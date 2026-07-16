@@ -1,0 +1,380 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover, user-scalable=no">
+<title>Jarvis</title>
+<meta name="theme-color" content="#000000">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="Jarvis">
+<link rel="manifest" href="./manifest.webmanifest">
+<link rel="apple-touch-icon" href="./icon-512.png">
+<link rel="icon" type="image/png" href="./icon-512.png">
+<style>
+  :root{
+    --bg:#000000; --surface:#1C1C1E; --bubble:#26262A;
+    --hairline:rgba(84,84,88,.65); --ink:#FFFFFF; --muted:#98989E;
+    --blue:#0A84FF; --gold-a:#E8B96A; --gold-b:#B87E2E;
+    --ok:#30D158; --no:#FF453A;
+  }
+  *{box-sizing:border-box; -webkit-tap-highlight-color:transparent}
+  html{-webkit-text-size-adjust:100%; height:100%}
+  body{
+    margin:0; background:var(--bg); color:var(--ink);
+    font-family:-apple-system,BlinkMacSystemFont,"SF Pro Text","Segoe UI",Roboto,system-ui,sans-serif;
+    display:flex; flex-direction:column; overflow:hidden;
+    position:fixed; inset:0;
+    touch-action:manipulation; overscroll-behavior:none;
+  }
+  button{touch-action:manipulation; font-family:inherit}
+  /* ---------- Login ---------- */
+  #login{
+    flex:1; display:flex; flex-direction:column; align-items:center;
+    justify-content:center; gap:20px; padding:24px; text-align:center;
+    padding-top:calc(24px + env(safe-area-inset-top));
+  }
+  .biglogo{
+    width:96px; height:96px; border-radius:50%;
+    background:linear-gradient(145deg,var(--gold-a),var(--gold-b));
+    color:#1A130A; font-weight:800; font-size:48px;
+    display:flex; align-items:center; justify-content:center;
+    font-family:Georgia,serif;
+  }
+  #login h1{font-size:34px; font-weight:700; margin:0; letter-spacing:.01em}
+  #login p{color:var(--muted); font-size:16px; margin:0; max-width:34ch}
+  #codein{
+    font:inherit; font-size:18px; text-align:center; letter-spacing:.04em;
+    background:var(--surface); border:0.5px solid var(--hairline); color:var(--ink);
+    border-radius:12px; padding:15px 18px; width:min(340px,88vw);
+    text-transform:lowercase;
+  }
+  #codein:focus{outline:none; border-color:var(--blue); box-shadow:0 0 0 3px rgba(10,132,255,.3)}
+  #loginbtn{
+    font:inherit; font-size:17px; font-weight:600; cursor:pointer;
+    background:var(--blue); color:#fff;
+    border:none; border-radius:12px; padding:15px 20px; width:min(340px,88vw);
+  }
+  #loginbtn:active{opacity:.75}
+  #loginbtn:disabled{opacity:.5}
+  #loginerr{color:var(--no); font-size:15px; min-height:22px; margin:0}
+  .hint{
+    color:var(--muted); font-size:13px; max-width:42ch; line-height:1.5;
+    border-top:0.5px solid var(--hairline); padding-top:16px; margin-top:6px;
+  }
+  /* ---------- Chat ---------- */
+  #app{flex:1; display:none; flex-direction:column; min-height:0}
+  header{
+    display:flex; align-items:center; gap:12px;
+    padding:calc(10px + env(safe-area-inset-top)) 16px 10px; flex:0 0 auto;
+    background:rgba(22,22,24,.85);
+    -webkit-backdrop-filter:saturate(180%) blur(20px);
+    backdrop-filter:saturate(180%) blur(20px);
+    border-bottom:0.5px solid var(--hairline);
+  }
+  .mono-j{
+    width:42px; height:42px; border-radius:50%;
+    background:linear-gradient(145deg,var(--gold-a),var(--gold-b));
+    color:#1A130A; font-weight:800; font-size:20px;
+    display:flex; align-items:center; justify-content:center;
+    font-family:Georgia,serif; flex:0 0 auto;
+  }
+  header .who{flex:1; min-width:0}
+  header .who b{display:block; font-size:18px; font-weight:600; letter-spacing:-.01em}
+  header .who span{font-size:13px; color:var(--muted); display:flex; align-items:center; gap:6px}
+  .dot{width:7px; height:7px; border-radius:50%; background:var(--ok)}
+  #chat{
+    flex:1; overflow-y:auto; padding:16px 14px 10px;
+    display:flex; flex-direction:column; gap:8px;
+    -webkit-overflow-scrolling:touch;
+    background:var(--bg);
+  }
+  .msg{
+    max-width:78%; padding:10px 15px; border-radius:20px;
+    font-size:17px; line-height:1.35; white-space:pre-wrap; word-wrap:break-word;
+  }
+  .msg.user{align-self:flex-end; background:var(--blue); color:#fff; border-bottom-right-radius:6px}
+  .msg.jarvis{align-self:flex-start; background:var(--bubble); color:var(--ink); border-bottom-left-radius:6px}
+  .msg.err{align-self:center; background:none; border:0.5px dashed var(--no); color:var(--no); font-size:14px; max-width:94%; border-radius:12px}
+  .msg.info{align-self:center; background:none; border:0.5px dashed var(--hairline); color:var(--muted); font-size:13.5px; max-width:94%; border-radius:12px}
+  .typing{align-self:flex-start; display:flex; gap:5px; padding:14px 16px; background:var(--bubble); border-radius:20px; border-bottom-left-radius:6px}
+  .typing i{width:8px; height:8px; border-radius:50%; background:var(--muted); animation:tp 1.2s infinite}
+  .typing i:nth-child(2){animation-delay:.2s}
+  .typing i:nth-child(3){animation-delay:.4s}
+  @keyframes tp{0%,60%,100%{opacity:.25}30%{opacity:1}}
+  @media (prefers-reduced-motion: reduce){.typing i{animation:none; opacity:.6}}
+  /* ---------- Composer ---------- */
+  #composer{
+    display:flex; align-items:flex-end; gap:9px; flex:0 0 auto;
+    padding:8px 12px max(0px, calc(env(safe-area-inset-bottom) - 24px));
+    background:rgba(22,22,24,.9);
+    -webkit-backdrop-filter:saturate(180%) blur(20px);
+    backdrop-filter:saturate(180%) blur(20px);
+    border-top:0.5px solid var(--hairline);
+  }
+  #micbtn{
+    width:40px; height:40px; border-radius:50%; flex:0 0 auto; cursor:pointer;
+    border:none; background:var(--surface); color:var(--muted);
+    display:none; align-items:center; justify-content:center;
+    margin-bottom:2px;
+  }
+  #micbtn.on{display:flex}
+  #micbtn.rec{background:var(--no); color:#fff; animation:pulse 1.4s infinite}
+  @keyframes pulse{0%,100%{box-shadow:0 0 0 0 rgba(255,69,58,.5)}60%{box-shadow:0 0 0 12px rgba(255,69,58,0)}}
+  @media (prefers-reduced-motion: reduce){#micbtn.rec{animation:none}}
+  #textin{
+    flex:1; min-width:0; font:inherit; font-size:17px; resize:none;
+    background:var(--surface); border:0.5px solid var(--hairline); color:var(--ink);
+    border-radius:20px; padding:10px 16px; max-height:120px; line-height:1.35;
+  }
+  #textin::placeholder{color:var(--muted)}
+  #textin:focus{outline:none; border-color:rgba(10,132,255,.7)}
+  #sendbtn{
+    width:40px; height:40px; border-radius:50%; flex:0 0 auto; cursor:pointer;
+    border:none; background:var(--blue); color:#fff;
+    display:flex; align-items:center; justify-content:center;
+    margin-bottom:2px;
+    transition:opacity .12s ease, transform .12s ease;
+  }
+  #sendbtn:active{transform:scale(.9)}
+  #sendbtn.idle{opacity:.4}
+  @media (prefers-reduced-motion: reduce){#sendbtn{transition:none}}
+  #rectag{
+    display:none; font-size:14px; color:var(--no); font-weight:600;
+    position:absolute; transform:translateY(-40px); padding-left:6px;
+  }
+</style>
+</head>
+<body>
+
+<div id="login">
+  <div class="biglogo">J</div>
+  <h1>Jarvis</h1>
+  <p>Votre assistant, disponible 24h/24.</p>
+  <input id="codein" type="text" placeholder="Code d'accès" autocomplete="off" autocapitalize="none">
+  <button id="loginbtn" type="button">Se connecter</button>
+  <p id="loginerr"></p>
+  <p class="hint">Une fois connecté : Partager → « Sur l'écran d'accueil ». Jarvis s'installe comme une vraie application, avec votre code retenu dans le raccourci.</p>
+  <p class="hint" style="border:none; padding-top:0; margin-top:-8px">v2.0</p>
+</div>
+
+<div id="app">
+  <header>
+    <div class="mono-j">J</div>
+    <div class="who">
+      <b>Jarvis</b>
+      <span><i class="dot"></i><span id="subline">en ligne</span></span>
+    </div>
+  </header>
+  <div id="chat"></div>
+  <span id="rectag">● Enregistrement… touchez pour envoyer</span>
+  <div id="composer">
+    <button id="micbtn" type="button" aria-label="Message vocal">
+      <svg width="18" height="22" viewBox="0 0 22 26" fill="currentColor"><rect x="7" y="1" width="8" height="14" rx="4"/><path d="M3 12a8 8 0 0 0 16 0M11 20v4M7 24.5h8" stroke="currentColor" stroke-width="2" fill="none" stroke-linecap="round"/></svg>
+    </button>
+    <textarea id="textin" rows="1" placeholder="Écrire à Jarvis…"></textarea>
+    <button id="sendbtn" class="idle" type="button" aria-label="Envoyer">
+      <svg width="18" height="18" viewBox="0 0 20 20" fill="currentColor"><path d="M10 17V5.5M10 3l-6 6.2M10 3l6 6.2" stroke="currentColor" stroke-width="2.6" fill="none" stroke-linecap="round" stroke-linejoin="round"/></svg>
+    </button>
+  </div>
+</div>
+
+<script>
+(function(){
+  var APPV = 'v2.0';
+  var API = 'https://mat22.app.n8n.cloud/webhook/jarvis-msg';
+  var login = document.getElementById('login');
+  var app = document.getElementById('app');
+  var chat = document.getElementById('chat');
+  var codein = document.getElementById('codein');
+  var loginbtn = document.getElementById('loginbtn');
+  var loginerr = document.getElementById('loginerr');
+  var textin = document.getElementById('textin');
+  var sendbtn = document.getElementById('sendbtn');
+  var micbtn = document.getElementById('micbtn');
+  var rectag = document.getElementById('rectag');
+  var subline = document.getElementById('subline');
+
+  // Clavier iOS : garder la conversation calée en bas (sans toucher a la hauteur du body)
+  if (window.visualViewport){
+    window.visualViewport.addEventListener('resize', function(){
+      setTimeout(function(){ chat.scrollTop = chat.scrollHeight; }, 60);
+    });
+  }
+
+  // Environnement : sandbox n8n ? (localStorage et micro bloqués)
+  var sandboxed = false;
+  try { localStorage.setItem('_t','1'); localStorage.removeItem('_t'); } catch(e){ sandboxed = true; }
+  var micCapable = !sandboxed && !!(navigator.mediaDevices && window.MediaRecorder);
+  if (micCapable) micbtn.classList.add('on');
+
+  // Stockage résilient : le code vit dans l'ADRESSE (?c=..., conservé par le raccourci
+  // iOS/Android) + localStorage quand il est disponible + mémoire de session.
+  var mem = {};
+  function urlCode(){
+    try {
+      var q = new URLSearchParams(location.search).get('c');
+      if (q) return q;
+    } catch(e){}
+    var m = (location.hash || '').match(/[#&]c=([^&]+)/);
+    return m ? decodeURIComponent(m[1]) : null;
+  }
+  function store(k, v){
+    mem[k] = v;
+    try { localStorage.setItem(k, v); } catch(e){}
+    if (k === 'jarvisCode'){
+      try {
+        history.replaceState(null, '', v ? (location.pathname + '?c=' + encodeURIComponent(v)) : location.pathname);
+      } catch(e){}
+    }
+  }
+  function read(k){
+    if (mem[k] !== undefined) return mem[k];
+    try { var v = localStorage.getItem(k); if (v !== null) return v; } catch(e){}
+    if (k === 'jarvisCode') return urlCode();
+    return null;
+  }
+
+  function bubble(text, who){
+    var d = document.createElement('div');
+    d.className = 'msg ' + who;
+    d.textContent = text;
+    chat.appendChild(d);
+    chat.scrollTop = chat.scrollHeight;
+    return d;
+  }
+  function typingOn(){
+    var d = document.createElement('div');
+    d.className = 'typing'; d.id = 'typing';
+    d.innerHTML = '<i></i><i></i><i></i>';
+    chat.appendChild(d); chat.scrollTop = chat.scrollHeight;
+  }
+  function typingOff(){ var t = document.getElementById('typing'); if(t) t.remove(); }
+
+  function post(payload, onOk, onErr){
+    payload.code = String(read('jarvisCode') || '').trim();
+    fetch(API, {
+      method:'POST',
+      headers:{'Content-Type':'application/json'},
+      body: JSON.stringify(payload)
+    }).then(function(r){ return r.json(); }).then(function(j){
+      if (j && j.error){ onErr(j.error); } else { onOk(j || {}); }
+    }).catch(function(){ onErr('Connexion impossible. Vérifiez le réseau et réessayez.'); });
+  }
+
+  function renderHistory(msgs){
+    chat.innerHTML = '';
+    (msgs || []).forEach(function(m){
+      if (!m || !m.contenu) return;
+      bubble(String(m.contenu), m.role === 'user' ? 'user' : 'jarvis');
+    });
+    if (!chat.children.length){
+      bubble('Bonjour, je suis Jarvis. Je connais vos contacts, vos chantiers, vos devis et votre agenda — posez-moi une question.', 'jarvis');
+    }
+  }
+
+  function enterApp(nom, msgs){
+    login.style.display = 'none';
+    app.style.display = 'flex';
+    subline.textContent = (nom ? ('Assistant de ' + nom + ' — en ligne') : 'en ligne') + ' · ' + APPV;
+    renderHistory(msgs);
+  }
+
+  // ---- Login ----
+  loginbtn.addEventListener('click', function(){
+    var code = codein.value.trim().toLowerCase();
+    if (!code){ loginerr.textContent = 'Entrez votre code d’accès.'; return; }
+    loginbtn.disabled = true; loginerr.textContent = '';
+    store('jarvisCode', code);
+    post({ type:'history' }, function(j){
+      loginbtn.disabled = false;
+      if (j.nom) store('jarvisNom', j.nom);
+      enterApp(j.nom, j.messages);
+    }, function(err){
+      loginbtn.disabled = false;
+      store('jarvisCode','');
+      loginerr.textContent = err;
+    });
+  });
+  codein.addEventListener('keydown', function(e){ if (e.key === 'Enter') loginbtn.click(); });
+
+  // ---- Texte ----
+  function autosize(){
+    textin.style.height = 'auto';
+    textin.style.height = Math.min(textin.scrollHeight, 120) + 'px';
+    sendbtn.classList.toggle('idle', !textin.value.trim());
+  }
+  textin.addEventListener('input', autosize);
+  function sendText(){
+    var t = textin.value.trim();
+    if (!t) return;
+    textin.value = ''; autosize();
+    bubble(t, 'user');
+    typingOn();
+    post({ type:'text', message:t }, function(j){
+      typingOff();
+      bubble(j.reply || 'Hmm, je n’ai rien reçu. Réessayez.', 'jarvis');
+    }, function(err){
+      typingOff(); bubble(err, 'err');
+    });
+  }
+  sendbtn.addEventListener('click', sendText);
+  textin.addEventListener('keydown', function(e){
+    if (e.key === 'Enter' && !e.shiftKey && window.innerWidth > 700){ e.preventDefault(); sendText(); }
+  });
+
+  // ---- Voix (bouton affiché seulement si le micro est utilisable) ----
+  var rec = null, chunks = [], recMime = '';
+  function pickMime(){
+    var c = ['audio/mp4','audio/webm;codecs=opus','audio/webm','audio/ogg;codecs=opus'];
+    for (var i=0;i<c.length;i++){ if (MediaRecorder.isTypeSupported && MediaRecorder.isTypeSupported(c[i])) return c[i]; }
+    return '';
+  }
+  micbtn.addEventListener('click', function(){
+    if (rec && rec.state === 'recording'){ rec.stop(); return; }
+    navigator.mediaDevices.getUserMedia({ audio:true }).then(function(stream){
+      recMime = pickMime();
+      rec = new MediaRecorder(stream, recMime ? { mimeType: recMime } : undefined);
+      chunks = [];
+      rec.ondataavailable = function(e){ if (e.data && e.data.size) chunks.push(e.data); };
+      rec.onstop = function(){
+        stream.getTracks().forEach(function(t){ t.stop(); });
+        micbtn.classList.remove('rec'); rectag.style.display = 'none';
+        var blob = new Blob(chunks, { type: recMime || 'audio/webm' });
+        if (blob.size < 1500){ return; }
+        if (blob.size > 8000000){ bubble('Message vocal trop long — refaites plus court.', 'err'); return; }
+        var fr = new FileReader();
+        fr.onload = function(){
+          var b64 = String(fr.result).split(',')[1] || '';
+          var ub = bubble('🎙 message vocal…', 'user');
+          typingOn();
+          post({ type:'audio', audio:b64, mime: blob.type }, function(j){
+            typingOff();
+            if (j.transcription){ ub.textContent = j.transcription; }
+            bubble(j.reply || 'Hmm, je n’ai rien reçu. Réessayez.', 'jarvis');
+          }, function(err){ typingOff(); ub.remove(); bubble(err, 'err'); });
+        };
+        fr.readAsDataURL(blob);
+      };
+      rec.start();
+      micbtn.classList.add('rec'); rectag.style.display = 'block';
+      setTimeout(function(){ if (rec && rec.state === 'recording') rec.stop(); }, 90000);
+    }).catch(function(){
+      bubble('Jarvis n’a pas l’autorisation d’utiliser le micro. Autorisez-le, ou utilisez la dictée du clavier.', 'err');
+    });
+  });
+
+  // ---- Démarrage : reconnexion auto si un code est connu (URL ou stockage) ----
+  var savedCode = String(read('jarvisCode') || '').trim();
+  if (savedCode){
+    store('jarvisCode', savedCode);
+    post({ type:'history' }, function(j){
+      if (j.nom) store('jarvisNom', j.nom);
+      enterApp(j.nom || read('jarvisNom'), j.messages);
+    }, function(){ /* code périmé : rester sur l'écran de connexion */ });
+  }
+})();
+</script>
+</body>
+</html>
