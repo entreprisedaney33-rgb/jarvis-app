@@ -200,7 +200,7 @@
   <button id="loginbtn" type="button">Se connecter</button>
   <p id="loginerr"></p>
   <p class="hint">Une fois connecté : Partager → « Sur l'écran d'accueil ». Jarvis s'installe comme une vraie application, avec votre code retenu dans le raccourci.</p>
-  <p class="hint" style="border:none; padding-top:0; margin-top:-8px">v2.4</p>
+  <p class="hint" style="border:none; padding-top:0; margin-top:-8px">v2.5</p>
 </div>
 
 <div id="app">
@@ -240,7 +240,24 @@
 
 <script>
 (function(){
-  var APPV = 'v2.4';
+  var APPV = 'v2.5';
+
+  // ---- Mise à jour automatique (contourne le cache GitHub Pages) ----
+  function checkUpdate(){
+    fetch('./version.json?t=' + Date.now(), { cache:'no-store' })
+      .then(function(r){ return r.json(); })
+      .then(function(j){
+        if (!j || !j.v || ('v' + j.v) === APPV) return;
+        var tried = null;
+        try { tried = sessionStorage.getItem('majTentee'); } catch(e){}
+        if (tried === j.v) return; // déjà tenté (nouvelle version en cours de propagation)
+        try { sessionStorage.setItem('majTentee', j.v); } catch(e){}
+        location.replace(location.pathname + '?u=' + Date.now());
+      }).catch(function(){});
+  }
+  checkUpdate();
+  setInterval(checkUpdate, 60000);
+  document.addEventListener('visibilitychange', function(){ if (!document.hidden) checkUpdate(); });
   var API = 'https://mat22.app.n8n.cloud/webhook/jarvis-msg';
   var login = document.getElementById('login');
   var app = document.getElementById('app');
