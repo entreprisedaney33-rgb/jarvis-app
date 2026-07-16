@@ -248,7 +248,7 @@
   <button id="loginbtn" type="button">Se connecter</button>
   <p id="loginerr"></p>
   <p class="hint">Une fois connecté : Partager → « Sur l'écran d'accueil ». Jarvis s'installe comme une vraie application, avec votre code retenu dans le raccourci.</p>
-  <p class="hint" style="border:none; padding-top:0; margin-top:-8px">v2.7</p>
+  <p class="hint" style="border:none; padding-top:0; margin-top:-8px">v2.8</p>
 </div>
 
 <div id="app">
@@ -283,12 +283,12 @@
   <button class="sh-item" type="button" disabled>✉️&nbsp; Emails à valider <span class="soon">bientôt</span></button>
   <button class="sh-item" type="button" disabled>📄&nbsp; Mes documents <span class="soon">bientôt</span></button>
   <button class="sh-item danger" id="sh-logout" type="button">Se déconnecter</button>
-  <p class="sh-ver" id="subline">Jarvis · v2.7</p>
+  <p class="sh-ver" id="subline">Jarvis · v2.8</p>
 </div>
 
 <script>
 (function(){
-  var APPV = 'v2.7';
+  var APPV = 'v2.8';
 
   // ---- Mise à jour automatique (contourne le cache GitHub Pages) ----
   function checkUpdate(){
@@ -638,6 +638,20 @@
       bubble('Jarvis n’a pas l’autorisation du micro. Autorise-le (Réglages > Jarvis), ou utilise la dictée du clavier.', 'err');
     });
   });
+
+  // ---- Boîte de réception : messages poussés (téléphone, alertes...) ----
+  function pollInbox(){
+    if (document.hidden) return;
+    if (app.style.display !== 'flex') return;
+    if (!String(read('jarvisCode') || '').trim()) return;
+    post({ type:'inbox' }, function(j){
+      (j.messages || []).forEach(function(m){
+        bubble(String(m.contenu || ''), 'jarvis');
+      });
+    }, function(){});
+  }
+  setInterval(pollInbox, 5000);
+  document.addEventListener('visibilitychange', function(){ if (!document.hidden) pollInbox(); });
 
   // ---- Démarrage INSTANTANÉ : cache local d'abord, serveur en arrière-plan ----
   var splash = document.getElementById('splash');
