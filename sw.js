@@ -9,8 +9,10 @@ self.addEventListener('push', function(event){
 
     // Pas de notification si l'utilisateur regarde deja la discussion
     // (evite le doublon : le message arrive de toute facon par le rafraichissement de l'app)
+    // ⚠️ NE PAS exiger client.focused : Safari/WebKit ne le rapporte pas de façon fiable
+    // (souvent false même app au premier plan) → on se fie a visibilityState seul.
     const list = await clients.matchAll({ type: 'window', includeUncontrolled: true });
-    const dejaDansConversation = list.some(function(c){ return c.visibilityState === 'visible' && c.focused; });
+    const dejaDansConversation = list.some(function(c){ return c.visibilityState === 'visible'; });
     if (dejaDansConversation) return;
 
     const title = data.title || 'Jarvis';

@@ -229,6 +229,12 @@
   .vc-ok{background:#30D158; color:#03240F}
   .vc-no{background:rgba(255,69,58,.15); color:#FF453A; border:0.5px solid rgba(255,69,58,.5)}
   .vc-ok:disabled,.vc-no:disabled{opacity:.45}
+  .vc-edit{
+    display:block; width:100%; font:inherit; font-size:14.5px; font-weight:600;
+    padding:10px; border-radius:12px; margin-bottom:8px; cursor:pointer;
+    background:none; border:0.5px solid var(--hairline); color:var(--muted);
+  }
+  .vc-edit:disabled{opacity:.4}
   a.fbtn{display:block; text-decoration:none; align-self:flex-start; cursor:pointer}
   .fbtn b{display:block; font-size:15.5px; color:var(--ink); font-weight:600}
   .fbtn span{display:block; font-size:12.5px; color:var(--muted); margin-top:3px}
@@ -283,7 +289,7 @@
   <button id="loginbtn" type="button">Se connecter</button>
   <p id="loginerr"></p>
   <p class="hint">Une fois connecté : Partager → « Sur l'écran d'accueil ». Jarvis s'installe comme une vraie application, avec votre code retenu dans le raccourci.</p>
-  <p class="hint" style="border:none; padding-top:0; margin-top:-8px">v2.10</p>
+  <p class="hint" style="border:none; padding-top:0; margin-top:-8px">v2.11</p>
 </div>
 
 <div id="app">
@@ -319,7 +325,7 @@
   <button class="sh-item" type="button" disabled>📄&nbsp; Mes documents <span class="soon">bientôt</span></button>
   <button class="sh-item" id="sh-push" type="button">🔔&nbsp; Activer les notifications</button>
   <button class="sh-item danger" id="sh-logout" type="button">Se déconnecter</button>
-  <p class="sh-ver" id="subline">Jarvis · v2.10</p>
+  <p class="sh-ver" id="subline">Jarvis · v2.11</p>
 </div>
 
 <div id="msgSheetbg"></div>
@@ -333,7 +339,7 @@
 
 <script>
 (function(){
-  var APPV = 'v2.10';
+  var APPV = 'v2.11';
 
   // ---- Mise à jour automatique (contourne le cache GitHub Pages) ----
   function checkUpdate(){
@@ -465,19 +471,31 @@
       var pre = document.createElement('div'); pre.className = 'vc-resume';
       pre.textContent = j.validation.resume || '';
       card.appendChild(pre);
+      var edit = null;
+      if (j.validation.kind === 'email' || j.validation.kind === 'emaildoc'){
+        edit = document.createElement('button');
+        edit.type = 'button'; edit.className = 'vc-edit'; edit.textContent = '✏️ Modifier';
+        card.appendChild(edit);
+      }
       var row = document.createElement('div'); row.className = 'vc-row';
       var ok = document.createElement('button'); ok.type = 'button'; ok.className = 'vc-ok'; ok.textContent = '✅ Valider';
       var no = document.createElement('button'); no.type = 'button'; no.className = 'vc-no'; no.textContent = '❌ Annuler';
       row.appendChild(ok); row.appendChild(no); card.appendChild(row);
       function act(choix){
         ok.disabled = no.disabled = true;
+        if (edit) edit.disabled = true;
         post({ type:'action', kind: j.validation.kind, choix: choix }, function(r){
           row.remove();
+          if (edit) edit.remove();
           bubble(r.reply || 'Fait.', 'jarvis');
-        }, function(err){ ok.disabled = no.disabled = false; bubble(err, 'err'); });
+        }, function(err){ ok.disabled = no.disabled = false; if (edit) edit.disabled = false; bubble(err, 'err'); });
       }
       ok.addEventListener('click', function(){ act('oui'); });
       no.addEventListener('click', function(){ act('non'); });
+      if (edit) edit.addEventListener('click', function(){
+        textin.focus();
+        textin.scrollIntoView({ block:'nearest' });
+      });
       chat.appendChild(card);
     }
     (j.fichiers || []).forEach(function(f){
