@@ -348,7 +348,7 @@
 
 <script>
 (function(){
-  var APPV = 'v2.12';
+  var APPV = 'v2.13';
 
   // ---- Mise à jour automatique (contourne le cache GitHub Pages) ----
   function checkUpdate(){
@@ -401,6 +401,30 @@
     return arr;
   }
   if ('serviceWorker' in navigator){ navigator.serviceWorker.register('./sw.js').catch(function(){}); }
+
+  // Signale au service worker qu'on regarde ACTIVEMENT la conversation, via IndexedDB
+  // (partagee entre la page et le SW). ⚠️ Ne pas se fier a clients.matchAll() seul dans le SW :
+  // sur iOS Safari, la visibilite/le focus des clients y est rapportee de facon peu fiable
+  // (le SW tourne dans un contexte separe) -> d'ou des notifications sonores qui arrivaient
+  // encore alors que l'app etait deja ouverte au premier plan.
+  function pingVisible(){
+    if (document.visibilityState !== 'visible') return;
+    try {
+      var open = indexedDB.open('jarvis', 1);
+      open.onupgradeneeded = function(){ try { open.result.createObjectStore('kv'); } catch(e){} };
+      open.onsuccess = function(){
+        try {
+          var tx = open.result.transaction('kv','readwrite');
+          tx.objectStore('kv').put(Date.now(), 'lastVisibleAt');
+        } catch(e){}
+      };
+    } catch(e){}
+  }
+  document.addEventListener('visibilitychange', pingVisible);
+  window.addEventListener('focus', pingVisible);
+  window.addEventListener('pageshow', pingVisible);
+  pingVisible();
+  setInterval(pingVisible, 4000);
 
   // Stockage résilient : le code vit dans l'ADRESSE (?c=..., conservé par le raccourci
   // iOS/Android) + localStorage quand il est disponible + mémoire de session.
