@@ -197,6 +197,17 @@
   .sh-item .soon{margin-left:auto; font-size:11px; color:var(--gold-a); border:1px solid rgba(232,185,106,.4); border-radius:99px; padding:2px 8px}
   .sh-item.danger{color:var(--no)}
   .sh-ver{text-align:center; color:var(--muted); font-size:12px; margin:10px 0 0}
+  /* Cartes de validation (brouillons email, rendez-vous...) */
+  .vcard{max-width:88%}
+  .vc-resume{white-space:pre-wrap; font-size:15px; line-height:1.45; background:rgba(255,255,255,.07); border-radius:12px; padding:10px 12px; margin-bottom:10px; word-wrap:break-word}
+  .vc-row{display:flex; gap:8px}
+  .vc-ok,.vc-no{flex:1; font:inherit; font-size:16px; font-weight:600; padding:12px; border-radius:12px; border:none; cursor:pointer}
+  .vc-ok{background:#30D158; color:#03240F}
+  .vc-no{background:rgba(255,69,58,.15); color:#FF453A; border:0.5px solid rgba(255,69,58,.5)}
+  .vc-ok:disabled,.vc-no:disabled{opacity:.45}
+  a.fbtn{display:block; text-decoration:none; align-self:flex-start; cursor:pointer}
+  .fbtn b{display:block; font-size:15.5px; color:var(--ink); font-weight:600}
+  .fbtn span{display:block; font-size:12.5px; color:var(--muted); margin-top:3px}
   /* ---------- Écran de lancement ---------- */
   #splash{
     position:fixed; inset:0; z-index:60; background:var(--bg);
@@ -248,7 +259,7 @@
   <button id="loginbtn" type="button">Se connecter</button>
   <p id="loginerr"></p>
   <p class="hint">Une fois connecté : Partager → « Sur l'écran d'accueil ». Jarvis s'installe comme une vraie application, avec votre code retenu dans le raccourci.</p>
-  <p class="hint" style="border:none; padding-top:0; margin-top:-8px">v2.8</p>
+  <p class="hint" style="border:none; padding-top:0; margin-top:-8px">v2.9</p>
 </div>
 
 <div id="app">
@@ -283,12 +294,12 @@
   <button class="sh-item" type="button" disabled>✉️&nbsp; Emails à valider <span class="soon">bientôt</span></button>
   <button class="sh-item" type="button" disabled>📄&nbsp; Mes documents <span class="soon">bientôt</span></button>
   <button class="sh-item danger" id="sh-logout" type="button">Se déconnecter</button>
-  <p class="sh-ver" id="subline">Jarvis · v2.8</p>
+  <p class="sh-ver" id="subline">Jarvis · v2.9</p>
 </div>
 
 <script>
 (function(){
-  var APPV = 'v2.8';
+  var APPV = 'v2.9';
 
   // ---- Mise à jour automatique (contourne le cache GitHub Pages) ----
   function checkUpdate(){
@@ -385,6 +396,41 @@
     }).catch(function(){ onErr('Connexion impossible. Vérifiez le réseau et réessayez.'); });
   }
 
+  function renderExtras(j){
+    if (j.validation && j.validation.kind){
+      var card = document.createElement('div');
+      card.className = 'msg jarvis vcard';
+      var pre = document.createElement('div'); pre.className = 'vc-resume';
+      pre.textContent = j.validation.resume || '';
+      card.appendChild(pre);
+      var row = document.createElement('div'); row.className = 'vc-row';
+      var ok = document.createElement('button'); ok.type = 'button'; ok.className = 'vc-ok'; ok.textContent = '✅ Valider';
+      var no = document.createElement('button'); no.type = 'button'; no.className = 'vc-no'; no.textContent = '❌ Annuler';
+      row.appendChild(ok); row.appendChild(no); card.appendChild(row);
+      function act(choix){
+        ok.disabled = no.disabled = true;
+        post({ type:'action', kind: j.validation.kind, choix: choix }, function(r){
+          row.remove();
+          bubble(r.reply || 'Fait.', 'jarvis');
+        }, function(err){ ok.disabled = no.disabled = false; bubble(err, 'err'); });
+      }
+      ok.addEventListener('click', function(){ act('oui'); });
+      no.addEventListener('click', function(){ act('non'); });
+      chat.appendChild(card);
+    }
+    (j.fichiers || []).forEach(function(f){
+      var a = document.createElement('a');
+      a.className = 'msg jarvis fbtn';
+      a.href = 'https://mat22.app.n8n.cloud' + f.url + '&code=' + encodeURIComponent(String(read('jarvisCode') || '').trim());
+      a.target = '_blank'; a.rel = 'noopener';
+      var b = document.createElement('b'); b.textContent = '📄 ' + (f.nom || 'document');
+      a.appendChild(b);
+      if (f.info){ var sp = document.createElement('span'); sp.textContent = f.info; a.appendChild(sp); }
+      chat.appendChild(a);
+    });
+    chat.scrollTop = chat.scrollHeight;
+  }
+
   function renderHistory(msgs){
     chat.innerHTML = '';
     (msgs || []).forEach(function(m){
@@ -438,6 +484,7 @@
     post({ type:'text', message:t }, function(j){
       typingOff();
       bubble(j.reply || 'Hmm, je n’ai rien reçu. Réessayez.', 'jarvis');
+      renderExtras(j);
     }, function(err){
       typingOff(); bubble(err, 'err');
     });
@@ -604,6 +651,7 @@
           vb.appendChild(t);
         }
         bubble(j.reply || 'Hmm, je n’ai rien reçu. Réessayez.', 'jarvis');
+        renderExtras(j);
       }, function(err){ typingOff(); bubble(err, 'err'); });
     };
     fr.readAsDataURL(blob);
