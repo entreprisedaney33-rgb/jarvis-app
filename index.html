@@ -25,8 +25,7 @@
     margin:0; background:var(--bg); color:var(--ink);
     font-family:-apple-system,BlinkMacSystemFont,"SF Pro Text","Segoe UI",Roboto,system-ui,sans-serif;
     display:flex; flex-direction:column; overflow:hidden;
-    position:fixed; top:0; left:0; width:100%;
-    height:100%; height:100vh; height:100lvh;
+    position:fixed; inset:0;
     touch-action:manipulation; overscroll-behavior:none;
   }
   button{touch-action:manipulation; font-family:inherit}
@@ -109,10 +108,8 @@
   /* ---------- Composer ---------- */
   #composer{
     display:flex; align-items:flex-end; gap:9px; flex:0 0 auto;
-    padding:8px 12px max(8px, calc(env(safe-area-inset-bottom) - 12px));
-    background:rgba(22,22,24,.9);
-    -webkit-backdrop-filter:saturate(180%) blur(20px);
-    backdrop-filter:saturate(180%) blur(20px);
+    padding:8px 12px max(8px, calc(env(safe-area-inset-bottom) - 6px));
+    background:#17171B;
     border-top:0.5px solid var(--hairline);
   }
   #micbtn{
@@ -203,7 +200,7 @@
   <button id="loginbtn" type="button">Se connecter</button>
   <p id="loginerr"></p>
   <p class="hint">Une fois connecté : Partager → « Sur l'écran d'accueil ». Jarvis s'installe comme une vraie application, avec votre code retenu dans le raccourci.</p>
-  <p class="hint" style="border:none; padding-top:0; margin-top:-8px">v2.3</p>
+  <p class="hint" style="border:none; padding-top:0; margin-top:-8px">v2.4</p>
 </div>
 
 <div id="app">
@@ -238,12 +235,12 @@
   <button class="sh-item" type="button" disabled>✉️&nbsp; Emails à valider <span class="soon">bientôt</span></button>
   <button class="sh-item" type="button" disabled>📄&nbsp; Mes documents <span class="soon">bientôt</span></button>
   <button class="sh-item danger" id="sh-logout" type="button">Se déconnecter</button>
-  <p class="sh-ver" id="subline">Jarvis · v2.3</p>
+  <p class="sh-ver" id="subline">Jarvis · v2.4</p>
 </div>
 
 <script>
 (function(){
-  var APPV = 'v2.3';
+  var APPV = 'v2.4';
   var API = 'https://mat22.app.n8n.cloud/webhook/jarvis-msg';
   var login = document.getElementById('login');
   var app = document.getElementById('app');
