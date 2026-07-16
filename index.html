@@ -311,7 +311,7 @@
   <button id="loginbtn" type="button">Se connecter</button>
   <p id="loginerr"></p>
   <p class="hint">Une fois connecté : Partager → « Sur l'écran d'accueil ». Jarvis s'installe comme une vraie application, avec votre code retenu dans le raccourci.</p>
-  <p class="hint" style="border:none; padding-top:0; margin-top:-8px">v2.15</p>
+  <p class="hint" style="border:none; padding-top:0; margin-top:-8px">v2.16</p>
 </div>
 
 <div id="app">
@@ -362,7 +362,7 @@
 
 <script>
 (function(){
-  var APPV = 'v2.15';
+  var APPV = 'v2.16';
 
   // ---- Mise à jour automatique (contourne le cache GitHub Pages) ----
   function checkUpdate(){
@@ -938,18 +938,39 @@
   window.addEventListener('pageshow', function(e){ if (e.persisted) onResume(); });
 
   // ---- Tire vers le haut = petite roue + recharge la conversation depuis le serveur ----
+  // ⚠️ Le simple evenement 'scroll' s'est revele peu fiable sur iOS (momentum scroll,
+  // evenements pas toujours emis a la bonne position) -> geste tactile direct a la place
+  // (touchstart/touchmove/touchend), le meme principe que les listes "tirer pour rafraichir".
   var pullspin = document.getElementById('pullspin');
   var pullCooldown = false;
-  chat.addEventListener('scroll', function(){
+  var pullStartY = null;
+  var pullArmed = false;
+  chat.addEventListener('touchstart', function(e){
     if (pullCooldown) return;
-    if (chat.scrollTop > 4) return;
+    if (chat.scrollTop > 2) { pullStartY = null; return; }
+    pullStartY = e.touches[0].clientY;
+    pullArmed = false;
+  }, { passive:true });
+  chat.addEventListener('touchmove', function(e){
+    if (pullStartY === null || pullCooldown) return;
+    var dy = e.touches[0].clientY - pullStartY;
+    if (chat.scrollTop <= 2 && dy > 28){
+      pullArmed = true;
+      pullspin.classList.add('on');
+    }
+  }, { passive:true });
+  function pullEnd(){
+    pullStartY = null;
+    if (!pullArmed) return;
+    pullArmed = false;
     pullCooldown = true;
-    pullspin.classList.add('on');
     refreshFromServer(true, function(){
       pullspin.classList.remove('on');
-      setTimeout(function(){ pullCooldown = false; }, 1500);
+      setTimeout(function(){ pullCooldown = false; }, 1200);
     });
-  }, { passive:true });
+  }
+  chat.addEventListener('touchend', pullEnd, { passive:true });
+  chat.addEventListener('touchcancel', pullEnd, { passive:true });
 
   // ---- Démarrage INSTANTANÉ : cache local d'abord, serveur en arrière-plan ----
   var splash = document.getElementById('splash');
