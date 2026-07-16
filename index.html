@@ -116,6 +116,7 @@
   .msg{
     max-width:78%; padding:10px 15px; border-radius:20px;
     font-size:17px; line-height:1.35; white-space:pre-wrap; word-wrap:break-word;
+    -webkit-touch-callout:none; -webkit-user-select:none; user-select:none;
   }
   .msg.user{align-self:flex-end; background:var(--blue); color:#fff; border-bottom-right-radius:6px}
   .msg.jarvis{align-self:flex-start; background:var(--bubble); color:var(--ink); border-bottom-left-radius:6px}
@@ -311,7 +312,7 @@
   <button id="loginbtn" type="button">Se connecter</button>
   <p id="loginerr"></p>
   <p class="hint">Une fois connecté : Partager → « Sur l'écran d'accueil ». Jarvis s'installe comme une vraie application, avec votre code retenu dans le raccourci.</p>
-  <p class="hint" style="border:none; padding-top:0; margin-top:-8px">v2.17</p>
+  <p class="hint" style="border:none; padding-top:0; margin-top:-8px">v2.18</p>
 </div>
 
 <div id="app">
@@ -362,7 +363,7 @@
 
 <script>
 (function(){
-  var APPV = 'v2.17';
+  var APPV = 'v2.18';
 
   // ---- Mise à jour automatique (contourne le cache GitHub Pages) ----
   function checkUpdate(){
@@ -956,7 +957,10 @@
     var dy = e.touches[0].clientY - pullStartY;
     if (chat.scrollTop <= 2 && dy > 28){
       pullArmed = true;
-      pullspin.classList.add('on');
+      // ⚠️ On NE touche PAS au DOM ici (pendant le geste actif) : iOS Safari peut geler le
+      // rendu des changements JS tant qu'un scroll/toucher est en cours, rendant la roue
+      // invisible malgre la classe bien posee. On l'affiche seulement au relachement du doigt
+      // (touchend), quand le rendu n'est plus en concurrence avec le scroll natif.
     }
   }, { passive:true });
   function pullEnd(){
@@ -964,11 +968,13 @@
     if (!pullArmed) return;
     pullArmed = false;
     pullCooldown = true;
+    pullspin.classList.add('on');
+    toast('Actualisation…');
     var shownAt = Date.now();
     refreshFromServer(true, function(){
-      // Reste visible au moins 700 ms (sinon un rechargement rapide fait clignoter la roue
+      // Reste visible au moins 900 ms (sinon un rechargement rapide fait clignoter la roue
       // trop vite pour etre remarquee).
-      var reste = 700 - (Date.now() - shownAt);
+      var reste = 900 - (Date.now() - shownAt);
       setTimeout(function(){
         pullspin.classList.remove('on');
         setTimeout(function(){ pullCooldown = false; }, 1200);
