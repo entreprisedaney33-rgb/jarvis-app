@@ -2,18 +2,27 @@ self.addEventListener('install', function(e){ self.skipWaiting(); });
 self.addEventListener('activate', function(e){ e.waitUntil(clients.claim()); });
 
 self.addEventListener('push', function(event){
-  let data = {};
-  try { data = event.data ? event.data.json() : {}; }
-  catch (e) { data = { title: 'Jarvis', body: event.data ? event.data.text() : '' }; }
-  const title = data.title || 'Jarvis';
-  const options = {
-    body: data.body || '',
-    icon: './icon-512.png',
-    badge: './icon-512.png',
-    tag: 'jarvis-notif',
-    renotify: true
-  };
-  event.waitUntil(self.registration.showNotification(title, options));
+  event.waitUntil((async function(){
+    let data = {};
+    try { data = event.data ? event.data.json() : {}; }
+    catch (e) { data = { title: 'Jarvis', body: event.data ? event.data.text() : '' }; }
+
+    // Pas de notification si l'utilisateur regarde deja la discussion
+    // (evite le doublon : le message arrive de toute facon par le rafraichissement de l'app)
+    const list = await clients.matchAll({ type: 'window', includeUncontrolled: true });
+    const dejaDansConversation = list.some(function(c){ return c.visibilityState === 'visible' && c.focused; });
+    if (dejaDansConversation) return;
+
+    const title = data.title || 'Jarvis';
+    const options = {
+      body: data.body || '',
+      icon: './icon-512.png',
+      badge: './icon-512.png',
+      tag: 'jarvis-notif',
+      renotify: true
+    };
+    await self.registration.showNotification(title, options);
+  })());
 });
 
 self.addEventListener('notificationclick', function(event){
