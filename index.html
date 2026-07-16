@@ -4,7 +4,7 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover, user-scalable=no">
 <title>Jarvis</title>
-<meta name="theme-color" content="#000000">
+<meta name="theme-color" content="#17171B">
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
@@ -188,9 +188,46 @@
   .sh-item .soon{margin-left:auto; font-size:11px; color:var(--gold-a); border:1px solid rgba(232,185,106,.4); border-radius:99px; padding:2px 8px}
   .sh-item.danger{color:var(--no)}
   .sh-ver{text-align:center; color:var(--muted); font-size:12px; margin:10px 0 0}
+  /* ---------- Écran de lancement ---------- */
+  #splash{
+    position:fixed; inset:0; z-index:60; background:var(--bg);
+    display:none; align-items:center; justify-content:center; flex-direction:column; gap:30px;
+    transition:opacity .55s ease;
+  }
+  #splash.on{display:flex}
+  #splash.done{opacity:0; pointer-events:none}
+  .s-wrap{position:relative; width:118px; height:118px; animation:senter .6s cubic-bezier(.2,.9,.3,1.3) both}
+  @keyframes senter{from{transform:scale(.55); opacity:0}to{transform:scale(1); opacity:1}}
+  .s-ring{
+    position:absolute; inset:0; border-radius:50%;
+    background:conic-gradient(from 0deg, transparent 0 62%, rgba(232,185,106,.15) 72%, #E8B96A 88%, #F5D9A0 96%, transparent 100%);
+    -webkit-mask:radial-gradient(farthest-side, transparent calc(100% - 3.5px), #fff calc(100% - 3px));
+    mask:radial-gradient(farthest-side, transparent calc(100% - 3.5px), #fff calc(100% - 3px));
+    animation:sring 1.15s linear infinite;
+  }
+  @keyframes sring{to{transform:rotate(360deg)}}
+  .s-logo{
+    position:absolute; inset:13px; border-radius:50%;
+    background:linear-gradient(145deg,#E8B96A,#B87E2E); color:#1A130A;
+    font-family:Georgia,serif; font-weight:800; font-size:46px;
+    display:flex; align-items:center; justify-content:center;
+    animation:sbreathe 2.2s ease-in-out infinite;
+  }
+  @keyframes sbreathe{0%,100%{box-shadow:0 0 22px rgba(232,185,106,.22)}50%{box-shadow:0 0 58px rgba(232,185,106,.55)}}
+  #splash .s-name{color:var(--muted); font-size:13px; font-weight:700; letter-spacing:.34em; text-transform:uppercase; padding-left:.34em}
+  @media (prefers-reduced-motion: reduce){
+    .s-ring{animation:none; opacity:.4}
+    .s-logo{animation:none}
+    .s-wrap{animation:none}
+  }
 </style>
 </head>
 <body>
+
+<div id="splash">
+  <div class="s-wrap"><div class="s-ring"></div><div class="s-logo">J</div></div>
+  <div class="s-name">Jarvis</div>
+</div>
 
 <div id="login">
   <div class="biglogo">J</div>
@@ -200,7 +237,7 @@
   <button id="loginbtn" type="button">Se connecter</button>
   <p id="loginerr"></p>
   <p class="hint">Une fois connecté : Partager → « Sur l'écran d'accueil ». Jarvis s'installe comme une vraie application, avec votre code retenu dans le raccourci.</p>
-  <p class="hint" style="border:none; padding-top:0; margin-top:-8px">v2.5</p>
+  <p class="hint" style="border:none; padding-top:0; margin-top:-8px">v2.6</p>
 </div>
 
 <div id="app">
@@ -235,12 +272,12 @@
   <button class="sh-item" type="button" disabled>✉️&nbsp; Emails à valider <span class="soon">bientôt</span></button>
   <button class="sh-item" type="button" disabled>📄&nbsp; Mes documents <span class="soon">bientôt</span></button>
   <button class="sh-item danger" id="sh-logout" type="button">Se déconnecter</button>
-  <p class="sh-ver" id="subline">Jarvis · v2.4</p>
+  <p class="sh-ver" id="subline">Jarvis · v2.6</p>
 </div>
 
 <script>
 (function(){
-  var APPV = 'v2.5';
+  var APPV = 'v2.6';
 
   // ---- Mise à jour automatique (contourne le cache GitHub Pages) ----
   function checkUpdate(){
@@ -590,14 +627,27 @@
     });
   });
 
-  // ---- Démarrage : reconnexion auto si un code est connu (URL ou stockage) ----
+  // ---- Démarrage : splash animé + reconnexion auto si un code est connu ----
+  var splash = document.getElementById('splash');
   var savedCode = String(read('jarvisCode') || '').trim();
   if (savedCode){
+    splash.classList.add('on');
+    login.style.display = 'none';
     store('jarvisCode', savedCode);
+    var t0 = Date.now();
     post({ type:'history' }, function(j){
       if (j.nom) store('jarvisNom', j.nom);
       enterApp(j.nom || read('jarvisNom'), j.messages);
-    }, function(){ /* code périmé : rester sur l'écran de connexion */ });
+      var reste = Math.max(0, 1100 - (Date.now() - t0));
+      setTimeout(function(){
+        splash.classList.add('done');
+        setTimeout(function(){ splash.classList.remove('on','done'); }, 650);
+      }, reste);
+    }, function(){
+      // code périmé : retour à l'écran de connexion
+      splash.classList.remove('on');
+      login.style.display = 'flex';
+    });
   }
 })();
 </script>
