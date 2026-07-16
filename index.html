@@ -66,23 +66,26 @@
   /* ---------- Chat ---------- */
   #app{flex:1; display:none; flex-direction:column; min-height:0}
   header{
-    display:flex; align-items:center; gap:12px;
-    padding:calc(10px + env(safe-area-inset-top)) 16px 10px; flex:0 0 auto;
+    display:flex; flex-direction:column; align-items:center; gap:4px;
+    padding:calc(8px + env(safe-area-inset-top)) 16px 9px; flex:0 0 auto;
     background:rgba(22,22,24,.85);
     -webkit-backdrop-filter:saturate(180%) blur(20px);
     backdrop-filter:saturate(180%) blur(20px);
     border-bottom:0.5px solid var(--hairline);
+    cursor:pointer; user-select:none; -webkit-user-select:none;
   }
+  header:active{opacity:.8}
   .mono-j{
+    box-shadow:0 2px 14px rgba(232,185,106,.35);
     width:42px; height:42px; border-radius:50%;
     background:linear-gradient(145deg,var(--gold-a),var(--gold-b));
     color:#1A130A; font-weight:800; font-size:20px;
     display:flex; align-items:center; justify-content:center;
     font-family:Georgia,serif; flex:0 0 auto;
   }
-  header .who{flex:1; min-width:0}
-  header .who b{display:block; font-size:18px; font-weight:600; letter-spacing:-.01em}
-  header .who span{font-size:13px; color:var(--muted); display:flex; align-items:center; gap:6px}
+  header .who{text-align:center}
+  header .who b{display:block; font-size:15px; font-weight:700; letter-spacing:.22em; text-transform:uppercase; padding-left:.22em}
+  header .who span{font-size:12.5px; color:var(--muted); display:flex; align-items:center; justify-content:center; gap:6px; margin-top:2px}
   .dot{width:7px; height:7px; border-radius:50%; background:var(--ok)}
   #chat{
     flex:1; overflow-y:auto; padding:16px 14px 10px;
@@ -107,7 +110,7 @@
   /* ---------- Composer ---------- */
   #composer{
     display:flex; align-items:flex-end; gap:9px; flex:0 0 auto;
-    padding:8px 12px max(0px, calc(env(safe-area-inset-bottom) - 24px));
+    padding:8px 12px max(2px, calc(env(safe-area-inset-bottom) - 30px));
     background:rgba(22,22,24,.9);
     -webkit-backdrop-filter:saturate(180%) blur(20px);
     backdrop-filter:saturate(180%) blur(20px);
@@ -140,10 +143,43 @@
   #sendbtn:active{transform:scale(.9)}
   #sendbtn.idle{opacity:.4}
   @media (prefers-reduced-motion: reduce){#sendbtn{transition:none}}
-  #rectag{
-    display:none; font-size:14px; color:var(--no); font-weight:600;
-    position:absolute; transform:translateY(-40px); padding-left:6px;
+  /* Enregistrement : onde sonore en direct */
+  #recui{display:none; flex:1; align-items:center; gap:10px; min-height:44px}
+  #recui canvas{flex:1; height:34px; min-width:0}
+  #rectime2{font-size:15px; font-variant-numeric:tabular-nums; color:var(--no); font-weight:600}
+  #composer.recording #textin,#composer.recording #sendbtn{display:none}
+  #composer.recording #recui{display:flex}
+  /* Bulle vocal re-ecoutable */
+  .msg.voice{min-width:200px}
+  .vrow{display:flex; align-items:center; gap:10px}
+  .vplay{width:34px; height:34px; border-radius:50%; border:none; cursor:pointer; background:rgba(255,255,255,.28); color:#fff; font-size:13px; display:flex; align-items:center; justify-content:center; flex:0 0 auto}
+  .vbar{flex:1; height:4px; border-radius:2px; background:rgba(255,255,255,.35); overflow:hidden}
+  .vbar i{display:block; height:100%; width:0; background:#fff}
+  .vtime{font-size:12.5px; opacity:.9; font-variant-numeric:tabular-nums}
+  .vtxt{font-size:15px; opacity:.95; margin-top:7px}
+  /* Feuille menu (appui sur l'en-tete) */
+  #sheetbg{position:fixed; inset:0; background:rgba(0,0,0,.5); display:none; z-index:40}
+  #sheetbg.open{display:block}
+  #sheet{
+    position:fixed; left:0; right:0; bottom:0; z-index:41;
+    background:#1C1C1E; border-radius:16px 16px 0 0;
+    padding:8px 16px calc(16px + env(safe-area-inset-bottom));
+    transform:translateY(105%); transition:transform .28s cubic-bezier(.2,.9,.25,1);
   }
+  #sheet.open{transform:translateY(0)}
+  @media (prefers-reduced-motion: reduce){#sheet{transition:none}}
+  .sh-handle{width:38px; height:5px; border-radius:3px; background:#3A3A3C; margin:4px auto 12px}
+  .sh-item{
+    display:flex; align-items:center; gap:12px; width:100%;
+    font:inherit; font-size:17px; color:var(--ink); text-align:left;
+    background:none; border:none; padding:14px 4px; cursor:pointer;
+    border-top:0.5px solid rgba(84,84,88,.4);
+  }
+  .sh-item:first-of-type{border-top:none}
+  .sh-item[disabled]{color:var(--muted)}
+  .sh-item .soon{margin-left:auto; font-size:11px; color:var(--gold-a); border:1px solid rgba(232,185,106,.4); border-radius:99px; padding:2px 8px}
+  .sh-item.danger{color:var(--no)}
+  .sh-ver{text-align:center; color:var(--muted); font-size:12px; margin:10px 0 0}
 </style>
 </head>
 <body>
@@ -156,7 +192,7 @@
   <button id="loginbtn" type="button">Se connecter</button>
   <p id="loginerr"></p>
   <p class="hint">Une fois connecté : Partager → « Sur l'écran d'accueil ». Jarvis s'installe comme une vraie application, avec votre code retenu dans le raccourci.</p>
-  <p class="hint" style="border:none; padding-top:0; margin-top:-8px">v2.0</p>
+  <p class="hint" style="border:none; padding-top:0; margin-top:-8px">v2.1</p>
 </div>
 
 <div id="app">
@@ -168,11 +204,11 @@
     </div>
   </header>
   <div id="chat"></div>
-  <span id="rectag">● Enregistrement… touchez pour envoyer</span>
   <div id="composer">
     <button id="micbtn" type="button" aria-label="Message vocal">
       <svg width="18" height="22" viewBox="0 0 22 26" fill="currentColor"><rect x="7" y="1" width="8" height="14" rx="4"/><path d="M3 12a8 8 0 0 0 16 0M11 20v4M7 24.5h8" stroke="currentColor" stroke-width="2" fill="none" stroke-linecap="round"/></svg>
     </button>
+    <div id="recui"><canvas id="reccv"></canvas><span id="rectime2">0:00</span></div>
     <textarea id="textin" rows="1" placeholder="Écrire à Jarvis…"></textarea>
     <button id="sendbtn" class="idle" type="button" aria-label="Envoyer">
       <svg width="18" height="18" viewBox="0 0 20 20" fill="currentColor"><path d="M10 17V5.5M10 3l-6 6.2M10 3l6 6.2" stroke="currentColor" stroke-width="2.6" fill="none" stroke-linecap="round" stroke-linejoin="round"/></svg>
@@ -180,9 +216,20 @@
   </div>
 </div>
 
+<div id="sheetbg"></div>
+<div id="sheet">
+  <div class="sh-handle"></div>
+  <button class="sh-item" id="sh-reload" type="button">🔄&nbsp; Recharger la conversation</button>
+  <button class="sh-item" type="button" disabled>📞&nbsp; Appeler Jarvis <span class="soon">bientôt</span></button>
+  <button class="sh-item" type="button" disabled>✉️&nbsp; Emails à valider <span class="soon">bientôt</span></button>
+  <button class="sh-item" type="button" disabled>📄&nbsp; Mes documents <span class="soon">bientôt</span></button>
+  <button class="sh-item danger" id="sh-logout" type="button">Se déconnecter</button>
+  <p class="sh-ver">Jarvis · v2.1</p>
+</div>
+
 <script>
 (function(){
-  var APPV = 'v2.0';
+  var APPV = 'v2.1';
   var API = 'https://mat22.app.n8n.cloud/webhook/jarvis-msg';
   var login = document.getElementById('login');
   var app = document.getElementById('app');
@@ -193,7 +240,6 @@
   var textin = document.getElementById('textin');
   var sendbtn = document.getElementById('sendbtn');
   var micbtn = document.getElementById('micbtn');
-  var rectag = document.getElementById('rectag');
   var subline = document.getElementById('subline');
 
   // Clavier iOS : garder la conversation calée en bas (sans toucher a la hauteur du body)
@@ -324,12 +370,79 @@
     if (e.key === 'Enter' && !e.shiftKey && window.innerWidth > 700){ e.preventDefault(); sendText(); }
   });
 
-  // ---- Voix (bouton affiché seulement si le micro est utilisable) ----
-  var rec = null, chunks = [], recMime = '';
+  // ---- Menu Jarvis (appui sur l'en-tête) ----
+  var sheet = document.getElementById('sheet');
+  var sheetbg = document.getElementById('sheetbg');
+  function sheetOpen(o){ sheet.classList.toggle('open', o); sheetbg.classList.toggle('open', o); }
+  document.querySelector('header').addEventListener('click', function(){ sheetOpen(true); });
+  sheetbg.addEventListener('click', function(){ sheetOpen(false); });
+  document.getElementById('sh-reload').addEventListener('click', function(){
+    sheetOpen(false);
+    post({ type:'history' }, function(j){ renderHistory(j.messages); }, function(err){ bubble(err, 'err'); });
+  });
+  document.getElementById('sh-logout').addEventListener('click', function(){
+    store('jarvisCode',''); store('jarvisNom','');
+    location.href = location.pathname;
+  });
+
+  // ---- Voix : onde sonore en direct + vocal ré-écoutable ----
+  var rec = null, chunks = [], recMime = '', recT0 = 0, recTimer = null, actx = null, raf = 0;
+  var composer = document.getElementById('composer');
+  var reccv = document.getElementById('reccv');
+  var rectime2 = document.getElementById('rectime2');
   function pickMime(){
     var c = ['audio/mp4','audio/webm;codecs=opus','audio/webm','audio/ogg;codecs=opus'];
     for (var i=0;i<c.length;i++){ if (MediaRecorder.isTypeSupported && MediaRecorder.isTypeSupported(c[i])) return c[i]; }
     return '';
+  }
+  function fmtT(x){ x = Math.max(0, Math.round(x)); return Math.floor(x/60) + ':' + ('0' + (x % 60)).slice(-2); }
+  function startWave(stream){
+    try {
+      actx = new (window.AudioContext || window.webkitAudioContext)();
+      var src = actx.createMediaStreamSource(stream);
+      var an = actx.createAnalyser(); an.fftSize = 128; an.smoothingTimeConstant = 0.75;
+      src.connect(an);
+      var data = new Uint8Array(an.frequencyBinCount);
+      var c2 = reccv.getContext('2d');
+      function draw(){
+        raf = requestAnimationFrame(draw);
+        var w = reccv.width = (reccv.clientWidth || 200) * 2, h = reccv.height = 68;
+        an.getByteFrequencyData(data);
+        c2.clearRect(0, 0, w, h);
+        var n = 30, bw = w / n;
+        c2.fillStyle = '#FF453A';
+        for (var i = 0; i < n; i++){
+          var v = data[Math.floor(i * data.length / n)] / 255;
+          var bh = Math.max(6, v * h);
+          c2.fillRect(i * bw + bw * 0.28, (h - bh) / 2, bw * 0.44, bh);
+        }
+      }
+      draw();
+    } catch(e){}
+  }
+  function stopWave(){
+    cancelAnimationFrame(raf);
+    if (actx){ try { actx.close(); } catch(e){} actx = null; }
+  }
+  function voiceBubble(blob, dur){
+    var d = document.createElement('div');
+    d.className = 'msg user voice';
+    d.innerHTML = '<div class="vrow"><button class="vplay" type="button" aria-label="Écouter">▶</button><span class="vbar"><i></i></span><span class="vtime"></span></div>';
+    var audio = new Audio(URL.createObjectURL(blob));
+    var btn = d.querySelector('.vplay'), fill = d.querySelector('.vbar i'), vt = d.querySelector('.vtime');
+    vt.textContent = fmtT(dur);
+    btn.addEventListener('click', function(){
+      if (audio.paused){ audio.play(); btn.textContent = '❚❚'; }
+      else { audio.pause(); btn.textContent = '▶'; }
+    });
+    audio.addEventListener('timeupdate', function(){
+      var total = (audio.duration && isFinite(audio.duration)) ? audio.duration : dur;
+      if (total) fill.style.width = (audio.currentTime / total * 100) + '%';
+      vt.textContent = fmtT(total - audio.currentTime);
+    });
+    audio.addEventListener('ended', function(){ btn.textContent = '▶'; fill.style.width = '0'; vt.textContent = fmtT(dur); });
+    chat.appendChild(d); chat.scrollTop = chat.scrollHeight;
+    return d;
   }
   micbtn.addEventListener('click', function(){
     if (rec && rec.state === 'recording'){ rec.stop(); return; }
@@ -340,28 +453,41 @@
       rec.ondataavailable = function(e){ if (e.data && e.data.size) chunks.push(e.data); };
       rec.onstop = function(){
         stream.getTracks().forEach(function(t){ t.stop(); });
-        micbtn.classList.remove('rec'); rectag.style.display = 'none';
+        stopWave(); clearInterval(recTimer);
+        micbtn.classList.remove('rec');
+        composer.classList.remove('recording');
+        var dur = (Date.now() - recT0) / 1000;
         var blob = new Blob(chunks, { type: recMime || 'audio/webm' });
-        if (blob.size < 1500){ return; }
+        if (blob.size < 1500) return;
         if (blob.size > 8000000){ bubble('Message vocal trop long — refaites plus court.', 'err'); return; }
+        var vb = voiceBubble(blob, dur);
         var fr = new FileReader();
         fr.onload = function(){
           var b64 = String(fr.result).split(',')[1] || '';
-          var ub = bubble('🎙 message vocal…', 'user');
           typingOn();
           post({ type:'audio', audio:b64, mime: blob.type }, function(j){
             typingOff();
-            if (j.transcription){ ub.textContent = j.transcription; }
+            if (j.transcription){
+              var t = document.createElement('div');
+              t.className = 'vtxt';
+              t.textContent = j.transcription;
+              vb.appendChild(t);
+            }
             bubble(j.reply || 'Hmm, je n’ai rien reçu. Réessayez.', 'jarvis');
-          }, function(err){ typingOff(); ub.remove(); bubble(err, 'err'); });
+          }, function(err){ typingOff(); bubble(err, 'err'); });
         };
         fr.readAsDataURL(blob);
       };
       rec.start();
-      micbtn.classList.add('rec'); rectag.style.display = 'block';
+      recT0 = Date.now();
+      micbtn.classList.add('rec');
+      composer.classList.add('recording');
+      rectime2.textContent = '0:00';
+      recTimer = setInterval(function(){ rectime2.textContent = fmtT((Date.now() - recT0) / 1000); }, 300);
+      startWave(stream);
       setTimeout(function(){ if (rec && rec.state === 'recording') rec.stop(); }, 90000);
     }).catch(function(){
-      bubble('Jarvis n’a pas l’autorisation d’utiliser le micro. Autorisez-le, ou utilisez la dictée du clavier.', 'err');
+      bubble('Jarvis n’a pas l’autorisation du micro. Autorise-le (Réglages > Jarvis), ou utilise la dictée du clavier.', 'err');
     });
   });
 
