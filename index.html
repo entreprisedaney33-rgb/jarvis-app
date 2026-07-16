@@ -235,6 +235,15 @@
     background:none; border:0.5px solid var(--hairline); color:var(--muted);
   }
   .vc-edit:disabled{opacity:.4}
+  a.vc-attach{
+    display:flex; align-items:center; gap:8px; text-decoration:none;
+    background:rgba(255,255,255,.07); border:0.5px solid var(--hairline);
+    border-radius:12px; padding:9px 12px; margin-bottom:10px; cursor:pointer;
+  }
+  .vc-attach .vc-attach-ic{font-size:18px}
+  .vc-attach .vc-attach-txt{flex:1; min-width:0}
+  .vc-attach b{display:block; font-size:14.5px; color:var(--ink); font-weight:600; overflow:hidden; text-overflow:ellipsis; white-space:nowrap}
+  .vc-attach span{display:block; font-size:12px; color:var(--muted); margin-top:1px}
   a.fbtn{display:block; text-decoration:none; align-self:flex-start; cursor:pointer}
   .fbtn b{display:block; font-size:15.5px; color:var(--ink); font-weight:600}
   .fbtn span{display:block; font-size:12.5px; color:var(--muted); margin-top:3px}
@@ -339,7 +348,7 @@
 
 <script>
 (function(){
-  var APPV = 'v2.11';
+  var APPV = 'v2.12';
 
   // ---- Mise à jour automatique (contourne le cache GitHub Pages) ----
   function checkUpdate(){
@@ -471,6 +480,19 @@
       var pre = document.createElement('div'); pre.className = 'vc-resume';
       pre.textContent = j.validation.resume || '';
       card.appendChild(pre);
+      if (j.validation.fichier && j.validation.fichier.url){
+        var att = document.createElement('a');
+        att.className = 'vc-attach';
+        att.href = 'https://mat22.app.n8n.cloud' + j.validation.fichier.url + '&code=' + encodeURIComponent(String(read('jarvisCode') || '').trim());
+        att.target = '_blank'; att.rel = 'noopener';
+        var ic = document.createElement('span'); ic.className = 'vc-attach-ic'; ic.textContent = '📎';
+        var txt = document.createElement('span'); txt.className = 'vc-attach-txt';
+        var nom = document.createElement('b'); nom.textContent = j.validation.fichier.nom || 'pièce jointe';
+        var sp2 = document.createElement('span'); sp2.textContent = 'Touche pour vérifier le fichier avant de valider';
+        txt.appendChild(nom); txt.appendChild(sp2);
+        att.appendChild(ic); att.appendChild(txt);
+        card.appendChild(att);
+      }
       var edit = null;
       if (j.validation.kind === 'email' || j.validation.kind === 'emaildoc'){
         edit = document.createElement('button');
