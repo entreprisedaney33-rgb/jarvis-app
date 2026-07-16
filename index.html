@@ -100,6 +100,19 @@
     -webkit-overflow-scrolling:touch;
     background:var(--bg);
   }
+  #pullspin{
+    flex:0 0 auto; height:0; overflow:hidden;
+    display:flex; align-items:center; justify-content:center;
+    background:var(--bg); transition:height .18s ease;
+  }
+  #pullspin.on{height:34px}
+  .pullspin-ic{
+    width:18px; height:18px; border-radius:50%;
+    border:2px solid rgba(255,255,255,.25); border-top-color:var(--gold-a);
+    animation:pullspin .7s linear infinite;
+  }
+  @keyframes pullspin{to{transform:rotate(360deg)}}
+  @media (prefers-reduced-motion: reduce){.pullspin-ic{animation:none}}
   .msg{
     max-width:78%; padding:10px 15px; border-radius:20px;
     font-size:17px; line-height:1.35; white-space:pre-wrap; word-wrap:break-word;
@@ -298,7 +311,7 @@
   <button id="loginbtn" type="button">Se connecter</button>
   <p id="loginerr"></p>
   <p class="hint">Une fois connecté : Partager → « Sur l'écran d'accueil ». Jarvis s'installe comme une vraie application, avec votre code retenu dans le raccourci.</p>
-  <p class="hint" style="border:none; padding-top:0; margin-top:-8px">v2.11</p>
+  <p class="hint" style="border:none; padding-top:0; margin-top:-8px">v2.14</p>
 </div>
 
 <div id="app">
@@ -307,6 +320,7 @@
     <b class="hname">Jarvis</b>
     <i class="dot"></i>
   </header>
+  <div id="pullspin"><span class="pullspin-ic"></span></div>
   <div id="chat"></div>
   <div id="composer">
     <button id="micbtn" type="button" aria-label="Message vocal">
@@ -348,7 +362,7 @@
 
 <script>
 (function(){
-  var APPV = 'v2.13';
+  var APPV = 'v2.14';
 
   // ---- Mise à jour automatique (contourne le cache GitHub Pages) ----
   function checkUpdate(){
@@ -498,6 +512,7 @@
   }
 
   function renderExtras(j){
+    if (!j) return;
     if (j.validation && j.validation.kind){
       var card = document.createElement('div');
       card.className = 'msg jarvis vcard';
@@ -557,7 +572,7 @@
     chat.scrollTop = chat.scrollHeight;
   }
 
-  function renderHistory(msgs){
+  function renderHistory(msgs, extras){
     chat.innerHTML = '';
     (msgs || []).forEach(function(m){
       if (!m || !m.contenu) return;
@@ -566,6 +581,10 @@
     if (!chat.children.length){
       bubble('Bonjour, je suis Jarvis. Je connais vos contacts, vos chantiers, vos devis et votre agenda — posez-moi une question.', 'jarvis');
     }
+    // Re-affiche le brouillon en attente (email/rdv/archive) et les derniers fichiers trouves
+    // s'il y en a — sinon ils disparaissaient a chaque rafraichissement/reouverture de l'app
+    // (ils n'etaient jamais que dans la reponse LIVE, jamais reconstruits depuis le serveur).
+    if (extras) renderExtras(extras);
   }
 
   // ---- Toast (petite confirmation, ex: "Copié") ----
@@ -618,11 +637,11 @@
     el.addEventListener('contextmenu', function(e){ e.preventDefault(); showMsgMenu(el); });
   }
 
-  function enterApp(nom, msgs){
+  function enterApp(nom, msgs, extras){
     login.style.display = 'none';
     app.style.display = 'flex';
     subline.textContent = (nom ? ('Assistant de ' + nom + ' — en ligne') : 'en ligne') + ' · ' + APPV + ' · H' + window.innerHeight + '/' + ((screen && screen.height) || '?');
-    renderHistory(msgs);
+    renderHistory(msgs, extras);
   }
 
   // ---- Login ----
@@ -635,7 +654,7 @@
       loginbtn.disabled = false;
       if (j.nom) store('jarvisNom', j.nom);
       try { localStorage.setItem('jarvisHist', JSON.stringify({ nom: j.nom, messages: j.messages })); } catch(e){}
-      enterApp(j.nom, j.messages);
+      enterApp(j.nom, j.messages, j);
     }, function(err){
       loginbtn.disabled = false;
       store('jarvisCode','');
@@ -678,7 +697,7 @@
   sheetbg.addEventListener('click', function(){ sheetOpen(false); });
   document.getElementById('sh-reload').addEventListener('click', function(){
     sheetOpen(false);
-    post({ type:'history' }, function(j){ renderHistory(j.messages); }, function(err){ bubble(err, 'err'); });
+    post({ type:'history' }, function(j){ renderHistory(j.messages, j); }, function(err){ bubble(err, 'err'); });
   });
   document.getElementById('sh-push').addEventListener('click', async function(){
     sheetOpen(false);
@@ -895,10 +914,10 @@
 
   // ---- Rafraîchit la conversation depuis le serveur (corrige : notification cliquée → discussion pas à jour) ----
   var refreshing = false;
-  function refreshFromServer(){
-    if (refreshing) return;
-    if (app.style.display !== 'flex') return;
-    if (!String(read('jarvisCode') || '').trim()) return;
+  function refreshFromServer(force, done){
+    if (refreshing){ if (done) done(); return; }
+    if (app.style.display !== 'flex'){ if (done) done(); return; }
+    if (!String(read('jarvisCode') || '').trim()){ if (done) done(); return; }
     refreshing = true;
     post({ type:'history' }, function(j){
       refreshing = false;
@@ -906,16 +925,31 @@
       var frais = JSON.stringify({ nom: j.nom, messages: j.messages });
       var prevCached = null;
       try { prevCached = localStorage.getItem('jarvisHist'); } catch(e){}
-      if (frais !== prevCached){
-        renderHistory(j.messages);
+      if (frais !== prevCached || force){
+        renderHistory(j.messages, j);
         try { localStorage.setItem('jarvisHist', frais); } catch(e){}
       }
-    }, function(){ refreshing = false; });
+      if (done) done();
+    }, function(){ refreshing = false; if (done) done(); });
   }
   function onResume(){ pollInbox(); refreshFromServer(); }
   document.addEventListener('visibilitychange', function(){ if (!document.hidden) onResume(); });
   window.addEventListener('focus', onResume);
   window.addEventListener('pageshow', function(e){ if (e.persisted) onResume(); });
+
+  // ---- Tire vers le haut = petite roue + recharge la conversation depuis le serveur ----
+  var pullspin = document.getElementById('pullspin');
+  var pullCooldown = false;
+  chat.addEventListener('scroll', function(){
+    if (pullCooldown) return;
+    if (chat.scrollTop > 4) return;
+    pullCooldown = true;
+    pullspin.classList.add('on');
+    refreshFromServer(true, function(){
+      pullspin.classList.remove('on');
+      setTimeout(function(){ pullCooldown = false; }, 1500);
+    });
+  }, { passive:true });
 
   // ---- Démarrage INSTANTANÉ : cache local d'abord, serveur en arrière-plan ----
   var splash = document.getElementById('splash');
@@ -943,7 +977,9 @@
       if (j.nom) store('jarvisNom', j.nom);
       var frais = JSON.stringify({ nom: j.nom, messages: j.messages });
       if (!cached || frais !== JSON.stringify(cached)){
-        enterApp(j.nom || read('jarvisNom'), j.messages);
+        enterApp(j.nom || read('jarvisNom'), j.messages, j);
+      } else {
+        renderExtras(j);
       }
       try { localStorage.setItem('jarvisHist', frais); } catch(e){}
       splashOff();
