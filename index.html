@@ -293,6 +293,7 @@
   <button class="sh-item" type="button" disabled>📞&nbsp; Appeler Jarvis <span class="soon">bientôt</span></button>
   <button class="sh-item" type="button" disabled>✉️&nbsp; Emails à valider <span class="soon">bientôt</span></button>
   <button class="sh-item" type="button" disabled>📄&nbsp; Mes documents <span class="soon">bientôt</span></button>
+  <button class="sh-item" id="sh-push" type="button">🔔&nbsp; Activer les notifications</button>
   <button class="sh-item danger" id="sh-logout" type="button">Se déconnecter</button>
   <p class="sh-ver" id="subline">Jarvis · v2.9</p>
 </div>
@@ -341,6 +342,17 @@
   try { localStorage.setItem('_t','1'); localStorage.removeItem('_t'); } catch(e){ sandboxed = true; }
   var micCapable = !sandboxed && !!(navigator.mediaDevices && window.MediaRecorder);
   if (micCapable) micbtn.classList.add('on');
+
+  // Notifications push (app fermée) : clé publique VAPID, sans danger à exposer
+  var VAPID_PUBLIC = 'BMPImK_GCyBR1RBz1SjLJM0TzLYJzAW6IaQFuB6Tdoj0aOsvIIXX4T2ShdfE_jUu4roapFLceY9Wr6jafR1SRR0';
+  function urlB64ToUint8Array(b64){
+    var pad = '='.repeat((4 - b64.length % 4) % 4);
+    var base64 = (b64 + pad).replace(/-/g,'+').replace(/_/g,'/');
+    var raw = atob(base64), arr = new Uint8Array(raw.length);
+    for (var i=0;i<raw.length;i++) arr[i] = raw.charCodeAt(i);
+    return arr;
+  }
+  if ('serviceWorker' in navigator){ navigator.serviceWorker.register('./sw.js').catch(function(){}); }
 
   // Stockage résilient : le code vit dans l'ADRESSE (?c=..., conservé par le raccourci
   // iOS/Android) + localStorage quand il est disponible + mémoire de session.
@@ -503,6 +515,23 @@
   document.getElementById('sh-reload').addEventListener('click', function(){
     sheetOpen(false);
     post({ type:'history' }, function(j){ renderHistory(j.messages); }, function(err){ bubble(err, 'err'); });
+  });
+  document.getElementById('sh-push').addEventListener('click', async function(){
+    sheetOpen(false);
+    if (!('serviceWorker' in navigator) || !('PushManager' in window)){
+      bubble('Les notifications ne sont pas prises en charge sur ce navigateur.', 'err'); return;
+    }
+    try {
+      var perm = await Notification.requestPermission();
+      if (perm !== 'granted'){ bubble('Notifications refusées — tu peux les activer plus tard dans les réglages du navigateur.', 'info'); return; }
+      var reg = await navigator.serviceWorker.ready;
+      var sub = await reg.pushManager.subscribe({ userVisibleOnly: true, applicationServerKey: urlB64ToUint8Array(VAPID_PUBLIC) });
+      var r = await fetch(API, { method:'POST', headers:{'Content-Type':'application/json'},
+        body: JSON.stringify({ type:'push-subscribe', code: String(read('jarvisCode')||'').trim(), subscription: sub.toJSON() }) });
+      var j = await r.json();
+      if (j && j.ok) bubble('🔔 Notifications activées — tu recevras Jarvis même app fermée.', 'info');
+      else bubble('Abonnement non confirmé, réessaie.', 'err');
+    } catch(e){ bubble('Impossible d’activer les notifications : ' + e.message, 'err'); }
   });
   document.getElementById('sh-logout').addEventListener('click', function(){
     store('jarvisCode',''); store('jarvisNom','');
