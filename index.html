@@ -312,7 +312,7 @@
   <button id="loginbtn" type="button">Se connecter</button>
   <p id="loginerr"></p>
   <p class="hint">Une fois connecté : Partager → « Sur l'écran d'accueil ». Jarvis s'installe comme une vraie application, avec votre code retenu dans le raccourci.</p>
-  <p class="hint" style="border:none; padding-top:0; margin-top:-8px">v2.18</p>
+  <p class="hint" style="border:none; padding-top:0; margin-top:-8px">v2.19</p>
 </div>
 
 <div id="app">
@@ -363,7 +363,7 @@
 
 <script>
 (function(){
-  var APPV = 'v2.18';
+  var APPV = 'v2.19';
 
   // ---- Mise à jour automatique (contourne le cache GitHub Pages) ----
   function checkUpdate(){
@@ -624,6 +624,16 @@
     if (!msgSheetTarget || !msgSheetTarget.dataset.id) return;
     var el = msgSheetTarget;
     post({ type:'delete-message', id: el.dataset.id }, function(){ el.remove(); }, function(err){ bubble(err, 'err'); });
+  });
+  // ⚠️ Regression WebKit connue (iOS, cf. bug webkit #231161) : -webkit-user-select:none seul
+  // ne suffit plus toujours a empecher la loupe/selection native sur un appui long — Safari peut
+  // quand meme demarrer une selection de texte (surlignage bleu) en concurrence avec notre menu.
+  // Parade fiable utilisee par la plupart des apps de messagerie web : on efface IMMEDIATEMENT
+  // toute selection que Safari tente de creer, des qu'elle apparait (selectionchange), pour
+  // qu'elle ne devienne jamais visible a l'ecran.
+  document.addEventListener('selectionchange', function(){
+    var s = window.getSelection();
+    if (s && !s.isCollapsed) s.removeAllRanges();
   });
   function bindLongPress(el){
     var timer = null;
