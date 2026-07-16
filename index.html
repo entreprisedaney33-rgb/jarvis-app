@@ -5,6 +5,15 @@
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover, user-scalable=no">
 <title>Jarvis</title>
 <meta name="theme-color" content="#17171B">
+<script>
+/* Decide AVANT le premier rendu : si un code est connu, on n'affiche JAMAIS l'ecran de connexion */
+(function(){
+  var has = false;
+  try { has = !!localStorage.getItem('jarvisCode'); } catch(e){}
+  if (!has) has = /[?&#]c=/.test(location.search + location.hash);
+  if (has) document.documentElement.classList.add('boot');
+})();
+</script>
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
@@ -192,9 +201,11 @@
   #splash{
     position:fixed; inset:0; z-index:60; background:var(--bg);
     display:none; align-items:center; justify-content:center; flex-direction:column; gap:30px;
-    transition:opacity .55s ease;
+    transition:opacity .3s ease;
   }
   #splash.on{display:flex}
+  html.boot #login{display:none}
+  html.boot #splash{display:flex}
   #splash.done{opacity:0; pointer-events:none}
   .s-wrap{position:relative; width:118px; height:118px; animation:senter .6s cubic-bezier(.2,.9,.3,1.3) both}
   @keyframes senter{from{transform:scale(.55); opacity:0}to{transform:scale(1); opacity:1}}
@@ -237,7 +248,7 @@
   <button id="loginbtn" type="button">Se connecter</button>
   <p id="loginerr"></p>
   <p class="hint">Une fois connecté : Partager → « Sur l'écran d'accueil ». Jarvis s'installe comme une vraie application, avec votre code retenu dans le raccourci.</p>
-  <p class="hint" style="border:none; padding-top:0; margin-top:-8px">v2.6</p>
+  <p class="hint" style="border:none; padding-top:0; margin-top:-8px">v2.7</p>
 </div>
 
 <div id="app">
@@ -272,12 +283,12 @@
   <button class="sh-item" type="button" disabled>✉️&nbsp; Emails à valider <span class="soon">bientôt</span></button>
   <button class="sh-item" type="button" disabled>📄&nbsp; Mes documents <span class="soon">bientôt</span></button>
   <button class="sh-item danger" id="sh-logout" type="button">Se déconnecter</button>
-  <p class="sh-ver" id="subline">Jarvis · v2.6</p>
+  <p class="sh-ver" id="subline">Jarvis · v2.7</p>
 </div>
 
 <script>
 (function(){
-  var APPV = 'v2.6';
+  var APPV = 'v2.7';
 
   // ---- Mise à jour automatique (contourne le cache GitHub Pages) ----
   function checkUpdate(){
@@ -401,6 +412,7 @@
     post({ type:'history' }, function(j){
       loginbtn.disabled = false;
       if (j.nom) store('jarvisNom', j.nom);
+      try { localStorage.setItem('jarvisHist', JSON.stringify({ nom: j.nom, messages: j.messages })); } catch(e){}
       enterApp(j.nom, j.messages);
     }, function(err){
       loginbtn.disabled = false;
@@ -627,26 +639,44 @@
     });
   });
 
-  // ---- Démarrage : splash animé + reconnexion auto si un code est connu ----
+  // ---- Démarrage INSTANTANÉ : cache local d'abord, serveur en arrière-plan ----
   var splash = document.getElementById('splash');
+  function splashOff(){
+    splash.classList.add('done');
+    setTimeout(function(){
+      document.documentElement.classList.remove('boot');
+      splash.classList.remove('on','done');
+      splash.style.display = 'none';
+    }, 320);
+  }
   var savedCode = String(read('jarvisCode') || '').trim();
   if (savedCode){
-    splash.classList.add('on');
-    login.style.display = 'none';
     store('jarvisCode', savedCode);
-    var t0 = Date.now();
+    var cached = null;
+    try { cached = JSON.parse(localStorage.getItem('jarvisHist') || 'null'); } catch(e){}
+    if (cached && cached.messages && cached.messages.length){
+      // Ouverture immédiate sur la dernière conversation connue (0 attente)
+      enterApp(cached.nom || read('jarvisNom'), cached.messages);
+      splashOff();
+    } else {
+      splash.classList.add('on');
+    }
     post({ type:'history' }, function(j){
       if (j.nom) store('jarvisNom', j.nom);
-      enterApp(j.nom || read('jarvisNom'), j.messages);
-      var reste = Math.max(0, 1100 - (Date.now() - t0));
-      setTimeout(function(){
-        splash.classList.add('done');
-        setTimeout(function(){ splash.classList.remove('on','done'); }, 650);
-      }, reste);
+      var frais = JSON.stringify({ nom: j.nom, messages: j.messages });
+      if (!cached || frais !== JSON.stringify(cached)){
+        enterApp(j.nom || read('jarvisNom'), j.messages);
+      }
+      try { localStorage.setItem('jarvisHist', frais); } catch(e){}
+      splashOff();
     }, function(){
-      // code périmé : retour à l'écran de connexion
-      splash.classList.remove('on');
-      login.style.display = 'flex';
+      // code périmé ou réseau coupé : sans cache, retour à l'écran de connexion
+      if (!(cached && cached.messages && cached.messages.length)){
+        splash.classList.remove('on');
+        document.documentElement.classList.remove('boot');
+        splash.style.display = 'none';
+        login.style.display = 'flex';
+      }
     });
   }
 })();
