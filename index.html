@@ -221,6 +221,39 @@
   .sh-item .soon{margin-left:auto; font-size:11px; color:var(--gold-a); border:1px solid rgba(232,185,106,.4); border-radius:99px; padding:2px 8px}
   .sh-item.danger{color:var(--no)}
   .sh-ver{text-align:center; color:var(--muted); font-size:12px; margin:10px 0 0}
+  /* Panneau plein ecran "Mes documents" */
+  #docsview{
+    position:fixed; inset:0; z-index:50; background:var(--bg);
+    display:none; flex-direction:column;
+    transform:translateY(100%); transition:transform .28s cubic-bezier(.2,.9,.25,1);
+  }
+  #docsview.open{display:flex; transform:translateY(0)}
+  @media (prefers-reduced-motion: reduce){#docsview{transition:none}}
+  #docs-head{
+    flex:0 0 auto; display:flex; align-items:center; gap:10px;
+    padding:calc(10px + env(safe-area-inset-top)) 14px 12px;
+    border-bottom:0.5px solid var(--hairline);
+  }
+  #docs-head b{font-size:16px; flex:1}
+  #docs-close{
+    width:32px; height:32px; border-radius:50%; border:0; flex:0 0 auto;
+    background:var(--surface); color:var(--ink); font-size:16px;
+    display:flex; align-items:center; justify-content:center; cursor:pointer;
+    -webkit-tap-highlight-color:transparent;
+  }
+  #docs-list{flex:1; overflow-y:auto; -webkit-overflow-scrolling:touch; padding:10px 14px calc(20px + env(safe-area-inset-bottom))}
+  .doc-row{
+    display:flex; align-items:center; gap:12px; width:100%;
+    padding:12px 4px; border-top:0.5px solid rgba(84,84,88,.4);
+    color:inherit; text-decoration:none; background:none; border-left:none; border-right:none;
+  }
+  .doc-row:first-child{border-top:none}
+  .doc-emo{font-size:22px; flex:0 0 auto; width:28px; text-align:center}
+  .doc-mid{flex:1; min-width:0}
+  .doc-nom{font-size:15px; font-weight:600; display:block; white-space:nowrap; overflow:hidden; text-overflow:ellipsis}
+  .doc-info{font-size:12.5px; color:var(--muted); display:block; margin-top:2px; white-space:nowrap; overflow:hidden; text-overflow:ellipsis}
+  .doc-cat{font-size:11px; color:var(--gold-a); border:1px solid rgba(232,185,106,.4); border-radius:99px; padding:2px 8px; flex:0 0 auto}
+  #docs-empty, #docs-loading{color:var(--muted); text-align:center; padding:40px 20px; font-size:14px}
   /* Horodatage discret sous chaque bulle */
   .mtime{display:block; font-size:10.5px; opacity:.5; margin-top:3px; line-height:1}
   .msg.user .mtime{text-align:right}
@@ -388,10 +421,18 @@
   <button class="sh-item" id="sh-reload" type="button">🔄&nbsp; Recharger la conversation</button>
   <button class="sh-item" id="sh-call" type="button">📞&nbsp; Appeler Jarvis</button>
   <button class="sh-item" type="button" disabled>✉️&nbsp; Emails à valider <span class="soon">bientôt</span></button>
-  <button class="sh-item" type="button" disabled>📄&nbsp; Mes documents <span class="soon">bientôt</span></button>
+  <button class="sh-item" id="sh-docs" type="button">📄&nbsp; Mes documents</button>
   <button class="sh-item" id="sh-push" type="button">🔔&nbsp; Activer les notifications</button>
   <button class="sh-item danger" id="sh-logout" type="button">Se déconnecter</button>
   <p class="sh-ver" id="subline">Jarvis</p>
+</div>
+
+<div id="docsview">
+  <div id="docs-head">
+    <b>📄 Mes documents</b>
+    <button id="docs-close" type="button" aria-label="Fermer">✕</button>
+  </div>
+  <div id="docs-list"></div>
 </div>
 
 <div id="msgSheetbg"></div>
@@ -405,7 +446,7 @@
 
 <script>
 (function(){
-  var APPV = 'v2.23';
+  var APPV = 'v2.24';
 
   // ---- Mise à jour automatique (contourne le cache GitHub Pages) ----
   function checkUpdate(){
@@ -781,6 +822,36 @@
     store('jarvisCode',''); store('jarvisNom','');
     location.href = location.pathname;
   });
+
+  // ---- Mes documents (catalogue indexe la nuit, lecture seule) ----
+  var docsview = document.getElementById('docsview');
+  var docsList = document.getElementById('docs-list');
+  function docsClose(){ docsview.classList.remove('open'); }
+  function docsOpen(){
+    docsview.classList.add('open');
+    docsList.innerHTML = '<p id="docs-loading">Chargement…</p>';
+    post({ type:'documents' }, function(j){
+      var docs = j.documents || [];
+      if (!docs.length){ docsList.innerHTML = '<p id="docs-empty">Aucun document trouvé pour l’instant.</p>'; return; }
+      docsList.innerHTML = '';
+      docs.forEach(function(d){
+        var a = document.createElement('a');
+        a.className = 'doc-row';
+        a.href = 'https://mat22.app.n8n.cloud' + d.url + '&code=' + encodeURIComponent(String(read('jarvisCode') || '').trim());
+        a.target = '_blank'; a.rel = 'noopener';
+        var emo = document.createElement('span'); emo.className = 'doc-emo'; emo.textContent = d.emoji || '📄';
+        var mid = document.createElement('span'); mid.className = 'doc-mid';
+        var nom = document.createElement('span'); nom.className = 'doc-nom'; nom.textContent = d.nom || 'document';
+        var info = document.createElement('span'); info.className = 'doc-info'; info.textContent = d.info || '';
+        mid.appendChild(nom); mid.appendChild(info);
+        var cat = document.createElement('span'); cat.className = 'doc-cat'; cat.textContent = d.categorie || '';
+        a.appendChild(emo); a.appendChild(mid); a.appendChild(cat);
+        docsList.appendChild(a);
+      });
+    }, function(err){ docsList.innerHTML = '<p id="docs-empty">' + (err || 'Impossible de charger les documents.') + '</p>'; });
+  }
+  document.getElementById('sh-docs').addEventListener('click', function(){ sheetOpen(false); docsOpen(); });
+  document.getElementById('docs-close').addEventListener('click', docsClose);
 
   // ---- Appel vocal en direct avec Jarvis (V2) ----
   // Le SDK est chargé A LA DEMANDE (au 1er appel) : l'ouverture de l'app reste instantanée.
