@@ -86,8 +86,8 @@
   }
   header:active{opacity:.8}
   #hcallbtn{
-    position:absolute; right:12px; top:50%; transform:translateY(-50%);
-    width:32px; height:32px; border-radius:50%; border:0; padding:0;
+    margin-left:auto; flex:0 0 auto;
+    width:44px; height:44px; border-radius:50%; border:0; padding:0;
     display:flex; align-items:center; justify-content:center;
     background:linear-gradient(145deg,var(--gold-a),var(--gold-b));
     color:#1A130A; box-shadow:0 1px 8px rgba(232,185,106,.4);
@@ -360,7 +360,7 @@
     <b class="hname">Jarvis</b>
     <i class="dot"></i>
     <button id="hcallbtn" type="button" aria-label="Appeler Jarvis">
-      <svg width="15" height="15" viewBox="0 0 24 24" fill="currentColor"><path d="M6.6 10.8c1.4 2.8 3.8 5.1 6.6 6.6l2.2-2.2c.3-.3.7-.4 1.1-.2 1.2.4 2.5.6 3.8.6.6 0 1 .5 1 1V20.5c0 .6-.4 1-1 1C11.5 21.5 2.5 12.5 2.5 1.7c0-.6.4-1 1-1H7c.6 0 1 .4 1 1 0 1.3.2 2.6.6 3.8.1.4 0 .8-.2 1.1L6.6 10.8Z"/></svg>
+      <svg width="21" height="21" viewBox="0 0 24 24" fill="currentColor"><path d="M6.6 10.8c1.4 2.8 3.8 5.1 6.6 6.6l2.2-2.2c.3-.3.7-.4 1.1-.2 1.2.4 2.5.6 3.8.6.6 0 1 .5 1 1V20.5c0 .6-.4 1-1 1C11.5 21.5 2.5 12.5 2.5 1.7c0-.6.4-1 1-1H7c.6 0 1 .4 1 1 0 1.3.2 2.6.6 3.8.1.4 0 .8-.2 1.1L6.6 10.8Z"/></svg>
     </button>
   </header>
   <div id="pullspin"><span class="pullspin-ic"></span></div>
@@ -405,7 +405,7 @@
 
 <script>
 (function(){
-  var APPV = 'v2.22';
+  var APPV = 'v2.23';
 
   // ---- Mise à jour automatique (contourne le cache GitHub Pages) ----
   function checkUpdate(){
