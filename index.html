@@ -392,7 +392,7 @@
 
 <script>
 (function(){
-  var APPV = 'v2.20';
+  var APPV = 'v2.21';
 
   // ---- Mise à jour automatique (contourne le cache GitHub Pages) ----
   function checkUpdate(){
@@ -831,6 +831,13 @@
     }
     if (callbar.classList.contains('on')) return; // déjà en ligne
 
+    // L'identité voyage en metadata d'appel (Vapi la renvoie dans chaque webhook d'outil)
+    // -> c'est ce qui permet à Jarvis de charger TA mémoire, pas celle de l'autre associé.
+    var vocalCode = String(read('jarvisCode') || '').trim();
+    if (!vocalCode){
+      bubble('Reconnecte-toi avant d’appeler Jarvis.', 'err'); return;
+    }
+
     // Le micro est demandé ICI, pas par le SDK : quand le SDK se voit refuser le micro,
     // il se contente d'un avertissement dans la console et réessaie en boucle
     // -> l'utilisateur resterait bloqué sur « Connexion… » sans jamais rien comprendre.
@@ -854,7 +861,7 @@
         callStop();
         bubble('Jarvis n’a pas décroché. Vérifie ta connexion et réessaie.', 'err');
       }, 20000);
-      await v.start(VAPI_ASSISTANT);
+      await v.start(VAPI_ASSISTANT, { metadata: { code: vocalCode } });
     } catch(e){
       callStop();
       bubble('Impossible de démarrer l’appel : ' + String((e && (e.message || e.name)) || e), 'err');
