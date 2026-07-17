@@ -295,6 +295,28 @@
     .s-logo{animation:none}
     .s-wrap{animation:none}
   }
+
+  /* ---- Appel vocal en direct (V2) ---- */
+  #callbar{
+    position:fixed; left:0; right:0; top:0; z-index:60;
+    display:none; align-items:center; gap:10px;
+    padding:calc(env(safe-area-inset-top) + 8px) 14px 10px;
+    background:rgba(28,28,30,.92); -webkit-backdrop-filter:saturate(180%) blur(20px); backdrop-filter:saturate(180%) blur(20px);
+    border-bottom:.5px solid var(--hairline);
+  }
+  #callbar.on{display:flex}
+  .cb-dot{width:9px; height:9px; border-radius:50%; background:var(--ok); flex:none; animation:cbpulse 1.6s ease-in-out infinite}
+  .cb-dot.wait{background:var(--gold-a)}
+  @keyframes cbpulse{0%,100%{opacity:1}50%{opacity:.25}}
+  .cb-txt{flex:1; min-width:0; font-size:14px; font-weight:600; color:var(--ink); white-space:nowrap; overflow:hidden; text-overflow:ellipsis}
+  .cb-txt small{display:block; font-size:11px; font-weight:400; color:var(--muted)}
+  .cb-btn{
+    flex:none; border:0; border-radius:999px; padding:8px 14px; font-size:13px; font-weight:700;
+    color:#fff; background:rgba(120,120,128,.32); cursor:pointer; -webkit-tap-highlight-color:transparent;
+  }
+  .cb-btn.hang{background:var(--no)}
+  .cb-btn.muted{background:var(--gold-b)}
+  @media (prefers-reduced-motion: reduce){ .cb-dot{animation:none} }
 </style>
 </head>
 <body>
@@ -302,6 +324,13 @@
 <div id="splash">
   <div class="s-wrap"><div class="s-ring"></div><div class="s-logo">J</div></div>
   <div class="s-name">Jarvis</div>
+</div>
+
+<div id="callbar">
+  <span class="cb-dot wait" id="cb-dot"></span>
+  <span class="cb-txt" id="cb-txt">Connexion…<small id="cb-sub">Jarvis arrive</small></span>
+  <button class="cb-btn" id="cb-mute" type="button">Muet</button>
+  <button class="cb-btn hang" id="cb-hang" type="button">Raccrocher</button>
 </div>
 
 <div id="login">
@@ -312,7 +341,7 @@
   <button id="loginbtn" type="button">Se connecter</button>
   <p id="loginerr"></p>
   <p class="hint">Une fois connecté : Partager → « Sur l'écran d'accueil ». Jarvis s'installe comme une vraie application, avec votre code retenu dans le raccourci.</p>
-  <p class="hint" style="border:none; padding-top:0; margin-top:-8px">v2.19</p>
+  <p class="hint" id="loginver" style="border:none; padding-top:0; margin-top:-8px"></p>
 </div>
 
 <div id="app">
@@ -344,12 +373,12 @@
 <div id="sheet">
   <div class="sh-handle"></div>
   <button class="sh-item" id="sh-reload" type="button">🔄&nbsp; Recharger la conversation</button>
-  <button class="sh-item" type="button" disabled>📞&nbsp; Appeler Jarvis <span class="soon">bientôt</span></button>
+  <button class="sh-item" id="sh-call" type="button">📞&nbsp; Appeler Jarvis</button>
   <button class="sh-item" type="button" disabled>✉️&nbsp; Emails à valider <span class="soon">bientôt</span></button>
   <button class="sh-item" type="button" disabled>📄&nbsp; Mes documents <span class="soon">bientôt</span></button>
   <button class="sh-item" id="sh-push" type="button">🔔&nbsp; Activer les notifications</button>
   <button class="sh-item danger" id="sh-logout" type="button">Se déconnecter</button>
-  <p class="sh-ver" id="subline">Jarvis · v2.11</p>
+  <p class="sh-ver" id="subline">Jarvis</p>
 </div>
 
 <div id="msgSheetbg"></div>
@@ -363,7 +392,7 @@
 
 <script>
 (function(){
-  var APPV = 'v2.19';
+  var APPV = 'v2.20';
 
   // ---- Mise à jour automatique (contourne le cache GitHub Pages) ----
   function checkUpdate(){
@@ -392,6 +421,9 @@
   var sendbtn = document.getElementById('sendbtn');
   var micbtn = document.getElementById('micbtn');
   var subline = document.getElementById('subline');
+  // Version affichée = TOUJOURS APPV (sert au diagnostic à distance : elle ne doit jamais mentir)
+  var loginver = document.getElementById('loginver');
+  if (loginver) loginver.textContent = APPV;
 
   // Clavier iOS : garder la conversation calée en bas (sans toucher a la hauteur du body)
   if (window.visualViewport){
@@ -408,6 +440,11 @@
 
   // Notifications push (app fermée) : clé publique VAPID, sans danger à exposer
   var VAPID_PUBLIC = 'BMPImK_GCyBR1RBz1SjLJM0TzLYJzAW6IaQFuB6Tdoj0aOsvIIXX4T2ShdfE_jUu4roapFLceY9Wr6jafR1SRR0';
+
+  // Appel vocal en direct (Vapi) : clé PUBLIQUE, faite pour vivre dans la page (aucun droit d'admin)
+  var VAPI_PUBLIC = '012e5669-0374-4b12-95a0-56a1a9f81bb2';
+  var VAPI_ASSISTANT = '89f9d8c9-4bc4-46b2-b0b8-a901474ae2c3'; // « Jarvis Web (V2 vocal) »
+  var VAPI_SDK = 'https://cdn.jsdelivr.net/npm/@vapi-ai/web@2.6.1/+esm';
   function urlB64ToUint8Array(b64){
     var pad = '='.repeat((4 - b64.length % 4) % 4);
     var base64 = (b64 + pad).replace(/-/g,'+').replace(/_/g,'/');
@@ -730,6 +767,110 @@
   document.getElementById('sh-logout').addEventListener('click', function(){
     store('jarvisCode',''); store('jarvisNom','');
     location.href = location.pathname;
+  });
+
+  // ---- Appel vocal en direct avec Jarvis (V2) ----
+  // Le SDK est chargé A LA DEMANDE (au 1er appel) : l'ouverture de l'app reste instantanée.
+  var vapi = null, vapiLoading = null, callT0 = 0, callTimer = null, callWatch = null, callLive = false;
+  var callbar = document.getElementById('callbar');
+  var cbDot = document.getElementById('cb-dot');
+  var cbTxt = document.getElementById('cb-txt');
+  var cbSub = document.getElementById('cb-sub');
+  var cbMute = document.getElementById('cb-mute');
+  var cbHang = document.getElementById('cb-hang');
+
+  function callShow(on){ callbar.classList.toggle('on', on); }
+  function callState(txt, sub, live){
+    cbTxt.childNodes[0].nodeValue = txt;
+    cbSub.textContent = sub || '';
+    cbDot.classList.toggle('wait', !live);
+  }
+  function callTick(){
+    var s = Math.floor((Date.now() - callT0) / 1000);
+    cbSub.textContent = Math.floor(s / 60) + ':' + String(s % 60).padStart(2, '0');
+  }
+  function callStop(){
+    if (callTimer){ clearInterval(callTimer); callTimer = null; }
+    if (callWatch){ clearTimeout(callWatch); callWatch = null; }
+    callLive = false;
+    callShow(false);
+    cbMute.classList.remove('muted'); cbMute.textContent = 'Muet';
+  }
+
+  // Le CDN emballe le module deux fois (default.default) : sans ce dépliage, « n'est pas un constructeur ».
+  function loadVapi(){
+    if (vapi) return Promise.resolve(vapi);
+    if (vapiLoading) return vapiLoading;
+    vapiLoading = import(VAPI_SDK).then(function(Mod){
+      var Vapi = (Mod && Mod.default && Mod.default.default) || (Mod && Mod.default);
+      if (typeof Vapi !== 'function') throw new Error('SDK vocal illisible');
+      vapi = new Vapi(VAPI_PUBLIC);
+      vapi.on('call-start', function(){
+        callLive = true;
+        if (callWatch){ clearTimeout(callWatch); callWatch = null; }
+        callT0 = Date.now();
+        callState('Jarvis', '0:00', true);
+        callTick();
+        if (callTimer) clearInterval(callTimer);
+        callTimer = setInterval(callTick, 1000);
+      });
+      vapi.on('call-end', function(){ callStop(); });
+      vapi.on('error', function(e){
+        callStop();
+        bubble('Appel interrompu : ' + ((e && (e.errorMsg || e.message)) || 'erreur inconnue'), 'err');
+      });
+      return vapi;
+    }).catch(function(e){ vapiLoading = null; throw e; });
+    return vapiLoading;
+  }
+
+  document.getElementById('sh-call').addEventListener('click', async function(){
+    sheetOpen(false);
+    if (!navigator.mediaDevices || !window.isSecureContext){
+      bubble('L’appel vocal a besoin du micro, indisponible sur ce navigateur.', 'err'); return;
+    }
+    if (callbar.classList.contains('on')) return; // déjà en ligne
+
+    // Le micro est demandé ICI, pas par le SDK : quand le SDK se voit refuser le micro,
+    // il se contente d'un avertissement dans la console et réessaie en boucle
+    // -> l'utilisateur resterait bloqué sur « Connexion… » sans jamais rien comprendre.
+    try {
+      var probe = await navigator.mediaDevices.getUserMedia({ audio: true });
+      probe.getTracks().forEach(function(t){ t.stop(); });
+    } catch(e){
+      bubble('Jarvis n’a pas l’autorisation du micro. Autorise-le pour ce site, puis réessaie — en attendant, tu peux lui écrire ou utiliser la dictée du clavier.', 'err');
+      return;
+    }
+
+    callShow(true);
+    callState('Connexion…', 'Jarvis arrive', false);
+    try {
+      var v = await loadVapi();
+      // Filet : si Jarvis n'a pas décroché au bout de 20 s, on ne laisse pas la barre tourner dans le vide.
+      if (callWatch) clearTimeout(callWatch);
+      callWatch = setTimeout(function(){
+        if (callLive) return;
+        try { if (vapi) vapi.stop(); } catch(e2){}
+        callStop();
+        bubble('Jarvis n’a pas décroché. Vérifie ta connexion et réessaie.', 'err');
+      }, 20000);
+      await v.start(VAPI_ASSISTANT);
+    } catch(e){
+      callStop();
+      bubble('Impossible de démarrer l’appel : ' + String((e && (e.message || e.name)) || e), 'err');
+    }
+  });
+
+  cbHang.addEventListener('click', function(){
+    try { if (vapi) vapi.stop(); } catch(e){}
+    callStop();
+  });
+  cbMute.addEventListener('click', function(){
+    if (!vapi) return;
+    var m = !vapi.isMuted();
+    vapi.setMuted(m);
+    cbMute.classList.toggle('muted', m);
+    cbMute.textContent = m ? 'Muet ●' : 'Muet';
   });
 
   // ---- Voix : enregistrement façon iMessage (onde réelle, aperçu, envoi) ----
