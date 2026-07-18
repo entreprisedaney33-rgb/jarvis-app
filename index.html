@@ -244,6 +244,17 @@
   .sh-label{flex:1; min-width:0}
   .sh-item .soon{margin-left:auto; flex:0 0 auto; font-size:11px; color:var(--gold-a); border:1px solid rgba(232,185,106,.4); border-radius:99px; padding:2px 8px}
   .sh-item.danger{color:var(--no)}
+  .sw{
+    margin-left:auto; flex:0 0 auto; width:48px; height:28px; border-radius:16px;
+    background:rgba(120,120,128,.32); position:relative; transition:background .2s ease;
+  }
+  .sw.on{background:var(--ok)}
+  .sw.busy{opacity:.5}
+  .sw-knob{
+    position:absolute; top:2px; left:2px; width:24px; height:24px; border-radius:50%;
+    background:#fff; box-shadow:0 1px 3px rgba(0,0,0,.4); transition:transform .2s cubic-bezier(.3,1,.4,1);
+  }
+  .sw.on .sw-knob{transform:translateX(20px)}
   .sh-ver{text-align:center; color:var(--muted); font-size:12px; margin:4px 0 0}
   /* Panneau plein ecran "Mes documents" */
   #docsview{
@@ -481,7 +492,7 @@
     <button class="sh-item" id="sh-call" type="button"><span class="sh-ic">📞</span><span class="sh-label">Appeler Jarvis</span></button>
     <button class="sh-item" type="button" disabled><span class="sh-ic">✉️</span><span class="sh-label">Emails à valider</span><span class="soon">bientôt</span></button>
     <button class="sh-item" id="sh-docs" type="button"><span class="sh-ic">📄</span><span class="sh-label">Mes documents</span></button>
-    <button class="sh-item" id="sh-push" type="button"><span class="sh-ic">🔔</span><span class="sh-label">Activer les notifications</span></button>
+    <button class="sh-item" id="sh-push" type="button"><span class="sh-ic">🔔</span><span class="sh-label">Notifications</span><span class="sw" id="sw-push"><span class="sw-knob"></span></span></button>
   </div>
   <div class="sh-group">
     <button class="sh-item danger" id="sh-logout" type="button"><span class="sh-ic">🚪</span><span class="sh-label">Se déconnecter</span></button>
@@ -512,7 +523,7 @@
 
 <script>
 (function(){
-  var APPV = 'v2.28';
+  var APPV = 'v2.29';
 
   // ---- Mise à jour automatique (contourne le cache GitHub Pages) ----
   function checkUpdate(){
@@ -866,24 +877,62 @@
     sheetbg.classList.toggle('open', o);
     headerEl.classList.toggle('menu-open', o);
   }
-  headerEl.addEventListener('click', function(){ sheetOpen(!sheet.classList.contains('open')); });
+  headerEl.addEventListener('click', function(){
+    var opening = !sheet.classList.contains('open');
+    sheetOpen(opening);
+    if (opening) refreshPushToggle();
+  });
   sheetbg.addEventListener('click', function(){ sheetOpen(false); });
+  // ---- Notifications : interrupteur ON/OFF reflétant l'état RÉEL de l'appareil ----
+  // pushManager.getSubscription() est l'API standard qui dit, de façon fiable et 100% locale
+  // (pas besoin d'interroger le serveur), si CET appareil/navigateur a deja un abonnement actif.
+  var pushSupported = 'serviceWorker' in navigator && 'PushManager' in window && typeof Notification !== 'undefined';
+  var swPush = document.getElementById('sw-push');
+  var pushCurrentSub = null; // l'abonnement actif connu, pour pouvoir le desinscrire
+  function setSwOn(on){ swPush.classList.toggle('on', !!on); }
+  async function refreshPushToggle(){
+    if (!pushSupported){ setSwOn(false); pushCurrentSub = null; return; }
+    try {
+      if (Notification.permission !== 'granted'){ setSwOn(false); pushCurrentSub = null; return; }
+      var reg = await navigator.serviceWorker.ready;
+      pushCurrentSub = await reg.pushManager.getSubscription();
+      setSwOn(!!pushCurrentSub);
+    } catch(e){ setSwOn(false); pushCurrentSub = null; }
+  }
+  refreshPushToggle();
   document.getElementById('sh-push').addEventListener('click', async function(){
-    sheetOpen(false);
-    if (!('serviceWorker' in navigator) || !('PushManager' in window)){
+    if (!pushSupported){
+      sheetOpen(false);
       bubble('Les notifications ne sont pas prises en charge sur ce navigateur.', 'err'); return;
     }
+    if (Notification.permission === 'denied'){
+      sheetOpen(false);
+      bubble('Notifications bloquées pour Jarvis — active-les dans les réglages du navigateur pour ce site, puis réessaie.', 'info'); return;
+    }
+    swPush.classList.add('busy');
     try {
-      var perm = await Notification.requestPermission();
-      if (perm !== 'granted'){ bubble('Notifications refusées — tu peux les activer plus tard dans les réglages du navigateur.', 'info'); return; }
-      var reg = await navigator.serviceWorker.ready;
-      var sub = await reg.pushManager.subscribe({ userVisibleOnly: true, applicationServerKey: urlB64ToUint8Array(VAPID_PUBLIC) });
-      var r = await fetch(API, { method:'POST', headers:{'Content-Type':'application/json'},
-        body: JSON.stringify({ type:'push-subscribe', code: String(read('jarvisCode')||'').trim(), subscription: sub.toJSON() }) });
-      var j = await r.json();
-      if (j && j.ok) bubble('🔔 Notifications activées — tu recevras Jarvis même app fermée.', 'info');
-      else bubble('Abonnement non confirmé, réessaie.', 'err');
-    } catch(e){ bubble('Impossible d’activer les notifications : ' + e.message, 'err'); }
+      if (pushCurrentSub){
+        // ---- Désactiver ----
+        var endpoint = pushCurrentSub.endpoint;
+        await pushCurrentSub.unsubscribe();
+        pushCurrentSub = null;
+        setSwOn(false);
+        await fetch(API, { method:'POST', headers:{'Content-Type':'application/json'},
+          body: JSON.stringify({ type:'push-unsubscribe', code: String(read('jarvisCode')||'').trim(), endpoint: endpoint }) });
+      } else {
+        // ---- Activer ----
+        var perm = await Notification.requestPermission();
+        if (perm !== 'granted'){ swPush.classList.remove('busy'); return; }
+        var reg = await navigator.serviceWorker.ready;
+        var sub = await reg.pushManager.subscribe({ userVisibleOnly: true, applicationServerKey: urlB64ToUint8Array(VAPID_PUBLIC) });
+        var r = await fetch(API, { method:'POST', headers:{'Content-Type':'application/json'},
+          body: JSON.stringify({ type:'push-subscribe', code: String(read('jarvisCode')||'').trim(), subscription: sub.toJSON() }) });
+        var j = await r.json();
+        if (j && j.ok){ pushCurrentSub = sub; setSwOn(true); }
+        else { try { await sub.unsubscribe(); } catch(e2){} setSwOn(false); bubble('Abonnement non confirmé, réessaie.', 'err'); }
+      }
+    } catch(e){ bubble('Notifications : ' + e.message, 'err'); refreshPushToggle(); }
+    swPush.classList.remove('busy');
   });
   document.getElementById('sh-logout').addEventListener('click', function(){
     store('jarvisCode',''); store('jarvisNom','');
