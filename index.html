@@ -338,6 +338,16 @@
     -webkit-tap-highlight-color:transparent;
   }
   #emails-tabs{flex:0 0 auto; display:flex; gap:6px; padding:10px 14px; border-bottom:0.5px solid var(--hairline)}
+  #emails-bulkbar{
+    display:none; align-items:center; justify-content:space-between; gap:10px;
+    padding:10px 14px; border-bottom:0.5px solid var(--hairline);
+  }
+  #emails-bulk-count{font-size:13px; color:var(--muted)}
+  #emails-bulk-archive{
+    font:inherit; font-size:13px; font-weight:600; color:#1A130A;
+    background:var(--gold-a); border:none; border-radius:10px; padding:8px 12px;
+    cursor:pointer; -webkit-tap-highlight-color:transparent; flex:0 0 auto;
+  }
   .etab{
     flex:1; font:inherit; font-size:12px; font-weight:600; color:var(--muted); letter-spacing:-.01em;
     background:var(--surface); border:none; border-radius:11px; padding:9px 3px; cursor:pointer;
@@ -353,7 +363,13 @@
   .email-nom{font-size:15px; font-weight:600; flex:1; min-width:0; white-space:nowrap; overflow:hidden; text-overflow:ellipsis}
   .email-time{font-size:11.5px; color:var(--muted); flex:0 0 auto}
   .email-objet{font-size:13.5px; color:var(--muted); margin-top:2px; white-space:nowrap; overflow:hidden; text-overflow:ellipsis}
-  .email-box{display:inline-block; margin-top:5px; font-size:10.5px; color:var(--gold-a); border:1px solid rgba(232,185,106,.4); border-radius:99px; padding:1.5px 7px}
+  .email-bottom{display:flex; align-items:center; justify-content:space-between; margin-top:6px}
+  .email-box{display:inline-block; font-size:10.5px; color:var(--gold-a); border:1px solid rgba(232,185,106,.4); border-radius:99px; padding:1.5px 7px}
+  .email-acts{display:flex; gap:6px}
+  .email-act-btn{
+    width:28px; height:28px; border-radius:50%; border:0; font-size:13px;
+    background:var(--surface); cursor:pointer; -webkit-tap-highlight-color:transparent;
+  }
   /* Horodatage discret sous chaque bulle */
   .mtime{display:block; font-size:10.5px; opacity:.5; margin-top:3px; line-height:1}
   .msg.user .mtime{text-align:right}
@@ -552,6 +568,10 @@
     <button class="etab" data-cat="neutre" type="button">Neutre <span class="etab-count" id="etab-neutre-count"></span></button>
     <button class="etab" data-cat="spam" type="button">Pub & spam <span class="etab-count" id="etab-spam-count"></span></button>
   </div>
+  <div id="emails-bulkbar">
+    <span id="emails-bulk-count"></span>
+    <button id="emails-bulk-archive" type="button">🗄 Tout archiver</button>
+  </div>
   <div id="emails-list"></div>
 </div>
 
@@ -566,7 +586,7 @@
 
 <script>
 (function(){
-  var APPV = 'v2.31';
+  var APPV = 'v2.32';
 
   // ---- Mise à jour automatique (contourne le cache GitHub Pages) ----
   function checkUpdate(){
@@ -1110,22 +1130,45 @@
     var time = document.createElement('span'); time.className = 'email-time'; time.textContent = fmtRelative(m.date_ms);
     top.appendChild(nom); top.appendChild(time);
     var obj = document.createElement('div'); obj.className = 'email-objet'; obj.textContent = m.objet;
+    var bottom = document.createElement('div'); bottom.className = 'email-bottom';
     var box = document.createElement('span'); box.className = 'email-box'; box.textContent = CAT_LABEL_BOX[m.boite] || m.boite;
-    row.appendChild(top); row.appendChild(obj); row.appendChild(box);
+    var acts = document.createElement('span'); acts.className = 'email-acts';
+    var doneBtn = document.createElement('button');
+    doneBtn.type = 'button'; doneBtn.className = 'email-act-btn'; doneBtn.textContent = '✅'; doneBtn.setAttribute('aria-label', 'Marquer traité');
+    var archBtn = document.createElement('button');
+    archBtn.type = 'button'; archBtn.className = 'email-act-btn'; archBtn.textContent = '🗄'; archBtn.setAttribute('aria-label', 'Archiver');
+    doneBtn.addEventListener('click', function(){ emailAction(m.id, 'traite', row); });
+    archBtn.addEventListener('click', function(){ emailAction(m.id, 'archive', row); });
+    acts.appendChild(doneBtn); acts.appendChild(archBtn);
+    bottom.appendChild(box); bottom.appendChild(acts);
+    row.appendChild(top); row.appendChild(obj); row.appendChild(bottom);
     return row;
   }
 
+  function activeEmails(){ return emailsAll.filter(function(m){ return m.statut !== 'traite'; }); }
+
   function updateEmailTabCounts(){
     ['important','neutre','spam'].forEach(function(cat){
-      var n = emailsAll.filter(function(m){ return m.categorie === cat; }).length;
+      var n = activeEmails().filter(function(m){ return m.categorie === cat; }).length;
       var el = document.getElementById('etab-' + cat + '-count');
       if (el) el.textContent = n ? ('(' + n + ')') : '';
     });
   }
 
+  function refreshMenuBadgeFromEmails(){
+    updateEmailBadge(activeEmails().filter(function(m){ return m.categorie === 'important'; }).length);
+  }
+
+  var emailsBulkBar = document.getElementById('emails-bulkbar');
+  var emailsBulkCount = document.getElementById('emails-bulk-count');
+  var emailsBulkBtn = document.getElementById('emails-bulk-archive');
+
   function renderEmailsTab(){
-    var items = emailsAll.filter(function(m){ return m.categorie === emailsTab; });
+    var items = activeEmails().filter(function(m){ return m.categorie === emailsTab; });
     emailsList.innerHTML = '';
+    var showBulk = emailsTab === 'spam' && items.length > 0;
+    emailsBulkBar.style.display = showBulk ? 'flex' : 'none';
+    if (showBulk) emailsBulkCount.textContent = items.length + ' mail' + (items.length > 1 ? 's' : '') + ' à trier';
     if (!items.length){ emailsList.innerHTML = '<p id="emails-empty">Rien ici.</p>'; return; }
     items.forEach(function(m){ emailsList.appendChild(emailRow(m)); });
   }
@@ -1136,6 +1179,45 @@
       document.querySelectorAll('.etab').forEach(function(b){ b.classList.toggle('active', b === btn); });
       renderEmailsTab();
     });
+  });
+
+  function emailAction(id, action, rowEl){
+    if (rowEl) rowEl.style.opacity = '.4';
+    post({ type:'email-action', id: id, action: action }, function(){
+      emailsAll = emailsAll.filter(function(m){ return String(m.id) !== String(id); });
+      updateEmailTabCounts();
+      renderEmailsTab();
+      refreshMenuBadgeFromEmails();
+      toast(action === 'archive' ? '🗄 Archivé' : '✅ Marqué traité');
+    }, function(err){ if (rowEl) rowEl.style.opacity = '1'; toast(err || 'Action impossible'); });
+  }
+
+  function showBulkArchiveRecap(ids){
+    emailsList.innerHTML = '';
+    var card = document.createElement('div'); card.className = 'msg jarvis vcard';
+    var pre = document.createElement('div'); pre.className = 'vc-resume';
+    pre.textContent = ids.length + ' mail' + (ids.length > 1 ? 's' : '') + ' vont être archivés (réversible — ils restent retrouvables dans Gmail).';
+    card.appendChild(pre);
+    var row = document.createElement('div'); row.className = 'vc-row';
+    var ok = document.createElement('button'); ok.type = 'button'; ok.className = 'vc-ok'; ok.textContent = '✅ Confirmer';
+    var no = document.createElement('button'); no.type = 'button'; no.className = 'vc-no'; no.textContent = '❌ Annuler';
+    row.appendChild(ok); row.appendChild(no); card.appendChild(row);
+    emailsList.appendChild(card);
+    no.addEventListener('click', function(){ renderEmailsTab(); });
+    ok.addEventListener('click', function(){
+      ok.disabled = true; no.disabled = true;
+      post({ type:'email-bulk-archive', ids: ids }, function(){
+        emailsAll = emailsAll.filter(function(m){ return ids.indexOf(m.id) === -1; });
+        updateEmailTabCounts();
+        renderEmailsTab();
+        refreshMenuBadgeFromEmails();
+        toast('🗄 Archivés');
+      }, function(err){ ok.disabled = false; no.disabled = false; toast(err || 'Action impossible'); });
+    });
+  }
+  emailsBulkBtn.addEventListener('click', function(){
+    var ids = activeEmails().filter(function(m){ return m.categorie === 'spam'; }).map(function(m){ return m.id; });
+    if (ids.length) showBulkArchiveRecap(ids);
   });
 
   function emailsClose(){ emailsview.classList.remove('open'); }
