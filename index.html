@@ -241,7 +241,19 @@
     display:flex; align-items:center; justify-content:center; cursor:pointer;
     -webkit-tap-highlight-color:transparent;
   }
-  #docs-list{flex:1; overflow-y:auto; -webkit-overflow-scrolling:touch; padding:10px 14px calc(20px + env(safe-area-inset-bottom))}
+  #docs-search-wrap{flex:0 0 auto; padding:2px 14px 10px}
+  #docs-search{
+    width:100%; box-sizing:border-box; border:none; border-radius:12px;
+    background:var(--surface); color:var(--ink); font-size:15px; padding:10px 12px;
+    -webkit-appearance:none;
+  }
+  #docs-search::placeholder{color:var(--muted)}
+  #docs-list{flex:1; overflow-y:auto; -webkit-overflow-scrolling:touch; padding:0 14px calc(20px + env(safe-area-inset-bottom))}
+  .doc-group-head{
+    font-size:12.5px; font-weight:700; color:var(--gold-a); text-transform:uppercase; letter-spacing:.03em;
+    padding:14px 4px 6px; position:sticky; top:0; background:var(--bg);
+  }
+  .doc-group-head:first-child{padding-top:6px}
   .doc-row{
     display:flex; align-items:center; gap:12px; width:100%;
     padding:12px 4px; border-top:0.5px solid rgba(84,84,88,.4);
@@ -432,6 +444,9 @@
     <b>📄 Mes documents</b>
     <button id="docs-close" type="button" aria-label="Fermer">✕</button>
   </div>
+  <div id="docs-search-wrap">
+    <input id="docs-search" type="search" inputmode="search" placeholder="🔍 Rechercher un document…" autocomplete="off" autocapitalize="off" autocorrect="off">
+  </div>
   <div id="docs-list"></div>
 </div>
 
@@ -446,7 +461,7 @@
 
 <script>
 (function(){
-  var APPV = 'v2.24';
+  var APPV = 'v2.25';
 
   // ---- Mise à jour automatique (contourne le cache GitHub Pages) ----
   function checkUpdate(){
@@ -826,30 +841,69 @@
   // ---- Mes documents (catalogue indexe la nuit, lecture seule) ----
   var docsview = document.getElementById('docsview');
   var docsList = document.getElementById('docs-list');
+  var docsSearch = document.getElementById('docs-search');
+  var docsAll = [];
+  var CAT_LABELS = {
+    devis:'📝 Devis', facture:'🧾 Factures', impot:'🏛️ Impôts', identite:'🪪 Identité',
+    contrat:'📃 Contrats', releve_bancaire:'🏦 Relevés bancaires', attestation:'✅ Attestations',
+    assurance:'🛡️ Assurance', rib:'💳 RIB', kbis:'🏢 Kbis', plan:'📐 Plans', autre:'📄 Autres',
+    'non classé':'⏳ Non classés'
+  };
+  var CAT_ORDER = ['devis','facture','releve_bancaire','rib','contrat','impot','assurance','attestation','identite','kbis','plan','autre','non classé'];
+  function normDoc(s){ return String(s||'').toLowerCase().normalize('NFD').replace(/[̀-ͯ]/g,''); }
+  function docRow(d){
+    var a = document.createElement('a');
+    a.className = 'doc-row';
+    a.href = 'https://mat22.app.n8n.cloud' + d.url + '&code=' + encodeURIComponent(String(read('jarvisCode') || '').trim());
+    a.target = '_blank'; a.rel = 'noopener';
+    var emo = document.createElement('span'); emo.className = 'doc-emo'; emo.textContent = d.emoji || '📄';
+    var mid = document.createElement('span'); mid.className = 'doc-mid';
+    var nom = document.createElement('span'); nom.className = 'doc-nom'; nom.textContent = d.nom || 'document';
+    var info = document.createElement('span'); info.className = 'doc-info'; info.textContent = d.info || '';
+    mid.appendChild(nom); mid.appendChild(info);
+    var cat = document.createElement('span'); cat.className = 'doc-cat'; cat.textContent = (CAT_LABELS[d.categorie||''] || d.categorie || '').replace(/^\S+\s/, '') || d.categorie || '';
+    a.appendChild(emo); a.appendChild(mid); a.appendChild(cat);
+    return a;
+  }
+  function renderDocsList(list, grouped){
+    docsList.innerHTML = '';
+    if (!list.length){ docsList.innerHTML = '<p id="docs-empty">Aucun document trouvé.</p>'; return; }
+    if (!grouped){
+      list.forEach(function(d){ docsList.appendChild(docRow(d)); });
+      return;
+    }
+    var groups = {};
+    list.forEach(function(d){ var k = d.categorie || ''; (groups[k] = groups[k] || []).push(d); });
+    var seen = {};
+    CAT_ORDER.concat(Object.keys(groups)).forEach(function(key){
+      if (seen[key] || !groups[key] || !groups[key].length) return;
+      seen[key] = true;
+      var head = document.createElement('div');
+      head.className = 'doc-group-head';
+      head.textContent = (CAT_LABELS[key] || ('📄 ' + key)) + ' (' + groups[key].length + ')';
+      docsList.appendChild(head);
+      groups[key].forEach(function(d){ docsList.appendChild(docRow(d)); });
+    });
+  }
   function docsClose(){ docsview.classList.remove('open'); }
   function docsOpen(){
     docsview.classList.add('open');
+    docsSearch.value = '';
     docsList.innerHTML = '<p id="docs-loading">Chargement…</p>';
     post({ type:'documents' }, function(j){
-      var docs = j.documents || [];
-      if (!docs.length){ docsList.innerHTML = '<p id="docs-empty">Aucun document trouvé pour l’instant.</p>'; return; }
-      docsList.innerHTML = '';
-      docs.forEach(function(d){
-        var a = document.createElement('a');
-        a.className = 'doc-row';
-        a.href = 'https://mat22.app.n8n.cloud' + d.url + '&code=' + encodeURIComponent(String(read('jarvisCode') || '').trim());
-        a.target = '_blank'; a.rel = 'noopener';
-        var emo = document.createElement('span'); emo.className = 'doc-emo'; emo.textContent = d.emoji || '📄';
-        var mid = document.createElement('span'); mid.className = 'doc-mid';
-        var nom = document.createElement('span'); nom.className = 'doc-nom'; nom.textContent = d.nom || 'document';
-        var info = document.createElement('span'); info.className = 'doc-info'; info.textContent = d.info || '';
-        mid.appendChild(nom); mid.appendChild(info);
-        var cat = document.createElement('span'); cat.className = 'doc-cat'; cat.textContent = d.categorie || '';
-        a.appendChild(emo); a.appendChild(mid); a.appendChild(cat);
-        docsList.appendChild(a);
-      });
+      docsAll = j.documents || [];
+      if (!docsAll.length){ docsList.innerHTML = '<p id="docs-empty">Aucun document trouvé pour l’instant.</p>'; return; }
+      renderDocsList(docsAll, true);
     }, function(err){ docsList.innerHTML = '<p id="docs-empty">' + (err || 'Impossible de charger les documents.') + '</p>'; });
   }
+  docsSearch.addEventListener('input', function(){
+    var q = normDoc(docsSearch.value);
+    if (!q){ renderDocsList(docsAll, true); return; }
+    var filtered = docsAll.filter(function(d){
+      return normDoc(d.nom).indexOf(q) !== -1 || normDoc(d.categorie).indexOf(q) !== -1 || normDoc(d.info).indexOf(q) !== -1;
+    });
+    renderDocsList(filtered, false);
+  });
   document.getElementById('sh-docs').addEventListener('click', function(){ sheetOpen(false); docsOpen(); });
   document.getElementById('docs-close').addEventListener('click', docsClose);
 
