@@ -586,7 +586,7 @@
 
 <script>
 (function(){
-  var APPV = 'v2.32';
+  var APPV = 'v2.33';
 
   // ---- Mise à jour automatique (contourne le cache GitHub Pages) ----
   function checkUpdate(){
@@ -1133,6 +1133,12 @@
     var bottom = document.createElement('div'); bottom.className = 'email-bottom';
     var box = document.createElement('span'); box.className = 'email-box'; box.textContent = CAT_LABEL_BOX[m.boite] || m.boite;
     var acts = document.createElement('span'); acts.className = 'email-acts';
+    if (m.categorie !== 'spam'){
+      var replyBtn = document.createElement('button');
+      replyBtn.type = 'button'; replyBtn.className = 'email-act-btn'; replyBtn.textContent = '↩️'; replyBtn.setAttribute('aria-label', 'Répondre');
+      replyBtn.addEventListener('click', function(){ emailReply(m.id, replyBtn); });
+      acts.appendChild(replyBtn);
+    }
     var doneBtn = document.createElement('button');
     doneBtn.type = 'button'; doneBtn.className = 'email-act-btn'; doneBtn.textContent = '✅'; doneBtn.setAttribute('aria-label', 'Marquer traité');
     var archBtn = document.createElement('button');
@@ -1190,6 +1196,16 @@
       refreshMenuBadgeFromEmails();
       toast(action === 'archive' ? '🗄 Archivé' : '✅ Marqué traité');
     }, function(err){ if (rowEl) rowEl.style.opacity = '1'; toast(err || 'Action impossible'); });
+  }
+
+  function emailReply(id, btnEl){
+    if (btnEl) btnEl.disabled = true;
+    post({ type:'email-reply', id: id }, function(j){
+      if (btnEl) btnEl.disabled = false;
+      emailsClose();
+      bubble('↩️ Brouillon de réponse préparé — valide-le ci-dessous.', 'info');
+      renderExtras(j);
+    }, function(err){ if (btnEl) btnEl.disabled = false; toast(err || 'Impossible de préparer une réponse'); });
   }
 
   function showBulkArchiveRecap(ids){
