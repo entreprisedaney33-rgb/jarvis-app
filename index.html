@@ -234,8 +234,8 @@
     padding:calc(10px + env(safe-area-inset-top)) 14px 12px;
     border-bottom:0.5px solid var(--hairline);
   }
-  #docs-head b{font-size:16px; flex:1}
-  #docs-close{
+  #docs-head b{font-size:16px; flex:1; white-space:nowrap; overflow:hidden; text-overflow:ellipsis}
+  #docs-close, #docs-back{
     width:32px; height:32px; border-radius:50%; border:0; flex:0 0 auto;
     background:var(--surface); color:var(--ink); font-size:16px;
     display:flex; align-items:center; justify-content:center; cursor:pointer;
@@ -266,6 +266,28 @@
   .doc-info{font-size:12.5px; color:var(--muted); display:block; margin-top:2px; white-space:nowrap; overflow:hidden; text-overflow:ellipsis}
   .doc-cat{font-size:11px; color:var(--gold-a); border:1px solid rgba(232,185,106,.4); border-radius:99px; padding:2px 8px; flex:0 0 auto}
   #docs-empty, #docs-loading{color:var(--muted); text-align:center; padding:40px 20px; font-size:14px}
+  /* Dossiers (vue racine "Mes documents") */
+  .doc-folder{
+    display:flex; align-items:center; gap:12px; width:100%;
+    padding:14px 4px; border-top:0.5px solid rgba(84,84,88,.4);
+    color:inherit; text-decoration:none; background:none; border-left:none; border-right:none; cursor:pointer;
+    -webkit-tap-highlight-color:transparent;
+  }
+  .doc-folder:first-child{border-top:none}
+  .doc-folder-nom{flex:1; font-size:15.5px; font-weight:600}
+  .doc-folder-count{font-size:13px; color:var(--muted); background:var(--surface); border-radius:99px; padding:2px 9px; flex:0 0 auto}
+  .doc-folder-chev{font-size:18px; color:var(--muted); flex:0 0 auto}
+  .doc-folder-dup .doc-folder-nom{color:var(--gold-a)}
+  /* Doublons detectes */
+  .doc-row-dup{align-items:flex-start}
+  .doc-dup-note{display:block; font-size:11.5px; color:var(--gold-a); margin-top:2px}
+  .doc-dup-actions{display:flex; gap:6px; flex:0 0 auto; padding-top:2px}
+  .dup-btn{
+    width:30px; height:30px; border-radius:50%; border:0; font-size:14px;
+    background:var(--surface); cursor:pointer; -webkit-tap-highlight-color:transparent;
+  }
+  .dup-ok{color:var(--ok)}
+  .dup-no{color:var(--no)}
   /* Horodatage discret sous chaque bulle */
   .mtime{display:block; font-size:10.5px; opacity:.5; margin-top:3px; line-height:1}
   .msg.user .mtime{text-align:right}
@@ -441,7 +463,8 @@
 
 <div id="docsview">
   <div id="docs-head">
-    <b>📄 Mes documents</b>
+    <button id="docs-back" type="button" aria-label="Retour" style="display:none">←</button>
+    <b id="docs-title">📄 Mes documents</b>
     <button id="docs-close" type="button" aria-label="Fermer">✕</button>
   </div>
   <div id="docs-search-wrap">
@@ -461,7 +484,7 @@
 
 <script>
 (function(){
-  var APPV = 'v2.25';
+  var APPV = 'v2.26';
 
   // ---- Mise à jour automatique (contourne le cache GitHub Pages) ----
   function checkUpdate(){
@@ -838,19 +861,24 @@
     location.href = location.pathname;
   });
 
-  // ---- Mes documents (catalogue indexe la nuit, lecture seule) ----
+  // ---- Mes documents (catalogue indexe la nuit) : dossiers par categorie + doublons detectes ----
   var docsview = document.getElementById('docsview');
   var docsList = document.getElementById('docs-list');
   var docsSearch = document.getElementById('docs-search');
+  var docsTitle = document.getElementById('docs-title');
+  var docsBack = document.getElementById('docs-back');
   var docsAll = [];
   var CAT_LABELS = {
-    devis:'📝 Devis', facture:'🧾 Factures', impot:'🏛️ Impôts', identite:'🪪 Identité',
-    contrat:'📃 Contrats', releve_bancaire:'🏦 Relevés bancaires', attestation:'✅ Attestations',
-    assurance:'🛡️ Assurance', rib:'💳 RIB', kbis:'🏢 Kbis', plan:'📐 Plans', autre:'📄 Autres',
-    'non classé':'⏳ Non classés'
+    rib_banque:'💳 RIB & Banque', facture:'🧾 Factures', devis:'📝 Devis', impot:'🏛️ Impôts & Taxes',
+    contrat_assurance:'📃 Contrats & Assurances', vehicule:'🚗 Véhicules', chantier:'🏗️ Chantiers',
+    administratif:'🪪 Administratif & Identité', autre:'📄 Autres', 'non classé':'⏳ Non classés'
   };
-  var CAT_ORDER = ['devis','facture','releve_bancaire','rib','contrat','impot','assurance','attestation','identite','kbis','plan','autre','non classé'];
+  var CAT_ORDER = ['rib_banque','facture','devis','impot','contrat_assurance','vehicule','chantier','administratif','autre','non classé'];
   function normDoc(s){ return String(s||'').toLowerCase().normalize('NFD').replace(/[̀-ͯ]/g,''); }
+  function visibleDocs(){ return docsAll.filter(function(d){ return d.doublonStatut !== 'detecte'; }); }
+  function duplicateDocs(){ return docsAll.filter(function(d){ return d.doublonStatut === 'detecte'; }); }
+  function docById(id){ for (var i=0;i<docsAll.length;i++) if (String(docsAll[i].id)===String(id)) return docsAll[i]; return null; }
+
   function docRow(d){
     var a = document.createElement('a');
     a.className = 'doc-row';
@@ -865,26 +893,101 @@
     a.appendChild(emo); a.appendChild(mid); a.appendChild(cat);
     return a;
   }
-  function renderDocsList(list, grouped){
+
+  function dupRow(d){
+    var row = document.createElement('div');
+    row.className = 'doc-row doc-row-dup';
+    var emo = document.createElement('span'); emo.className = 'doc-emo'; emo.textContent = d.emoji || '📄';
+    var mid = document.createElement('span'); mid.className = 'doc-mid';
+    var link = document.createElement('a');
+    link.href = 'https://mat22.app.n8n.cloud' + d.url + '&code=' + encodeURIComponent(String(read('jarvisCode') || '').trim());
+    link.target = '_blank'; link.rel = 'noopener';
+    link.className = 'doc-nom'; link.textContent = d.nom || 'document';
+    mid.appendChild(link);
+    var info = document.createElement('span'); info.className = 'doc-info'; info.textContent = d.info || '';
+    mid.appendChild(info);
+    var ref = docById(d.doublonDe);
+    var note = document.createElement('span'); note.className = 'doc-dup-note';
+    note.textContent = 'Doublon de : ' + (ref ? ref.nom : 'un document déjà connu');
+    mid.appendChild(note);
+    var actions = document.createElement('span'); actions.className = 'doc-dup-actions';
+    var ok = document.createElement('button'); ok.type = 'button'; ok.className = 'dup-btn dup-ok'; ok.setAttribute('aria-label','Valider la suppression'); ok.textContent = '✅';
+    var no = document.createElement('button'); no.type = 'button'; no.className = 'dup-btn dup-no'; no.setAttribute('aria-label','Ce n’est pas un doublon'); no.textContent = '❌';
+    ok.addEventListener('click', function(){ docAction(d.id, 'confirmer'); });
+    no.addEventListener('click', function(){ docAction(d.id, 'restaurer'); });
+    actions.appendChild(ok); actions.appendChild(no);
+    row.appendChild(emo); row.appendChild(mid); row.appendChild(actions);
+    return row;
+  }
+
+  function folderRow(key, count, onOpen, dup){
+    var a = document.createElement('a');
+    a.className = 'doc-folder' + (dup ? ' doc-folder-dup' : '');
+    a.href = 'javascript:void(0)';
+    var label = dup ? '🗂️ Doublons détectés' : (CAT_LABELS[key] || ('📄 ' + key));
+    var parts = label.split(' ');
+    var emo = document.createElement('span'); emo.className = 'doc-emo'; emo.textContent = parts.shift();
+    var nom = document.createElement('span'); nom.className = 'doc-folder-nom'; nom.textContent = parts.join(' ');
+    var cnt = document.createElement('span'); cnt.className = 'doc-folder-count'; cnt.textContent = count;
+    var chev = document.createElement('span'); chev.className = 'doc-folder-chev'; chev.textContent = '›';
+    a.appendChild(emo); a.appendChild(nom); a.appendChild(cnt); a.appendChild(chev);
+    a.addEventListener('click', onOpen);
+    return a;
+  }
+
+  function renderFolders(){
+    docsTitle.textContent = '📄 Mes documents';
+    docsBack.style.display = 'none';
     docsList.innerHTML = '';
-    if (!list.length){ docsList.innerHTML = '<p id="docs-empty">Aucun document trouvé.</p>'; return; }
-    if (!grouped){
-      list.forEach(function(d){ docsList.appendChild(docRow(d)); });
-      return;
-    }
+    var vis = visibleDocs(), dups = duplicateDocs();
+    if (!vis.length && !dups.length){ docsList.innerHTML = '<p id="docs-empty">Aucun document trouvé pour l’instant.</p>'; return; }
+    if (dups.length) docsList.appendChild(folderRow('', dups.length, openDoublons, true));
     var groups = {};
-    list.forEach(function(d){ var k = d.categorie || ''; (groups[k] = groups[k] || []).push(d); });
+    vis.forEach(function(d){ var k = d.categorie || 'non classé'; (groups[k] = groups[k] || []).push(d); });
     var seen = {};
     CAT_ORDER.concat(Object.keys(groups)).forEach(function(key){
       if (seen[key] || !groups[key] || !groups[key].length) return;
       seen[key] = true;
-      var head = document.createElement('div');
-      head.className = 'doc-group-head';
-      head.textContent = (CAT_LABELS[key] || ('📄 ' + key)) + ' (' + groups[key].length + ')';
-      docsList.appendChild(head);
-      groups[key].forEach(function(d){ docsList.appendChild(docRow(d)); });
+      docsList.appendChild(folderRow(key, groups[key].length, function(){ openCategory(key); }));
     });
   }
+
+  function openCategory(key){
+    docsTitle.textContent = CAT_LABELS[key] || key;
+    docsBack.style.display = 'flex';
+    docsSearch.value = '';
+    var items = visibleDocs().filter(function(d){ return (d.categorie || 'non classé') === key; });
+    docsList.innerHTML = '';
+    if (!items.length){ docsList.innerHTML = '<p id="docs-empty">Aucun document dans ce dossier.</p>'; return; }
+    items.forEach(function(d){ docsList.appendChild(docRow(d)); });
+  }
+
+  function openDoublons(){
+    docsTitle.textContent = '🗂️ Doublons détectés';
+    docsBack.style.display = 'flex';
+    docsSearch.value = '';
+    renderDoublonsList();
+  }
+  function renderDoublonsList(){
+    var dups = duplicateDocs();
+    docsList.innerHTML = '';
+    if (!dups.length){ renderFolders(); return; }
+    dups.forEach(function(d){ docsList.appendChild(dupRow(d)); });
+  }
+
+  function docAction(id, choix){
+    post({ type:'doc-action', id: id, choix: choix }, function(){
+      if (choix === 'confirmer'){
+        docsAll = docsAll.filter(function(d){ return String(d.id) !== String(id); });
+        toast('Doublon supprimé de l’index');
+      } else {
+        docsAll.forEach(function(d){ if (String(d.id) === String(id)){ d.doublonStatut = ''; d.doublonDe = ''; } });
+        toast('Restauré — plus considéré comme un doublon');
+      }
+      renderDoublonsList();
+    }, function(err){ toast(err || 'Action impossible'); });
+  }
+
   function docsClose(){ docsview.classList.remove('open'); }
   function docsOpen(){
     docsview.classList.add('open');
@@ -892,18 +995,22 @@
     docsList.innerHTML = '<p id="docs-loading">Chargement…</p>';
     post({ type:'documents' }, function(j){
       docsAll = j.documents || [];
-      if (!docsAll.length){ docsList.innerHTML = '<p id="docs-empty">Aucun document trouvé pour l’instant.</p>'; return; }
-      renderDocsList(docsAll, true);
+      renderFolders();
     }, function(err){ docsList.innerHTML = '<p id="docs-empty">' + (err || 'Impossible de charger les documents.') + '</p>'; });
   }
   docsSearch.addEventListener('input', function(){
     var q = normDoc(docsSearch.value);
-    if (!q){ renderDocsList(docsAll, true); return; }
-    var filtered = docsAll.filter(function(d){
+    if (!q){ renderFolders(); return; }
+    docsBack.style.display = 'none';
+    docsTitle.textContent = '📄 Mes documents';
+    var filtered = visibleDocs().filter(function(d){
       return normDoc(d.nom).indexOf(q) !== -1 || normDoc(d.categorie).indexOf(q) !== -1 || normDoc(d.info).indexOf(q) !== -1;
     });
-    renderDocsList(filtered, false);
+    docsList.innerHTML = '';
+    if (!filtered.length){ docsList.innerHTML = '<p id="docs-empty">Aucun document trouvé.</p>'; return; }
+    filtered.forEach(function(d){ docsList.appendChild(docRow(d)); });
   });
+  docsBack.addEventListener('click', function(){ docsSearch.value = ''; renderFolders(); });
   document.getElementById('sh-docs').addEventListener('click', function(){ sheetOpen(false); docsOpen(); });
   document.getElementById('docs-close').addEventListener('click', docsClose);
 
