@@ -478,7 +478,6 @@
 <div id="sheet">
   <div class="sh-handle"></div>
   <div class="sh-group">
-    <button class="sh-item" id="sh-reload" type="button"><span class="sh-ic">🔄</span><span class="sh-label">Recharger la conversation</span></button>
     <button class="sh-item" id="sh-call" type="button"><span class="sh-ic">📞</span><span class="sh-label">Appeler Jarvis</span></button>
     <button class="sh-item" type="button" disabled><span class="sh-ic">✉️</span><span class="sh-label">Emails à valider</span><span class="soon">bientôt</span></button>
     <button class="sh-item" id="sh-docs" type="button"><span class="sh-ic">📄</span><span class="sh-label">Mes documents</span></button>
@@ -513,7 +512,7 @@
 
 <script>
 (function(){
-  var APPV = 'v2.27';
+  var APPV = 'v2.28';
 
   // ---- Mise à jour automatique (contourne le cache GitHub Pages) ----
   function checkUpdate(){
@@ -869,10 +868,6 @@
   }
   headerEl.addEventListener('click', function(){ sheetOpen(!sheet.classList.contains('open')); });
   sheetbg.addEventListener('click', function(){ sheetOpen(false); });
-  document.getElementById('sh-reload').addEventListener('click', function(){
-    sheetOpen(false);
-    post({ type:'history' }, function(j){ renderHistory(j.messages, j); }, function(err){ bubble(err, 'err'); });
-  });
   document.getElementById('sh-push').addEventListener('click', async function(){
     sheetOpen(false);
     if (!('serviceWorker' in navigator) || !('PushManager' in window)){
