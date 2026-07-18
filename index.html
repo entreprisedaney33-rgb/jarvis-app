@@ -312,17 +312,6 @@
   .doc-folder-nom{flex:1; font-size:15.5px; font-weight:600}
   .doc-folder-count{font-size:13px; color:var(--muted); background:var(--surface); border-radius:99px; padding:2px 9px; flex:0 0 auto}
   .doc-folder-chev{font-size:18px; color:var(--muted); flex:0 0 auto}
-  .doc-folder-dup .doc-folder-nom{color:var(--gold-a)}
-  /* Doublons detectes */
-  .doc-row-dup{align-items:flex-start}
-  .doc-dup-note{display:block; font-size:11.5px; color:var(--gold-a); margin-top:2px}
-  .doc-dup-actions{display:flex; gap:6px; flex:0 0 auto; padding-top:2px}
-  .dup-btn{
-    width:30px; height:30px; border-radius:50%; border:0; font-size:14px;
-    background:var(--surface); cursor:pointer; -webkit-tap-highlight-color:transparent;
-  }
-  .dup-ok{color:var(--ok)}
-  .dup-no{color:var(--no)}
   /* Horodatage discret sous chaque bulle */
   .mtime{display:block; font-size:10.5px; opacity:.5; margin-top:3px; line-height:1}
   .msg.user .mtime{text-align:right}
@@ -489,7 +478,6 @@
 <div id="sheet">
   <div class="sh-handle"></div>
   <div class="sh-group">
-    <button class="sh-item" id="sh-call" type="button"><span class="sh-ic">📞</span><span class="sh-label">Appeler Jarvis</span></button>
     <button class="sh-item" type="button" disabled><span class="sh-ic">✉️</span><span class="sh-label">Emails à valider</span><span class="soon">bientôt</span></button>
     <button class="sh-item" id="sh-docs" type="button"><span class="sh-ic">📄</span><span class="sh-label">Mes documents</span></button>
     <button class="sh-item" id="sh-push" type="button"><span class="sh-ic">🔔</span><span class="sh-label">Notifications</span><span class="sw" id="sw-push"><span class="sw-knob"></span></span></button>
@@ -523,7 +511,7 @@
 
 <script>
 (function(){
-  var APPV = 'v2.29';
+  var APPV = 'v2.30';
 
   // ---- Mise à jour automatique (contourne le cache GitHub Pages) ----
   function checkUpdate(){
@@ -939,7 +927,8 @@
     location.href = location.pathname;
   });
 
-  // ---- Mes documents (catalogue indexe la nuit) : dossiers par categorie + doublons detectes ----
+  // ---- Mes documents (catalogue indexe la nuit) : dossiers par categorie ----
+  // Les doublons sont desormais supprimes automatiquement cote serveur (plus de vue a valider ici).
   var docsview = document.getElementById('docsview');
   var docsList = document.getElementById('docs-list');
   var docsSearch = document.getElementById('docs-search');
@@ -953,9 +942,6 @@
   };
   var CAT_ORDER = ['rib_banque','facture','devis','impot','contrat_assurance','vehicule','chantier','administratif','autre','non classé'];
   function normDoc(s){ return String(s||'').toLowerCase().normalize('NFD').replace(/[̀-ͯ]/g,''); }
-  function visibleDocs(){ return docsAll.filter(function(d){ return d.doublonStatut !== 'detecte'; }); }
-  function duplicateDocs(){ return docsAll.filter(function(d){ return d.doublonStatut === 'detecte'; }); }
-  function docById(id){ for (var i=0;i<docsAll.length;i++) if (String(docsAll[i].id)===String(id)) return docsAll[i]; return null; }
 
   function docRow(d){
     var a = document.createElement('a');
@@ -972,37 +958,11 @@
     return a;
   }
 
-  function dupRow(d){
-    var row = document.createElement('div');
-    row.className = 'doc-row doc-row-dup';
-    var emo = document.createElement('span'); emo.className = 'doc-emo'; emo.textContent = d.emoji || '📄';
-    var mid = document.createElement('span'); mid.className = 'doc-mid';
-    var link = document.createElement('a');
-    link.href = 'https://mat22.app.n8n.cloud' + d.url + '&code=' + encodeURIComponent(String(read('jarvisCode') || '').trim());
-    link.target = '_blank'; link.rel = 'noopener';
-    link.className = 'doc-nom'; link.textContent = d.nom || 'document';
-    mid.appendChild(link);
-    var info = document.createElement('span'); info.className = 'doc-info'; info.textContent = d.info || '';
-    mid.appendChild(info);
-    var ref = docById(d.doublonDe);
-    var note = document.createElement('span'); note.className = 'doc-dup-note';
-    note.textContent = 'Doublon de : ' + (ref ? ref.nom : 'un document déjà connu');
-    mid.appendChild(note);
-    var actions = document.createElement('span'); actions.className = 'doc-dup-actions';
-    var ok = document.createElement('button'); ok.type = 'button'; ok.className = 'dup-btn dup-ok'; ok.setAttribute('aria-label','Valider la suppression'); ok.textContent = '✅';
-    var no = document.createElement('button'); no.type = 'button'; no.className = 'dup-btn dup-no'; no.setAttribute('aria-label','Ce n’est pas un doublon'); no.textContent = '❌';
-    ok.addEventListener('click', function(){ docAction(d.id, 'confirmer'); });
-    no.addEventListener('click', function(){ docAction(d.id, 'restaurer'); });
-    actions.appendChild(ok); actions.appendChild(no);
-    row.appendChild(emo); row.appendChild(mid); row.appendChild(actions);
-    return row;
-  }
-
-  function folderRow(key, count, onOpen, dup){
+  function folderRow(key, count, onOpen){
     var a = document.createElement('a');
-    a.className = 'doc-folder' + (dup ? ' doc-folder-dup' : '');
+    a.className = 'doc-folder';
     a.href = 'javascript:void(0)';
-    var label = dup ? '🗂️ Doublons détectés' : (CAT_LABELS[key] || ('📄 ' + key));
+    var label = CAT_LABELS[key] || ('📄 ' + key);
     var parts = label.split(' ');
     var emo = document.createElement('span'); emo.className = 'doc-emo'; emo.textContent = parts.shift();
     var nom = document.createElement('span'); nom.className = 'doc-folder-nom'; nom.textContent = parts.join(' ');
@@ -1017,11 +977,9 @@
     docsTitle.textContent = '📄 Mes documents';
     docsBack.style.display = 'none';
     docsList.innerHTML = '';
-    var vis = visibleDocs(), dups = duplicateDocs();
-    if (!vis.length && !dups.length){ docsList.innerHTML = '<p id="docs-empty">Aucun document trouvé pour l’instant.</p>'; return; }
-    if (dups.length) docsList.appendChild(folderRow('', dups.length, openDoublons, true));
+    if (!docsAll.length){ docsList.innerHTML = '<p id="docs-empty">Aucun document trouvé pour l’instant.</p>'; return; }
     var groups = {};
-    vis.forEach(function(d){ var k = d.categorie || 'non classé'; (groups[k] = groups[k] || []).push(d); });
+    docsAll.forEach(function(d){ var k = d.categorie || 'non classé'; (groups[k] = groups[k] || []).push(d); });
     var seen = {};
     CAT_ORDER.concat(Object.keys(groups)).forEach(function(key){
       if (seen[key] || !groups[key] || !groups[key].length) return;
@@ -1034,36 +992,10 @@
     docsTitle.textContent = CAT_LABELS[key] || key;
     docsBack.style.display = 'flex';
     docsSearch.value = '';
-    var items = visibleDocs().filter(function(d){ return (d.categorie || 'non classé') === key; });
+    var items = docsAll.filter(function(d){ return (d.categorie || 'non classé') === key; });
     docsList.innerHTML = '';
     if (!items.length){ docsList.innerHTML = '<p id="docs-empty">Aucun document dans ce dossier.</p>'; return; }
     items.forEach(function(d){ docsList.appendChild(docRow(d)); });
-  }
-
-  function openDoublons(){
-    docsTitle.textContent = '🗂️ Doublons détectés';
-    docsBack.style.display = 'flex';
-    docsSearch.value = '';
-    renderDoublonsList();
-  }
-  function renderDoublonsList(){
-    var dups = duplicateDocs();
-    docsList.innerHTML = '';
-    if (!dups.length){ renderFolders(); return; }
-    dups.forEach(function(d){ docsList.appendChild(dupRow(d)); });
-  }
-
-  function docAction(id, choix){
-    post({ type:'doc-action', id: id, choix: choix }, function(){
-      if (choix === 'confirmer'){
-        docsAll = docsAll.filter(function(d){ return String(d.id) !== String(id); });
-        toast('Doublon supprimé de l’index');
-      } else {
-        docsAll.forEach(function(d){ if (String(d.id) === String(id)){ d.doublonStatut = ''; d.doublonDe = ''; } });
-        toast('Restauré — plus considéré comme un doublon');
-      }
-      renderDoublonsList();
-    }, function(err){ toast(err || 'Action impossible'); });
   }
 
   function docsClose(){ docsview.classList.remove('open'); }
@@ -1081,7 +1013,7 @@
     if (!q){ renderFolders(); return; }
     docsBack.style.display = 'none';
     docsTitle.textContent = '📄 Mes documents';
-    var filtered = visibleDocs().filter(function(d){
+    var filtered = docsAll.filter(function(d){
       return normDoc(d.nom).indexOf(q) !== -1 || normDoc(d.categorie).indexOf(q) !== -1 || normDoc(d.info).indexOf(q) !== -1;
     });
     docsList.innerHTML = '';
@@ -1190,10 +1122,6 @@
     }
   }
 
-  document.getElementById('sh-call').addEventListener('click', function(){
-    sheetOpen(false);
-    startVocalCall();
-  });
   document.getElementById('hcallbtn').addEventListener('click', function(e){
     e.stopPropagation(); // sinon le clic remonte au header et ouvre le menu par-dessus
     if (!callbar.classList.contains('on')) startVocalCall();
