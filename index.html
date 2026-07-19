@@ -477,6 +477,34 @@
   }
   #cf-err{color:#FF453A; font-size:12.5px; min-height:1em}
   #cf-row{display:flex; gap:8px}
+  /* Fiche client devis (démo MCS) */
+  #devis-form-bg{position:fixed; inset:0; background:rgba(0,0,0,.5); display:none; z-index:52}
+  #devis-form-bg.open{display:block}
+  #devis-form{
+    position:fixed; left:14px; right:14px; top:50%; transform:translateY(-50%) scale(.96); z-index:53;
+    background:#1C1C1E; border-radius:16px; padding:18px 18px calc(18px + env(safe-area-inset-bottom));
+    display:none; flex-direction:column; gap:10px; max-height:80vh; overflow-y:auto;
+    opacity:0; transition:opacity .2s ease, transform .2s ease;
+  }
+  #devis-form.open{display:flex; opacity:1; transform:translateY(-50%) scale(1)}
+  @media (prefers-reduced-motion: reduce){#devis-form{transition:none}}
+  #devis-form b{font-size:16px}
+  #devis-form p.dfhint{font-size:12px; color:var(--muted); margin:0 0 4px}
+  #devis-form label{display:flex; flex-direction:column; gap:5px; font-size:12.5px; color:var(--muted); position:relative}
+  #devis-form input{
+    font:inherit; font-size:15px; color:var(--ink); background:var(--surface);
+    border:0.5px solid var(--hairline); border-radius:10px; padding:9px 11px; box-sizing:border-box;
+  }
+  #df-err{color:#FF453A; font-size:12.5px; min-height:1em}
+  #df-sug{
+    list-style:none; margin:2px 0 0; padding:0; border:0.5px solid var(--hairline); border-radius:10px;
+    overflow:hidden; position:absolute; left:0; right:0; top:100%; background:#232326; z-index:5;
+    max-height:180px; overflow-y:auto; display:none;
+  }
+  #df-sug.open{display:block}
+  #df-sug li{padding:10px 11px; font-size:13.5px; color:var(--ink); border-bottom:0.5px solid var(--hairline); cursor:pointer}
+  #df-sug li:last-child{border-bottom:none}
+  #df-sug li:active{background:rgba(255,255,255,.08)}
   #cf-delete{flex:0 0 auto; padding:12px 14px; border-radius:12px}
   /* Horodatage discret sous chaque bulle */
   .mtime{display:block; font-size:10.5px; opacity:.5; margin-top:3px; line-height:1}
@@ -647,6 +675,7 @@
     <button class="sh-item" id="sh-emails" type="button"><span class="sh-ic">✉️</span><span class="sh-label">Emails</span><span class="badge-count" id="menu-email-badge" style="display:none"></span></button>
     <button class="sh-item" id="sh-calendar" type="button"><span class="sh-ic">📅</span><span class="sh-label">Calendrier</span></button>
     <button class="sh-item" id="sh-docs" type="button"><span class="sh-ic">📄</span><span class="sh-label">Mes documents</span></button>
+    <button class="sh-item" id="sh-devis" type="button"><span class="sh-ic">🧾</span><span class="sh-label">Nouveau devis (démo MCS)</span></button>
     <button class="sh-item" id="sh-push" type="button"><span class="sh-ic">🔔</span><span class="sh-label">Notifications</span><span class="sw" id="sw-push"><span class="sw-knob"></span></span></button>
   </div>
   <div class="sh-group">
@@ -715,6 +744,23 @@
   <button id="cf-cancel" type="button" class="vc-edit">Annuler</button>
 </div>
 
+<div id="devis-form-bg"></div>
+<div id="devis-form">
+  <b>Fiche client — devis</b>
+  <p class="dfhint">Démo pour MCS : ce devis sera généré à son nom, avec ses mentions légales.</p>
+  <label>Nom et prénom <input id="df-nom" type="text" placeholder="Ex : Jean Martin" autocomplete="off"></label>
+  <label>Email <input id="df-email" type="email" placeholder="jean.martin@email.fr" autocomplete="off"></label>
+  <label>Adresse
+    <input id="df-adresse" type="text" placeholder="Commence à taper l'adresse…" autocomplete="off">
+    <ul id="df-sug"></ul>
+  </label>
+  <div id="df-err"></div>
+  <div id="cf-row">
+    <button id="df-save" type="button" class="ed-send">Générer le devis</button>
+  </div>
+  <button id="df-cancel" type="button" class="vc-edit">Annuler</button>
+</div>
+
 <div id="msgSheetbg"></div>
 <div id="msgSheet">
   <div class="sh-handle"></div>
@@ -726,7 +772,7 @@
 
 <script>
 (function(){
-  var APPV = 'v2.34';
+  var APPV = 'v2.35';
 
   // ---- Mise à jour automatique (contourne le cache GitHub Pages) ----
   function checkUpdate(){
@@ -1053,9 +1099,19 @@
     sendbtn.classList.toggle('idle', !textin.value.trim());
   }
   textin.addEventListener('input', autosize);
+  // Mot-cle "devis" tape en clair -> ouvre la fiche client (pas d'aller-retour serveur)
+  var DEVIS_TRIGGERS = ['devis', 'nouveau devis', 'faire un devis', 'un devis'];
+  function normDevis(s){
+    return String(s || '').trim().toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '');
+  }
   function sendText(){
     var t = textin.value.trim();
     if (!t) return;
+    if (DEVIS_TRIGGERS.indexOf(normDevis(t)) !== -1){
+      textin.value = ''; autosize();
+      devisOpen();
+      return;
+    }
     textin.value = ''; autosize();
     bubble(t, 'user');
     typingOn();
@@ -1676,6 +1732,86 @@
   }
   document.getElementById('sh-calendar').addEventListener('click', function(){ sheetOpen(false); calendarOpen(); });
   document.getElementById('cal-close').addEventListener('click', calendarClose);
+
+  // ---- Fiche client devis (demo MCS) ----
+  var devisFormBg = document.getElementById('devis-form-bg');
+  var devisForm = document.getElementById('devis-form');
+  var dfNom = document.getElementById('df-nom');
+  var dfEmail = document.getElementById('df-email');
+  var dfAdresse = document.getElementById('df-adresse');
+  var dfSug = document.getElementById('df-sug');
+  var dfSave = document.getElementById('df-save');
+  var dfErr = document.getElementById('df-err');
+  var dfAdrTimer = null;
+  var dfAdrFeats = [];
+
+  function devisOpen(){
+    sheetOpen(false);
+    dfNom.value = ''; dfEmail.value = ''; dfAdresse.value = '';
+    dfSug.classList.remove('open'); dfSug.innerHTML = '';
+    dfErr.textContent = '';
+    dfSave.disabled = false;
+    devisFormBg.classList.add('open');
+    devisForm.classList.add('open');
+    setTimeout(function(){ dfNom.focus(); }, 50);
+  }
+  function devisClose(){
+    devisFormBg.classList.remove('open');
+    devisForm.classList.remove('open');
+    dfSug.classList.remove('open');
+  }
+  devisFormBg.addEventListener('click', devisClose);
+  document.getElementById('df-cancel').addEventListener('click', devisClose);
+  document.getElementById('sh-devis').addEventListener('click', devisOpen);
+
+  // Autocompletion adresse : API Base Adresse Nationale (officielle, gratuite, sans cle)
+  dfAdresse.addEventListener('input', function(){
+    clearTimeout(dfAdrTimer);
+    var q = dfAdresse.value.trim();
+    if (q.length < 3){ dfSug.innerHTML = ''; dfSug.classList.remove('open'); return; }
+    dfAdrTimer = setTimeout(function(){
+      fetch('https://api-adresse.data.gouv.fr/search/?limit=5&autocomplete=1&q=' + encodeURIComponent(q))
+        .then(function(r){ return r.json(); })
+        .then(function(j){
+          dfAdrFeats = (j && j.features) || [];
+          dfSug.innerHTML = '';
+          dfAdrFeats.forEach(function(f, i){
+            var li = document.createElement('li');
+            li.textContent = f.properties.label;
+            li.addEventListener('click', function(){
+              dfAdresse.value = f.properties.label;
+              dfSug.innerHTML = ''; dfSug.classList.remove('open');
+            });
+            dfSug.appendChild(li);
+          });
+          dfSug.classList.toggle('open', dfAdrFeats.length > 0);
+        }).catch(function(){});
+    }, 250);
+  });
+
+  dfSave.addEventListener('click', function(){
+    var nom = dfNom.value.trim();
+    var email = dfEmail.value.trim();
+    var adresse = dfAdresse.value.trim();
+    dfErr.textContent = '';
+    if (!nom){ dfErr.textContent = 'Le nom est obligatoire.'; return; }
+    if (!email || email.indexOf('@') === -1){ dfErr.textContent = 'Indique un email valide.'; return; }
+    if (!adresse){ dfErr.textContent = "L'adresse est obligatoire."; return; }
+    dfSave.disabled = true;
+    dfSave.textContent = 'Génération du devis…';
+    post({ type: 'devis-submit', nom: nom, email: email, adresse: adresse }, function(r){
+      dfSave.disabled = false;
+      dfSave.textContent = 'Générer le devis';
+      devisClose();
+      bubble('Fiche client : ' + nom, 'user');
+      bubble(r.reply || 'Devis généré.', 'jarvis');
+      renderExtras(r);
+    }, function(err){
+      dfSave.disabled = false;
+      dfSave.textContent = 'Générer le devis';
+      dfErr.textContent = err || 'Impossible de générer le devis.';
+    });
+  });
 
   // Badge du menu = nombre d'emails "important" pas encore traites (vient de la reponse history)
   var menuEmailBadge = document.getElementById('menu-email-badge');
