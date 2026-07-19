@@ -482,7 +482,7 @@
   #devis-form-bg.open{display:block}
   #devis-form{
     position:fixed; left:14px; right:14px; top:50%; transform:translateY(-50%) scale(.96); z-index:53;
-    background:#1C1C1E; border-radius:16px; padding:18px 18px calc(18px + env(safe-area-inset-bottom));
+    background:#151517; border-radius:16px; padding:18px 18px calc(18px + env(safe-area-inset-bottom));
     display:none; flex-direction:column; gap:10px; max-height:80vh; overflow-y:auto;
     opacity:0; transition:opacity .2s ease, transform .2s ease;
   }
@@ -492,19 +492,20 @@
   #devis-form p.dfhint{font-size:12px; color:var(--muted); margin:0 0 4px}
   #devis-form label{display:flex; flex-direction:column; gap:5px; font-size:12.5px; color:var(--muted); position:relative}
   #devis-form input{
-    font:inherit; font-size:15px; color:var(--ink); background:var(--surface);
-    border:0.5px solid var(--hairline); border-radius:10px; padding:9px 11px; box-sizing:border-box;
+    font:inherit; font-size:15px; color:var(--ink); background:#2E2E32;
+    border:0.5px solid rgba(255,255,255,.18); border-radius:10px; padding:9px 11px; box-sizing:border-box;
   }
   #df-err{color:#FF453A; font-size:12.5px; min-height:1em}
   #df-sug{
-    list-style:none; margin:2px 0 0; padding:0; border:0.5px solid var(--hairline); border-radius:10px;
-    overflow:hidden; position:absolute; left:0; right:0; top:100%; background:#232326; z-index:5;
+    list-style:none; margin:2px 0 0; padding:0; border:0.5px solid rgba(255,255,255,.18); border-radius:10px;
+    overflow:hidden; position:absolute; left:0; right:0; top:100%; background:#333336; z-index:5;
     max-height:180px; overflow-y:auto; display:none;
   }
   #df-sug.open{display:block}
-  #df-sug li{padding:10px 11px; font-size:13.5px; color:var(--ink); border-bottom:0.5px solid var(--hairline); cursor:pointer}
+  #df-sug li{padding:10px 11px; font-size:13.5px; color:var(--ink); border-bottom:0.5px solid rgba(255,255,255,.12); cursor:pointer}
   #df-sug li:last-child{border-bottom:none}
-  #df-sug li:active{background:rgba(255,255,255,.08)}
+  #df-sug li:active{background:rgba(255,255,255,.1)}
+  #df-row{display:flex; gap:8px}
   #cf-delete{flex:0 0 auto; padding:12px 14px; border-radius:12px}
   /* Horodatage discret sous chaque bulle */
   .mtime{display:block; font-size:10.5px; opacity:.5; margin-top:3px; line-height:1}
@@ -747,7 +748,7 @@
 <div id="devis-form-bg"></div>
 <div id="devis-form">
   <b>Fiche client — devis</b>
-  <p class="dfhint">Démo pour MCS : ce devis sera généré à son nom, avec ses mentions légales.</p>
+  <p class="dfhint">Démo pour MCS : le client est enregistré. Décris ensuite ses besoins (à l'oral ou par écrit) pour générer son devis.</p>
   <label>Nom et prénom <input id="df-nom" type="text" placeholder="Ex : Jean Martin" autocomplete="off"></label>
   <label>Email <input id="df-email" type="email" placeholder="jean.martin@email.fr" autocomplete="off"></label>
   <label>Adresse
@@ -755,10 +756,10 @@
     <ul id="df-sug"></ul>
   </label>
   <div id="df-err"></div>
-  <div id="cf-row">
-    <button id="df-save" type="button" class="ed-send">Générer le devis</button>
+  <div id="df-row">
+    <button id="df-cancel" type="button" class="vc-no">Annuler</button>
+    <button id="df-save" type="button" class="vc-ok">Enregistrer</button>
   </div>
-  <button id="df-cancel" type="button" class="vc-edit">Annuler</button>
 </div>
 
 <div id="msgSheetbg"></div>
@@ -772,7 +773,7 @@
 
 <script>
 (function(){
-  var APPV = 'v2.35';
+  var APPV = 'v2.36';
 
   // ---- Mise à jour automatique (contourne le cache GitHub Pages) ----
   function checkUpdate(){
@@ -1798,18 +1799,18 @@
     if (!email || email.indexOf('@') === -1){ dfErr.textContent = 'Indique un email valide.'; return; }
     if (!adresse){ dfErr.textContent = "L'adresse est obligatoire."; return; }
     dfSave.disabled = true;
-    dfSave.textContent = 'Génération du devis…';
+    dfSave.textContent = 'Enregistrement…';
     post({ type: 'devis-submit', nom: nom, email: email, adresse: adresse }, function(r){
       dfSave.disabled = false;
-      dfSave.textContent = 'Générer le devis';
+      dfSave.textContent = 'Enregistrer';
       devisClose();
       bubble('Fiche client : ' + nom, 'user');
-      bubble(r.reply || 'Devis généré.', 'jarvis');
+      bubble(r.reply || 'Client enregistré.', 'jarvis');
       renderExtras(r);
     }, function(err){
       dfSave.disabled = false;
-      dfSave.textContent = 'Générer le devis';
-      dfErr.textContent = err || 'Impossible de générer le devis.';
+      dfSave.textContent = 'Enregistrer';
+      dfErr.textContent = err || "Impossible d'enregistrer le client.";
     });
   });
 
