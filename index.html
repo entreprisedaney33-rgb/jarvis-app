@@ -470,13 +470,22 @@
   #cal-form.open{display:flex; opacity:1; transform:translateY(-50%) scale(1)}
   @media (prefers-reduced-motion: reduce){#cal-form{transition:none}}
   #cal-form b{font-size:16px}
-  #cal-form label{display:flex; flex-direction:column; gap:5px; font-size:12.5px; color:var(--muted)}
+  #cal-form label{display:flex; flex-direction:column; gap:5px; font-size:12.5px; color:var(--muted); position:relative}
   #cal-form input{
     font:inherit; font-size:15px; color:var(--ink); background:var(--surface);
     border:0.5px solid var(--hairline); border-radius:10px; padding:9px 11px; box-sizing:border-box;
   }
   #cf-err{color:#FF453A; font-size:12.5px; min-height:1em}
   #cf-row{display:flex; gap:8px}
+  #cf-sug{
+    list-style:none; margin:2px 0 0; padding:0; border:0.5px solid rgba(255,255,255,.18); border-radius:10px;
+    overflow:hidden; position:absolute; left:0; right:0; top:100%; background:#333336; z-index:5;
+    max-height:180px; overflow-y:auto; display:none;
+  }
+  #cf-sug.open{display:block}
+  #cf-sug li{padding:10px 11px; font-size:13.5px; color:var(--ink); border-bottom:0.5px solid rgba(255,255,255,.12); cursor:pointer}
+  #cf-sug li:last-child{border-bottom:none}
+  #cf-sug li:active{background:rgba(255,255,255,.1)}
   /* Fiche client devis (démo MCS) */
   #devis-form-bg{position:fixed; inset:0; background:rgba(0,0,0,.5); display:none; z-index:52}
   #devis-form-bg.open{display:block}
@@ -736,7 +745,10 @@
   <label>Titre <input id="cf-titre" type="text" placeholder="Ex : RDV chantier Carignan"></label>
   <label>Début <input id="cf-debut" type="datetime-local"></label>
   <label>Fin <input id="cf-fin" type="datetime-local"></label>
-  <label>Lieu (optionnel) <input id="cf-lieu" type="text" placeholder="Adresse ou nom du lieu"></label>
+  <label>Lieu (optionnel)
+    <input id="cf-lieu" type="text" placeholder="Adresse ou nom du lieu" autocomplete="off">
+    <ul id="cf-sug"></ul>
+  </label>
   <div id="cf-err"></div>
   <div id="cf-row">
     <button id="cf-delete" type="button" class="vc-no" style="display:none">🗑 Supprimer</button>
@@ -773,7 +785,7 @@
 
 <script>
 (function(){
-  var APPV = 'v2.36';
+  var APPV = 'v2.37';
 
   // ---- Mise à jour automatique (contourne le cache GitHub Pages) ----
   function checkUpdate(){
@@ -1586,6 +1598,34 @@
   var calForm = document.getElementById('cal-form');
   var calEditingId = '';
   var CAL_DOW = ['Lun','Mar','Mer','Jeu','Ven','Sam','Dim'];
+  var cfLieu = document.getElementById('cf-lieu');
+  var cfSug = document.getElementById('cf-sug');
+  var cfAdrTimer = null;
+
+  // Autocompletion adresse sur le lieu du rdv : meme API que la fiche devis (Base Adresse Nationale)
+  cfLieu.addEventListener('input', function(){
+    clearTimeout(cfAdrTimer);
+    var q = cfLieu.value.trim();
+    if (q.length < 3){ cfSug.innerHTML = ''; cfSug.classList.remove('open'); return; }
+    cfAdrTimer = setTimeout(function(){
+      fetch('https://api-adresse.data.gouv.fr/search/?limit=5&autocomplete=1&q=' + encodeURIComponent(q))
+        .then(function(r){ return r.json(); })
+        .then(function(j){
+          var feats = (j && j.features) || [];
+          cfSug.innerHTML = '';
+          feats.forEach(function(f){
+            var li = document.createElement('li');
+            li.textContent = f.properties.label;
+            li.addEventListener('click', function(){
+              cfLieu.value = f.properties.label;
+              cfSug.innerHTML = ''; cfSug.classList.remove('open');
+            });
+            cfSug.appendChild(li);
+          });
+          cfSug.classList.toggle('open', feats.length > 0);
+        }).catch(function(){});
+    }, 250);
+  });
 
   function pad2(n){ return ('0' + n).slice(-2); }
   function calDateKey(d){ return d.getFullYear() + '-' + pad2(d.getMonth() + 1) + '-' + pad2(d.getDate()); }
@@ -1686,10 +1726,11 @@
     document.getElementById('cf-lieu').value = mode === 'edit' ? (ev.location || '') : '';
     document.getElementById('cf-err').textContent = '';
     document.getElementById('cf-delete').style.display = mode === 'edit' ? '' : 'none';
+    cfSug.innerHTML = ''; cfSug.classList.remove('open');
     calFormBg.classList.add('open');
     calForm.classList.add('open');
   }
-  function calCloseForm(){ calFormBg.classList.remove('open'); calForm.classList.remove('open'); }
+  function calCloseForm(){ calFormBg.classList.remove('open'); calForm.classList.remove('open'); cfSug.innerHTML = ''; cfSug.classList.remove('open'); }
   calFormBg.addEventListener('click', calCloseForm);
   document.getElementById('cf-cancel').addEventListener('click', calCloseForm);
   document.getElementById('cal-add').addEventListener('click', function(){ calOpenForm('create', null); });
