@@ -370,6 +370,114 @@
     width:28px; height:28px; border-radius:50%; border:0; font-size:13px;
     background:var(--surface); cursor:pointer; -webkit-tap-highlight-color:transparent;
   }
+  /* Detail d'un email (corps complet + reponse texte/micro) */
+  #email-detail{flex:1; overflow-y:auto; -webkit-overflow-scrolling:touch; display:none; flex-direction:column; padding:0 14px calc(20px + env(safe-area-inset-bottom))}
+  #email-detail.open{display:flex}
+  #email-back{
+    width:32px; height:32px; border-radius:50%; border:0; flex:0 0 auto;
+    background:var(--surface); color:var(--ink); font-size:16px;
+    display:flex; align-items:center; justify-content:center; cursor:pointer;
+    -webkit-tap-highlight-color:transparent;
+  }
+  .ed-meta{padding:14px 2px 10px; border-bottom:0.5px solid var(--hairline)}
+  .ed-subject{font-size:17px; font-weight:700; margin-bottom:6px; word-wrap:break-word}
+  .ed-line{font-size:13px; color:var(--muted); margin-top:2px; word-wrap:break-word}
+  .ed-body{white-space:pre-wrap; word-wrap:break-word; font-size:14.5px; line-height:1.5; padding:14px 2px; color:var(--ink)}
+  .ed-attachments{display:flex; flex-direction:column; gap:8px; padding:0 2px 14px}
+  .ed-reply{border-top:0.5px solid var(--hairline); padding:14px 2px calc(14px + env(safe-area-inset-bottom)); display:flex; flex-direction:column; gap:8px}
+  .ed-reply textarea{
+    width:100%; min-height:80px; resize:vertical; font:inherit; font-size:14.5px;
+    background:var(--surface); color:var(--ink); border:0.5px solid var(--hairline);
+    border-radius:12px; padding:10px 12px; box-sizing:border-box;
+  }
+  .ed-reply-row{display:flex; gap:8px}
+  .ed-mic{
+    width:44px; height:44px; border-radius:50%; border:0; flex:0 0 auto; font-size:18px;
+    background:var(--surface); color:var(--ink); cursor:pointer; -webkit-tap-highlight-color:transparent;
+  }
+  .ed-mic.rec{background:#FF453A; color:#fff}
+  .ed-mic:disabled,.ed-send:disabled{opacity:.45}
+  .ed-send{
+    flex:1; font:inherit; font-size:15px; font-weight:600; color:#1A130A;
+    background:var(--gold-a); border:none; border-radius:12px; cursor:pointer;
+    -webkit-tap-highlight-color:transparent;
+  }
+  .ed-hint{font-size:11.5px; color:var(--muted)}
+  /* Calendrier premium (mois, custom, sans lib externe) */
+  #calendarview{
+    position:fixed; inset:0; z-index:50; background:var(--bg);
+    display:none; flex-direction:column;
+    transform:translateY(100%); transition:transform .28s cubic-bezier(.2,.9,.25,1);
+  }
+  #calendarview.open{display:flex; transform:translateY(0)}
+  @media (prefers-reduced-motion: reduce){#calendarview{transition:none}}
+  #cal-head{
+    flex:0 0 auto; display:flex; align-items:center; gap:10px;
+    padding:calc(10px + env(safe-area-inset-top)) 14px 12px;
+    border-bottom:0.5px solid var(--hairline);
+  }
+  #cal-head b{font-size:16px; flex:1}
+  #cal-close{
+    width:32px; height:32px; border-radius:50%; border:0; flex:0 0 auto;
+    background:var(--surface); color:var(--ink); font-size:16px;
+    display:flex; align-items:center; justify-content:center; cursor:pointer;
+    -webkit-tap-highlight-color:transparent;
+  }
+  #cal-nav{flex:0 0 auto; display:flex; align-items:center; justify-content:space-between; padding:12px 18px; border-bottom:0.5px solid var(--hairline)}
+  #cal-month-label{font-size:16px; font-weight:700; text-transform:capitalize}
+  #cal-prev,#cal-next{
+    width:36px; height:36px; border-radius:50%; border:0; font-size:19px;
+    background:var(--surface); color:var(--ink); cursor:pointer; -webkit-tap-highlight-color:transparent;
+  }
+  #cal-grid{flex:0 0 auto; display:grid; grid-template-columns:repeat(7,1fr); gap:4px; padding:10px 10px 4px}
+  .cal-dow{font-size:11px; color:var(--muted); text-align:center; padding-bottom:4px}
+  .cal-cell{
+    aspect-ratio:1; border-radius:11px; display:flex; flex-direction:column; align-items:center; justify-content:center;
+    background:var(--surface); cursor:pointer; -webkit-tap-highlight-color:transparent; position:relative; gap:2px;
+  }
+  .cal-cell.pad{visibility:hidden; cursor:default}
+  .cal-cell .cal-daynum{font-size:14px; font-weight:600}
+  .cal-cell.today .cal-daynum{color:var(--gold-a)}
+  .cal-cell.selected{background:var(--gold-a)}
+  .cal-cell.selected .cal-daynum{color:#1A130A}
+  .cal-dots{display:flex; gap:2px}
+  .cal-dot{width:4px; height:4px; border-radius:50%; background:var(--gold-a)}
+  .cal-cell.selected .cal-dot{background:#1A130A}
+  #cal-day{flex:1; overflow-y:auto; -webkit-overflow-scrolling:touch; padding:6px 14px calc(90px + env(safe-area-inset-bottom))}
+  #cal-day-empty{color:var(--muted); text-align:center; padding:30px 20px; font-size:13.5px}
+  .cal-ev{
+    display:flex; align-items:center; gap:10px; padding:10px 12px; margin-bottom:8px;
+    background:var(--surface); border-radius:12px; cursor:pointer; -webkit-tap-highlight-color:transparent;
+  }
+  .cal-ev-time{font-size:12.5px; color:var(--gold-a); font-weight:700; flex:0 0 auto; width:44px}
+  .cal-ev-info{flex:1; min-width:0}
+  .cal-ev-title{font-size:14.5px; font-weight:600; overflow:hidden; text-overflow:ellipsis; white-space:nowrap}
+  .cal-ev-loc{font-size:12px; color:var(--muted); overflow:hidden; text-overflow:ellipsis; white-space:nowrap}
+  #cal-add{
+    position:absolute; right:18px; bottom:calc(18px + env(safe-area-inset-bottom));
+    width:52px; height:52px; border-radius:50%; border:0; font-size:24px; font-weight:600;
+    background:var(--gold-a); color:#1A130A; cursor:pointer; -webkit-tap-highlight-color:transparent;
+    box-shadow:0 6px 18px rgba(0,0,0,.35);
+  }
+  #cal-form-bg{position:fixed; inset:0; background:rgba(0,0,0,.5); display:none; z-index:52}
+  #cal-form-bg.open{display:block}
+  #cal-form{
+    position:fixed; left:14px; right:14px; top:50%; transform:translateY(-50%) scale(.96); z-index:53;
+    background:#1C1C1E; border-radius:16px; padding:18px 18px calc(18px + env(safe-area-inset-bottom));
+    display:none; flex-direction:column; gap:10px; max-height:80vh; overflow-y:auto;
+    opacity:0; transition:opacity .2s ease, transform .2s ease;
+  }
+  #cal-form.open{display:flex; opacity:1; transform:translateY(-50%) scale(1)}
+  @media (prefers-reduced-motion: reduce){#cal-form{transition:none}}
+  #cal-form b{font-size:16px}
+  #cal-form label{display:flex; flex-direction:column; gap:5px; font-size:12.5px; color:var(--muted)}
+  #cal-form input{
+    font:inherit; font-size:15px; color:var(--ink); background:var(--surface);
+    border:0.5px solid var(--hairline); border-radius:10px; padding:9px 11px; box-sizing:border-box;
+  }
+  #cf-err{color:#FF453A; font-size:12.5px; min-height:1em}
+  #cf-row{display:flex; gap:8px}
+  #cf-delete{flex:0 0 auto; padding:12px 14px; border-radius:12px}
   /* Horodatage discret sous chaque bulle */
   .mtime{display:block; font-size:10.5px; opacity:.5; margin-top:3px; line-height:1}
   .msg.user .mtime{text-align:right}
@@ -537,6 +645,7 @@
   <div class="sh-handle"></div>
   <div class="sh-group">
     <button class="sh-item" id="sh-emails" type="button"><span class="sh-ic">✉️</span><span class="sh-label">Emails</span><span class="badge-count" id="menu-email-badge" style="display:none"></span></button>
+    <button class="sh-item" id="sh-calendar" type="button"><span class="sh-ic">📅</span><span class="sh-label">Calendrier</span></button>
     <button class="sh-item" id="sh-docs" type="button"><span class="sh-ic">📄</span><span class="sh-label">Mes documents</span></button>
     <button class="sh-item" id="sh-push" type="button"><span class="sh-ic">🔔</span><span class="sh-label">Notifications</span><span class="sw" id="sw-push"><span class="sw-knob"></span></span></button>
   </div>
@@ -560,7 +669,8 @@
 
 <div id="emailsview">
   <div id="emails-head">
-    <b>✉️ Emails</b>
+    <button id="email-back" type="button" aria-label="Retour" style="display:none">←</button>
+    <b id="emails-title">✉️ Emails</b>
     <button id="emails-close" type="button" aria-label="Fermer">✕</button>
   </div>
   <div id="emails-tabs">
@@ -573,6 +683,36 @@
     <button id="emails-bulk-archive" type="button">🗄 Tout archiver</button>
   </div>
   <div id="emails-list"></div>
+  <div id="email-detail"></div>
+</div>
+
+<div id="calendarview">
+  <div id="cal-head">
+    <b id="cal-title">📅 Calendrier</b>
+    <button id="cal-close" type="button" aria-label="Fermer">✕</button>
+  </div>
+  <div id="cal-nav">
+    <button id="cal-prev" type="button" aria-label="Mois précédent">‹</button>
+    <span id="cal-month-label"></span>
+    <button id="cal-next" type="button" aria-label="Mois suivant">›</button>
+  </div>
+  <div id="cal-grid"></div>
+  <div id="cal-day"></div>
+  <button id="cal-add" type="button" aria-label="Nouveau rendez-vous">＋</button>
+</div>
+<div id="cal-form-bg"></div>
+<div id="cal-form">
+  <b id="cal-form-title">Nouveau rendez-vous</b>
+  <label>Titre <input id="cf-titre" type="text" placeholder="Ex : RDV chantier Carignan"></label>
+  <label>Début <input id="cf-debut" type="datetime-local"></label>
+  <label>Fin <input id="cf-fin" type="datetime-local"></label>
+  <label>Lieu (optionnel) <input id="cf-lieu" type="text" placeholder="Adresse ou nom du lieu"></label>
+  <div id="cf-err"></div>
+  <div id="cf-row">
+    <button id="cf-delete" type="button" class="vc-no" style="display:none">🗑 Supprimer</button>
+    <button id="cf-save" type="button" class="ed-send">Proposer</button>
+  </div>
+  <button id="cf-cancel" type="button" class="vc-edit">Annuler</button>
 </div>
 
 <div id="msgSheetbg"></div>
@@ -586,7 +726,7 @@
 
 <script>
 (function(){
-  var APPV = 'v2.33';
+  var APPV = 'v2.34';
 
   // ---- Mise à jour automatique (contourne le cache GitHub Pages) ----
   function checkUpdate(){
@@ -1125,6 +1265,7 @@
   function emailRow(m){
     var row = document.createElement('div');
     row.className = 'email-row';
+    row.style.cursor = 'pointer';
     var top = document.createElement('div'); top.className = 'email-top';
     var nom = document.createElement('span'); nom.className = 'email-nom'; nom.textContent = m.nom;
     var time = document.createElement('span'); time.className = 'email-time'; time.textContent = fmtRelative(m.date_ms);
@@ -1136,20 +1277,146 @@
     if (m.categorie !== 'spam'){
       var replyBtn = document.createElement('button');
       replyBtn.type = 'button'; replyBtn.className = 'email-act-btn'; replyBtn.textContent = '↩️'; replyBtn.setAttribute('aria-label', 'Répondre');
-      replyBtn.addEventListener('click', function(){ emailReply(m.id, replyBtn); });
+      replyBtn.addEventListener('click', function(e){ e.stopPropagation(); emailReply(m.id, replyBtn); });
       acts.appendChild(replyBtn);
     }
     var doneBtn = document.createElement('button');
     doneBtn.type = 'button'; doneBtn.className = 'email-act-btn'; doneBtn.textContent = '✅'; doneBtn.setAttribute('aria-label', 'Marquer traité');
     var archBtn = document.createElement('button');
     archBtn.type = 'button'; archBtn.className = 'email-act-btn'; archBtn.textContent = '🗄'; archBtn.setAttribute('aria-label', 'Archiver');
-    doneBtn.addEventListener('click', function(){ emailAction(m.id, 'traite', row); });
-    archBtn.addEventListener('click', function(){ emailAction(m.id, 'archive', row); });
+    doneBtn.addEventListener('click', function(e){ e.stopPropagation(); emailAction(m.id, 'traite', row); });
+    archBtn.addEventListener('click', function(e){ e.stopPropagation(); emailAction(m.id, 'archive', row); });
     acts.appendChild(doneBtn); acts.appendChild(archBtn);
     bottom.appendChild(box); bottom.appendChild(acts);
     row.appendChild(top); row.appendChild(obj); row.appendChild(bottom);
+    row.addEventListener('click', function(){ emailOpenDetail(m); });
     return row;
   }
+
+  // ---- Detail d'un email : corps complet + reponse par texte ou dictee ----
+  var emailDetailEl = document.getElementById('email-detail');
+  var emailsTitleEl = document.getElementById('emails-title');
+  var emailBackBtn = document.getElementById('email-back');
+  var emailsTabsEl = document.getElementById('emails-tabs');
+
+  function emailResetDetail(){
+    emailDetailEl.classList.remove('open');
+    emailDetailEl.innerHTML = '';
+    emailsList.style.display = '';
+    emailsTabsEl.style.display = '';
+    emailBackBtn.style.display = 'none';
+    emailsTitleEl.textContent = '✉️ Emails';
+  }
+
+  function fmtFullDate(iso){
+    var d = new Date(iso);
+    if (isNaN(d.getTime())) return '';
+    return d.toLocaleString('fr-FR', { day:'2-digit', month:'2-digit', year:'numeric', hour:'2-digit', minute:'2-digit' });
+  }
+
+  function wireEmailDictation(btn, textarea){
+    var erec = null, echunks = [], emime = '';
+    btn.addEventListener('click', function(){
+      if (erec && erec.state === 'recording'){ erec.stop(); return; }
+      navigator.mediaDevices.getUserMedia({ audio:true }).then(function(stream){
+        emime = pickMime();
+        erec = new MediaRecorder(stream, emime ? { mimeType: emime } : undefined);
+        echunks = [];
+        erec.ondataavailable = function(e){ if (e.data && e.data.size) echunks.push(e.data); };
+        erec.onstop = function(){
+          stream.getTracks().forEach(function(t){ t.stop(); });
+          btn.classList.remove('rec');
+          var blob = new Blob(echunks, { type: emime || 'audio/webm' });
+          if (blob.size < 1500) return;
+          btn.disabled = true;
+          var fr = new FileReader();
+          fr.onload = function(){
+            var b64 = String(fr.result).split(',')[1] || '';
+            post({ type:'transcribe', audio:b64, mime: blob.type }, function(r){
+              btn.disabled = false;
+              var t = (r.transcription || '').trim();
+              if (t) textarea.value = (textarea.value.trim() ? textarea.value.trim() + ' ' : '') + t;
+              else toast('Rien entendu, réessaie');
+            }, function(err){ btn.disabled = false; toast(err || 'Transcription impossible'); });
+          };
+          fr.readAsDataURL(blob);
+        };
+        erec.start();
+        btn.classList.add('rec');
+        setTimeout(function(){ if (erec && erec.state === 'recording') erec.stop(); }, 90000);
+      }).catch(function(){
+        toast('Micro refusé — tape ta réponse ou utilise la dictée du clavier.');
+      });
+    });
+  }
+
+  function renderEmailDetail(j){
+    emailDetailEl.innerHTML = '';
+    var meta = document.createElement('div'); meta.className = 'ed-meta';
+    var subj = document.createElement('div'); subj.className = 'ed-subject'; subj.textContent = j.subject || '(sans objet)';
+    var l1 = document.createElement('div'); l1.className = 'ed-line'; l1.textContent = 'De : ' + (j.from || '');
+    var l2 = document.createElement('div'); l2.className = 'ed-line'; l2.textContent = fmtFullDate(j.date) || fmtRelative(j.dateMs);
+    meta.appendChild(subj); meta.appendChild(l1); meta.appendChild(l2);
+    emailDetailEl.appendChild(meta);
+
+    var body = document.createElement('div'); body.className = 'ed-body'; body.textContent = j.bodyText || '';
+    emailDetailEl.appendChild(body);
+
+    if (j.attachments && j.attachments.length){
+      var wrap = document.createElement('div'); wrap.className = 'ed-attachments';
+      j.attachments.forEach(function(a){
+        var link = document.createElement('a'); link.className = 'vc-attach';
+        link.href = 'https://mat22.app.n8n.cloud' + a.url + '&code=' + encodeURIComponent(String(read('jarvisCode') || '').trim());
+        link.target = '_blank'; link.rel = 'noopener';
+        var ic = document.createElement('span'); ic.className = 'vc-attach-ic'; ic.textContent = '📎';
+        var txt = document.createElement('span'); txt.className = 'vc-attach-txt';
+        var b = document.createElement('b'); b.textContent = a.filename;
+        var sp = document.createElement('span'); sp.textContent = a.size ? Math.round(a.size / 1024) + ' Ko' : '';
+        txt.appendChild(b); txt.appendChild(sp);
+        link.appendChild(ic); link.appendChild(txt);
+        wrap.appendChild(link);
+      });
+      emailDetailEl.appendChild(wrap);
+    }
+
+    var reply = document.createElement('div'); reply.className = 'ed-reply';
+    var ta = document.createElement('textarea'); ta.placeholder = 'Écris ta réponse…';
+    var hint = document.createElement('div'); hint.className = 'ed-hint'; hint.textContent = 'Ta réponse sera proposée à la validation avant tout envoi.';
+    var row = document.createElement('div'); row.className = 'ed-reply-row';
+    var micBtn = document.createElement('button'); micBtn.type = 'button'; micBtn.className = 'ed-mic'; micBtn.textContent = '🎤'; micBtn.setAttribute('aria-label', 'Dicter');
+    var sendBtn = document.createElement('button'); sendBtn.type = 'button'; sendBtn.className = 'ed-send'; sendBtn.textContent = 'Envoyer la réponse';
+    row.appendChild(micBtn); row.appendChild(sendBtn);
+    reply.appendChild(ta); reply.appendChild(hint); reply.appendChild(row);
+    emailDetailEl.appendChild(reply);
+
+    wireEmailDictation(micBtn, ta);
+
+    sendBtn.addEventListener('click', function(){
+      var texte = ta.value.trim();
+      if (!texte){ toast('Écris ou dicte ta réponse d’abord'); return; }
+      sendBtn.disabled = true; micBtn.disabled = true;
+      post({ type:'email-reply', id: j.id, texte: texte }, function(r){
+        sendBtn.disabled = false; micBtn.disabled = false;
+        emailsClose();
+        bubble('↩️ Ta réponse est prête à valider ci-dessous.', 'info');
+        renderExtras(r);
+      }, function(err){ sendBtn.disabled = false; micBtn.disabled = false; toast(err || 'Impossible de préparer la réponse'); });
+    });
+  }
+
+  function emailOpenDetail(m){
+    emailsList.style.display = 'none';
+    emailsTabsEl.style.display = 'none';
+    emailsBulkBar.style.display = 'none';
+    emailBackBtn.style.display = 'flex';
+    emailsTitleEl.textContent = 'Email';
+    emailDetailEl.classList.add('open');
+    emailDetailEl.innerHTML = '<p id="emails-loading">Chargement…</p>';
+    post({ type:'email-detail', id: m.id }, function(j){
+      renderEmailDetail(j);
+    }, function(err){ emailDetailEl.innerHTML = '<p id="emails-empty">' + (err || 'Impossible de charger ce mail.') + '</p>'; });
+  }
+  emailBackBtn.addEventListener('click', emailResetDetail);
 
   function activeEmails(){ return emailsAll.filter(function(m){ return m.statut !== 'traite'; }); }
 
@@ -1238,6 +1505,7 @@
 
   function emailsClose(){ emailsview.classList.remove('open'); }
   function emailsOpen(){
+    emailResetDetail();
     emailsview.classList.add('open');
     emailsList.innerHTML = '<p id="emails-loading">Chargement…</p>';
     post({ type:'emails' }, function(j){
@@ -1248,6 +1516,166 @@
   }
   document.getElementById('sh-emails').addEventListener('click', function(){ sheetOpen(false); emailsOpen(); });
   document.getElementById('emails-close').addEventListener('click', emailsClose);
+
+  // ---- Calendrier premium (mois, custom vanilla, CRUD complet via cartes de validation) ----
+  var calendarview = document.getElementById('calendarview');
+  var calGrid = document.getElementById('cal-grid');
+  var calDayEl = document.getElementById('cal-day');
+  var calMonthLabel = document.getElementById('cal-month-label');
+  var calCurrentMonth = new Date();
+  var calSelectedKey = '';
+  var calEvents = [];
+  var calFormBg = document.getElementById('cal-form-bg');
+  var calForm = document.getElementById('cal-form');
+  var calEditingId = '';
+  var CAL_DOW = ['Lun','Mar','Mer','Jeu','Ven','Sam','Dim'];
+
+  function pad2(n){ return ('0' + n).slice(-2); }
+  function calDateKey(d){ return d.getFullYear() + '-' + pad2(d.getMonth() + 1) + '-' + pad2(d.getDate()); }
+  function calDtLocal(d){ return calDateKey(d) + 'T' + pad2(d.getHours()) + ':' + pad2(d.getMinutes()); }
+  function calMonthParam(d){ return d.getFullYear() + '-' + pad2(d.getMonth() + 1); }
+
+  function calRenderGrid(){
+    calGrid.innerHTML = '';
+    CAL_DOW.forEach(function(d){ var e = document.createElement('div'); e.className = 'cal-dow'; e.textContent = d; calGrid.appendChild(e); });
+    var y = calCurrentMonth.getFullYear(), m = calCurrentMonth.getMonth();
+    var first = new Date(y, m, 1);
+    var startOffset = (first.getDay() + 6) % 7; // 0 = lundi
+    var daysInMonth = new Date(y, m + 1, 0).getDate();
+    var todayKey = calDateKey(new Date());
+    var byDay = {};
+    calEvents.forEach(function(ev){
+      var d = new Date(ev.start);
+      if (isNaN(d.getTime())) return;
+      var k = calDateKey(d);
+      (byDay[k] = byDay[k] || []).push(ev);
+    });
+    for (var i = 0; i < startOffset; i++){ var pad = document.createElement('div'); pad.className = 'cal-cell pad'; calGrid.appendChild(pad); }
+    for (var day = 1; day <= daysInMonth; day++){
+      var d2 = new Date(y, m, day);
+      var k2 = calDateKey(d2);
+      var cell = document.createElement('div'); cell.className = 'cal-cell';
+      if (k2 === todayKey) cell.classList.add('today');
+      if (k2 === calSelectedKey) cell.classList.add('selected');
+      var num = document.createElement('div'); num.className = 'cal-daynum'; num.textContent = day;
+      cell.appendChild(num);
+      var evs = byDay[k2] || [];
+      if (evs.length){
+        var dots = document.createElement('div'); dots.className = 'cal-dots';
+        for (var di = 0; di < Math.min(3, evs.length); di++){ var dot = document.createElement('span'); dot.className = 'cal-dot'; dots.appendChild(dot); }
+        cell.appendChild(dots);
+      }
+      cell.addEventListener('click', (function(k){ return function(){ calSelectedKey = k; calRenderGrid(); calRenderDay(); }; })(k2));
+      calGrid.appendChild(cell);
+    }
+  }
+
+  function calRenderDay(){
+    calDayEl.innerHTML = '';
+    var evs = calEvents.filter(function(ev){ var d = new Date(ev.start); return !isNaN(d.getTime()) && calDateKey(d) === calSelectedKey; });
+    evs.sort(function(a, b){ return new Date(a.start) - new Date(b.start); });
+    if (!evs.length){
+      var p = document.createElement('p'); p.id = 'cal-day-empty'; p.textContent = 'Aucun rendez-vous ce jour-là.';
+      calDayEl.appendChild(p);
+      return;
+    }
+    evs.forEach(function(ev){
+      var row = document.createElement('div'); row.className = 'cal-ev';
+      var t = document.createElement('div'); t.className = 'cal-ev-time';
+      t.textContent = ev.allDay ? 'Jour' : new Date(ev.start).toLocaleTimeString('fr-FR', { hour: '2-digit', minute: '2-digit' });
+      var info = document.createElement('div'); info.className = 'cal-ev-info';
+      var ti = document.createElement('div'); ti.className = 'cal-ev-title'; ti.textContent = ev.title;
+      info.appendChild(ti);
+      if (ev.location){ var loc = document.createElement('div'); loc.className = 'cal-ev-loc'; loc.textContent = ev.location; info.appendChild(loc); }
+      row.appendChild(t); row.appendChild(info);
+      row.addEventListener('click', function(){ calOpenForm('edit', ev); });
+      calDayEl.appendChild(row);
+    });
+  }
+
+  function calLoadMonth(){
+    post({ type: 'calendar-month', month: calMonthParam(calCurrentMonth) }, function(j){
+      calEvents = j.events || [];
+      calMonthLabel.textContent = j.moisLabel || '';
+      calRenderGrid();
+      calRenderDay();
+    }, function(err){ calDayEl.innerHTML = '<p id="cal-day-empty">' + (err || 'Impossible de charger le calendrier.') + '</p>'; });
+  }
+
+  document.getElementById('cal-prev').addEventListener('click', function(){
+    calCurrentMonth = new Date(calCurrentMonth.getFullYear(), calCurrentMonth.getMonth() - 1, 1);
+    calLoadMonth();
+  });
+  document.getElementById('cal-next').addEventListener('click', function(){
+    calCurrentMonth = new Date(calCurrentMonth.getFullYear(), calCurrentMonth.getMonth() + 1, 1);
+    calLoadMonth();
+  });
+
+  function calOpenForm(mode, ev){
+    calEditingId = mode === 'edit' ? ev.id : '';
+    document.getElementById('cal-form-title').textContent = mode === 'edit' ? 'Modifier le rendez-vous' : 'Nouveau rendez-vous';
+    document.getElementById('cf-titre').value = mode === 'edit' ? ev.title : '';
+    var base;
+    if (mode === 'edit') base = new Date(ev.start);
+    else {
+      base = new Date();
+      if (calSelectedKey){ var parts = calSelectedKey.split('-'); base = new Date(+parts[0], +parts[1] - 1, +parts[2], base.getHours(), 0, 0); }
+      base.setMinutes(0, 0, 0);
+      base.setHours(base.getHours() + 1);
+    }
+    var end = mode === 'edit' ? new Date(ev.end) : new Date(base.getTime() + 3600000);
+    document.getElementById('cf-debut').value = calDtLocal(base);
+    document.getElementById('cf-fin').value = calDtLocal(end);
+    document.getElementById('cf-lieu').value = mode === 'edit' ? (ev.location || '') : '';
+    document.getElementById('cf-err').textContent = '';
+    document.getElementById('cf-delete').style.display = mode === 'edit' ? '' : 'none';
+    calFormBg.classList.add('open');
+    calForm.classList.add('open');
+  }
+  function calCloseForm(){ calFormBg.classList.remove('open'); calForm.classList.remove('open'); }
+  calFormBg.addEventListener('click', calCloseForm);
+  document.getElementById('cf-cancel').addEventListener('click', calCloseForm);
+  document.getElementById('cal-add').addEventListener('click', function(){ calOpenForm('create', null); });
+
+  function calPropose(payload, okMsg){
+    document.getElementById('cf-err').textContent = '';
+    post(payload, function(r){
+      if (r.error){ document.getElementById('cf-err').textContent = r.error; return; }
+      calCloseForm();
+      calendarClose();
+      bubble(okMsg, 'info');
+      renderExtras(r);
+    }, function(err){ document.getElementById('cf-err').textContent = err || 'Impossible de préparer ce rendez-vous.'; });
+  }
+  document.getElementById('cf-save').addEventListener('click', function(){
+    var titre = document.getElementById('cf-titre').value.trim();
+    var debut = document.getElementById('cf-debut').value;
+    var fin = document.getElementById('cf-fin').value;
+    var lieu = document.getElementById('cf-lieu').value.trim();
+    if (!titre){ document.getElementById('cf-err').textContent = 'Le titre est obligatoire.'; return; }
+    if (!debut || !fin){ document.getElementById('cf-err').textContent = 'Indique un début et une fin.'; return; }
+    calPropose({
+      type: 'calendar-propose', calAction: calEditingId ? 'update' : 'create',
+      titre: titre, debut: debut + ':00', fin: fin + ':00', lieu: lieu, eventId: calEditingId
+    }, '📅 Ta proposition de rendez-vous est prête à valider.');
+  });
+  document.getElementById('cf-delete').addEventListener('click', function(){
+    if (!calEditingId) return;
+    calPropose({ type: 'calendar-propose', calAction: 'delete', titre: document.getElementById('cf-titre').value.trim(), eventId: calEditingId },
+      '📅 Ta demande de suppression est prête à valider.');
+  });
+
+  function calendarClose(){ calendarview.classList.remove('open'); calCloseForm(); }
+  function calendarOpen(){
+    calendarview.classList.add('open');
+    calCurrentMonth = new Date();
+    calSelectedKey = calDateKey(new Date());
+    calGrid.innerHTML = '';
+    calDayEl.innerHTML = '<p id="cal-day-empty">Chargement…</p>';
+    calLoadMonth();
+  }
+  document.getElementById('sh-calendar').addEventListener('click', function(){ sheetOpen(false); calendarOpen(); });
+  document.getElementById('cal-close').addEventListener('click', calendarClose);
 
   // Badge du menu = nombre d'emails "important" pas encore traites (vient de la reponse history)
   var menuEmailBadge = document.getElementById('menu-email-badge');
