@@ -317,9 +317,15 @@
   .doc-folder-nom{flex:1; font-size:15.5px; font-weight:600}
   .doc-folder-count{font-size:13px; color:var(--muted); background:var(--surface); border-radius:99px; padding:2px 9px; flex:0 0 auto}
   .doc-folder-chev{font-size:18px; color:var(--muted); flex:0 0 auto}
-  /* Panneau plein ecran "Emails" */
+  /* Panneau plein ecran "Emails" — theme CLAIR dedie façon Mail iOS (le reste de l'app reste sombre :
+     les couleurs sont re-definies en variables locales sur #emailsview, donc tous les elements
+     enfants qui utilisent deja var(--bg)/var(--surface)/var(--ink)/var(--muted)/var(--hairline)
+     basculent automatiquement en clair sans dupliquer leurs regles). */
   #emailsview{
-    position:fixed; inset:0; z-index:50; background:var(--bg);
+    --bg:#F2F2F7; --surface:#FFFFFF; --bubble:#FFFFFF;
+    --hairline:rgba(60,60,67,.29); --ink:#000000; --muted:#8E8E93;
+    --blue:#007AFF; --ok:#34C759; --no:#FF3B30;
+    position:fixed; inset:0; z-index:50; background:var(--bg); color:var(--ink);
     display:none; flex-direction:column;
     transform:translateY(100%); transition:transform .28s cubic-bezier(.2,.9,.25,1);
   }
@@ -329,73 +335,91 @@
     flex:0 0 auto; display:flex; align-items:center; gap:10px;
     padding:calc(10px + env(safe-area-inset-top)) 14px 12px;
     border-bottom:0.5px solid var(--hairline);
+    background:rgba(247,247,248,.92);
+    -webkit-backdrop-filter:saturate(180%) blur(20px); backdrop-filter:saturate(180%) blur(20px);
   }
-  #emails-head b{font-size:16px; flex:1}
-  #emails-close{
+  #emails-head b{font-size:17px; font-weight:700; flex:1}
+  #emails-close, #email-back{
     width:32px; height:32px; border-radius:50%; border:0; flex:0 0 auto;
-    background:var(--surface); color:var(--ink); font-size:16px;
+    background:#E3E3E8; color:#3C3C43; font-size:16px;
     display:flex; align-items:center; justify-content:center; cursor:pointer;
     -webkit-tap-highlight-color:transparent;
   }
-  #emails-tabs{flex:0 0 auto; display:flex; gap:6px; padding:10px 14px; border-bottom:0.5px solid var(--hairline)}
+  /* Selecteur segmente façon iOS (remplace les 3 boutons separes) */
+  #emails-tabs{
+    flex:0 0 auto; display:flex; gap:2px; margin:10px 14px 8px; padding:2px;
+    background:#E3E3E8; border-radius:9px;
+  }
   #emails-bulkbar{
     display:none; align-items:center; justify-content:space-between; gap:10px;
     padding:10px 14px; border-bottom:0.5px solid var(--hairline);
   }
   #emails-bulk-count{font-size:13px; color:var(--muted)}
   #emails-bulk-archive{
-    font:inherit; font-size:13px; font-weight:600; color:#1A130A;
-    background:var(--gold-a); border:none; border-radius:10px; padding:8px 12px;
+    font:inherit; font-size:13px; font-weight:600; color:#fff;
+    background:var(--no); border:none; border-radius:10px; padding:8px 12px;
     cursor:pointer; -webkit-tap-highlight-color:transparent; flex:0 0 auto;
   }
   .etab{
-    flex:1; font:inherit; font-size:12px; font-weight:600; color:var(--muted); letter-spacing:-.01em;
-    background:var(--surface); border:none; border-radius:11px; padding:9px 3px; cursor:pointer;
+    flex:1; font:inherit; font-size:12.5px; font-weight:590; color:#3C3C43; opacity:.68; letter-spacing:-.01em;
+    background:transparent; border:none; border-radius:7px; padding:7px 3px; cursor:pointer;
     -webkit-tap-highlight-color:transparent; white-space:nowrap; overflow:hidden; text-overflow:ellipsis;
+    transition:background .15s ease, opacity .15s ease;
   }
-  .etab.active{background:var(--gold-a); color:#1A130A}
+  .etab.active{background:#fff; color:#000; opacity:1; box-shadow:0 1px 3px rgba(0,0,0,.16)}
   .etab-count{opacity:.75; font-weight:500}
-  #emails-list{flex:1; overflow-y:auto; -webkit-overflow-scrolling:touch; padding:0 14px calc(20px + env(safe-area-inset-bottom))}
+  #emails-list{flex:1; overflow-y:auto; -webkit-overflow-scrolling:touch; padding:0 0 calc(20px + env(safe-area-inset-bottom))}
   #emails-empty, #emails-loading{color:var(--muted); text-align:center; padding:40px 20px; font-size:14px}
-  .email-row{padding:12px 4px; border-top:0.5px solid rgba(84,84,88,.4)}
-  .email-row:first-child{border-top:none}
-  .email-top{display:flex; align-items:baseline; gap:8px}
-  .email-nom{font-size:15px; font-weight:600; flex:1; min-width:0; white-space:nowrap; overflow:hidden; text-overflow:ellipsis}
-  .email-time{font-size:11.5px; color:var(--muted); flex:0 0 auto}
-  .email-objet{font-size:13.5px; color:var(--muted); margin-top:2px; white-space:nowrap; overflow:hidden; text-overflow:ellipsis}
-  .email-bottom{display:flex; align-items:center; justify-content:space-between; margin-top:6px}
-  .email-box{display:inline-block; font-size:10.5px; color:var(--gold-a); border:1px solid rgba(232,185,106,.4); border-radius:99px; padding:1.5px 7px}
-  .email-acts{display:flex; gap:6px}
-  .email-act-btn{
-    width:28px; height:28px; border-radius:50%; border:0; font-size:13px;
-    background:var(--surface); cursor:pointer; -webkit-tap-highlight-color:transparent;
+  /* Ligne swipeable façon Mail : .email-row (blanc) glisse par-dessus 2 boutons d'action toujours
+     presents en dessous (.er-done a gauche, .er-archive a droite) — meme principe que les listes
+     "tirer pour rafraichir" deja utilisees ailleurs dans l'app (touchstart/touchmove/touchend natifs,
+     aucune librairie de gestes). */
+  .email-row-wrap{position:relative; overflow:hidden}
+  .email-row-wrap:first-child .email-row{border-top:none}
+  .er-done, .er-archive{
+    position:absolute; top:0; bottom:0; width:96px; display:flex; align-items:center; justify-content:center;
+    gap:4px; color:#fff; font-size:13px; font-weight:600; border:none; -webkit-tap-highlight-color:transparent;
+  }
+  .er-done{left:0; background:var(--ok)}
+  .er-archive{right:0; background:var(--no)}
+  .email-row{
+    position:relative; z-index:1; background:var(--surface);
+    padding:11px 16px; border-top:0.5px solid rgba(60,60,67,.29); cursor:pointer;
+    -webkit-touch-callout:none; -webkit-user-select:none; user-select:none;
+    touch-action:pan-y; will-change:transform;
+  }
+  .email-top{display:flex; align-items:center; gap:7px}
+  .email-dot{width:8px; height:8px; border-radius:50%; background:var(--blue); flex:0 0 auto}
+  .email-nom{font-size:16px; font-weight:700; flex:1; min-width:0; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; color:#000}
+  .email-time{font-size:12.5px; color:var(--muted); flex:0 0 auto}
+  .email-objet{font-size:14.5px; color:#000; font-weight:500; margin-top:3px; white-space:nowrap; overflow:hidden; text-overflow:ellipsis}
+  .email-apercu{font-size:13.5px; color:var(--muted); margin-top:2px; white-space:nowrap; overflow:hidden; text-overflow:ellipsis}
+  .email-bottom{display:flex; align-items:center; justify-content:space-between; margin-top:6px; gap:8px}
+  .email-box{display:inline-block; font-size:10.5px; color:#636366; background:#EFEFF2; border-radius:99px; padding:2px 8px}
+  .email-reply-btn{
+    width:26px; height:26px; border-radius:50%; border:0; font-size:12px;
+    background:#EFEFF2; cursor:pointer; -webkit-tap-highlight-color:transparent; flex:0 0 auto; margin-left:auto;
   }
   /* Detail d'un email (corps complet + reponse texte/micro) */
-  #email-detail{flex:1; overflow-y:auto; -webkit-overflow-scrolling:touch; display:none; flex-direction:column; padding:0 14px calc(20px + env(safe-area-inset-bottom))}
+  #email-detail{flex:1; overflow-y:auto; -webkit-overflow-scrolling:touch; display:none; flex-direction:column; padding:0 16px calc(20px + env(safe-area-inset-bottom))}
   #email-detail.open{display:flex}
-  #email-back{
-    width:32px; height:32px; border-radius:50%; border:0; flex:0 0 auto;
-    background:var(--surface); color:var(--ink); font-size:16px;
-    display:flex; align-items:center; justify-content:center; cursor:pointer;
-    -webkit-tap-highlight-color:transparent;
-  }
-  .ed-meta{padding:14px 2px 10px; border-bottom:0.5px solid var(--hairline)}
-  .ed-subject{font-size:17px; font-weight:700; margin-bottom:6px; word-wrap:break-word}
+  .ed-meta{padding:14px 0 12px; border-bottom:0.5px solid var(--hairline)}
+  .ed-subject{font-size:19px; font-weight:700; margin-bottom:7px; word-wrap:break-word; color:#000}
   .ed-line{font-size:13px; color:var(--muted); margin-top:2px; word-wrap:break-word}
-  .ed-body{white-space:pre-wrap; word-wrap:break-word; font-size:14.5px; line-height:1.5; padding:14px 2px; color:var(--ink)}
-  .ed-attachments{display:flex; flex-direction:column; gap:8px; padding:0 2px 14px}
-  .ed-reply{border-top:0.5px solid var(--hairline); padding:14px 2px calc(14px + env(safe-area-inset-bottom)); display:flex; flex-direction:column; gap:8px}
+  .ed-body{white-space:pre-wrap; word-wrap:break-word; font-size:15px; line-height:1.5; padding:16px 0; color:#000}
+  .ed-attachments{display:flex; flex-direction:column; gap:8px; padding:0 0 16px}
+  .ed-reply{border-top:0.5px solid var(--hairline); padding:14px 0 calc(14px + env(safe-area-inset-bottom)); display:flex; flex-direction:column; gap:8px}
   .ed-reply textarea{
-    width:100%; min-height:80px; resize:vertical; font:inherit; font-size:14.5px;
-    background:var(--surface); color:var(--ink); border:0.5px solid var(--hairline);
+    width:100%; min-height:80px; resize:vertical; font:inherit; font-size:15px;
+    background:#EFEFF2; color:#000; border:0.5px solid var(--hairline);
     border-radius:12px; padding:10px 12px; box-sizing:border-box;
   }
   .ed-reply-row{display:flex; gap:8px}
   .ed-mic{
     width:44px; height:44px; border-radius:50%; border:0; flex:0 0 auto; font-size:18px;
-    background:var(--surface); color:var(--ink); cursor:pointer; -webkit-tap-highlight-color:transparent;
+    background:#EFEFF2; color:#000; cursor:pointer; -webkit-tap-highlight-color:transparent;
   }
-  .ed-mic.rec{background:#FF453A; color:#fff}
+  .ed-mic.rec{background:#FF3B30; color:#fff}
   .ed-mic:disabled,.ed-send:disabled{opacity:.45}
   .ed-send{
     flex:1; font:inherit; font-size:15px; font-weight:600; color:#1A130A;
@@ -403,6 +427,23 @@
     -webkit-tap-highlight-color:transparent;
   }
   .ed-hint{font-size:11.5px; color:var(--muted)}
+  /* Cartes de validation (brouillon reponse) et pieces jointes reutilisees telles quelles ici :
+     leurs fonds semi-transparents (pensés pour un fond noir) sont re-eclaircis pour le blanc. */
+  #emailsview .vc-resume{background:rgba(60,60,67,.06)}
+  #emailsview a.vc-attach{background:rgba(60,60,67,.06); border-color:var(--hairline)}
+  #emailsview .vc-attach b{color:#000}
+  #emailsview .vc-edit{color:var(--muted); border-color:var(--hairline)}
+  /* Toast avec bouton "Annuler" (archivage differe — voir archiveWithUndo) */
+  #toastUndo{
+    position:fixed; left:50%; bottom:max(90px, calc(90px + env(safe-area-inset-bottom)));
+    transform:translate(-50%,10px); background:rgba(40,40,42,.95); color:#fff;
+    font-size:13.5px; padding:9px 8px 9px 16px; border-radius:99px; z-index:61;
+    display:flex; align-items:center; gap:4px;
+    opacity:0; pointer-events:none; transition:opacity .2s ease, transform .2s ease;
+  }
+  #toastUndo.on{opacity:1; transform:translate(-50%,0); pointer-events:auto}
+  #toastUndo .tu-undo{font:inherit; font-weight:700; color:#7FC8FF; background:none; border:none; padding:7px 11px; cursor:pointer; -webkit-tap-highlight-color:transparent}
+  @media (prefers-reduced-motion: reduce){#toastUndo{transition:none}}
   /* Calendrier premium (mois, custom, sans lib externe) */
   #calendarview{
     position:fixed; inset:0; z-index:50; background:var(--bg);
@@ -782,10 +823,11 @@
   <button class="sh-item" id="msgCancel" type="button">Annuler</button>
 </div>
 <div id="toast"></div>
+<div id="toastUndo"><span class="tu-msg"></span><button type="button" class="tu-undo">Annuler</button></div>
 
 <script>
 (function(){
-  var APPV = 'v2.37';
+  var APPV = 'v2.38';
 
   // ---- Mise à jour automatique (contourne le cache GitHub Pages) ----
   function checkUpdate(){
@@ -1027,6 +1069,26 @@
     toastEl.classList.add('on');
     clearTimeout(toastTimer);
     toastTimer = setTimeout(function(){ toastEl.classList.remove('on'); }, 1600);
+  }
+
+  // ---- Toast avec "Annuler" (archivage d'email differe, cf. archiveWithUndo) ----
+  var toastUndoEl = document.getElementById('toastUndo');
+  var toastUndoMsgEl = toastUndoEl.querySelector('.tu-msg');
+  var toastUndoBtn = toastUndoEl.querySelector('.tu-undo');
+  var toastUndoTimer = null;
+  var toastUndoHandler = null;
+  function toastUndo(msg, onUndo){
+    clearTimeout(toastUndoTimer);
+    if (toastUndoHandler) toastUndoBtn.removeEventListener('click', toastUndoHandler);
+    toastUndoMsgEl.textContent = msg;
+    toastUndoHandler = function(){
+      toastUndoEl.classList.remove('on');
+      clearTimeout(toastUndoTimer);
+      onUndo();
+    };
+    toastUndoBtn.addEventListener('click', toastUndoHandler);
+    toastUndoEl.classList.add('on');
+    toastUndoTimer = setTimeout(function(){ toastUndoEl.classList.remove('on'); }, 4200);
   }
 
   // ---- Feuille d'actions sur un message : copier / supprimer (appui long) ----
@@ -1331,35 +1393,174 @@
     return d.toLocaleDateString('fr-FR', { day:'2-digit', month:'2-digit' }) + ' ' + hhmm;
   }
 
+  // ---- Swipe façon Mail iOS sur chaque ligne (glisser = archiver / marquer traité) ----
+  // Geste tactile natif (touchstart/touchmove/touchend), meme principe que le "tirer pour
+  // rafraichir" deja utilise dans #chat plus bas dans ce fichier. Difference assumee avec ce
+  // pattern-la : ici on met a jour `row.style.transform` EN DIRECT pendant touchmove (pas
+  // seulement au relachement). C'est volontaire et sans rapport avec le bug connu de ce projet
+  // (une classe CSS qui change une propriete de LAYOUT comme `height`, en concurrence avec un
+  // scroll natif en cours) — `transform` est une propriete de composition (pas de layout), et le
+  // scroll vertical natif de la liste est explicitement coupe (touch-action:pan-y + verrouillage
+  // de direction ci-dessous) des qu'un glissement horizontal est detecte, donc aucune concurrence
+  // avec un scroll actif. A confirmer sur un vrai iPhone ; si un flicker apparaissait malgre tout,
+  // le repli connu est de ne plus toucher au style qu'au touchend (cf. gotcha #pullspin).
+  var openSwipeWrap = null;
+  function closeSwipeRow(wrap){
+    var row = wrap.querySelector('.email-row');
+    if (!row) return;
+    row.style.transition = 'transform .22s cubic-bezier(.2,.9,.25,1)';
+    row.style.transform = 'translateX(0px)';
+    wrap.dataset.openDir = '';
+    if (openSwipeWrap === wrap) openSwipeWrap = null;
+  }
+  function wireEmailSwipe(wrap, row, id){
+    var sx = 0, sy = 0, dx = 0, lock = null, width = 0, base = 0, moved = 0, active = false;
+    wrap.addEventListener('touchstart', function(e){
+      if (e.touches.length !== 1) return;
+      if (openSwipeWrap && openSwipeWrap !== wrap) closeSwipeRow(openSwipeWrap);
+      active = true; wrap._suppressClick = false;
+      sx = e.touches[0].clientX; sy = e.touches[0].clientY;
+      dx = 0; lock = null; moved = 0; width = wrap.offsetWidth;
+      base = wrap.dataset.openDir === 'left' ? -96 : (wrap.dataset.openDir === 'right' ? 96 : 0);
+      row.style.transition = 'none';
+    }, { passive:true });
+    wrap.addEventListener('touchmove', function(e){
+      if (!active || e.touches.length !== 1) return;
+      var ddx = e.touches[0].clientX - sx, ddy = e.touches[0].clientY - sy;
+      if (lock === null && (Math.abs(ddx) > 8 || Math.abs(ddy) > 8)){
+        lock = Math.abs(ddx) > Math.abs(ddy) ? 'x' : 'y';
+      }
+      if (lock !== 'x') return; // laisse le scroll vertical natif de la liste faire son travail
+      e.preventDefault();
+      moved = Math.max(moved, Math.abs(ddx));
+      var max = width * 0.85;
+      var x = base + ddx;
+      if (x > max) x = max + (x - max) * 0.15; // leger effet elastique au-dela
+      if (x < -max) x = -max + (x + max) * 0.15;
+      dx = x;
+      row.style.transform = 'translateX(' + x + 'px)';
+    }, { passive:false });
+    function end(){
+      active = false;
+      if (lock !== 'x'){ lock = null; return; }
+      wrap._suppressClick = moved > 6; // un vrai glissement ne doit pas aussi ouvrir le detail
+      var COMMIT = Math.max(130, width * 0.5);
+      row.style.transition = 'transform .22s cubic-bezier(.2,.9,.25,1)';
+      if (dx <= -COMMIT){ archiveWithUndo(id, wrap); }
+      else if (dx >= COMMIT){ doDone(id, wrap); }
+      else if (dx <= -48){ row.style.transform = 'translateX(-96px)'; wrap.dataset.openDir = 'left'; openSwipeWrap = wrap; }
+      else if (dx >= 48){ row.style.transform = 'translateX(96px)'; wrap.dataset.openDir = 'right'; openSwipeWrap = wrap; }
+      else { row.style.transform = 'translateX(0px)'; wrap.dataset.openDir = ''; if (openSwipeWrap === wrap) openSwipeWrap = null; }
+      lock = null;
+    }
+    wrap.addEventListener('touchend', end);
+    wrap.addEventListener('touchcancel', end);
+  }
+  function afterRowRemoved(){
+    updateEmailTabCounts();
+    refreshMenuBadgeFromEmails();
+    var items = activeEmails().filter(function(m){ return m.categorie === emailsTab; });
+    var showBulk = emailsTab === 'spam' && items.length > 0;
+    emailsBulkBar.style.display = showBulk ? 'flex' : 'none';
+    if (showBulk) emailsBulkCount.textContent = items.length + ' mail' + (items.length > 1 ? 's' : '') + ' à trier';
+    if (!items.length && !emailsList.children.length){
+      emailsList.innerHTML = '<p id="emails-empty">Rien ici.</p>';
+    }
+  }
+  function collapseRow(wrap, dir, cb){
+    if (openSwipeWrap === wrap) openSwipeWrap = null;
+    var h = wrap.offsetHeight;
+    var row = wrap.querySelector('.email-row');
+    wrap.style.maxHeight = h + 'px'; wrap.style.overflow = 'hidden';
+    if (row){ row.style.transition = 'transform .22s ease'; row.style.transform = 'translateX(' + (dir === 'left' ? '-100%' : '100%') + ')'; }
+    wrap.style.transition = 'opacity .22s ease';
+    wrap.style.opacity = '0';
+    setTimeout(function(){
+      wrap.style.transition = 'max-height .18s ease, margin .18s ease, padding .18s ease, border-width .18s ease';
+      wrap.style.maxHeight = '0px'; wrap.style.marginTop = '0'; wrap.style.marginBottom = '0';
+    }, 210);
+    setTimeout(function(){ wrap.remove(); if (cb) cb(); }, 420);
+  }
+  function doDone(id, wrap){
+    emailsAll = emailsAll.filter(function(m){ return String(m.id) !== String(id); });
+    collapseRow(wrap, 'right', afterRowRemoved);
+    post({ type:'email-action', id: id, action:'traite' }, function(){
+      toast('✅ Marqué traité');
+    }, function(err){ toast(err || 'Action impossible — recharge la liste'); });
+  }
+  function archiveWithUndo(id, wrap){
+    var idx = emailsAll.findIndex(function(m){ return String(m.id) === String(id); });
+    var removed = idx !== -1 ? emailsAll[idx] : null;
+    emailsAll = emailsAll.filter(function(m){ return String(m.id) !== String(id); });
+    collapseRow(wrap, 'left', afterRowRemoved);
+    // Archivage VRAIMENT differe : tant que la fenetre n'est pas ecoulee, AUCUN appel serveur
+    // n'a eu lieu -> "Annuler" restaure juste la ligne localement, sans avoir besoin d'une route
+    // n8n de restauration (qui n'existe pas pour les emails, contrairement aux doublons de docs).
+    var cancelled = false;
+    var timer = setTimeout(function(){
+      if (cancelled) return;
+      post({ type:'email-action', id: id, action:'archive' }, function(){}, function(err){
+        toast(err || 'Archivage impossible');
+        if (removed){ emailsAll.push(removed); updateEmailTabCounts(); renderEmailsTab(); refreshMenuBadgeFromEmails(); }
+      });
+    }, 4000);
+    toastUndo('🗄 Archivé', function(){
+      cancelled = true; clearTimeout(timer);
+      if (removed){ emailsAll.splice(Math.min(idx, emailsAll.length), 0, removed); }
+      updateEmailTabCounts();
+      renderEmailsTab();
+      refreshMenuBadgeFromEmails();
+    });
+  }
+
   function emailRow(m){
+    var wrap = document.createElement('div');
+    wrap.className = 'email-row-wrap';
+    wrap.dataset.id = m.id;
+
+    var done = document.createElement('button');
+    done.type = 'button'; done.className = 'er-done'; done.textContent = '✅ Traité';
+    var arch = document.createElement('button');
+    arch.type = 'button'; arch.className = 'er-archive'; arch.textContent = '🗄 Archiver';
+    wrap.appendChild(done); wrap.appendChild(arch);
+
     var row = document.createElement('div');
     row.className = 'email-row';
-    row.style.cursor = 'pointer';
     var top = document.createElement('div'); top.className = 'email-top';
+    if (m.categorie === 'important'){
+      var dot = document.createElement('span'); dot.className = 'email-dot';
+      top.appendChild(dot);
+    }
     var nom = document.createElement('span'); nom.className = 'email-nom'; nom.textContent = m.nom;
     var time = document.createElement('span'); time.className = 'email-time'; time.textContent = fmtRelative(m.date_ms);
     top.appendChild(nom); top.appendChild(time);
     var obj = document.createElement('div'); obj.className = 'email-objet'; obj.textContent = m.objet;
     var bottom = document.createElement('div'); bottom.className = 'email-bottom';
     var box = document.createElement('span'); box.className = 'email-box'; box.textContent = CAT_LABEL_BOX[m.boite] || m.boite;
-    var acts = document.createElement('span'); acts.className = 'email-acts';
+    bottom.appendChild(box);
     if (m.categorie !== 'spam'){
       var replyBtn = document.createElement('button');
-      replyBtn.type = 'button'; replyBtn.className = 'email-act-btn'; replyBtn.textContent = '↩️'; replyBtn.setAttribute('aria-label', 'Répondre');
+      replyBtn.type = 'button'; replyBtn.className = 'email-reply-btn'; replyBtn.textContent = '↩️'; replyBtn.setAttribute('aria-label', 'Répondre (brouillon IA)');
       replyBtn.addEventListener('click', function(e){ e.stopPropagation(); emailReply(m.id, replyBtn); });
-      acts.appendChild(replyBtn);
+      bottom.appendChild(replyBtn);
     }
-    var doneBtn = document.createElement('button');
-    doneBtn.type = 'button'; doneBtn.className = 'email-act-btn'; doneBtn.textContent = '✅'; doneBtn.setAttribute('aria-label', 'Marquer traité');
-    var archBtn = document.createElement('button');
-    archBtn.type = 'button'; archBtn.className = 'email-act-btn'; archBtn.textContent = '🗄'; archBtn.setAttribute('aria-label', 'Archiver');
-    doneBtn.addEventListener('click', function(e){ e.stopPropagation(); emailAction(m.id, 'traite', row); });
-    archBtn.addEventListener('click', function(e){ e.stopPropagation(); emailAction(m.id, 'archive', row); });
-    acts.appendChild(doneBtn); acts.appendChild(archBtn);
-    bottom.appendChild(box); bottom.appendChild(acts);
-    row.appendChild(top); row.appendChild(obj); row.appendChild(bottom);
-    row.addEventListener('click', function(){ emailOpenDetail(m); });
-    return row;
+    row.appendChild(top); row.appendChild(obj);
+    if (m.extrait){
+      var apercu = document.createElement('div'); apercu.className = 'email-apercu'; apercu.textContent = m.extrait;
+      row.appendChild(apercu);
+    }
+    row.appendChild(bottom);
+    wrap.appendChild(row);
+
+    done.addEventListener('click', function(e){ e.stopPropagation(); doDone(m.id, wrap); });
+    arch.addEventListener('click', function(e){ e.stopPropagation(); archiveWithUndo(m.id, wrap); });
+    row.addEventListener('click', function(){
+      if (wrap._suppressClick){ wrap._suppressClick = false; return; }
+      if (wrap.dataset.openDir){ closeSwipeRow(wrap); return; }
+      emailOpenDetail(m);
+    });
+    wireEmailSwipe(wrap, row, m.id);
+    return wrap;
   }
 
   // ---- Detail d'un email : corps complet + reponse par texte ou dictee ----
@@ -1523,17 +1724,6 @@
     });
   });
 
-  function emailAction(id, action, rowEl){
-    if (rowEl) rowEl.style.opacity = '.4';
-    post({ type:'email-action', id: id, action: action }, function(){
-      emailsAll = emailsAll.filter(function(m){ return String(m.id) !== String(id); });
-      updateEmailTabCounts();
-      renderEmailsTab();
-      refreshMenuBadgeFromEmails();
-      toast(action === 'archive' ? '🗄 Archivé' : '✅ Marqué traité');
-    }, function(err){ if (rowEl) rowEl.style.opacity = '1'; toast(err || 'Action impossible'); });
-  }
-
   function emailReply(id, btnEl){
     if (btnEl) btnEl.disabled = true;
     post({ type:'email-reply', id: id }, function(j){
@@ -1585,6 +1775,8 @@
   }
   document.getElementById('sh-emails').addEventListener('click', function(){ sheetOpen(false); emailsOpen(); });
   document.getElementById('emails-close').addEventListener('click', emailsClose);
+  // Une ligne glissee-ouverte se referme si on defile la liste (comme dans Mail)
+  emailsList.addEventListener('scroll', function(){ if (openSwipeWrap) closeSwipeRow(openSwipeWrap); }, { passive:true });
 
   // ---- Calendrier premium (mois, custom vanilla, CRUD complet via cartes de validation) ----
   var calendarview = document.getElementById('calendarview');
