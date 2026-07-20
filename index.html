@@ -557,6 +557,26 @@
   #df-sug li:active{background:rgba(255,255,255,.1)}
   #df-row{display:flex; gap:8px}
   #cf-delete{flex:0 0 auto; padding:12px 14px; border-radius:12px}
+  /* Modal "nouvelle version installee -> reactiver les notifs ?" — au-dessus de tout le reste
+     (menu, panneaux plein ecran, callbar), pour etre impossible a manquer et bloquer l'interaction
+     avec le reste de l'app tant qu'il n'est pas ferme. */
+  #updModalBg{position:fixed; inset:0; background:rgba(0,0,0,.62); display:none; z-index:70}
+  #updModalBg.open{display:block}
+  #updModal{
+    position:fixed; left:22px; right:22px; top:50%; transform:translateY(-50%) scale(.96); z-index:71;
+    background:#1C1C1E; border-radius:18px; padding:26px 22px calc(20px + env(safe-area-inset-bottom));
+    display:none; flex-direction:column; align-items:center; text-align:center; gap:8px;
+    opacity:0; transition:opacity .2s ease, transform .2s ease;
+    box-shadow:0 24px 70px rgba(0,0,0,.55);
+    max-width:360px; margin:0 auto;
+  }
+  #updModal.open{display:flex; opacity:1; transform:translateY(-50%) scale(1)}
+  @media (prefers-reduced-motion: reduce){#updModal{transition:none}}
+  .upd-emoji{font-size:36px; line-height:1; margin-bottom:2px}
+  #updModal b{font-size:17.5px; font-weight:700; line-height:1.3}
+  #updModal p{font-size:14.5px; color:var(--muted); margin:2px 0 6px; line-height:1.42}
+  .upd-row{display:flex; gap:10px; width:100%; margin-top:8px}
+  .upd-row button{flex:1}
   /* Horodatage discret sous chaque bulle */
   .mtime{display:block; font-size:10.5px; opacity:.5; margin-top:3px; line-height:1}
   .msg.user .mtime{text-align:right}
@@ -815,6 +835,17 @@
   </div>
 </div>
 
+<div id="updModalBg"></div>
+<div id="updModal">
+  <div class="upd-emoji">🆕</div>
+  <b id="upd-title">Nouvelle version installée</b>
+  <p id="upd-text">Voulez-vous réactiver les notifications ?</p>
+  <div class="upd-row">
+    <button id="upd-no" type="button" class="vc-no">Non</button>
+    <button id="upd-yes" type="button" class="vc-ok">Oui</button>
+  </div>
+</div>
+
 <div id="msgSheetbg"></div>
 <div id="msgSheet">
   <div class="sh-handle"></div>
@@ -827,7 +858,7 @@
 
 <script>
 (function(){
-  var APPV = 'v2.38';
+  var APPV = 'v2.39';
 
   // ---- Mise à jour automatique (contourne le cache GitHub Pages) ----
   function checkUpdate(){
@@ -1146,6 +1177,7 @@
     app.style.display = 'flex';
     subline.textContent = (nom ? ('Assistant de ' + nom + ' — en ligne') : 'en ligne') + ' · ' + APPV + ' · H' + window.innerHeight + '/' + ((screen && screen.height) || '?');
     renderHistory(msgs, extras);
+    maybeOfferPushOnUpdate();
   }
 
   // ---- Login ----
@@ -1235,40 +1267,78 @@
     } catch(e){ setSwOn(false); pushCurrentSub = null; }
   }
   refreshPushToggle();
-  document.getElementById('sh-push').addEventListener('click', async function(){
+  // ---- Activation des notifications : SEULE implémentation (partagée par le bouton du menu
+  // ET le modal de mise à jour ci-dessous — jamais dupliquée). Ne gère QUE l'activation ;
+  // la désactivation reste dans le handler du menu (pas de bouton "désactiver" ailleurs). ----
+  async function activatePush(){
     if (!pushSupported){
-      sheetOpen(false);
-      bubble('Les notifications ne sont pas prises en charge sur ce navigateur.', 'err'); return;
+      bubble('Les notifications ne sont pas prises en charge sur ce navigateur.', 'err'); return false;
     }
     if (Notification.permission === 'denied'){
-      sheetOpen(false);
-      bubble('Notifications bloquées pour Jarvis — active-les dans les réglages du navigateur pour ce site, puis réessaie.', 'info'); return;
+      bubble('Notifications bloquées pour Jarvis — active-les dans les réglages du navigateur pour ce site, puis réessaie.', 'info'); return false;
     }
     swPush.classList.add('busy');
+    var ok = false;
     try {
-      if (pushCurrentSub){
-        // ---- Désactiver ----
+      var perm = await Notification.requestPermission();
+      if (perm === 'granted'){
+        var reg = await navigator.serviceWorker.ready;
+        var sub = await reg.pushManager.subscribe({ userVisibleOnly: true, applicationServerKey: urlB64ToUint8Array(VAPID_PUBLIC) });
+        var r = await fetch(API, { method:'POST', headers:{'Content-Type':'application/json'},
+          body: JSON.stringify({ type:'push-subscribe', code: String(read('jarvisCode')||'').trim(), subscription: sub.toJSON() }) });
+        var j = await r.json();
+        if (j && j.ok){ pushCurrentSub = sub; setSwOn(true); ok = true; }
+        else { try { await sub.unsubscribe(); } catch(e2){} setSwOn(false); bubble('Abonnement non confirmé, réessaie.', 'err'); }
+      }
+    } catch(e){ bubble('Notifications : ' + e.message, 'err'); refreshPushToggle(); }
+    swPush.classList.remove('busy');
+    return ok;
+  }
+  document.getElementById('sh-push').addEventListener('click', async function(){
+    if (pushCurrentSub){
+      // ---- Désactiver ----
+      if (!pushSupported) return;
+      swPush.classList.add('busy');
+      try {
         var endpoint = pushCurrentSub.endpoint;
         await pushCurrentSub.unsubscribe();
         pushCurrentSub = null;
         setSwOn(false);
         await fetch(API, { method:'POST', headers:{'Content-Type':'application/json'},
           body: JSON.stringify({ type:'push-unsubscribe', code: String(read('jarvisCode')||'').trim(), endpoint: endpoint }) });
-      } else {
-        // ---- Activer ----
-        var perm = await Notification.requestPermission();
-        if (perm !== 'granted'){ swPush.classList.remove('busy'); return; }
-        var reg = await navigator.serviceWorker.ready;
-        var sub = await reg.pushManager.subscribe({ userVisibleOnly: true, applicationServerKey: urlB64ToUint8Array(VAPID_PUBLIC) });
-        var r = await fetch(API, { method:'POST', headers:{'Content-Type':'application/json'},
-          body: JSON.stringify({ type:'push-subscribe', code: String(read('jarvisCode')||'').trim(), subscription: sub.toJSON() }) });
-        var j = await r.json();
-        if (j && j.ok){ pushCurrentSub = sub; setSwOn(true); }
-        else { try { await sub.unsubscribe(); } catch(e2){} setSwOn(false); bubble('Abonnement non confirmé, réessaie.', 'err'); }
-      }
-    } catch(e){ bubble('Notifications : ' + e.message, 'err'); refreshPushToggle(); }
-    swPush.classList.remove('busy');
+      } catch(e){ bubble('Notifications : ' + e.message, 'err'); refreshPushToggle(); }
+      swPush.classList.remove('busy');
+      return;
+    }
+    if (!pushSupported || Notification.permission === 'denied') sheetOpen(false);
+    await activatePush();
   });
+
+  // ---- Modal "nouvelle version installée -> réactiver les notifications ?" ----
+  // N'apparaît qu'UNE fois par nouvelle version détectée (jarvisAppVersion en localStorage
+  // trace la dernière version vue sur CET appareil) et jamais si les notifs sont déjà actives.
+  var updBg = document.getElementById('updModalBg');
+  var updModal = document.getElementById('updModal');
+  var updTitle = document.getElementById('upd-title');
+  function updOpen(o){ updBg.classList.toggle('open', o); updModal.classList.toggle('open', o); }
+  document.getElementById('upd-yes').addEventListener('click', async function(){
+    updOpen(false);
+    await activatePush();
+  });
+  document.getElementById('upd-no').addEventListener('click', function(){ updOpen(false); });
+  updBg.addEventListener('click', function(){ updOpen(false); });
+  function maybeOfferPushOnUpdate(){
+    var seen = read('jarvisAppVersion');
+    if (seen === APPV) return; // deja vu cette version (ou deja propose pour elle)
+    store('jarvisAppVersion', APPV);
+    if (!seen) return; // premiere ouverture jamais faite sur cet appareil : pas une mise a jour
+    if (!pushSupported) return;
+    refreshPushToggle().then(function(){
+      if (pushCurrentSub) return; // notifs deja actives : ne pas interrompre
+      updTitle.textContent = '🆕 Nouvelle version ' + APPV + ' installée';
+      updOpen(true);
+    });
+  }
   document.getElementById('sh-logout').addEventListener('click', function(){
     store('jarvisCode',''); store('jarvisNom','');
     location.href = location.pathname;
