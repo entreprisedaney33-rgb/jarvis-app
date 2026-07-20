@@ -350,6 +350,19 @@
     flex:0 0 auto; display:flex; gap:2px; margin:10px 14px 8px; padding:2px;
     background:#E3E3E8; border-radius:9px;
   }
+  /* Selecteur de boite (compte) — meme famille visuelle que #emails-tabs, au-dessus :
+     on choisit d'abord le compte (comme un vrai client mail multi-comptes), puis le dossier. */
+  #emails-boxtabs{
+    flex:0 0 auto; display:flex; gap:2px; margin:10px 14px 0; padding:2px;
+    background:#E3E3E8; border-radius:9px;
+  }
+  .eboxtab{
+    flex:1; font:inherit; font-size:11.5px; font-weight:590; color:#3C3C43; opacity:.68; letter-spacing:-.01em;
+    background:transparent; border:none; border-radius:7px; padding:6px 3px; cursor:pointer;
+    -webkit-tap-highlight-color:transparent; white-space:nowrap; overflow:hidden; text-overflow:ellipsis;
+    transition:background .15s ease, opacity .15s ease;
+  }
+  .eboxtab.active{background:#fff; color:#000; opacity:1; box-shadow:0 1px 3px rgba(0,0,0,.16)}
   #emails-bulkbar{
     display:none; align-items:center; justify-content:space-between; gap:10px;
     padding:10px 14px; border-bottom:0.5px solid var(--hairline);
@@ -420,13 +433,26 @@
     background:#EFEFF2; color:#000; cursor:pointer; -webkit-tap-highlight-color:transparent;
   }
   .ed-mic.rec{background:#FF3B30; color:#fff}
-  .ed-mic:disabled,.ed-send:disabled{opacity:.45}
+  .ed-mic:disabled,.ed-send:disabled,.ed-attach:disabled{opacity:.45}
+  .ed-attach{
+    width:44px; height:44px; border-radius:50%; border:0; flex:0 0 auto; font-size:18px;
+    background:#EFEFF2; color:#000; cursor:pointer; -webkit-tap-highlight-color:transparent;
+  }
   .ed-send{
     flex:1; font:inherit; font-size:15px; font-weight:600; color:#1A130A;
     background:var(--gold-a); border:none; border-radius:12px; cursor:pointer;
     -webkit-tap-highlight-color:transparent;
   }
   .ed-hint{font-size:11.5px; color:var(--muted)}
+  .ed-pending-att{
+    display:flex; align-items:center; gap:8px; font-size:13px; color:#000;
+    background:#EFEFF2; border-radius:10px; padding:8px 10px;
+  }
+  .ed-pending-att span{flex:1; min-width:0; overflow:hidden; text-overflow:ellipsis; white-space:nowrap}
+  .ed-pending-att button{
+    border:0; background:transparent; color:var(--muted); font-size:15px; cursor:pointer;
+    -webkit-tap-highlight-color:transparent; flex:0 0 auto; padding:0 2px;
+  }
   /* Cartes de validation (brouillon reponse) et pieces jointes reutilisees telles quelles ici :
      leurs fonds semi-transparents (pensés pour un fond noir) sont re-eclaircis pour le blanc. */
   #emailsview .vc-resume{background:rgba(60,60,67,.06)}
@@ -773,6 +799,12 @@
     <b id="emails-title">✉️ Emails</b>
     <button id="emails-close" type="button" aria-label="Fermer">✕</button>
   </div>
+  <div id="emails-boxtabs">
+    <button class="eboxtab active" data-box="all" type="button">Toutes</button>
+    <button class="eboxtab" data-box="e" type="button">Perso</button>
+    <button class="eboxtab" data-box="a" type="button">Altaestima</button>
+    <button class="eboxtab" data-box="d" type="button">DAMATP</button>
+  </div>
   <div id="emails-tabs">
     <button class="etab active" data-cat="important" type="button">Important <span class="etab-count" id="etab-important-count"></span></button>
     <button class="etab" data-cat="neutre" type="button">Neutre <span class="etab-count" id="etab-neutre-count"></span></button>
@@ -858,7 +890,7 @@
 
 <script>
 (function(){
-  var APPV = 'v2.40';
+  var APPV = 'v2.41';
 
   // Debug : ?debug_modal=1 force l'affichage du modal "nouvelle version" sans attendre un vrai
   // déploiement. Capturé ICI, tout au début, car plus bas (login mémorisé, connexion) le code
@@ -1456,6 +1488,7 @@
   var emailsList = document.getElementById('emails-list');
   var emailsAll = [];
   var emailsTab = 'important';
+  var emailsBox = 'all';
   var CAT_LABEL_BOX = { e:'Perso', a:'Altaestima', d:'DAMATP' };
 
   function fmtRelative(ms){
@@ -1621,7 +1654,9 @@
     if (m.categorie !== 'spam'){
       var replyBtn = document.createElement('button');
       replyBtn.type = 'button'; replyBtn.className = 'email-reply-btn'; replyBtn.textContent = '↩️'; replyBtn.setAttribute('aria-label', 'Répondre (brouillon IA)');
-      replyBtn.addEventListener('click', function(e){ e.stopPropagation(); emailReply(m.id, replyBtn); });
+      // Ouvre directement le mail (le brouillon IA s'y pre-redige tout seul, cf. emailOpenDetail) —
+      // c'est desormais le seul point d'entree pour repondre, plus de carte de validation separee.
+      replyBtn.addEventListener('click', function(e){ e.stopPropagation(); emailOpenDetail(m); });
       bottom.appendChild(replyBtn);
     }
     row.appendChild(top); row.appendChild(obj);
@@ -1730,27 +1765,81 @@
     }
 
     var reply = document.createElement('div'); reply.className = 'ed-reply';
-    var ta = document.createElement('textarea'); ta.placeholder = 'Écris ta réponse…';
-    var hint = document.createElement('div'); hint.className = 'ed-hint'; hint.textContent = 'Ta réponse sera proposée à la validation avant tout envoi.';
+    var ta = document.createElement('textarea'); ta.placeholder = 'Rédaction du brouillon…';
+    var hint = document.createElement('div'); hint.className = 'ed-hint'; hint.textContent = 'Relis/modifie le brouillon puis touche Envoyer — c’est ta validation.';
+    var attWrap = document.createElement('div');
     var row = document.createElement('div'); row.className = 'ed-reply-row';
     var micBtn = document.createElement('button'); micBtn.type = 'button'; micBtn.className = 'ed-mic'; micBtn.textContent = '🎤'; micBtn.setAttribute('aria-label', 'Dicter');
+    var attachBtn = document.createElement('button'); attachBtn.type = 'button'; attachBtn.className = 'ed-attach'; attachBtn.textContent = '📎'; attachBtn.setAttribute('aria-label', 'Joindre un fichier');
+    var fileInput = document.createElement('input'); fileInput.type = 'file'; fileInput.style.display = 'none';
     var sendBtn = document.createElement('button'); sendBtn.type = 'button'; sendBtn.className = 'ed-send'; sendBtn.textContent = 'Envoyer la réponse';
-    row.appendChild(micBtn); row.appendChild(sendBtn);
-    reply.appendChild(ta); reply.appendChild(hint); reply.appendChild(row);
+    row.appendChild(micBtn); row.appendChild(attachBtn); row.appendChild(sendBtn);
+    reply.appendChild(ta); reply.appendChild(hint); reply.appendChild(attWrap); reply.appendChild(row); reply.appendChild(fileInput);
     emailDetailEl.appendChild(reply);
 
     wireEmailDictation(micBtn, ta);
 
+    // ---- Piece jointe a joindre a la reponse (upload depuis l'appareil) ----
+    var pendingAttachment = null;
+    var MAX_ATTACH_BYTES = 8 * 1024 * 1024;
+    function renderAttachmentChip(){
+      attWrap.innerHTML = '';
+      if (!pendingAttachment) return;
+      var chip = document.createElement('div'); chip.className = 'ed-pending-att';
+      var ic = document.createElement('span'); ic.textContent = '📎';
+      var name = document.createElement('span'); name.textContent = pendingAttachment.filename;
+      var rm = document.createElement('button'); rm.type = 'button'; rm.textContent = '✕'; rm.setAttribute('aria-label', 'Retirer la pièce jointe');
+      rm.addEventListener('click', function(){ pendingAttachment = null; renderAttachmentChip(); });
+      chip.appendChild(ic); chip.appendChild(name); chip.appendChild(rm);
+      attWrap.appendChild(chip);
+    }
+    attachBtn.addEventListener('click', function(){ fileInput.value = ''; fileInput.click(); });
+    fileInput.addEventListener('change', function(){
+      var f = fileInput.files && fileInput.files[0];
+      if (!f) return;
+      if (f.size > MAX_ATTACH_BYTES){ toast('Fichier trop volumineux (8 Mo max)'); return; }
+      var fr = new FileReader();
+      fr.onload = function(){
+        var b64 = String(fr.result).split(',')[1] || '';
+        pendingAttachment = { filename: f.name, mime: f.type || 'application/octet-stream', data: b64 };
+        renderAttachmentChip();
+      };
+      fr.onerror = function(){ toast('Lecture du fichier impossible'); };
+      fr.readAsDataURL(f);
+    });
+
+    // ---- Brouillon IA pre-redige automatiquement des l'ouverture du mail (memes coulisses
+    // que l'ancien bouton Repondre : Claude calque le ton du mail recu) — editable ci-dessus,
+    // on n'ecrase jamais un texte deja tape/dicte par le patron pendant le chargement. ----
+    var draftObjet = '';
+    post({ type:'email-reply', id: j.id }, function(d){
+      draftObjet = d.objet || '';
+      ta.placeholder = 'Écris ta réponse…';
+      if (!ta.value.trim() && d.corps) ta.value = d.corps;
+    }, function(){ ta.placeholder = 'Écris ta réponse…'; });
+
+    // ---- Envoi direct : relire/editer le brouillon PUIS taper Envoyer EST la validation
+    // humaine — pas de carte ✅/❌ redondante dans le fil pour ce flux (contrairement au
+    // "envoie un mail a..." depuis le chat, qui n'a pas de composeur editable et garde sa carte). ----
     sendBtn.addEventListener('click', function(){
       var texte = ta.value.trim();
       if (!texte){ toast('Écris ou dicte ta réponse d’abord'); return; }
-      sendBtn.disabled = true; micBtn.disabled = true;
-      post({ type:'email-reply', id: j.id, texte: texte }, function(r){
-        sendBtn.disabled = false; micBtn.disabled = false;
+      sendBtn.disabled = true; micBtn.disabled = true; attachBtn.disabled = true;
+      var payload = { type:'email-send-reply', id: j.id, objet: draftObjet, corps: texte };
+      if (pendingAttachment){
+        payload.attNom = pendingAttachment.filename;
+        payload.attMime = pendingAttachment.mime;
+        payload.attData = pendingAttachment.data;
+      }
+      post(payload, function(){
+        sendBtn.disabled = false; micBtn.disabled = false; attachBtn.disabled = false;
         emailsClose();
-        bubble('↩️ Ta réponse est prête à valider ci-dessous.', 'info');
-        renderExtras(r);
-      }, function(err){ sendBtn.disabled = false; micBtn.disabled = false; toast(err || 'Impossible de préparer la réponse'); });
+        toast('✅ Réponse envoyée');
+        emailsAll = emailsAll.filter(function(m){ return String(m.id) !== String(j.id); });
+        updateEmailTabCounts();
+        renderEmailsTab();
+        refreshMenuBadgeFromEmails();
+      }, function(err){ sendBtn.disabled = false; micBtn.disabled = false; attachBtn.disabled = false; toast(err || 'Envoi impossible'); });
     });
   }
 
@@ -1770,9 +1859,15 @@
 
   function activeEmails(){ return emailsAll.filter(function(m){ return m.statut !== 'traite'; }); }
 
+  // Boites : filtre applique EN PLUS des onglets Important/Neutre/Pub&spam (les 2 se combinent),
+  // comme un vrai client mail multi-comptes ou l'on choisit d'abord le compte puis le dossier.
+  function boxFilteredEmails(){
+    return activeEmails().filter(function(m){ return emailsBox === 'all' || m.boite === emailsBox; });
+  }
+
   function updateEmailTabCounts(){
     ['important','neutre','spam'].forEach(function(cat){
-      var n = activeEmails().filter(function(m){ return m.categorie === cat; }).length;
+      var n = boxFilteredEmails().filter(function(m){ return m.categorie === cat; }).length;
       var el = document.getElementById('etab-' + cat + '-count');
       if (el) el.textContent = n ? ('(' + n + ')') : '';
     });
@@ -1787,7 +1882,7 @@
   var emailsBulkBtn = document.getElementById('emails-bulk-archive');
 
   function renderEmailsTab(){
-    var items = activeEmails().filter(function(m){ return m.categorie === emailsTab; });
+    var items = boxFilteredEmails().filter(function(m){ return m.categorie === emailsTab; });
     emailsList.innerHTML = '';
     var showBulk = emailsTab === 'spam' && items.length > 0;
     emailsBulkBar.style.display = showBulk ? 'flex' : 'none';
@@ -1804,15 +1899,14 @@
     });
   });
 
-  function emailReply(id, btnEl){
-    if (btnEl) btnEl.disabled = true;
-    post({ type:'email-reply', id: id }, function(j){
-      if (btnEl) btnEl.disabled = false;
-      emailsClose();
-      bubble('↩️ Brouillon de réponse préparé — valide-le ci-dessous.', 'info');
-      renderExtras(j);
-    }, function(err){ if (btnEl) btnEl.disabled = false; toast(err || 'Impossible de préparer une réponse'); });
-  }
+  document.querySelectorAll('.eboxtab').forEach(function(btn){
+    btn.addEventListener('click', function(){
+      emailsBox = btn.dataset.box;
+      document.querySelectorAll('.eboxtab').forEach(function(b){ b.classList.toggle('active', b === btn); });
+      updateEmailTabCounts();
+      renderEmailsTab();
+    });
+  });
 
   function showBulkArchiveRecap(ids){
     emailsList.innerHTML = '';
@@ -1838,7 +1932,7 @@
     });
   }
   emailsBulkBtn.addEventListener('click', function(){
-    var ids = activeEmails().filter(function(m){ return m.categorie === 'spam'; }).map(function(m){ return m.id; });
+    var ids = boxFilteredEmails().filter(function(m){ return m.categorie === 'spam'; }).map(function(m){ return m.id; });
     if (ids.length) showBulkArchiveRecap(ids);
   });
 
