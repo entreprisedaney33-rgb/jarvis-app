@@ -858,7 +858,14 @@
 
 <script>
 (function(){
-  var APPV = 'v2.39';
+  var APPV = 'v2.40';
+
+  // Debug : ?debug_modal=1 force l'affichage du modal "nouvelle version" sans attendre un vrai
+  // déploiement. Capturé ICI, tout au début, car plus bas (login mémorisé, connexion) le code
+  // réécrit l'URL via history.replaceState (ne garde que ?c=code) — si on lisait ce paramètre
+  // plus tard (ex. dans enterApp()), il aurait déjà disparu de location.search.
+  var forceModalTest = false;
+  try { forceModalTest = new URLSearchParams(location.search).get('debug_modal') === '1'; } catch(e){}
 
   // ---- Mise à jour automatique (contourne le cache GitHub Pages) ----
   function checkUpdate(){
@@ -1177,7 +1184,7 @@
     app.style.display = 'flex';
     subline.textContent = (nom ? ('Assistant de ' + nom + ' — en ligne') : 'en ligne') + ' · ' + APPV + ' · H' + window.innerHeight + '/' + ((screen && screen.height) || '?');
     renderHistory(msgs, extras);
-    maybeOfferPushOnUpdate();
+    if (forceModalTest) showUpdateModal(); else maybeOfferPushOnUpdate();
   }
 
   // ---- Login ----
@@ -1327,17 +1334,20 @@
   });
   document.getElementById('upd-no').addEventListener('click', function(){ updOpen(false); });
   updBg.addEventListener('click', function(){ updOpen(false); });
+  function showUpdateModal(){
+    updTitle.textContent = '🆕 Nouvelle version ' + APPV + ' installée';
+    updOpen(true);
+  }
   function maybeOfferPushOnUpdate(){
     var seen = read('jarvisAppVersion');
     if (seen === APPV) return; // deja vu cette version (ou deja propose pour elle)
     store('jarvisAppVersion', APPV);
     if (!seen) return; // premiere ouverture jamais faite sur cet appareil : pas une mise a jour
-    if (!pushSupported) return;
-    refreshPushToggle().then(function(){
-      if (pushCurrentSub) return; // notifs deja actives : ne pas interrompre
-      updTitle.textContent = '🆕 Nouvelle version ' + APPV + ' installée';
-      updOpen(true);
-    });
+    if (!pushSupported) return; // rien a proposer si le navigateur ne sait meme pas faire de push
+    // Systematique des qu'une vraie mise a jour est detectee, MEME si les notifs semblent deja
+    // actives : iOS coupe l'abonnement en silence avec le temps, et le patron doit de toute facon
+    // etre informe qu'une nouvelle version vient d'etre installee (decision explicite du 2026-07-20).
+    showUpdateModal();
   }
   document.getElementById('sh-logout').addEventListener('click', function(){
     store('jarvisCode',''); store('jarvisNom','');
