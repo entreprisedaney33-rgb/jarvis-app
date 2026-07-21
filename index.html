@@ -845,7 +845,7 @@
   <div id="cf-err"></div>
   <div id="cf-row">
     <button id="cf-delete" type="button" class="vc-no" style="display:none">🗑 Supprimer</button>
-    <button id="cf-save" type="button" class="ed-send">Proposer</button>
+    <button id="cf-save" type="button" class="ed-send">Valider</button>
   </div>
   <button id="cf-cancel" type="button" class="vc-edit">Annuler</button>
 </div>
@@ -890,7 +890,7 @@
 
 <script>
 (function(){
-  var APPV = 'v2.41';
+  var APPV = 'v2.42';
 
   // Debug : ?debug_modal=1 force l'affichage du modal "nouvelle version" sans attendre un vrai
   // déploiement. Capturé ICI, tout au début, car plus bas (login mémorisé, connexion) le code
@@ -2101,14 +2101,16 @@
   document.getElementById('cf-cancel').addEventListener('click', calCloseForm);
   document.getElementById('cal-add').addEventListener('click', function(){ calOpenForm('create', null); });
 
+  // Valider dans le modal du calendrier = deja la validation humaine (formulaire rempli
+  // puis bouton tape) : le rdv est cree/modifie/supprime DIRECTEMENT, sans carte ✅/❌ et
+  // sans aucun texte ajoute au fil de discussion — seule la vue calendrier se rafraichit.
   function calPropose(payload, okMsg){
     document.getElementById('cf-err').textContent = '';
     post(payload, function(r){
       if (r.error){ document.getElementById('cf-err').textContent = r.error; return; }
       calCloseForm();
-      calendarClose();
-      bubble(okMsg, 'info');
-      renderExtras(r);
+      toast(okMsg);
+      calLoadMonth();
     }, function(err){ document.getElementById('cf-err').textContent = err || 'Impossible de préparer ce rendez-vous.'; });
   }
   document.getElementById('cf-save').addEventListener('click', function(){
@@ -2121,12 +2123,12 @@
     calPropose({
       type: 'calendar-propose', calAction: calEditingId ? 'update' : 'create',
       titre: titre, debut: debut + ':00', fin: fin + ':00', lieu: lieu, eventId: calEditingId
-    }, '📅 Ta proposition de rendez-vous est prête à valider.');
+    }, calEditingId ? '✅ Rendez-vous modifié.' : '✅ Rendez-vous créé.');
   });
   document.getElementById('cf-delete').addEventListener('click', function(){
     if (!calEditingId) return;
     calPropose({ type: 'calendar-propose', calAction: 'delete', titre: document.getElementById('cf-titre').value.trim(), eventId: calEditingId },
-      '📅 Ta demande de suppression est prête à valider.');
+      '✅ Rendez-vous supprimé.');
   });
 
   function calendarClose(){ calendarview.classList.remove('open'); calCloseForm(); }
