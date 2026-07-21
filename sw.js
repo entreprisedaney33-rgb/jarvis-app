@@ -25,14 +25,19 @@ self.addEventListener('push', function(event){
     try { data = event.data ? event.data.json() : {}; }
     catch (e) { data = { title: 'Jarvis', body: event.data ? event.data.text() : '' }; }
 
+    // Previent toute page deja ouverte pour qu'elle aille chercher le nouveau contenu
+    // tout de suite (remplace le besoin d'interroger le serveur en boucle : la page ne
+    // verifie plus que quand on la previent qu'il y a du nouveau).
+    const list = await clients.matchAll({ type: 'window', includeUncontrolled: true });
+    for (const c of list) { try { c.postMessage({ type: 'jarvis-push-refresh' }); } catch(e){} }
+
     // Pas de notification si l'utilisateur regarde deja la discussion
-    // (evite le doublon : le message arrive de toute facon par le rafraichissement de l'app)
+    // (evite le doublon : le message vient d'etre pousse a la page ci-dessus)
     // ⚠️ NE PAS exiger client.focused : Safari/WebKit ne le rapporte pas de façon fiable
     // (souvent false même app au premier plan) → on se fie a visibilityState seul.
     // ⚠️ NE PAS se fier QU'A clients.matchAll : sur iOS le SW tourne dans un contexte
     // separe et ne voit pas toujours la fenetre ouverte -> on croise avec un "ping" recent
     // pose par la page elle-meme dans IndexedDB (voir index.html, pingVisible()).
-    const list = await clients.matchAll({ type: 'window', includeUncontrolled: true });
     const dejaViaClients = list.some(function(c){ return c.visibilityState === 'visible'; });
     const lastVisibleAt = await getLastVisibleAt();
     const dejaViaPing = (Date.now() - lastVisibleAt) < 6000;

@@ -890,7 +890,7 @@
 
 <script>
 (function(){
-  var APPV = 'v2.43';
+  var APPV = 'v2.44';
 
   // Debug : ?debug_modal=1 force l'affichage du modal "nouvelle version" sans attendre un vrai
   // déploiement. Capturé ICI, tout au début, car plus bas (login mémorisé, connexion) le code
@@ -957,7 +957,15 @@
     for (var i=0;i<raw.length;i++) arr[i] = raw.charCodeAt(i);
     return arr;
   }
-  if ('serviceWorker' in navigator){ navigator.serviceWorker.register('./sw.js').catch(function(){}); }
+  if ('serviceWorker' in navigator){
+    navigator.serviceWorker.register('./sw.js').catch(function(){});
+    // Le SW previent la page quand un push arrive pendant qu'elle est deja ouverte
+    // -> on va chercher le nouveau contenu tout de suite, au lieu de compter sur le
+    // filet de securite (verification espacee, voir plus bas).
+    navigator.serviceWorker.addEventListener('message', function(e){
+      if (e.data && e.data.type === 'jarvis-push-refresh') onResume();
+    });
+  }
 
   // Signale au service worker qu'on regarde ACTIVEMENT la conversation, via IndexedDB
   // (partagee entre la page et le SW). ⚠️ Ne pas se fier a clients.matchAll() seul dans le SW :
@@ -2533,6 +2541,10 @@
   });
 
   // ---- Boîte de réception : messages poussés (téléphone, alertes...) ----
+  // Filet de securite seulement : le vrai declencheur, c'est le SW qui previent la
+  // page a la reception d'un push (voir listener 'message' plus haut) -> cette
+  // verification periodique n'est qu'un rattrapage si jamais le push a echoue en
+  // silence (abonnement iOS expire sans prevenir, deja vu sur ce projet).
   function pollInbox(){
     if (document.hidden) return;
     if (app.style.display !== 'flex') return;
@@ -2543,7 +2555,7 @@
       });
     }, function(){});
   }
-  setInterval(pollInbox, 5000);
+  setInterval(pollInbox, 60000);
 
   // ---- Rafraîchit la conversation depuis le serveur (corrige : notification cliquée → discussion pas à jour) ----
   var refreshing = false;
