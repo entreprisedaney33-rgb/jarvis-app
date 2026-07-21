@@ -890,7 +890,7 @@
 
 <script>
 (function(){
-  var APPV = 'v2.42';
+  var APPV = 'v2.43';
 
   // Debug : ?debug_modal=1 force l'affichage du modal "nouvelle version" sans attendre un vrai
   // déploiement. Capturé ICI, tout au début, car plus bas (login mémorisé, connexion) le code
@@ -2065,12 +2065,19 @@
     }, function(err){ calDayEl.innerHTML = '<p id="cal-day-empty">' + (err || 'Impossible de charger le calendrier.') + '</p>'; });
   }
 
+  // ⚠️ calSelectedKey doit toujours pointer vers un jour DU MOIS AFFICHÉ : sinon "Nouveau
+  // rendez-vous" (calOpenForm) pré-remplit une date restée sur l'ancien mois (ex: on navigue
+  // vers août mais le formulaire propose encore une date de juillet) -- un rdv créé sans
+  // corriger cette date atterrit dans un mois différent de celui affiché, invisible dans la
+  // grille au retour, sans qu'on s'en rende compte.
   document.getElementById('cal-prev').addEventListener('click', function(){
     calCurrentMonth = new Date(calCurrentMonth.getFullYear(), calCurrentMonth.getMonth() - 1, 1);
+    calSelectedKey = calDateKey(calCurrentMonth);
     calLoadMonth();
   });
   document.getElementById('cal-next').addEventListener('click', function(){
     calCurrentMonth = new Date(calCurrentMonth.getFullYear(), calCurrentMonth.getMonth() + 1, 1);
+    calSelectedKey = calDateKey(calCurrentMonth);
     calLoadMonth();
   });
 
