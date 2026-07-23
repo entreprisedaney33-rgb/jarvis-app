@@ -890,7 +890,7 @@
 
 <script>
 (function(){
-  var APPV = 'v2.45';
+  var APPV = 'v2.46';
 
   // Debug : ?debug_modal=1 force l'affichage du modal "nouvelle version" sans attendre un vrai
   // déploiement. Capturé ICI, tout au début, car plus bas (login mémorisé, connexion) le code
@@ -2555,7 +2555,9 @@
       });
     }, function(){});
   }
-  setInterval(pollInbox, 60000);
+  // 180 s (au lieu de 60 s) : economie d'executions n8n — le push reste le canal temps reel,
+  // et onResume() releve immediatement la boite au retour au premier plan.
+  setInterval(pollInbox, 180000);
 
   // ---- Rafraîchit la conversation depuis le serveur (corrige : notification cliquée → discussion pas à jour) ----
   var refreshing = false;
