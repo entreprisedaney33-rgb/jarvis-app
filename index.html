@@ -356,6 +356,40 @@
   }
   .veille-traite{font-size:13px; color:var(--muted); text-align:center; padding:6px}
   #veille-empty, #veille-loading{color:var(--muted); text-align:center; padding:40px 20px; font-size:14px}
+  #veille-add{
+    width:32px; height:32px; border-radius:50%; border:0; flex:0 0 auto; margin-left:auto;
+    background:var(--surface); color:var(--ink); font-size:15px;
+    display:flex; align-items:center; justify-content:center; cursor:pointer;
+    -webkit-tap-highlight-color:transparent;
+  }
+  /* Formulaire "post repere Facebook/Instagram" */
+  #veille-form-bg{position:fixed; inset:0; background:rgba(0,0,0,.5); display:none; z-index:52}
+  #veille-form-bg.open{display:block}
+  #veille-form{
+    position:fixed; left:14px; right:14px; top:50%; transform:translateY(-50%) scale(.96); z-index:53;
+    background:#151517; border-radius:16px; padding:18px 18px calc(18px + env(safe-area-inset-bottom));
+    display:none; flex-direction:column; gap:10px; max-height:80vh; overflow-y:auto;
+    opacity:0; transition:opacity .2s ease, transform .2s ease;
+  }
+  #veille-form.open{display:flex; opacity:1; transform:translateY(-50%) scale(1)}
+  @media (prefers-reduced-motion: reduce){#veille-form{transition:none}}
+  #veille-form b{font-size:16px}
+  .veille-form-hint{font-size:12px; color:var(--muted); margin:0 0 4px}
+  #veille-form label{display:flex; flex-direction:column; gap:5px; font-size:12.5px; color:var(--muted)}
+  #veille-form input, #veille-form textarea{
+    font:inherit; font-size:15px; color:var(--ink); background:#2E2E32;
+    border:0.5px solid rgba(255,255,255,.18); border-radius:10px; padding:9px 11px; box-sizing:border-box;
+    resize:vertical;
+  }
+  #vf-source{display:flex; gap:8px}
+  .vf-src-btn{
+    flex:1; padding:9px; border-radius:10px; border:0.5px solid rgba(255,255,255,.18);
+    background:#2E2E32; color:var(--muted); font-size:14px; font-weight:600; cursor:pointer;
+    -webkit-tap-highlight-color:transparent;
+  }
+  .vf-src-btn.active{background:var(--gold-a); color:#1a1200; border-color:var(--gold-a)}
+  #vf-err{color:#FF453A; font-size:12.5px; min-height:1em}
+  #vf-row{display:flex; gap:8px}
   /* Panneau plein ecran "Emails" — theme CLAIR dedie façon Mail iOS (le reste de l'app reste sombre :
      les couleurs sont re-definies en variables locales sur #emailsview, donc tous les elements
      enfants qui utilisent deja var(--bg)/var(--surface)/var(--ink)/var(--muted)/var(--hairline)
@@ -835,9 +869,30 @@
 <div id="veilleview">
   <div id="veille-head">
     <b>🕵️ Veille</b>
+    <button id="veille-add" type="button" aria-label="Ajouter un post repéré">➕</button>
     <button id="veille-close" type="button" aria-label="Fermer">✕</button>
   </div>
   <div id="veille-list"></div>
+</div>
+<div id="veille-form-bg"></div>
+<div id="veille-form">
+  <b>Post repéré sur Facebook / Instagram</b>
+  <p class="veille-form-hint">Colle ce que tu as vu en scrollant — Jarvis juge si c'est pertinent et prépare le brouillon de réponse.</p>
+  <div id="vf-source">
+    <button class="vf-src-btn active" data-src="facebook" type="button">Facebook</button>
+    <button class="vf-src-btn" data-src="instagram" type="button">Instagram</button>
+  </div>
+  <label>Lien du post (optionnel)
+    <input id="vf-url" type="text" placeholder="https://facebook.com/...">
+  </label>
+  <label>Texte du post
+    <textarea id="vf-texte" rows="5" placeholder="Colle ici ce que la personne a écrit…"></textarea>
+  </label>
+  <div id="vf-err"></div>
+  <div id="vf-row">
+    <button id="vf-cancel" type="button" class="vc-no">Annuler</button>
+    <button id="vf-submit" type="button" class="ed-send">Analyser</button>
+  </div>
 </div>
 
 <div id="emailsview">
@@ -937,7 +992,7 @@
 
 <script>
 (function(){
-  var APPV = 'v2.48';
+  var APPV = 'v2.49';
 
   // Debug : ?debug_modal=1 force l'affichage du modal "nouvelle version" sans attendre un vrai
   // déploiement. Capturé ICI, tout au début, car plus bas (login mémorisé, connexion) le code
@@ -1616,6 +1671,46 @@
   function veilleClose(){ veilleview.classList.remove('open'); }
   document.getElementById('sh-veille').addEventListener('click', function(){ sheetOpen(false); veilleOpen(); });
   document.getElementById('veille-close').addEventListener('click', veilleClose);
+
+  // ---- Formulaire "post repere Facebook/Instagram" (colle un lien+texte trouve manuellement) ----
+  var veilleFormBg = document.getElementById('veille-form-bg');
+  var veilleForm = document.getElementById('veille-form');
+  var vfUrl = document.getElementById('vf-url');
+  var vfTexte = document.getElementById('vf-texte');
+  var vfErr = document.getElementById('vf-err');
+  var vfSubmit = document.getElementById('vf-submit');
+  var vfSource = 'facebook';
+  document.querySelectorAll('.vf-src-btn').forEach(function(btn){
+    btn.addEventListener('click', function(){
+      document.querySelectorAll('.vf-src-btn').forEach(function(b){ b.classList.remove('active'); });
+      btn.classList.add('active');
+      vfSource = btn.dataset.src;
+    });
+  });
+  function veilleFormOpen(){
+    vfUrl.value = ''; vfTexte.value = ''; vfErr.textContent = '';
+    vfSource = 'facebook';
+    document.querySelectorAll('.vf-src-btn').forEach(function(b,i){ b.classList.toggle('active', i === 0); });
+    veilleFormBg.classList.add('open'); veilleForm.classList.add('open');
+  }
+  function veilleFormClose(){ veilleFormBg.classList.remove('open'); veilleForm.classList.remove('open'); }
+  document.getElementById('veille-add').addEventListener('click', veilleFormOpen);
+  document.getElementById('vf-cancel').addEventListener('click', veilleFormClose);
+  veilleFormBg.addEventListener('click', veilleFormClose);
+  vfSubmit.addEventListener('click', function(){
+    var texte = vfTexte.value.trim();
+    if (!texte){ vfErr.textContent = 'Colle le texte du post.'; return; }
+    vfErr.textContent = ''; vfSubmit.disabled = true; vfSubmit.textContent = 'Analyse…';
+    postGuetteur({ type:'soumettre', source: vfSource, url: vfUrl.value.trim(), texte: texte }, function(){
+      vfSubmit.disabled = false; vfSubmit.textContent = 'Analyser';
+      veilleFormClose();
+      toast('✅ Analysé — voir la carte dans la liste');
+      veilleOpen();
+    }, function(err){
+      vfSubmit.disabled = false; vfSubmit.textContent = 'Analyser';
+      vfErr.textContent = err;
+    });
+  });
   // Verifie discretement (juste le badge, pas d'ouverture) - appelee depuis enterApp() une fois connecte
   function veilleCheckBadge(){ postGuetteur({ type:'list' }, function(j){ veilleUpdateBadge(j.alertes || []); }, function(){}); }
 
