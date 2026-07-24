@@ -370,6 +370,73 @@
     display:flex; align-items:center; justify-content:center; cursor:pointer;
     -webkit-tap-highlight-color:transparent;
   }
+  /* Panneau plein ecran "Meute" (partenariats multi-sites) — meme famille visuelle que Veille */
+  #meuteview{
+    position:fixed; inset:0; z-index:50; background:var(--bg);
+    display:none; flex-direction:column;
+    transform:translateY(100%); transition:transform .28s cubic-bezier(.2,.9,.25,1);
+  }
+  #meuteview.open{display:flex; transform:translateY(0)}
+  @media (prefers-reduced-motion: reduce){#meuteview{transition:none}}
+  #meute-head{
+    flex:0 0 auto; display:flex; align-items:center; gap:10px;
+    padding:calc(10px + env(safe-area-inset-top)) 14px 12px;
+    border-bottom:0.5px solid var(--hairline);
+  }
+  #meute-head b{font-size:16px; flex:1}
+  #meute-relancer, #meute-close{
+    width:32px; height:32px; border-radius:50%; border:0; flex:0 0 auto;
+    background:var(--surface); color:var(--ink); font-size:15px;
+    display:flex; align-items:center; justify-content:center; cursor:pointer;
+    -webkit-tap-highlight-color:transparent;
+  }
+  #meute-relancer.spin svg{animation:meute-spin 1s linear infinite}
+  @keyframes meute-spin{from{transform:rotate(0)}to{transform:rotate(360deg)}}
+  #meute-status{padding:8px 14px; font-size:12.5px; color:var(--muted); text-align:center; display:none}
+  #meute-status.show{display:block}
+  #meute-list{flex:1; overflow-y:auto; -webkit-overflow-scrolling:touch; padding:10px 14px calc(20px + env(safe-area-inset-bottom))}
+  .meute-card{background:var(--surface); border-radius:14px; padding:14px; margin-bottom:12px}
+  .meute-card-head{display:flex; align-items:flex-start; gap:8px; margin-bottom:6px}
+  .meute-nom{font-size:15px; font-weight:600; flex:1}
+  .meute-score{font-size:11px; color:var(--gold-a); font-weight:700; flex:0 0 auto; padding-top:2px}
+  .meute-meta{font-size:12.5px; color:var(--muted); display:block; margin-bottom:8px}
+  .meute-argumentaire{
+    background:rgba(232,185,106,.1); border:1px solid rgba(232,185,106,.3); border-radius:10px;
+    padding:10px; font-size:13px; color:var(--ink); margin-bottom:10px; white-space:pre-wrap;
+  }
+  .meute-commission{font-size:12.5px; color:var(--gold-a); font-weight:600; margin-bottom:10px; display:block}
+  .meute-actions{display:flex; gap:8px; flex-wrap:wrap}
+  .meute-act-btn{
+    flex:1; min-width:80px; padding:9px; border-radius:10px; border:0; font-size:13px; font-weight:700;
+    cursor:pointer; -webkit-tap-highlight-color:transparent; background:var(--bg); color:var(--ink);
+  }
+  .meute-act-btn.active{background:var(--gold-a); color:#1a1200}
+  .meute-tel{font-size:13px; color:var(--blue,#0A84FF); text-decoration:none; display:inline-block; margin-bottom:8px}
+  #meute-empty, #meute-loading{color:var(--muted); text-align:center; padding:40px 20px; font-size:14px}
+  #meute-tabs{
+    flex:0 0 auto; display:flex; gap:8px; padding:10px 14px; overflow-x:auto; -webkit-overflow-scrolling:touch;
+    border-bottom:0.5px solid var(--hairline);
+  }
+  .meute-tab{
+    flex:0 0 auto; padding:8px 13px; border-radius:99px; border:0.5px solid rgba(255,255,255,.18);
+    background:#2E2E32; color:var(--muted); font-size:13px; font-weight:600; cursor:pointer;
+    -webkit-tap-highlight-color:transparent; white-space:nowrap;
+  }
+  .meute-tab.active{background:var(--gold-a); color:#1a1200; border-color:var(--gold-a)}
+  .meute-notes-btn{
+    background:none; border:0; color:var(--gold-a); font-size:12.5px; font-weight:600; cursor:pointer;
+    padding:0; margin-bottom:8px; display:block; -webkit-tap-highlight-color:transparent;
+  }
+  .meute-notes-box{display:none; margin-bottom:10px}
+  .meute-notes-box.open{display:block}
+  .meute-notes-box textarea{
+    width:100%; box-sizing:border-box; font:inherit; font-size:13px; color:var(--ink); background:#2E2E32;
+    border:0.5px solid rgba(255,255,255,.18); border-radius:10px; padding:9px 11px; resize:vertical; margin-bottom:6px;
+  }
+  .meute-notes-save{
+    padding:7px 14px; border-radius:8px; border:0; background:var(--gold-a); color:#1a1200;
+    font-size:12.5px; font-weight:700; cursor:pointer; -webkit-tap-highlight-color:transparent;
+  }
   /* Formulaire "post repere Facebook/Instagram" */
   #veille-form-bg{position:fixed; inset:0; background:rgba(0,0,0,.5); display:none; z-index:52}
   #veille-form-bg.open{display:block}
@@ -855,6 +922,7 @@
     <button class="sh-item" id="sh-docs" type="button"><span class="sh-ic">📄</span><span class="sh-label">Mes documents</span></button>
     <!-- "Veille" (GUETTEUR) retire du menu le 2026-07-24 sur demande utilisateur -- panneau et
          backend n8n intacts, juste plus d'entree pour y acceder (cf. CLAUDE-VENTE-ROUE.md). -->
+    <button class="sh-item" id="sh-meute" type="button"><span class="sh-ic">🐺</span><span class="sh-label">Meute</span><span class="badge-count" id="menu-meute-badge" style="display:none"></span></button>
     <button class="sh-item" id="sh-push" type="button"><span class="sh-ic">🔔</span><span class="sh-label">Notifications</span><span class="sw" id="sw-push"><span class="sw-knob"></span></span></button>
   </div>
   <div class="sh-group">
@@ -902,6 +970,22 @@
     <button id="vf-cancel" type="button" class="vc-no">Annuler</button>
     <button id="vf-submit" type="button" class="ed-send">Analyser</button>
   </div>
+</div>
+
+<div id="meuteview">
+  <div id="meute-head">
+    <b>🐺 Meute</b>
+    <button id="meute-relancer" type="button" aria-label="Chercher de nouvelles fiches"><svg width="16" height="16" viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M17 10a7 7 0 1 1-2-4.9M17 3v4h-4"/></svg></button>
+    <button id="meute-close" type="button" aria-label="Fermer">✕</button>
+  </div>
+  <p id="meute-status"></p>
+  <div id="meute-tabs">
+    <button class="meute-tab active" data-tab="nouveaux" type="button">🆕 Nouveaux</button>
+    <button class="meute-tab" data-tab="encours" type="button">📞 En cours</button>
+    <button class="meute-tab" data-tab="clients" type="button">✅ Clients</button>
+    <button class="meute-tab" data-tab="perdus" type="button">❌ Perdus</button>
+  </div>
+  <div id="meute-list"></div>
 </div>
 
 <div id="emailsview">
@@ -1001,7 +1085,7 @@
 
 <script>
 (function(){
-  var APPV = 'v2.54';
+  var APPV = 'v2.55';
 
   // Debug : ?debug_modal=1 force l'affichage du modal "nouvelle version" sans attendre un vrai
   // déploiement. Capturé ICI, tout au début, car plus bas (login mémorisé, connexion) le code
@@ -1028,6 +1112,7 @@
   document.addEventListener('visibilitychange', function(){ if (!document.hidden) checkUpdate(); });
   var API = 'https://mat22.app.n8n.cloud/webhook/jarvis-msg';
   var API_GUETTEUR = 'https://mat22.app.n8n.cloud/webhook/guetteur-app';
+  var API_MEUTE = 'https://mat22.app.n8n.cloud/webhook/meute-app';
   var login = document.getElementById('login');
   var app = document.getElementById('app');
   var chat = document.getElementById('chat');
@@ -1177,6 +1262,15 @@
   function postGuetteur(payload, onOk, onErr){
     payload.code = String(read('jarvisCode') || '').trim();
     fetch(API_GUETTEUR, {
+      method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify(payload)
+    }).then(function(r){ return r.json(); }).then(function(j){
+      if (!j || j.ok === false){ onErr((j && j.erreur) || 'Erreur.'); } else { onOk(j); }
+    }).catch(function(){ onErr('Connexion impossible.'); });
+  }
+
+  function postMeute(payload, onOk, onErr){
+    payload.code = String(read('jarvisCode') || '').trim();
+    fetch(API_MEUTE, {
       method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify(payload)
     }).then(function(r){ return r.json(); }).then(function(j){
       if (!j || j.ok === false){ onErr((j && j.erreur) || 'Erreur.'); } else { onOk(j); }
@@ -1346,6 +1440,7 @@
     subline.textContent = (nom ? ('Assistant de ' + nom + ' — en ligne') : 'en ligne') + ' · ' + APPV + ' · H' + window.innerHeight + '/' + ((screen && screen.height) || '?');
     renderHistory(msgs, extras);
     if (forceModalTest) showUpdateModal(); else maybeOfferPushOnUpdate();
+    meuteCheckBadge();
   }
 
   // ---- Login ----
@@ -1743,6 +1838,157 @@
   });
   // Verifie discretement (juste le badge, pas d'ouverture) - appelee depuis enterApp() une fois connecte
   function veilleCheckBadge(){ postGuetteur({ type:'list' }, function(j){ veilleUpdateBadge(j.alertes || []); }, function(){}); }
+
+  // ---- Meute (partenariats conciergeries multi-sites) : pipeline de prospection Matheo/Dorian ----
+  var meuteview = document.getElementById('meuteview');
+  var meuteList = document.getElementById('meute-list');
+  var meuteBadge = document.getElementById('menu-meute-badge');
+  var meuteStatus = document.getElementById('meute-status');
+  var meuteRelancerBtn = document.getElementById('meute-relancer');
+  var meuteAll = []; // cache local (comme emailsAll/docsAll) -- change d'onglet sans re-appeler le serveur
+  var meuteActiveTab = 'nouveaux';
+  var MEUTE_STATUTS = [
+    { v:'pas_reponse', label:'N’a pas répondu' },
+    { v:'appele', label:'Appelé' },
+    { v:'rdv', label:'RDV' },
+    { v:'signe', label:'Signé' },
+    { v:'perdu', label:'Perdu' },
+  ];
+  // Pipeline de prospection en 4 dossiers : Nouveaux (jamais joint ou a rappeler) -> En cours
+  // (contact etabli, ca avance) -> Clients (signe) / Perdus (statut final negatif).
+  var MEUTE_TABS = {
+    nouveaux: function(s){ return !s.statut || s.statut === 'a_appeler' || s.statut === 'pas_reponse'; },
+    encours: function(s){ return s.statut === 'appele' || s.statut === 'rdv'; },
+    clients: function(s){ return s.statut === 'signe'; },
+    perdus: function(s){ return s.statut === 'perdu'; },
+  };
+
+  function meuteCard(s){
+    var card = document.createElement('div'); card.className = 'meute-card';
+    var head = document.createElement('div'); head.className = 'meute-card-head';
+    var nom = document.createElement('span'); nom.className = 'meute-nom'; nom.textContent = s.nom_structure || '';
+    head.appendChild(nom);
+    if (s.score_priorite){
+      var score = document.createElement('span'); score.className = 'meute-score'; score.textContent = s.score_priorite;
+      head.appendChild(score);
+    }
+    card.appendChild(head);
+    var metaBits = [];
+    if (s.ville) metaBits.push(s.ville);
+    if (s.dirigeant_nom) metaBits.push(s.dirigeant_nom);
+    if (s.nb_biens_estime) metaBits.push(s.nb_biens_estime + ' biens (' + s.nb_biens_statut + ')');
+    if (metaBits.length){
+      var meta = document.createElement('span'); meta.className = 'meute-meta'; meta.textContent = metaBits.join(' · ');
+      card.appendChild(meta);
+    }
+    if (s.telephone){
+      var tel = document.createElement('a'); tel.className = 'meute-tel';
+      tel.href = 'tel:' + s.telephone.replace(/\s+/g,''); tel.textContent = '📞 ' + s.telephone;
+      card.appendChild(document.createElement('br'));
+      card.appendChild(tel);
+    }
+    if (s.argumentaire){
+      var arg = document.createElement('div'); arg.className = 'meute-argumentaire'; arg.textContent = s.argumentaire;
+      card.appendChild(arg);
+    }
+    if (s.commission_apporteur_estimee){
+      var com = document.createElement('span'); com.className = 'meute-commission';
+      com.textContent = '💰 Potentiel maximum : ' + s.commission_apporteur_estimee + ' € de commission';
+      card.appendChild(com);
+    }
+    // Note editable (info recueillie pendant l'appel) -- bouton qui deplie une zone de texte
+    var notesBtn = document.createElement('button'); notesBtn.className = 'meute-notes-btn'; notesBtn.type = 'button';
+    notesBtn.textContent = s.notes ? '📝 Note : ' + s.notes.slice(0, 40) + (s.notes.length > 40 ? '…' : '') : '📝 Ajouter une note';
+    var notesBox = document.createElement('div'); notesBox.className = 'meute-notes-box';
+    var notesArea = document.createElement('textarea'); notesArea.rows = 3; notesArea.placeholder = 'Infos recueillies pendant l’appel…';
+    notesArea.value = s.notes || '';
+    var notesSave = document.createElement('button'); notesSave.className = 'meute-notes-save'; notesSave.type = 'button'; notesSave.textContent = 'Enregistrer';
+    notesSave.addEventListener('click', function(){
+      notesSave.disabled = true; notesSave.textContent = '…';
+      postMeute({ type:'notes', id:s.id, notes:notesArea.value.trim() }, function(){
+        s.notes = notesArea.value.trim();
+        notesSave.disabled = false; notesSave.textContent = 'Enregistrer';
+        notesBtn.textContent = s.notes ? '📝 Note : ' + s.notes.slice(0, 40) + (s.notes.length > 40 ? '…' : '') : '📝 Ajouter une note';
+        toast('✅ Note enregistrée');
+      }, function(err){ notesSave.disabled = false; notesSave.textContent = 'Enregistrer'; toast(err); });
+    });
+    notesBox.appendChild(notesArea); notesBox.appendChild(notesSave);
+    notesBtn.addEventListener('click', function(){ notesBox.classList.toggle('open'); });
+    card.appendChild(notesBtn); card.appendChild(notesBox);
+    var actions = document.createElement('div'); actions.className = 'meute-actions';
+    MEUTE_STATUTS.forEach(function(st){
+      var btn = document.createElement('button'); btn.className = 'meute-act-btn' + (s.statut === st.v ? ' active' : '');
+      btn.type = 'button'; btn.textContent = st.label;
+      btn.addEventListener('click', function(){
+        postMeute({ type:'appele', id:s.id, statut:st.v }, function(){ meuteRefresh(); }, function(err){ toast(err); });
+      });
+      actions.appendChild(btn);
+    });
+    card.appendChild(actions);
+    return card;
+  }
+
+  function meuteRender(){
+    meuteList.innerHTML = '';
+    var filtre = MEUTE_TABS[meuteActiveTab] || MEUTE_TABS.nouveaux;
+    var structures = meuteAll.filter(filtre);
+    if (!structures.length){
+      var msg = meuteActiveTab === 'nouveaux' ? 'Aucune fiche pour l’instant — touche 🔄 pour lancer une recherche.' : 'Rien ici pour l’instant.';
+      meuteList.innerHTML = '<p id="meute-empty">' + msg + '</p>';
+      return;
+    }
+    structures.forEach(function(s){ meuteList.appendChild(meuteCard(s)); });
+  }
+
+  function meuteUpdateBadge(){
+    var n = meuteAll.filter(MEUTE_TABS.nouveaux).length;
+    if (n > 0){ meuteBadge.textContent = n; meuteBadge.style.display = ''; } else { meuteBadge.style.display = 'none'; }
+  }
+
+  // Recharge depuis le serveur (apres une action qui change des donnees) puis re-rend l'onglet actif
+  function meuteRefresh(){
+    postMeute({ type:'list' }, function(j){
+      meuteAll = j.structures || [];
+      meuteRender();
+      meuteUpdateBadge();
+    }, function(err){ meuteList.innerHTML = '<p id="meute-empty">' + err + '</p>'; });
+  }
+
+  function meuteOpen(){
+    meuteview.classList.add('open');
+    meuteList.innerHTML = '<p id="meute-loading">Chargement…</p>';
+    meuteRefresh();
+  }
+  function meuteClose(){ meuteview.classList.remove('open'); }
+  document.getElementById('sh-meute').addEventListener('click', function(){ sheetOpen(false); meuteOpen(); });
+  document.getElementById('meute-close').addEventListener('click', meuteClose);
+  document.querySelectorAll('.meute-tab').forEach(function(btn){
+    btn.addEventListener('click', function(){
+      document.querySelectorAll('.meute-tab').forEach(function(b){ b.classList.toggle('active', b === btn); });
+      meuteActiveTab = btn.dataset.tab;
+      meuteRender(); // deja en cache, pas de rechargement serveur necessaire pour changer d'onglet
+    });
+  });
+
+  meuteRelancerBtn.addEventListener('click', function(){
+    if (meuteRelancerBtn.classList.contains('spin')) return;
+    meuteRelancerBtn.classList.add('spin');
+    meuteStatus.textContent = 'Recherche en cours… (peut prendre 1 à 2 minutes)';
+    meuteStatus.classList.add('show');
+    postMeute({ type:'relancer' }, function(j){
+      meuteRelancerBtn.classList.remove('spin');
+      meuteStatus.classList.remove('show');
+      if (j.termine){ toast(j.message || 'Tout est déjà collecté.'); }
+      else { toast('✅ ' + j.departement_nom + ' : ' + j.nouvelles_structures + ' nouvelles fiches'); }
+      meuteRefresh();
+    }, function(err){
+      meuteRelancerBtn.classList.remove('spin');
+      meuteStatus.classList.remove('show');
+      toast(err);
+    });
+  });
+  // Verifie discretement (juste le badge) - appelee depuis enterApp() une fois connecte
+  function meuteCheckBadge(){ postMeute({ type:'list' }, function(j){ meuteAll = j.structures || []; meuteUpdateBadge(); }, function(){}); }
 
   // ---- Emails (indexes + tries par l'IA toutes les 20 min cote serveur) ----
   var emailsview = document.getElementById('emailsview');
