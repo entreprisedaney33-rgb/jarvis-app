@@ -416,7 +416,7 @@
   .meute-email-row{display:flex; gap:6px; margin-bottom:10px}
   .meute-email-input{
     flex:1; min-width:0; font:inherit; font-size:12.5px; color:var(--ink); background:#2E2E32;
-    border:0.5px solid rgba(255,255,255,.18); border-radius:9px; padding:8px 10px;
+    border:0.5px solid rgba(255,255,255,.18); border-radius:9px; padding:8px 10px; margin-bottom:8px;
   }
   .meute-email-send{
     flex:0 0 auto; padding:8px 12px; border-radius:9px; border:0; background:var(--gold-a); color:#1a1200;
@@ -424,6 +424,24 @@
   }
   .meute-email-send:disabled{opacity:.5}
   .meute-rapport-envoye{font-size:12px; color:#34C759; font-weight:600; margin-bottom:8px; display:block}
+  .meute-notes-actions{display:flex; gap:6px}
+  .meute-notes-mic{
+    flex:0 0 auto; width:38px; padding:7px; border-radius:9px; border:0; background:#2E2E32; color:var(--ink);
+    font-size:14px; cursor:pointer; -webkit-tap-highlight-color:transparent;
+  }
+  .meute-notes-mic.rec{background:#FF453A; color:#fff; animation:meute-pulse 1s infinite}
+  @keyframes meute-pulse{0%,100%{opacity:1}50%{opacity:.55}}
+  .meute-rapport-box{margin-top:2px}
+  .meute-gen-btn{
+    width:100%; padding:9px; border-radius:10px; border:0.5px solid rgba(255,255,255,.18); background:#2E2E32;
+    color:var(--ink); font-size:13px; font-weight:700; cursor:pointer; -webkit-tap-highlight-color:transparent; margin-bottom:8px;
+  }
+  .meute-gen-btn:disabled{opacity:.5}
+  .meute-preview-row{margin-bottom:8px}
+  .meute-preview-link{
+    display:inline-block; font-size:12.5px; color:var(--gold-a); font-weight:700; text-decoration:none;
+    border:0.5px solid rgba(232,185,106,.4); border-radius:9px; padding:7px 12px;
+  }
   #meute-tabs{
     flex:0 0 auto; display:flex; gap:8px; padding:10px 14px; overflow-x:auto; -webkit-overflow-scrolling:touch;
     border-bottom:0.5px solid var(--hairline);
@@ -1096,7 +1114,7 @@
 
 <script>
 (function(){
-  var APPV = 'v2.56';
+  var APPV = 'v2.57';
 
   // Debug : ?debug_modal=1 force l'affichage du modal "nouvelle version" sans attendre un vrai
   // déploiement. Capturé ICI, tout au début, car plus bas (login mémorisé, connexion) le code
@@ -1903,24 +1921,6 @@
       envoye.textContent = '✅ Rapport envoyé le ' + s.rapport_envoye;
       card.appendChild(envoye);
     }
-    var emailRow = document.createElement('div'); emailRow.className = 'meute-email-row';
-    var emailInput = document.createElement('input'); emailInput.className = 'meute-email-input';
-    emailInput.type = 'email'; emailInput.placeholder = 'Email du contact (noté au tel)'; emailInput.value = s.email || '';
-    var emailSend = document.createElement('button'); emailSend.className = 'meute-email-send'; emailSend.type = 'button';
-    emailSend.textContent = s.rapport_envoye ? '📧 Renvoyer' : '📧 Envoyer le rapport';
-    emailSend.addEventListener('click', function(){
-      var em = emailInput.value.trim();
-      if (!em){ toast('Note d’abord un email.'); return; }
-      emailSend.disabled = true; emailSend.textContent = '…';
-      postMeute({ type:'envoyer_rapport', id:s.id, email:em, nom_structure:s.nom_structure, ville:s.ville,
-        dirigeant_nom:s.dirigeant_nom, nb_biens_estime:s.nb_biens_estime, nb_biens_statut:s.nb_biens_statut,
-        commission_apporteur_estimee:s.commission_apporteur_estimee }, function(){
-        toast('✅ Rapport envoyé');
-        meuteRefresh();
-      }, function(err){ emailSend.disabled = false; emailSend.textContent = '📧 Envoyer le rapport'; toast(err); });
-    });
-    emailRow.appendChild(emailInput); emailRow.appendChild(emailSend);
-    card.appendChild(emailRow);
     if (s.argumentaire){
       var arg = document.createElement('div'); arg.className = 'meute-argumentaire'; arg.textContent = s.argumentaire;
       card.appendChild(arg);
@@ -1930,25 +1930,75 @@
       com.textContent = '💰 Potentiel maximum : ' + s.commission_apporteur_estimee + ' € de commission';
       card.appendChild(com);
     }
-    // Note editable (info recueillie pendant l'appel) -- bouton qui deplie une zone de texte
+    // Note editable (info recueillie pendant l'appel, au clavier OU au micro) -- deplie une zone
+    // de texte ; le vocal transcrit DANS ce meme champ (relu/corrige avant d'enregistrer), qui sert
+    // ensuite de contexte au rapport genere plus bas (jamais envoye directement, toujours relu).
     var notesBtn = document.createElement('button'); notesBtn.className = 'meute-notes-btn'; notesBtn.type = 'button';
-    notesBtn.textContent = s.notes ? '📝 Note : ' + s.notes.slice(0, 40) + (s.notes.length > 40 ? '…' : '') : '📝 Ajouter une note';
+    notesBtn.textContent = s.notes ? '📝 Note : ' + s.notes.slice(0, 40) + (s.notes.length > 40 ? '…' : '') : '📝 Ajouter une note (clavier ou micro)';
     var notesBox = document.createElement('div'); notesBox.className = 'meute-notes-box';
-    var notesArea = document.createElement('textarea'); notesArea.rows = 3; notesArea.placeholder = 'Infos recueillies pendant l’appel…';
+    var notesArea = document.createElement('textarea'); notesArea.rows = 3; notesArea.placeholder = 'Infos recueillies pendant l’appel… (tape ou dicte au micro)';
     notesArea.value = s.notes || '';
+    var notesRow = document.createElement('div'); notesRow.className = 'meute-notes-actions';
+    var notesMic = document.createElement('button'); notesMic.className = 'meute-notes-mic'; notesMic.type = 'button'; notesMic.textContent = '🎙️';
     var notesSave = document.createElement('button'); notesSave.className = 'meute-notes-save'; notesSave.type = 'button'; notesSave.textContent = 'Enregistrer';
+    if (micCapable) wireEmailDictation(notesMic, notesArea); else notesMic.style.display = 'none';
     notesSave.addEventListener('click', function(){
       notesSave.disabled = true; notesSave.textContent = '…';
       postMeute({ type:'notes', id:s.id, notes:notesArea.value.trim() }, function(){
         s.notes = notesArea.value.trim();
         notesSave.disabled = false; notesSave.textContent = 'Enregistrer';
-        notesBtn.textContent = s.notes ? '📝 Note : ' + s.notes.slice(0, 40) + (s.notes.length > 40 ? '…' : '') : '📝 Ajouter une note';
+        notesBtn.textContent = s.notes ? '📝 Note : ' + s.notes.slice(0, 40) + (s.notes.length > 40 ? '…' : '') : '📝 Ajouter une note (clavier ou micro)';
         toast('✅ Note enregistrée');
       }, function(err){ notesSave.disabled = false; notesSave.textContent = 'Enregistrer'; toast(err); });
     });
-    notesBox.appendChild(notesArea); notesBox.appendChild(notesSave);
+    notesRow.appendChild(notesMic); notesRow.appendChild(notesSave);
+    notesBox.appendChild(notesArea); notesBox.appendChild(notesRow);
     notesBtn.addEventListener('click', function(){ notesBox.classList.toggle('open'); });
     card.appendChild(notesBtn); card.appendChild(notesBox);
+
+    // Rapport PDF : GENERER (jamais d'envoi direct) -> PREVISUALISER -> ENVOYER seulement si ça
+    // convient. Retour utilisateur explicite : le 1er jet envoyait sans jamais montrer le rapport,
+    // corrigé ici avec un vrai temps d'arrêt humain avant tout envoi.
+    var rapportBox = document.createElement('div'); rapportBox.className = 'meute-rapport-box';
+    var genBtn = document.createElement('button'); genBtn.className = 'meute-gen-btn'; genBtn.type = 'button';
+    genBtn.textContent = '📄 Générer le rapport';
+    var previewRow = document.createElement('div'); previewRow.className = 'meute-preview-row';
+    var previewLink = document.createElement('a'); previewLink.className = 'meute-preview-link'; previewLink.target = '_blank'; previewLink.rel = 'noopener';
+    previewLink.textContent = '👁 Voir le rapport';
+    var emailInput = document.createElement('input'); emailInput.className = 'meute-email-input';
+    emailInput.type = 'email'; emailInput.placeholder = 'Email du contact'; emailInput.value = s.email || '';
+    var sendBtn = document.createElement('button'); sendBtn.className = 'meute-email-send'; sendBtn.type = 'button';
+    sendBtn.textContent = s.rapport_envoye ? '✉️ Renvoyer' : '✉️ Envoyer';
+    previewRow.appendChild(previewLink);
+    var generatedPdfB64 = '', generatedFilename = '';
+    genBtn.addEventListener('click', function(){
+      genBtn.disabled = true; genBtn.textContent = 'Génération…';
+      postMeute({ type:'generer_rapport', id:s.id, nom_structure:s.nom_structure, ville:s.ville,
+        dirigeant_nom:s.dirigeant_nom, nb_biens_estime:s.nb_biens_estime, nb_biens_statut:s.nb_biens_statut,
+        notes:s.notes }, function(j){
+        genBtn.disabled = false; genBtn.textContent = '🔄 Regénérer';
+        generatedPdfB64 = j.pdf_b64; generatedFilename = j.filename;
+        var bytes = atob(j.pdf_b64); var arr = new Uint8Array(bytes.length);
+        for (var i=0;i<bytes.length;i++) arr[i] = bytes.charCodeAt(i);
+        var blobUrl = URL.createObjectURL(new Blob([arr], { type:'application/pdf' }));
+        previewLink.href = blobUrl;
+        rapportBox.appendChild(previewRow); rapportBox.appendChild(emailInput); rapportBox.appendChild(sendBtn);
+        toast('📄 Rapport généré — relis-le avant d’envoyer');
+      }, function(err){ genBtn.disabled = false; genBtn.textContent = '📄 Générer le rapport'; toast(err); });
+    });
+    sendBtn.addEventListener('click', function(){
+      var em = emailInput.value.trim();
+      if (!em){ toast('Note d’abord un email.'); return; }
+      if (!generatedPdfB64){ toast('Génère le rapport d’abord.'); return; }
+      sendBtn.disabled = true; sendBtn.textContent = '…';
+      postMeute({ type:'envoyer_rapport', id:s.id, email:em, nom_structure:s.nom_structure,
+        pdf_b64:generatedPdfB64, filename:generatedFilename }, function(){
+        toast('✅ Rapport envoyé');
+        meuteRefresh();
+      }, function(err){ sendBtn.disabled = false; sendBtn.textContent = '✉️ Envoyer'; toast(err); });
+    });
+    rapportBox.appendChild(genBtn);
+    card.appendChild(rapportBox);
     var actions = document.createElement('div'); actions.className = 'meute-actions';
     MEUTE_STATUTS.forEach(function(st){
       var btn = document.createElement('button'); btn.className = 'meute-act-btn' + (s.statut === st.v ? ' active' : '');
