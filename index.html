@@ -317,6 +317,45 @@
   .doc-folder-nom{flex:1; font-size:15.5px; font-weight:600}
   .doc-folder-count{font-size:13px; color:var(--muted); background:var(--surface); border-radius:99px; padding:2px 9px; flex:0 0 auto}
   .doc-folder-chev{font-size:18px; color:var(--muted); flex:0 0 auto}
+  /* Panneau plein ecran "Veille" (GUETTEUR) — meme famille visuelle que Mes documents, theme sombre inchange */
+  #veilleview{
+    position:fixed; inset:0; z-index:50; background:var(--bg);
+    display:none; flex-direction:column;
+    transform:translateY(100%); transition:transform .28s cubic-bezier(.2,.9,.25,1);
+  }
+  #veilleview.open{display:flex; transform:translateY(0)}
+  @media (prefers-reduced-motion: reduce){#veilleview{transition:none}}
+  #veille-head{
+    flex:0 0 auto; display:flex; align-items:center; gap:10px;
+    padding:calc(10px + env(safe-area-inset-top)) 14px 12px;
+    border-bottom:0.5px solid var(--hairline);
+  }
+  #veille-head b{font-size:16px; flex:1}
+  #veille-close{
+    width:32px; height:32px; border-radius:50%; border:0; flex:0 0 auto;
+    background:var(--surface); color:var(--ink); font-size:16px;
+    display:flex; align-items:center; justify-content:center; cursor:pointer;
+    -webkit-tap-highlight-color:transparent;
+  }
+  #veille-list{flex:1; overflow-y:auto; -webkit-overflow-scrolling:touch; padding:10px 14px calc(20px + env(safe-area-inset-bottom))}
+  .veille-card{
+    background:var(--surface); border-radius:14px; padding:14px; margin-bottom:12px;
+  }
+  .veille-src{font-size:11px; color:var(--gold-a); text-transform:uppercase; letter-spacing:.03em; font-weight:700}
+  .veille-titre{font-size:15px; font-weight:600; margin:4px 0 6px; display:block}
+  .veille-extrait{font-size:13px; color:var(--muted); display:block; margin-bottom:8px; max-height:4.2em; overflow:hidden}
+  .veille-link{font-size:12.5px; color:var(--blue,#0A84FF); text-decoration:none; display:inline-block; margin-bottom:8px}
+  .veille-brouillon{
+    background:rgba(232,185,106,.1); border:1px solid rgba(232,185,106,.3); border-radius:10px;
+    padding:10px; font-size:13px; color:var(--ink); margin-bottom:10px; white-space:pre-wrap;
+  }
+  .veille-brouillon-label{font-size:11px; color:var(--gold-a); font-weight:700; display:block; margin-bottom:4px}
+  .veille-resolu-btn{
+    width:100%; padding:10px; border-radius:10px; border:0; background:var(--gold-a); color:#1a1200;
+    font-weight:700; font-size:14px; cursor:pointer; -webkit-tap-highlight-color:transparent;
+  }
+  .veille-traite{font-size:13px; color:var(--muted); text-align:center; padding:6px}
+  #veille-empty, #veille-loading{color:var(--muted); text-align:center; padding:40px 20px; font-size:14px}
   /* Panneau plein ecran "Emails" — theme CLAIR dedie façon Mail iOS (le reste de l'app reste sombre :
      les couleurs sont re-definies en variables locales sur #emailsview, donc tous les elements
      enfants qui utilisent deja var(--bg)/var(--surface)/var(--ink)/var(--muted)/var(--hairline)
@@ -772,7 +811,7 @@
     <button class="sh-item" id="sh-emails" type="button"><span class="sh-ic">✉️</span><span class="sh-label">Emails</span><span class="badge-count" id="menu-email-badge" style="display:none"></span></button>
     <button class="sh-item" id="sh-calendar" type="button"><span class="sh-ic">📅</span><span class="sh-label">Calendrier</span></button>
     <button class="sh-item" id="sh-docs" type="button"><span class="sh-ic">📄</span><span class="sh-label">Mes documents</span></button>
-    <button class="sh-item" id="sh-devis" type="button"><span class="sh-ic">🧾</span><span class="sh-label">Nouveau devis (démo MCS)</span></button>
+    <button class="sh-item" id="sh-veille" type="button"><span class="sh-ic">🕵️</span><span class="sh-label">Veille</span><span class="badge-count" id="menu-veille-badge" style="display:none"></span></button>
     <button class="sh-item" id="sh-push" type="button"><span class="sh-ic">🔔</span><span class="sh-label">Notifications</span><span class="sw" id="sw-push"><span class="sw-knob"></span></span></button>
   </div>
   <div class="sh-group">
@@ -791,6 +830,14 @@
     <input id="docs-search" type="search" inputmode="search" placeholder="🔍 Rechercher un document…" autocomplete="off" autocapitalize="off" autocorrect="off">
   </div>
   <div id="docs-list"></div>
+</div>
+
+<div id="veilleview">
+  <div id="veille-head">
+    <b>🕵️ Veille</b>
+    <button id="veille-close" type="button" aria-label="Fermer">✕</button>
+  </div>
+  <div id="veille-list"></div>
 </div>
 
 <div id="emailsview">
@@ -890,7 +937,7 @@
 
 <script>
 (function(){
-  var APPV = 'v2.46';
+  var APPV = 'v2.48';
 
   // Debug : ?debug_modal=1 force l'affichage du modal "nouvelle version" sans attendre un vrai
   // déploiement. Capturé ICI, tout au début, car plus bas (login mémorisé, connexion) le code
@@ -916,6 +963,7 @@
   setInterval(checkUpdate, 60000);
   document.addEventListener('visibilitychange', function(){ if (!document.hidden) checkUpdate(); });
   var API = 'https://mat22.app.n8n.cloud/webhook/jarvis-msg';
+  var API_GUETTEUR = 'https://mat22.app.n8n.cloud/webhook/guetteur-app';
   var login = document.getElementById('login');
   var app = document.getElementById('app');
   var chat = document.getElementById('chat');
@@ -1060,6 +1108,15 @@
     }).then(function(r){ return r.json(); }).then(function(j){
       if (j && j.error){ onErr(j.error); } else { onOk(j || {}); }
     }).catch(function(){ onErr('Connexion impossible. Vérifiez le réseau et réessayez.'); });
+  }
+
+  function postGuetteur(payload, onOk, onErr){
+    payload.code = String(read('jarvisCode') || '').trim();
+    fetch(API_GUETTEUR, {
+      method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify(payload)
+    }).then(function(r){ return r.json(); }).then(function(j){
+      if (!j || j.ok === false){ onErr((j && j.erreur) || 'Erreur.'); } else { onOk(j); }
+    }).catch(function(){ onErr('Connexion impossible.'); });
   }
 
   function renderExtras(j){
@@ -1224,6 +1281,7 @@
     app.style.display = 'flex';
     subline.textContent = (nom ? ('Assistant de ' + nom + ' — en ligne') : 'en ligne') + ' · ' + APPV + ' · H' + window.innerHeight + '/' + ((screen && screen.height) || '?');
     renderHistory(msgs, extras);
+    veilleCheckBadge();
     if (forceModalTest) showUpdateModal(); else maybeOfferPushOnUpdate();
   }
 
@@ -1490,6 +1548,76 @@
   docsBack.addEventListener('click', function(){ docsSearch.value = ''; renderFolders(); });
   document.getElementById('sh-docs').addEventListener('click', function(){ sheetOpen(false); docsOpen(); });
   document.getElementById('docs-close').addEventListener('click', docsClose);
+
+  // ---- Veille (GUETTEUR) : alertes partagees Matheo/Dorian, "J'ai repondu" ferme pour les 2 ----
+  var veilleview = document.getElementById('veilleview');
+  var veilleList = document.getElementById('veille-list');
+  var veilleBadge = document.getElementById('menu-veille-badge');
+  var SRC_LABELS = { quechoisir:'Forum Que Choisir', 'gites-et-chambres':'Forum gîtes & chambres d’hôtes' };
+
+  function veilleCard(a){
+    var card = document.createElement('div'); card.className = 'veille-card';
+    var src = document.createElement('span'); src.className = 'veille-src';
+    src.textContent = SRC_LABELS[a.sous_source] || a.sous_source || a.source || '';
+    var titre = document.createElement('span'); titre.className = 'veille-titre'; titre.textContent = a.titre || '';
+    var extrait = document.createElement('span'); extrait.className = 'veille-extrait'; extrait.textContent = a.extrait || '';
+    card.appendChild(src); card.appendChild(titre);
+    if (a.extrait) card.appendChild(extrait);
+    if (a.url){
+      var link = document.createElement('a'); link.className = 'veille-link'; link.href = a.url;
+      link.target = '_blank'; link.rel = 'noopener'; link.textContent = 'Voir le message ↗';
+      card.appendChild(link);
+    }
+    if (a.brouillon_reponse){
+      var b = document.createElement('div'); b.className = 'veille-brouillon';
+      var lab = document.createElement('span'); lab.className = 'veille-brouillon-label'; lab.textContent = 'Brouillon de réponse suggéré';
+      b.appendChild(lab);
+      b.appendChild(document.createTextNode(a.brouillon_reponse));
+      card.appendChild(b);
+    }
+    if (a.statut === 'traite'){
+      var done = document.createElement('div'); done.className = 'veille-traite';
+      done.textContent = '✅ Traité par ' + (a.traite_par || '?');
+      card.appendChild(done);
+    } else {
+      var btn = document.createElement('button'); btn.className = 'veille-resolu-btn'; btn.type = 'button';
+      btn.textContent = '✅ J’ai répondu';
+      btn.addEventListener('click', function(){
+        btn.disabled = true; btn.textContent = '…';
+        postGuetteur({ type:'resolve', id:a.id }, function(){ veilleOpen(); }, function(err){ btn.disabled = false; btn.textContent = '✅ J’ai répondu'; toast(err); });
+      });
+      card.appendChild(btn);
+    }
+    return card;
+  }
+
+  function veilleRender(alertes){
+    veilleList.innerHTML = '';
+    if (!alertes.length){ veilleList.innerHTML = '<p id="veille-empty">Aucune alerte pour l’instant.</p>'; return; }
+    var nouvelles = alertes.filter(function(a){ return a.statut !== 'traite'; });
+    var traitees = alertes.filter(function(a){ return a.statut === 'traite'; });
+    nouvelles.concat(traitees).forEach(function(a){ veilleList.appendChild(veilleCard(a)); });
+  }
+
+  function veilleUpdateBadge(alertes){
+    var n = alertes.filter(function(a){ return a.statut !== 'traite'; }).length;
+    if (n > 0){ veilleBadge.textContent = n; veilleBadge.style.display = ''; } else { veilleBadge.style.display = 'none'; }
+  }
+
+  function veilleOpen(){
+    veilleview.classList.add('open');
+    veilleList.innerHTML = '<p id="veille-loading">Chargement…</p>';
+    postGuetteur({ type:'list' }, function(j){
+      var alertes = j.alertes || [];
+      veilleRender(alertes);
+      veilleUpdateBadge(alertes);
+    }, function(err){ veilleList.innerHTML = '<p id="veille-empty">' + err + '</p>'; });
+  }
+  function veilleClose(){ veilleview.classList.remove('open'); }
+  document.getElementById('sh-veille').addEventListener('click', function(){ sheetOpen(false); veilleOpen(); });
+  document.getElementById('veille-close').addEventListener('click', veilleClose);
+  // Verifie discretement (juste le badge, pas d'ouverture) - appelee depuis enterApp() une fois connecte
+  function veilleCheckBadge(){ postGuetteur({ type:'list' }, function(j){ veilleUpdateBadge(j.alertes || []); }, function(){}); }
 
   // ---- Emails (indexes + tries par l'IA toutes les 20 min cote serveur) ----
   var emailsview = document.getElementById('emailsview');
@@ -2187,7 +2315,6 @@
   }
   devisFormBg.addEventListener('click', devisClose);
   document.getElementById('df-cancel').addEventListener('click', devisClose);
-  document.getElementById('sh-devis').addEventListener('click', devisOpen);
 
   // Autocompletion adresse : API Base Adresse Nationale (officielle, gratuite, sans cle)
   dfAdresse.addEventListener('input', function(){
