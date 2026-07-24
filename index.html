@@ -413,6 +413,17 @@
   .meute-act-btn.active{background:var(--gold-a); color:#1a1200}
   .meute-tel{font-size:13px; color:var(--blue,#0A84FF); text-decoration:none; display:inline-block; margin-bottom:8px}
   #meute-empty, #meute-loading{color:var(--muted); text-align:center; padding:40px 20px; font-size:14px}
+  .meute-email-row{display:flex; gap:6px; margin-bottom:10px}
+  .meute-email-input{
+    flex:1; min-width:0; font:inherit; font-size:12.5px; color:var(--ink); background:#2E2E32;
+    border:0.5px solid rgba(255,255,255,.18); border-radius:9px; padding:8px 10px;
+  }
+  .meute-email-send{
+    flex:0 0 auto; padding:8px 12px; border-radius:9px; border:0; background:var(--gold-a); color:#1a1200;
+    font-size:12.5px; font-weight:700; cursor:pointer; -webkit-tap-highlight-color:transparent; white-space:nowrap;
+  }
+  .meute-email-send:disabled{opacity:.5}
+  .meute-rapport-envoye{font-size:12px; color:#34C759; font-weight:600; margin-bottom:8px; display:block}
   #meute-tabs{
     flex:0 0 auto; display:flex; gap:8px; padding:10px 14px; overflow-x:auto; -webkit-overflow-scrolling:touch;
     border-bottom:0.5px solid var(--hairline);
@@ -1085,7 +1096,7 @@
 
 <script>
 (function(){
-  var APPV = 'v2.55';
+  var APPV = 'v2.56';
 
   // Debug : ?debug_modal=1 force l'affichage du modal "nouvelle version" sans attendre un vrai
   // déploiement. Capturé ICI, tout au début, car plus bas (login mémorisé, connexion) le code
@@ -1887,6 +1898,29 @@
       card.appendChild(document.createElement('br'));
       card.appendChild(tel);
     }
+    if (s.rapport_envoye){
+      var envoye = document.createElement('span'); envoye.className = 'meute-rapport-envoye';
+      envoye.textContent = '✅ Rapport envoyé le ' + s.rapport_envoye;
+      card.appendChild(envoye);
+    }
+    var emailRow = document.createElement('div'); emailRow.className = 'meute-email-row';
+    var emailInput = document.createElement('input'); emailInput.className = 'meute-email-input';
+    emailInput.type = 'email'; emailInput.placeholder = 'Email du contact (noté au tel)'; emailInput.value = s.email || '';
+    var emailSend = document.createElement('button'); emailSend.className = 'meute-email-send'; emailSend.type = 'button';
+    emailSend.textContent = s.rapport_envoye ? '📧 Renvoyer' : '📧 Envoyer le rapport';
+    emailSend.addEventListener('click', function(){
+      var em = emailInput.value.trim();
+      if (!em){ toast('Note d’abord un email.'); return; }
+      emailSend.disabled = true; emailSend.textContent = '…';
+      postMeute({ type:'envoyer_rapport', id:s.id, email:em, nom_structure:s.nom_structure, ville:s.ville,
+        dirigeant_nom:s.dirigeant_nom, nb_biens_estime:s.nb_biens_estime, nb_biens_statut:s.nb_biens_statut,
+        commission_apporteur_estimee:s.commission_apporteur_estimee }, function(){
+        toast('✅ Rapport envoyé');
+        meuteRefresh();
+      }, function(err){ emailSend.disabled = false; emailSend.textContent = '📧 Envoyer le rapport'; toast(err); });
+    });
+    emailRow.appendChild(emailInput); emailRow.appendChild(emailSend);
+    card.appendChild(emailRow);
     if (s.argumentaire){
       var arg = document.createElement('div'); arg.className = 'meute-argumentaire'; arg.textContent = s.argumentaire;
       card.appendChild(arg);
