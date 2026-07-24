@@ -853,7 +853,8 @@
     <button class="sh-item" id="sh-emails" type="button"><span class="sh-ic">✉️</span><span class="sh-label">Emails</span><span class="badge-count" id="menu-email-badge" style="display:none"></span></button>
     <button class="sh-item" id="sh-calendar" type="button"><span class="sh-ic">📅</span><span class="sh-label">Calendrier</span></button>
     <button class="sh-item" id="sh-docs" type="button"><span class="sh-ic">📄</span><span class="sh-label">Mes documents</span></button>
-    <button class="sh-item" id="sh-veille" type="button"><span class="sh-ic">🕵️</span><span class="sh-label">Veille</span><span class="badge-count" id="menu-veille-badge" style="display:none"></span></button>
+    <!-- "Veille" (GUETTEUR) retire du menu le 2026-07-24 sur demande utilisateur -- panneau et
+         backend n8n intacts, juste plus d'entree pour y acceder (cf. CLAUDE-VENTE-ROUE.md). -->
     <button class="sh-item" id="sh-push" type="button"><span class="sh-ic">🔔</span><span class="sh-label">Notifications</span><span class="sw" id="sw-push"><span class="sw-knob"></span></span></button>
   </div>
   <div class="sh-group">
@@ -1000,7 +1001,7 @@
 
 <script>
 (function(){
-  var APPV = 'v2.53';
+  var APPV = 'v2.54';
 
   // Debug : ?debug_modal=1 force l'affichage du modal "nouvelle version" sans attendre un vrai
   // déploiement. Capturé ICI, tout au début, car plus bas (login mémorisé, connexion) le code
@@ -1344,7 +1345,6 @@
     app.style.display = 'flex';
     subline.textContent = (nom ? ('Assistant de ' + nom + ' — en ligne') : 'en ligne') + ' · ' + APPV + ' · H' + window.innerHeight + '/' + ((screen && screen.height) || '?');
     renderHistory(msgs, extras);
-    veilleCheckBadge();
     if (forceModalTest) showUpdateModal(); else maybeOfferPushOnUpdate();
   }
 
@@ -1698,7 +1698,8 @@
     }, function(err){ veilleList.innerHTML = '<p id="veille-empty">' + err + '</p>'; });
   }
   function veilleClose(){ veilleview.classList.remove('open'); }
-  document.getElementById('sh-veille').addEventListener('click', function(){ sheetOpen(false); veilleOpen(); });
+  // Bouton de menu "sh-veille" retire (voir plus haut) -- plus d'entree pour ouvrir ce panneau,
+  // mais le code (ci-dessus/ci-dessous) reste intact, au cas ou.
   document.getElementById('veille-close').addEventListener('click', veilleClose);
 
   // ---- Formulaire "post repere Facebook/Instagram" (colle un lien+texte trouve manuellement) ----
