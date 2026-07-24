@@ -424,10 +424,11 @@
   }
   .meute-email-send:disabled{opacity:.5}
   .meute-rapport-envoye{font-size:12px; color:#34C759; font-weight:600; margin-bottom:8px; display:block}
-  .meute-notes-actions{display:flex; gap:6px}
+  .meute-notes-label{font-size:12px; color:var(--gold-a); font-weight:600; margin-bottom:6px; display:block}
+  .meute-notes-actions{display:flex; gap:6px; margin-bottom:10px}
   .meute-notes-mic{
-    flex:0 0 auto; width:38px; padding:7px; border-radius:9px; border:0; background:#2E2E32; color:var(--ink);
-    font-size:14px; cursor:pointer; -webkit-tap-highlight-color:transparent;
+    flex:0 0 auto; padding:7px 12px; border-radius:9px; border:0; background:#2E2E32; color:var(--ink);
+    font-size:12.5px; font-weight:600; cursor:pointer; -webkit-tap-highlight-color:transparent;
   }
   .meute-notes-mic.rec{background:#FF453A; color:#fff; animation:meute-pulse 1s infinite}
   @keyframes meute-pulse{0%,100%{opacity:1}50%{opacity:.55}}
@@ -452,15 +453,9 @@
     -webkit-tap-highlight-color:transparent; white-space:nowrap;
   }
   .meute-tab.active{background:var(--gold-a); color:#1a1200; border-color:var(--gold-a)}
-  .meute-notes-btn{
-    background:none; border:0; color:var(--gold-a); font-size:12.5px; font-weight:600; cursor:pointer;
-    padding:0; margin-bottom:8px; display:block; -webkit-tap-highlight-color:transparent;
-  }
-  .meute-notes-box{display:none; margin-bottom:10px}
-  .meute-notes-box.open{display:block}
-  .meute-notes-box textarea{
+  .meute-card > textarea{
     width:100%; box-sizing:border-box; font:inherit; font-size:13px; color:var(--ink); background:#2E2E32;
-    border:0.5px solid rgba(255,255,255,.18); border-radius:10px; padding:9px 11px; resize:vertical; margin-bottom:6px;
+    border:0.5px solid rgba(255,255,255,.18); border-radius:10px; padding:9px 11px; resize:vertical; margin-bottom:8px;
   }
   .meute-notes-save{
     padding:7px 14px; border-radius:8px; border:0; background:var(--gold-a); color:#1a1200;
@@ -1114,7 +1109,7 @@
 
 <script>
 (function(){
-  var APPV = 'v2.57';
+  var APPV = 'v2.58';
 
   // Debug : ?debug_modal=1 force l'affichage du modal "nouvelle version" sans attendre un vrai
   // déploiement. Capturé ICI, tout au début, car plus bas (login mémorisé, connexion) le code
@@ -1930,16 +1925,16 @@
       com.textContent = '💰 Potentiel maximum : ' + s.commission_apporteur_estimee + ' € de commission';
       card.appendChild(com);
     }
-    // Note editable (info recueillie pendant l'appel, au clavier OU au micro) -- deplie une zone
-    // de texte ; le vocal transcrit DANS ce meme champ (relu/corrige avant d'enregistrer), qui sert
-    // ensuite de contexte au rapport genere plus bas (jamais envoye directement, toujours relu).
-    var notesBtn = document.createElement('button'); notesBtn.className = 'meute-notes-btn'; notesBtn.type = 'button';
-    notesBtn.textContent = s.notes ? '📝 Note : ' + s.notes.slice(0, 40) + (s.notes.length > 40 ? '…' : '') : '📝 Ajouter une note (clavier ou micro)';
-    var notesBox = document.createElement('div'); notesBox.className = 'meute-notes-box';
+    // Note editable (info recueillie pendant l'appel, au clavier OU au micro) -- TOUJOURS visible,
+    // jamais repliee (retour utilisateur reel : le micro etait invisible car cache dans un volet
+    // replie par defaut). Le vocal transcrit DANS ce meme champ (relu/corrige avant d'enregistrer),
+    // qui sert ensuite de contexte au rapport genere plus bas (jamais envoye directement, toujours relu).
+    var notesLabel = document.createElement('span'); notesLabel.className = 'meute-notes-label';
+    notesLabel.textContent = '📝 Note d’appel (clavier ou micro 🎙️ ci-dessous)';
     var notesArea = document.createElement('textarea'); notesArea.rows = 3; notesArea.placeholder = 'Infos recueillies pendant l’appel… (tape ou dicte au micro)';
     notesArea.value = s.notes || '';
     var notesRow = document.createElement('div'); notesRow.className = 'meute-notes-actions';
-    var notesMic = document.createElement('button'); notesMic.className = 'meute-notes-mic'; notesMic.type = 'button'; notesMic.textContent = '🎙️';
+    var notesMic = document.createElement('button'); notesMic.className = 'meute-notes-mic'; notesMic.type = 'button'; notesMic.textContent = '🎙️ Dicter';
     var notesSave = document.createElement('button'); notesSave.className = 'meute-notes-save'; notesSave.type = 'button'; notesSave.textContent = 'Enregistrer';
     if (micCapable) wireEmailDictation(notesMic, notesArea); else notesMic.style.display = 'none';
     notesSave.addEventListener('click', function(){
@@ -1947,14 +1942,11 @@
       postMeute({ type:'notes', id:s.id, notes:notesArea.value.trim() }, function(){
         s.notes = notesArea.value.trim();
         notesSave.disabled = false; notesSave.textContent = 'Enregistrer';
-        notesBtn.textContent = s.notes ? '📝 Note : ' + s.notes.slice(0, 40) + (s.notes.length > 40 ? '…' : '') : '📝 Ajouter une note (clavier ou micro)';
         toast('✅ Note enregistrée');
       }, function(err){ notesSave.disabled = false; notesSave.textContent = 'Enregistrer'; toast(err); });
     });
     notesRow.appendChild(notesMic); notesRow.appendChild(notesSave);
-    notesBox.appendChild(notesArea); notesBox.appendChild(notesRow);
-    notesBtn.addEventListener('click', function(){ notesBox.classList.toggle('open'); });
-    card.appendChild(notesBtn); card.appendChild(notesBox);
+    card.appendChild(notesLabel); card.appendChild(notesArea); card.appendChild(notesRow);
 
     // Rapport PDF : GENERER (jamais d'envoi direct) -> PREVISUALISER -> ENVOYER seulement si ça
     // convient. Retour utilisateur explicite : le 1er jet envoyait sans jamais montrer le rapport,
