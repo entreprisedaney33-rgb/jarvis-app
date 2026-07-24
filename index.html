@@ -317,60 +317,7 @@
   .doc-folder-nom{flex:1; font-size:15.5px; font-weight:600}
   .doc-folder-count{font-size:13px; color:var(--muted); background:var(--surface); border-radius:99px; padding:2px 9px; flex:0 0 auto}
   .doc-folder-chev{font-size:18px; color:var(--muted); flex:0 0 auto}
-  /* Panneau plein ecran "Veille" (GUETTEUR) — meme famille visuelle que Mes documents, theme sombre inchange */
-  #veilleview{
-    position:fixed; inset:0; z-index:50; background:var(--bg);
-    display:none; flex-direction:column;
-    transform:translateY(100%); transition:transform .28s cubic-bezier(.2,.9,.25,1);
-  }
-  #veilleview.open{display:flex; transform:translateY(0)}
-  @media (prefers-reduced-motion: reduce){#veilleview{transition:none}}
-  #veille-head{
-    flex:0 0 auto; display:flex; align-items:center; gap:10px;
-    padding:calc(10px + env(safe-area-inset-top)) 14px 12px;
-    border-bottom:0.5px solid var(--hairline);
-  }
-  #veille-head b{font-size:16px; flex:1}
-  #veille-close{
-    width:32px; height:32px; border-radius:50%; border:0; flex:0 0 auto;
-    background:var(--surface); color:var(--ink); font-size:16px;
-    display:flex; align-items:center; justify-content:center; cursor:pointer;
-    -webkit-tap-highlight-color:transparent;
-  }
-  #veille-list{flex:1; overflow-y:auto; -webkit-overflow-scrolling:touch; padding:10px 14px calc(20px + env(safe-area-inset-bottom))}
-  .veille-card{
-    background:var(--surface); border-radius:14px; padding:14px; margin-bottom:12px;
-  }
-  .veille-card-head{display:flex; align-items:center; gap:8px}
-  .veille-src{font-size:11px; color:var(--gold-a); text-transform:uppercase; letter-spacing:.03em; font-weight:700; flex:1}
-  .veille-reject-btn{
-    width:26px; height:26px; border-radius:50%; border:0; flex:0 0 auto;
-    background:rgba(255,69,58,.15); color:#FF453A; font-size:13px; font-weight:700;
-    display:flex; align-items:center; justify-content:center; cursor:pointer;
-    -webkit-tap-highlight-color:transparent;
-  }
-  .veille-titre{font-size:15px; font-weight:600; margin:4px 0 6px; display:block}
-  .veille-extrait{font-size:13px; color:var(--muted); display:block; margin-bottom:8px; max-height:4.2em; overflow:hidden}
-  .veille-link{font-size:12.5px; color:var(--blue,#0A84FF); text-decoration:none; display:inline-block; margin-bottom:8px}
-  .veille-brouillon{
-    background:rgba(232,185,106,.1); border:1px solid rgba(232,185,106,.3); border-radius:10px;
-    padding:10px; font-size:13px; color:var(--ink); margin-bottom:10px; white-space:pre-wrap;
-  }
-  .veille-brouillon-label{font-size:11px; color:var(--gold-a); font-weight:700; display:block; margin-bottom:4px}
-  .veille-resolu-btn{
-    width:100%; padding:10px; border-radius:10px; border:0; background:var(--gold-a); color:#1a1200;
-    font-weight:700; font-size:14px; cursor:pointer; -webkit-tap-highlight-color:transparent;
-  }
-  .veille-send-link{display:block; box-sizing:border-box; text-align:center; text-decoration:none}
-  .veille-traite{font-size:13px; color:var(--muted); text-align:center; padding:6px}
-  #veille-empty, #veille-loading{color:var(--muted); text-align:center; padding:40px 20px; font-size:14px}
-  #veille-add{
-    width:32px; height:32px; border-radius:50%; border:0; flex:0 0 auto; margin-left:auto;
-    background:var(--surface); color:var(--ink); font-size:15px;
-    display:flex; align-items:center; justify-content:center; cursor:pointer;
-    -webkit-tap-highlight-color:transparent;
-  }
-  /* Panneau plein ecran "Meute" (partenariats multi-sites) — meme famille visuelle que Veille */
+  /* Panneau plein ecran "Meute" (partenariats multi-sites) */
   #meuteview{
     position:fixed; inset:0; z-index:50; background:var(--bg);
     display:none; flex-direction:column;
@@ -461,34 +408,6 @@
     padding:7px 14px; border-radius:8px; border:0; background:var(--gold-a); color:#1a1200;
     font-size:12.5px; font-weight:700; cursor:pointer; -webkit-tap-highlight-color:transparent;
   }
-  /* Formulaire "post repere Facebook/Instagram" */
-  #veille-form-bg{position:fixed; inset:0; background:rgba(0,0,0,.5); display:none; z-index:52}
-  #veille-form-bg.open{display:block}
-  #veille-form{
-    position:fixed; left:14px; right:14px; top:50%; transform:translateY(-50%) scale(.96); z-index:53;
-    background:#151517; border-radius:16px; padding:18px 18px calc(18px + env(safe-area-inset-bottom));
-    display:none; flex-direction:column; gap:10px; max-height:80vh; overflow-y:auto;
-    opacity:0; transition:opacity .2s ease, transform .2s ease;
-  }
-  #veille-form.open{display:flex; opacity:1; transform:translateY(-50%) scale(1)}
-  @media (prefers-reduced-motion: reduce){#veille-form{transition:none}}
-  #veille-form b{font-size:16px}
-  .veille-form-hint{font-size:12px; color:var(--muted); margin:0 0 4px}
-  #veille-form label{display:flex; flex-direction:column; gap:5px; font-size:12.5px; color:var(--muted)}
-  #veille-form input, #veille-form textarea{
-    font:inherit; font-size:15px; color:var(--ink); background:#2E2E32;
-    border:0.5px solid rgba(255,255,255,.18); border-radius:10px; padding:9px 11px; box-sizing:border-box;
-    resize:vertical;
-  }
-  #vf-source{display:flex; gap:8px}
-  .vf-src-btn{
-    flex:1; padding:9px; border-radius:10px; border:0.5px solid rgba(255,255,255,.18);
-    background:#2E2E32; color:var(--muted); font-size:14px; font-weight:600; cursor:pointer;
-    -webkit-tap-highlight-color:transparent;
-  }
-  .vf-src-btn.active{background:var(--gold-a); color:#1a1200; border-color:var(--gold-a)}
-  #vf-err{color:#FF453A; font-size:12.5px; min-height:1em}
-  #vf-row{display:flex; gap:8px}
   /* Panneau plein ecran "Emails" — theme CLAIR dedie façon Mail iOS (le reste de l'app reste sombre :
      les couleurs sont re-definies en variables locales sur #emailsview, donc tous les elements
      enfants qui utilisent deja var(--bg)/var(--surface)/var(--ink)/var(--muted)/var(--hairline)
@@ -944,8 +863,6 @@
     <button class="sh-item" id="sh-emails" type="button"><span class="sh-ic">✉️</span><span class="sh-label">Emails</span><span class="badge-count" id="menu-email-badge" style="display:none"></span></button>
     <button class="sh-item" id="sh-calendar" type="button"><span class="sh-ic">📅</span><span class="sh-label">Calendrier</span></button>
     <button class="sh-item" id="sh-docs" type="button"><span class="sh-ic">📄</span><span class="sh-label">Mes documents</span></button>
-    <!-- "Veille" (GUETTEUR) retire du menu le 2026-07-24 sur demande utilisateur -- panneau et
-         backend n8n intacts, juste plus d'entree pour y acceder (cf. CLAUDE-VENTE-ROUE.md). -->
     <button class="sh-item" id="sh-meute" type="button"><span class="sh-ic">🐺</span><span class="sh-label">Meute</span><span class="badge-count" id="menu-meute-badge" style="display:none"></span></button>
     <button class="sh-item" id="sh-push" type="button"><span class="sh-ic">🔔</span><span class="sh-label">Notifications</span><span class="sw" id="sw-push"><span class="sw-knob"></span></span></button>
   </div>
@@ -967,34 +884,6 @@
   <div id="docs-list"></div>
 </div>
 
-<div id="veilleview">
-  <div id="veille-head">
-    <b>🕵️ Veille</b>
-    <button id="veille-add" type="button" aria-label="Ajouter un post repéré">➕</button>
-    <button id="veille-close" type="button" aria-label="Fermer">✕</button>
-  </div>
-  <div id="veille-list"></div>
-</div>
-<div id="veille-form-bg"></div>
-<div id="veille-form">
-  <b>Post repéré sur Facebook / Instagram</b>
-  <p class="veille-form-hint">Colle ce que tu as vu en scrollant — Jarvis juge si c'est pertinent et prépare le brouillon de réponse.</p>
-  <div id="vf-source">
-    <button class="vf-src-btn active" data-src="facebook" type="button">Facebook</button>
-    <button class="vf-src-btn" data-src="instagram" type="button">Instagram</button>
-  </div>
-  <label>Lien du post (optionnel)
-    <input id="vf-url" type="text" placeholder="https://facebook.com/...">
-  </label>
-  <label>Texte du post
-    <textarea id="vf-texte" rows="5" placeholder="Colle ici ce que la personne a écrit…"></textarea>
-  </label>
-  <div id="vf-err"></div>
-  <div id="vf-row">
-    <button id="vf-cancel" type="button" class="vc-no">Annuler</button>
-    <button id="vf-submit" type="button" class="ed-send">Analyser</button>
-  </div>
-</div>
 
 <div id="meuteview">
   <div id="meute-head">
@@ -1109,7 +998,7 @@
 
 <script>
 (function(){
-  var APPV = 'v2.58';
+  var APPV = 'v2.59';
 
   // Debug : ?debug_modal=1 force l'affichage du modal "nouvelle version" sans attendre un vrai
   // déploiement. Capturé ICI, tout au début, car plus bas (login mémorisé, connexion) le code
@@ -1135,7 +1024,6 @@
   setInterval(checkUpdate, 60000);
   document.addEventListener('visibilitychange', function(){ if (!document.hidden) checkUpdate(); });
   var API = 'https://mat22.app.n8n.cloud/webhook/jarvis-msg';
-  var API_GUETTEUR = 'https://mat22.app.n8n.cloud/webhook/guetteur-app';
   var API_MEUTE = 'https://mat22.app.n8n.cloud/webhook/meute-app';
   var login = document.getElementById('login');
   var app = document.getElementById('app');
@@ -1281,15 +1169,6 @@
     }).then(function(r){ return r.json(); }).then(function(j){
       if (j && j.error){ onErr(j.error); } else { onOk(j || {}); }
     }).catch(function(){ onErr('Connexion impossible. Vérifiez le réseau et réessayez.'); });
-  }
-
-  function postGuetteur(payload, onOk, onErr){
-    payload.code = String(read('jarvisCode') || '').trim();
-    fetch(API_GUETTEUR, {
-      method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify(payload)
-    }).then(function(r){ return r.json(); }).then(function(j){
-      if (!j || j.ok === false){ onErr((j && j.erreur) || 'Erreur.'); } else { onOk(j); }
-    }).catch(function(){ onErr('Connexion impossible.'); });
   }
 
   function postMeute(payload, onOk, onErr){
@@ -1730,138 +1609,6 @@
   docsBack.addEventListener('click', function(){ docsSearch.value = ''; renderFolders(); });
   document.getElementById('sh-docs').addEventListener('click', function(){ sheetOpen(false); docsOpen(); });
   document.getElementById('docs-close').addEventListener('click', docsClose);
-
-  // ---- Veille (GUETTEUR) : alertes partagees Matheo/Dorian, "J'ai repondu" ferme pour les 2 ----
-  var veilleview = document.getElementById('veilleview');
-  var veilleList = document.getElementById('veille-list');
-  var veilleBadge = document.getElementById('menu-veille-badge');
-  var SRC_LABELS = { quechoisir:'Forum Que Choisir', 'gites-et-chambres':'Forum gîtes & chambres d’hôtes', 'nos-chambres-dhotes':'Forum chambres d’hôtes', facebook_page:'Prospect Facebook (SCOUT)', facebook:'Facebook', instagram:'Instagram' };
-
-  function veilleCard(a){
-    var card = document.createElement('div'); card.className = 'veille-card';
-    var head = document.createElement('div'); head.className = 'veille-card-head';
-    var src = document.createElement('span'); src.className = 'veille-src';
-    src.textContent = SRC_LABELS[a.sous_source] || a.sous_source || a.source || '';
-    head.appendChild(src);
-    if (a.statut !== 'traite'){
-      var rejBtn = document.createElement('button'); rejBtn.className = 'veille-reject-btn'; rejBtn.type = 'button';
-      rejBtn.setAttribute('aria-label', 'Mauvais tri, supprimer'); rejBtn.textContent = '✕';
-      rejBtn.addEventListener('click', function(){
-        rejBtn.disabled = true;
-        postGuetteur({ type:'rejeter', id:a.id }, function(){ toast('Supprimé'); veilleOpen(); }, function(err){ rejBtn.disabled = false; toast(err); });
-      });
-      head.appendChild(rejBtn);
-    }
-    card.appendChild(head);
-    var titre = document.createElement('span'); titre.className = 'veille-titre'; titre.textContent = a.titre || '';
-    var extrait = document.createElement('span'); extrait.className = 'veille-extrait'; extrait.textContent = a.extrait || '';
-    card.appendChild(titre);
-    if (a.extrait) card.appendChild(extrait);
-    var estMessenger = a.sous_source === 'facebook_page';
-    if (a.url && !estMessenger){
-      var link = document.createElement('a'); link.className = 'veille-link'; link.href = a.url;
-      link.target = '_blank'; link.rel = 'noopener'; link.textContent = 'Voir le message ↗';
-      card.appendChild(link);
-    }
-    if (a.brouillon_reponse){
-      var b = document.createElement('div'); b.className = 'veille-brouillon';
-      var lab = document.createElement('span'); lab.className = 'veille-brouillon-label'; lab.textContent = 'Brouillon de réponse suggéré';
-      b.appendChild(lab);
-      b.appendChild(document.createTextNode(a.brouillon_reponse));
-      card.appendChild(b);
-    }
-    if (a.statut === 'traite'){
-      var done = document.createElement('div'); done.className = 'veille-traite';
-      done.textContent = '✅ Traité par ' + (a.traite_par || '?');
-      card.appendChild(done);
-    } else if (estMessenger && a.url){
-      var envoyer = document.createElement('a'); envoyer.className = 'veille-resolu-btn veille-send-link'; envoyer.href = a.url;
-      envoyer.target = '_blank'; envoyer.rel = 'noopener'; envoyer.textContent = '✉️ Envoyer le message';
-      envoyer.addEventListener('click', function(){
-        postGuetteur({ type:'resolve', id:a.id }, function(){}, function(){});
-        setTimeout(function(){ veilleOpen(); }, 600);
-      });
-      card.appendChild(envoyer);
-    } else {
-      var btn = document.createElement('button'); btn.className = 'veille-resolu-btn'; btn.type = 'button';
-      btn.textContent = '✅ J’ai répondu';
-      btn.addEventListener('click', function(){
-        btn.disabled = true; btn.textContent = '…';
-        postGuetteur({ type:'resolve', id:a.id }, function(){ veilleOpen(); }, function(err){ btn.disabled = false; btn.textContent = '✅ J’ai répondu'; toast(err); });
-      });
-      card.appendChild(btn);
-    }
-    return card;
-  }
-
-  function veilleRender(alertes){
-    veilleList.innerHTML = '';
-    if (!alertes.length){ veilleList.innerHTML = '<p id="veille-empty">Aucune alerte pour l’instant.</p>'; return; }
-    var nouvelles = alertes.filter(function(a){ return a.statut !== 'traite'; });
-    var traitees = alertes.filter(function(a){ return a.statut === 'traite'; });
-    nouvelles.concat(traitees).forEach(function(a){ veilleList.appendChild(veilleCard(a)); });
-  }
-
-  function veilleUpdateBadge(alertes){
-    var n = alertes.filter(function(a){ return a.statut !== 'traite'; }).length;
-    if (n > 0){ veilleBadge.textContent = n; veilleBadge.style.display = ''; } else { veilleBadge.style.display = 'none'; }
-  }
-
-  function veilleOpen(){
-    veilleview.classList.add('open');
-    veilleList.innerHTML = '<p id="veille-loading">Chargement…</p>';
-    postGuetteur({ type:'list' }, function(j){
-      var alertes = j.alertes || [];
-      veilleRender(alertes);
-      veilleUpdateBadge(alertes);
-    }, function(err){ veilleList.innerHTML = '<p id="veille-empty">' + err + '</p>'; });
-  }
-  function veilleClose(){ veilleview.classList.remove('open'); }
-  // Bouton de menu "sh-veille" retire (voir plus haut) -- plus d'entree pour ouvrir ce panneau,
-  // mais le code (ci-dessus/ci-dessous) reste intact, au cas ou.
-  document.getElementById('veille-close').addEventListener('click', veilleClose);
-
-  // ---- Formulaire "post repere Facebook/Instagram" (colle un lien+texte trouve manuellement) ----
-  var veilleFormBg = document.getElementById('veille-form-bg');
-  var veilleForm = document.getElementById('veille-form');
-  var vfUrl = document.getElementById('vf-url');
-  var vfTexte = document.getElementById('vf-texte');
-  var vfErr = document.getElementById('vf-err');
-  var vfSubmit = document.getElementById('vf-submit');
-  var vfSource = 'facebook';
-  document.querySelectorAll('.vf-src-btn').forEach(function(btn){
-    btn.addEventListener('click', function(){
-      document.querySelectorAll('.vf-src-btn').forEach(function(b){ b.classList.remove('active'); });
-      btn.classList.add('active');
-      vfSource = btn.dataset.src;
-    });
-  });
-  function veilleFormOpen(){
-    vfUrl.value = ''; vfTexte.value = ''; vfErr.textContent = '';
-    vfSource = 'facebook';
-    document.querySelectorAll('.vf-src-btn').forEach(function(b,i){ b.classList.toggle('active', i === 0); });
-    veilleFormBg.classList.add('open'); veilleForm.classList.add('open');
-  }
-  function veilleFormClose(){ veilleFormBg.classList.remove('open'); veilleForm.classList.remove('open'); }
-  document.getElementById('veille-add').addEventListener('click', veilleFormOpen);
-  document.getElementById('vf-cancel').addEventListener('click', veilleFormClose);
-  veilleFormBg.addEventListener('click', veilleFormClose);
-  vfSubmit.addEventListener('click', function(){
-    var texte = vfTexte.value.trim();
-    if (!texte){ vfErr.textContent = 'Colle le texte du post.'; return; }
-    vfErr.textContent = ''; vfSubmit.disabled = true; vfSubmit.textContent = 'Analyse…';
-    postGuetteur({ type:'soumettre', source: vfSource, url: vfUrl.value.trim(), texte: texte }, function(){
-      vfSubmit.disabled = false; vfSubmit.textContent = 'Analyser';
-      veilleFormClose();
-      toast('✅ Analysé — voir la carte dans la liste');
-      veilleOpen();
-    }, function(err){
-      vfSubmit.disabled = false; vfSubmit.textContent = 'Analyser';
-      vfErr.textContent = err;
-    });
-  });
-  // Verifie discretement (juste le badge, pas d'ouverture) - appelee depuis enterApp() une fois connecte
-  function veilleCheckBadge(){ postGuetteur({ type:'list' }, function(j){ veilleUpdateBadge(j.alertes || []); }, function(){}); }
 
   // ---- Meute (partenariats conciergeries multi-sites) : pipeline de prospection Matheo/Dorian ----
   var meuteview = document.getElementById('meuteview');
