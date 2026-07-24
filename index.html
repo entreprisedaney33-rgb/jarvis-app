@@ -341,7 +341,14 @@
   .veille-card{
     background:var(--surface); border-radius:14px; padding:14px; margin-bottom:12px;
   }
-  .veille-src{font-size:11px; color:var(--gold-a); text-transform:uppercase; letter-spacing:.03em; font-weight:700}
+  .veille-card-head{display:flex; align-items:center; gap:8px}
+  .veille-src{font-size:11px; color:var(--gold-a); text-transform:uppercase; letter-spacing:.03em; font-weight:700; flex:1}
+  .veille-reject-btn{
+    width:26px; height:26px; border-radius:50%; border:0; flex:0 0 auto;
+    background:rgba(255,69,58,.15); color:#FF453A; font-size:13px; font-weight:700;
+    display:flex; align-items:center; justify-content:center; cursor:pointer;
+    -webkit-tap-highlight-color:transparent;
+  }
   .veille-titre{font-size:15px; font-weight:600; margin:4px 0 6px; display:block}
   .veille-extrait{font-size:13px; color:var(--muted); display:block; margin-bottom:8px; max-height:4.2em; overflow:hidden}
   .veille-link{font-size:12.5px; color:var(--blue,#0A84FF); text-decoration:none; display:inline-block; margin-bottom:8px}
@@ -354,6 +361,7 @@
     width:100%; padding:10px; border-radius:10px; border:0; background:var(--gold-a); color:#1a1200;
     font-weight:700; font-size:14px; cursor:pointer; -webkit-tap-highlight-color:transparent;
   }
+  .veille-send-link{display:block; box-sizing:border-box; text-align:center; text-decoration:none}
   .veille-traite{font-size:13px; color:var(--muted); text-align:center; padding:6px}
   #veille-empty, #veille-loading{color:var(--muted); text-align:center; padding:40px 20px; font-size:14px}
   #veille-add{
@@ -992,7 +1000,7 @@
 
 <script>
 (function(){
-  var APPV = 'v2.49';
+  var APPV = 'v2.51';
 
   // Debug : ?debug_modal=1 force l'affichage du modal "nouvelle version" sans attendre un vrai
   // déploiement. Capturé ICI, tout au début, car plus bas (login mémorisé, connexion) le code
@@ -1608,17 +1616,30 @@
   var veilleview = document.getElementById('veilleview');
   var veilleList = document.getElementById('veille-list');
   var veilleBadge = document.getElementById('menu-veille-badge');
-  var SRC_LABELS = { quechoisir:'Forum Que Choisir', 'gites-et-chambres':'Forum gîtes & chambres d’hôtes' };
+  var SRC_LABELS = { quechoisir:'Forum Que Choisir', 'gites-et-chambres':'Forum gîtes & chambres d’hôtes', 'nos-chambres-dhotes':'Forum chambres d’hôtes', facebook_page:'Prospect Facebook (SCOUT)', facebook:'Facebook', instagram:'Instagram' };
 
   function veilleCard(a){
     var card = document.createElement('div'); card.className = 'veille-card';
+    var head = document.createElement('div'); head.className = 'veille-card-head';
     var src = document.createElement('span'); src.className = 'veille-src';
     src.textContent = SRC_LABELS[a.sous_source] || a.sous_source || a.source || '';
+    head.appendChild(src);
+    if (a.statut !== 'traite'){
+      var rejBtn = document.createElement('button'); rejBtn.className = 'veille-reject-btn'; rejBtn.type = 'button';
+      rejBtn.setAttribute('aria-label', 'Mauvais tri, supprimer'); rejBtn.textContent = '✕';
+      rejBtn.addEventListener('click', function(){
+        rejBtn.disabled = true;
+        postGuetteur({ type:'rejeter', id:a.id }, function(){ toast('Supprimé'); veilleOpen(); }, function(err){ rejBtn.disabled = false; toast(err); });
+      });
+      head.appendChild(rejBtn);
+    }
+    card.appendChild(head);
     var titre = document.createElement('span'); titre.className = 'veille-titre'; titre.textContent = a.titre || '';
     var extrait = document.createElement('span'); extrait.className = 'veille-extrait'; extrait.textContent = a.extrait || '';
-    card.appendChild(src); card.appendChild(titre);
+    card.appendChild(titre);
     if (a.extrait) card.appendChild(extrait);
-    if (a.url){
+    var estMessenger = a.sous_source === 'facebook_page';
+    if (a.url && !estMessenger){
       var link = document.createElement('a'); link.className = 'veille-link'; link.href = a.url;
       link.target = '_blank'; link.rel = 'noopener'; link.textContent = 'Voir le message ↗';
       card.appendChild(link);
@@ -1634,6 +1655,14 @@
       var done = document.createElement('div'); done.className = 'veille-traite';
       done.textContent = '✅ Traité par ' + (a.traite_par || '?');
       card.appendChild(done);
+    } else if (estMessenger && a.url){
+      var envoyer = document.createElement('a'); envoyer.className = 'veille-resolu-btn veille-send-link'; envoyer.href = a.url;
+      envoyer.target = '_blank'; envoyer.rel = 'noopener'; envoyer.textContent = '✉️ Envoyer le message';
+      envoyer.addEventListener('click', function(){
+        postGuetteur({ type:'resolve', id:a.id }, function(){}, function(){});
+        setTimeout(function(){ veilleOpen(); }, 600);
+      });
+      card.appendChild(envoyer);
     } else {
       var btn = document.createElement('button'); btn.className = 'veille-resolu-btn'; btn.type = 'button';
       btn.textContent = '✅ J’ai répondu';
