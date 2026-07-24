@@ -362,11 +362,6 @@
     font-weight:700; font-size:14px; cursor:pointer; -webkit-tap-highlight-color:transparent;
   }
   .veille-send-link{display:block; box-sizing:border-box; text-align:center; text-decoration:none}
-  .veille-mail-btn{
-    width:100%; padding:9px; border-radius:10px; margin-top:8px; box-sizing:border-box;
-    background:transparent; border:1px solid rgba(232,185,106,.4); color:var(--gold-a);
-    font-weight:600; font-size:12.5px; text-align:center; text-decoration:none; display:block;
-  }
   .veille-traite{font-size:13px; color:var(--muted); text-align:center; padding:6px}
   #veille-empty, #veille-loading{color:var(--muted); text-align:center; padding:40px 20px; font-size:14px}
   #veille-add{
@@ -1005,7 +1000,7 @@
 
 <script>
 (function(){
-  var APPV = 'v2.52';
+  var APPV = 'v2.53';
 
   // Debug : ?debug_modal=1 force l'affichage du modal "nouvelle version" sans attendre un vrai
   // déploiement. Capturé ICI, tout au début, car plus bas (login mémorisé, connexion) le code
@@ -1668,19 +1663,6 @@
         setTimeout(function(){ veilleOpen(); }, 600);
       });
       card.appendChild(envoyer);
-      // Repli email : certaines pages Facebook n'ont pas Messenger active (indetectable a l'avance,
-      // meme Facebook ne le revele qu'apres son propre JS) — si SCOUT a deja trouve un email reel
-      // sur le site de l'etablissement, on propose ce 2e chemin tout de suite, sans attendre un echec.
-      if (a.email_secours){
-        var mailBtn = document.createElement('a'); mailBtn.className = 'veille-mail-btn';
-        mailBtn.href = 'mailto:' + a.email_secours + '?subject=' + encodeURIComponent('La Roue des Récompenses') + '&body=' + encodeURIComponent(a.brouillon_reponse || '');
-        mailBtn.textContent = '📧 Si Messenger ne marche pas : envoyer un email';
-        mailBtn.addEventListener('click', function(){
-          postGuetteur({ type:'resolve', id:a.id }, function(){}, function(){});
-          setTimeout(function(){ veilleOpen(); }, 600);
-        });
-        card.appendChild(mailBtn);
-      }
     } else {
       var btn = document.createElement('button'); btn.className = 'veille-resolu-btn'; btn.type = 'button';
       btn.textContent = '✅ J’ai répondu';
