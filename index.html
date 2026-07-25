@@ -609,6 +609,28 @@
   .plume-plan-actions{font-size:12.5px; color:var(--ink); line-height:1.4; display:block; margin-bottom:4px}
   .plume-plan-resultat{font-size:12px; color:var(--muted); line-height:1.4; display:block}
   .plume-plan-resultat b{color:var(--gold-a); font-weight:700}
+  .plume-rapport-box{margin-bottom:10px}
+  .plume-rapport-toggle{
+    width:100%; padding:9px; border-radius:10px; border:0.5px solid rgba(255,255,255,.18); background:#2E2E32;
+    color:var(--ink); font-size:13px; font-weight:700; cursor:pointer; -webkit-tap-highlight-color:transparent;
+  }
+  .plume-rapport-fields{display:none; flex-direction:column; gap:6px; margin-top:8px}
+  .plume-rapport-fields.open{display:flex}
+  .plume-rapport-dest{font-size:12px; color:var(--muted)}
+  .plume-rapport-sujet{
+    font:inherit; font-size:12.5px; color:var(--ink); background:#2E2E32;
+    border:0.5px solid rgba(255,255,255,.18); border-radius:9px; padding:8px 10px;
+  }
+  .plume-rapport-corps{
+    width:100%; box-sizing:border-box; font:inherit; font-size:12.5px; color:var(--ink); background:#2E2E32;
+    border:0.5px solid rgba(255,255,255,.18); border-radius:10px; padding:9px 11px; resize:vertical; min-height:220px;
+  }
+  .plume-rapport-send{
+    padding:9px; border-radius:10px; border:0; background:var(--gold-a); color:#1a1200;
+    font-size:13px; font-weight:700; cursor:pointer; -webkit-tap-highlight-color:transparent;
+  }
+  .plume-rapport-send:disabled{opacity:.5}
+  .plume-rapport-envoye{font-size:12px; color:#34C759; font-weight:600; margin-top:2px; display:block}
   .plume-journal-toggle{
     width:100%; padding:9px; border-radius:10px; border:0.5px solid rgba(255,255,255,.18); background:#2E2E32;
     color:var(--ink); font-size:13px; font-weight:700; cursor:pointer; -webkit-tap-highlight-color:transparent;
@@ -1252,7 +1274,7 @@
 
 <script>
 (function(){
-  var APPV = 'v2.68';
+  var APPV = 'v2.69';
 
   // Debug : ?debug_modal=1 force l'affichage du modal "nouvelle version" sans attendre un vrai
   // déploiement. Capturé ICI, tout au début, car plus bas (login mémorisé, connexion) le code
@@ -2483,6 +2505,50 @@
       pToggle.addEventListener('click', function(){ pList.classList.toggle('open'); });
       card.appendChild(pToggle);
       card.appendChild(pList);
+    }
+
+    if (s.client_email){
+      var rBox = document.createElement('div'); rBox.className = 'plume-rapport-box';
+      var rToggle = document.createElement('button'); rToggle.className = 'plume-rapport-toggle'; rToggle.type = 'button';
+      rToggle.textContent = '📧 Compte rendu pour ' + s.client_email;
+      var rFields = document.createElement('div'); rFields.className = 'plume-rapport-fields';
+      var rDest = document.createElement('span'); rDest.className = 'plume-rapport-dest';
+      var rSujet = document.createElement('input'); rSujet.className = 'plume-rapport-sujet'; rSujet.type = 'text'; rSujet.placeholder = 'Sujet';
+      var rCorps = document.createElement('textarea'); rCorps.className = 'plume-rapport-corps'; rCorps.placeholder = 'Corps du mail';
+      var rSend = document.createElement('button'); rSend.className = 'plume-rapport-send'; rSend.type = 'button'; rSend.textContent = 'Générer l’aperçu';
+      var rDone = document.createElement('span'); rDone.className = 'plume-rapport-envoye'; rDone.style.display = 'none';
+      rFields.appendChild(rDest); rFields.appendChild(rSujet); rFields.appendChild(rCorps); rFields.appendChild(rSend); rFields.appendChild(rDone);
+
+      var rGenerated = false;
+      rSend.addEventListener('click', function(){
+        if (rSend.disabled) return;
+        if (!rGenerated){
+          rSend.disabled = true; rSend.textContent = 'Génération…';
+          postPlume({ type:'rapport_apercu', domaine: s.domaine }, function(j){
+            rSend.disabled = false;
+            rDest.textContent = 'Destinataire : ' + (j.destinataire || s.client_email);
+            rSujet.value = j.sujet || '';
+            rCorps.value = j.corps || '';
+            rGenerated = true;
+            rSend.textContent = 'Envoyer';
+          }, function(err){
+            rSend.disabled = false; rSend.textContent = 'Générer l’aperçu';
+            toast(err);
+          });
+        } else {
+          rSend.disabled = true; rSend.textContent = 'Envoi…';
+          postPlume({ type:'rapport_envoyer', domaine: s.domaine, sujet: rSujet.value, corps: rCorps.value }, function(){
+            rDone.style.display = 'block'; rDone.textContent = '✅ Compte rendu envoyé.';
+            rSend.style.display = 'none';
+          }, function(err){
+            rSend.disabled = false; rSend.textContent = 'Envoyer';
+            toast(err);
+          });
+        }
+      });
+      rToggle.addEventListener('click', function(){ rFields.classList.toggle('open'); });
+      rBox.appendChild(rToggle); rBox.appendChild(rFields);
+      card.appendChild(rBox);
     }
 
     if (s.journal && s.journal.length){
