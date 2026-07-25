@@ -544,6 +544,61 @@
   }
   .vitrine-statut-btn.active{background:var(--gold-a); color:#1a1200}
   #vitrine-empty, #vitrine-loading{color:var(--muted); text-align:center; padding:40px 20px; font-size:14px}
+  /* Panneau plein ecran "SEO" (agent PLUME, 2026-07-25) — avancement de chaque site suivi + la
+     prochaine intervention/strategie prevue par l'agent. Backend 100% independant (webhook dedie
+     plume-liste, tables dediees) -- seul ce panneau frontend est partage avec Jarvis, memes
+     classes .plume-* calquees sur .vitrine-* et .meute-* pour rester coherent visuellement. */
+  #plumeview{
+    position:fixed; inset:0; z-index:50; background:var(--bg);
+    display:none; flex-direction:column;
+    transform:translateY(100%); transition:transform .28s cubic-bezier(.2,.9,.25,1);
+  }
+  #plumeview.open{display:flex; transform:translateY(0)}
+  @media (prefers-reduced-motion: reduce){#plumeview{transition:none}}
+  #plume-head{
+    flex:0 0 auto; display:flex; align-items:center; gap:10px;
+    padding:calc(10px + env(safe-area-inset-top)) 14px 12px;
+    border-bottom:0.5px solid var(--hairline);
+  }
+  #plume-head b{font-size:16px; flex:1}
+  #plume-refresh, #plume-close{
+    width:32px; height:32px; border-radius:50%; border:0; flex:0 0 auto;
+    background:var(--surface); color:var(--ink); font-size:15px;
+    display:flex; align-items:center; justify-content:center; cursor:pointer;
+    -webkit-tap-highlight-color:transparent;
+  }
+  #plume-refresh.spin svg{animation:meute-spin 1s linear infinite}
+  #plume-list{flex:1; overflow-y:auto; -webkit-overflow-scrolling:touch; padding:10px 14px calc(20px + env(safe-area-inset-bottom))}
+  .plume-card{background:var(--surface); border-radius:14px; padding:14px; margin-bottom:12px}
+  .plume-nom{font-size:15px; font-weight:600; display:block; margin-bottom:2px}
+  .plume-meta{font-size:12.5px; color:var(--muted); display:block; margin-bottom:10px}
+  .plume-statut-pill{
+    display:inline-block; font-size:12px; font-weight:700; color:#1a1200; background:var(--gold-a);
+    border-radius:99px; padding:5px 11px; margin-bottom:10px;
+  }
+  .plume-checklist{display:flex; flex-wrap:wrap; gap:6px; margin-bottom:10px}
+  .plume-check{
+    font-size:11.5px; font-weight:600; padding:5px 9px; border-radius:8px;
+    background:#2E2E32; color:var(--muted); border:0.5px solid rgba(255,255,255,.12);
+  }
+  .plume-check.done{background:rgba(52,199,89,.16); color:#34C759; border-color:rgba(52,199,89,.4)}
+  .plume-next{
+    background:#2E2E32; border:0.5px solid rgba(224,166,79,.35); border-radius:10px;
+    padding:10px 11px; margin-bottom:10px;
+  }
+  .plume-next b{font-size:12px; color:var(--gold-a); display:block; margin-bottom:4px}
+  .plume-next span{font-size:13px; color:var(--ink); line-height:1.4}
+  .plume-journal-toggle{
+    width:100%; padding:9px; border-radius:10px; border:0.5px solid rgba(255,255,255,.18); background:#2E2E32;
+    color:var(--ink); font-size:13px; font-weight:700; cursor:pointer; -webkit-tap-highlight-color:transparent;
+  }
+  .plume-journal-list{display:none; flex-direction:column; gap:8px; margin-top:8px}
+  .plume-journal-list.open{display:flex}
+  .plume-journal-item{padding:8px 2px; border-bottom:0.5px solid rgba(255,255,255,.08)}
+  .plume-journal-date{font-size:11px; color:var(--muted); display:block; margin-bottom:2px}
+  .plume-journal-action{font-size:13px; font-weight:700; display:block; margin-bottom:2px}
+  .plume-journal-detail{font-size:12.5px; color:var(--muted); line-height:1.4}
+  #plume-empty, #plume-loading{color:var(--muted); text-align:center; padding:40px 20px; font-size:14px}
   /* Panneau plein ecran "Emails" — theme CLAIR dedie façon Mail iOS (le reste de l'app reste sombre :
      les couleurs sont re-definies en variables locales sur #emailsview, donc tous les elements
      enfants qui utilisent deja var(--bg)/var(--surface)/var(--ink)/var(--muted)/var(--hairline)
@@ -1001,6 +1056,7 @@
     <button class="sh-item" id="sh-docs" type="button"><span class="sh-ic">📄</span><span class="sh-label">Mes documents</span></button>
     <button class="sh-item" id="sh-meute" type="button"><span class="sh-ic">🐺</span><span class="sh-label">Meute</span><span class="badge-count" id="menu-meute-badge" style="display:none"></span></button>
     <button class="sh-item" id="sh-vitrine" type="button"><span class="sh-ic">🏗️</span><span class="sh-label">Sites Vitrine</span></button>
+    <button class="sh-item" id="sh-plume" type="button"><span class="sh-ic">🪶</span><span class="sh-label">SEO</span></button>
     <button class="sh-item" id="sh-push" type="button"><span class="sh-ic">🔔</span><span class="sh-label">Notifications</span><span class="sw" id="sw-push"><span class="sw-knob"></span></span></button>
   </div>
   <div class="sh-group">
@@ -1067,6 +1123,15 @@
     <button class="vitrine-tab" data-tab="perdus" type="button">❌ Perdus</button>
   </div>
   <div id="vitrine-list"></div>
+</div>
+
+<div id="plumeview">
+  <div id="plume-head">
+    <b>🪶 SEO</b>
+    <button id="plume-refresh" type="button" aria-label="Actualiser"><svg width="16" height="16" viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M17 10a7 7 0 1 1-2-4.9M17 3v4h-4"/></svg></button>
+    <button id="plume-close" type="button" aria-label="Fermer">✕</button>
+  </div>
+  <div id="plume-list"></div>
 </div>
 
 <div id="emailsview">
@@ -1166,7 +1231,7 @@
 
 <script>
 (function(){
-  var APPV = 'v2.66';
+  var APPV = 'v2.67';
 
   // Debug : ?debug_modal=1 force l'affichage du modal "nouvelle version" sans attendre un vrai
   // déploiement. Capturé ICI, tout au début, car plus bas (login mémorisé, connexion) le code
@@ -1194,6 +1259,7 @@
   var API = 'https://mat22.app.n8n.cloud/webhook/jarvis-msg';
   var API_MEUTE = 'https://mat22.app.n8n.cloud/webhook/meute-app';
   var API_VITRINE = 'https://mat22.app.n8n.cloud/webhook/vitrine-liste';
+  var API_PLUME = 'https://mat22.app.n8n.cloud/webhook/plume-liste';
   var login = document.getElementById('login');
   var app = document.getElementById('app');
   var chat = document.getElementById('chat');
@@ -1352,6 +1418,15 @@
   function postVitrine(payload, onOk, onErr){
     payload.code = String(read('jarvisCode') || '').trim();
     fetch(API_VITRINE, {
+      method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify(payload)
+    }).then(function(r){ return r.json(); }).then(function(j){
+      if (!j || j.ok === false){ onErr((j && j.erreur) || 'Erreur.'); } else { onOk(j); }
+    }).catch(function(){ onErr('Connexion impossible.'); });
+  }
+
+  function postPlume(payload, onOk, onErr){
+    payload.code = String(read('jarvisCode') || '').trim();
+    fetch(API_PLUME, {
       method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify(payload)
     }).then(function(r){ return r.json(); }).then(function(j){
       if (!j || j.ok === false){ onErr((j && j.erreur) || 'Erreur.'); } else { onOk(j); }
@@ -2306,6 +2381,103 @@
       vitrineLancerStatus.textContent = '';
       toast(err);
     });
+  });
+
+  // ---- SEO (agent PLUME) : avancement de chaque site + prochaine intervention/strategie ----
+  var plumeview = document.getElementById('plumeview');
+  var plumeList = document.getElementById('plume-list');
+  var plumeRefreshBtn = document.getElementById('plume-refresh');
+  var plumeAll = [];
+  var PLUME_CHECKS = [
+    { key:'gsc', label:'Search Console' },
+    { key:'ga4', label:'GA4' },
+    { key:'sitemap', label:'Sitemap' },
+    { key:'schema', label:'Schema.org' },
+    { key:'gbp', label:'Fiche Google Business' },
+    { key:'contenu', label:'Contenu (~10 pages)' },
+  ];
+
+  function plumeCard(s){
+    var card = document.createElement('div'); card.className = 'plume-card';
+
+    var nom = document.createElement('span'); nom.className = 'plume-nom'; nom.textContent = s.nom || s.domaine;
+    card.appendChild(nom);
+
+    var meta = document.createElement('span'); meta.className = 'plume-meta';
+    var metaParts = [s.domaine, s.type_site, s.scope].filter(Boolean);
+    meta.textContent = metaParts.join(' · ');
+    card.appendChild(meta);
+
+    if (s.statut){
+      var pill = document.createElement('span'); pill.className = 'plume-statut-pill'; pill.textContent = s.statut;
+      card.appendChild(pill);
+    }
+
+    var checklist = document.createElement('div'); checklist.className = 'plume-checklist';
+    PLUME_CHECKS.forEach(function(c){
+      var chip = document.createElement('span'); chip.className = 'plume-check' + (s.checklist && s.checklist[c.key] ? ' done' : '');
+      chip.textContent = (s.checklist && s.checklist[c.key] ? '✅ ' : '⬜ ') + c.label;
+      checklist.appendChild(chip);
+    });
+    card.appendChild(checklist);
+
+    if (s.prochaine_action){
+      var next = document.createElement('div'); next.className = 'plume-next';
+      var nb = document.createElement('b'); nb.textContent = '➡️ Prochaine intervention';
+      var ns = document.createElement('span'); ns.textContent = s.prochaine_action;
+      next.appendChild(nb); next.appendChild(ns);
+      card.appendChild(next);
+    }
+
+    if (s.journal && s.journal.length){
+      var jToggle = document.createElement('button'); jToggle.className = 'plume-journal-toggle'; jToggle.type = 'button';
+      jToggle.textContent = '📋 Historique (' + s.journal.length + ')';
+      var jList = document.createElement('div'); jList.className = 'plume-journal-list';
+      s.journal.forEach(function(j){
+        var item = document.createElement('div'); item.className = 'plume-journal-item';
+        var jd = document.createElement('span'); jd.className = 'plume-journal-date'; jd.textContent = j.date || '';
+        var ja = document.createElement('span'); ja.className = 'plume-journal-action'; ja.textContent = j.action || '';
+        var jt = document.createElement('span'); jt.className = 'plume-journal-detail'; jt.textContent = j.detail || '';
+        item.appendChild(jd); item.appendChild(ja); item.appendChild(jt);
+        jList.appendChild(item);
+      });
+      jToggle.addEventListener('click', function(){ jList.classList.toggle('open'); });
+      card.appendChild(jToggle);
+      card.appendChild(jList);
+    }
+
+    return card;
+  }
+
+  function plumeRender(){
+    plumeList.innerHTML = '';
+    if (!plumeAll.length){
+      plumeList.innerHTML = '<p id="plume-empty">Aucun site suivi pour l’instant.</p>';
+      return;
+    }
+    plumeAll.forEach(function(s){ plumeList.appendChild(plumeCard(s)); });
+  }
+
+  function plumeRefresh(onDone){
+    postPlume({ type:'list' }, function(j){
+      plumeAll = j.sites || [];
+      plumeRender();
+      if (onDone) onDone();
+    }, function(err){ plumeList.innerHTML = '<p id="plume-empty">' + err + '</p>'; if (onDone) onDone(); });
+  }
+
+  function plumeOpen(){
+    plumeview.classList.add('open');
+    plumeList.innerHTML = '<p id="plume-loading">Chargement…</p>';
+    plumeRefresh();
+  }
+  function plumeClose(){ plumeview.classList.remove('open'); }
+  document.getElementById('sh-plume').addEventListener('click', function(){ sheetOpen(false); plumeOpen(); });
+  document.getElementById('plume-close').addEventListener('click', plumeClose);
+  plumeRefreshBtn.addEventListener('click', function(){
+    if (plumeRefreshBtn.classList.contains('spin')) return;
+    plumeRefreshBtn.classList.add('spin');
+    plumeRefresh(function(){ plumeRefreshBtn.classList.remove('spin'); });
   });
 
   // ---- Emails (indexes + tries par l'IA toutes les 20 min cote serveur) ----
