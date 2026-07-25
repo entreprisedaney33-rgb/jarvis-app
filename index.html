@@ -497,6 +497,46 @@
   }
   .vitrine-mail-send:disabled{opacity:.5}
   .vitrine-mail-envoye{font-size:12px; color:#34C759; font-weight:600; margin-top:2px; display:block}
+  .vitrine-devis-box{margin-bottom:10px}
+  .vitrine-devis-toggle{
+    width:100%; padding:9px; border-radius:10px; border:0.5px solid rgba(255,255,255,.18); background:#2E2E32;
+    color:var(--ink); font-size:13px; font-weight:700; cursor:pointer; -webkit-tap-highlight-color:transparent;
+  }
+  .vitrine-devis-fields{display:none; flex-direction:column; gap:8px; margin-top:8px}
+  .vitrine-devis-fields.open{display:flex}
+  .vitrine-devis-option{
+    display:flex; align-items:center; gap:8px; font-size:13px; padding:7px 2px;
+    border-bottom:0.5px solid rgba(255,255,255,.08);
+  }
+  .vitrine-devis-option input[type=checkbox]{flex:0 0 auto; width:18px; height:18px}
+  .vitrine-devis-option-titre{flex:1}
+  .vitrine-devis-option-prix{color:var(--muted); font-size:12.5px; flex:0 0 auto}
+  .vitrine-devis-option-qte{
+    flex:0 0 40px; text-align:center; font:inherit; font-size:12.5px; color:var(--ink); background:#2E2E32;
+    border:0.5px solid rgba(255,255,255,.18); border-radius:7px; padding:5px 2px;
+  }
+  .vitrine-devis-libre{display:flex; gap:8px; margin-top:4px}
+  .vitrine-devis-libre-titre{flex:1; min-width:0}
+  .vitrine-devis-libre-prix{flex:0 0 70px; text-align:center}
+  .vitrine-devis-libre-titre, .vitrine-devis-libre-prix{
+    font:inherit; font-size:12.5px; color:var(--ink); background:#2E2E32;
+    border:0.5px solid rgba(255,255,255,.18); border-radius:9px; padding:8px 10px;
+  }
+  .vitrine-devis-go{
+    padding:9px; border-radius:10px; border:0; background:var(--gold-a); color:#1a1200;
+    font-size:13px; font-weight:700; cursor:pointer; -webkit-tap-highlight-color:transparent;
+  }
+  .vitrine-devis-go:disabled{opacity:.5}
+  .vitrine-devis-result{
+    display:none; align-items:center; gap:8px; margin-top:8px; padding:9px 10px; border-radius:10px;
+    background:#2E2E32; border:0.5px solid rgba(52,199,89,.4);
+  }
+  .vitrine-devis-result.open{display:flex}
+  .vitrine-devis-result-url{flex:1; min-width:0; font-size:12px; color:var(--muted); overflow:hidden; text-overflow:ellipsis; white-space:nowrap}
+  .vitrine-devis-copy{
+    flex:0 0 auto; padding:7px 10px; border-radius:8px; border:0; background:var(--gold-a); color:#1a1200;
+    font-size:12px; font-weight:700; cursor:pointer; -webkit-tap-highlight-color:transparent;
+  }
   .vitrine-statut-actions{display:flex; gap:8px; flex-wrap:wrap}
   .vitrine-statut-btn{
     flex:1; min-width:76px; padding:9px; border-radius:10px; border:0; font-size:12.5px; font-weight:700;
@@ -1126,7 +1166,7 @@
 
 <script>
 (function(){
-  var APPV = 'v2.63';
+  var APPV = 'v2.64';
 
   // Debug : ?debug_modal=1 force l'affichage du modal "nouvelle version" sans attendre un vrai
   // déploiement. Capturé ICI, tout au début, car plus bas (login mémorisé, connexion) le code
@@ -1972,6 +2012,28 @@
     { v:'a_relancer', label:'À relancer' },
     { v:'perdu', label:'Perdu' },
   ];
+  // Catalogue du devis (etape 4, Bloc 2) -- memes cles/prix que CATALOGUE_DEVIS cote n8n
+  // (build-vitrine-cockpit.js). "video/drone" volontairement absent d'ici : son prix est sur
+  // devis, donc toujours saisi via la ligne libre plutot qu'une case a 0€.
+  var VITRINE_DEVIS_OPTIONS = [
+    { cle:'base_1_page', titre:'Site web professionnel (1 page)', prix:490 },
+    { cle:'page_supp', titre:'Page supplémentaire', prix:250, qte:true },
+    { cle:'google_business', titre:'Fiche Google Business', prix:199 },
+    { cle:'photo_pro', titre:'Séance photo professionnelle', prix:390 },
+    { cle:'devis_interactif', titre:'Formulaire de devis interactif', prix:129 },
+    { cle:'logo', titre:'Logo / identité visuelle', prix:219 },
+    { cle:'galerie_avancee', titre:'Galerie de réalisations avancée', prix:99 },
+    { cle:'email_pro', titre:'Adresses email pro', prix:49 },
+    { cle:'domaine_perso', titre:'Nom de domaine personnalisé', prix:49 },
+    { cle:'avis_widget', titre:'Avis Google intégrés (widget)', prix:49 },
+    { cle:'redaction_premium', titre:'Rédaction premium', prix:99 },
+    { cle:'rdv_ligne', titre:'Prise de rendez-vous en ligne', prix:149 },
+    { cle:'reseaux_sociaux', titre:'Réseaux sociaux (pages pro)', prix:99 },
+    { cle:'analytics', titre:'Analytics + Search Console', prix:49 },
+    { cle:'badges_confiance', titre:'Badges de confiance BTP', prix:49 },
+    { cle:'multilingue', titre:'Multilingue (par langue)', prix:149 },
+    { cle:'formation', titre:'Formation prise en main', prix:99 },
+  ];
   // Pipeline de vente en 4 dossiers (meme principe que Meute) : Nouveaux (jamais appelé) -> En
   // cours (contact etabli, mail envoyé, ou à relancer) -> Clients (acheté) / Perdus.
   var VITRINE_TABS = {
@@ -2070,6 +2132,85 @@
     });
     mailBox.appendChild(mailToggle); mailBox.appendChild(mailFields);
     card.appendChild(mailBox);
+
+    // Devis (etape 4, Bloc 2) : on coche les options choisies par l'artisan au telephone -> Jarvis
+    // cree un vrai draft order Shopify et renvoie un lien de paiement personnalise a lui envoyer
+    // (copie/colle dans le mail ou par SMS). Replie par defaut, meme discipline que le mail.
+    var devisBox = document.createElement('div'); devisBox.className = 'vitrine-devis-box';
+    var devisToggle = document.createElement('button'); devisToggle.className = 'vitrine-devis-toggle'; devisToggle.type = 'button';
+    devisToggle.textContent = s.devis_url ? '🧾 Revoir le devis' : '🧾 Créer un devis';
+    var devisFields = document.createElement('div'); devisFields.className = 'vitrine-devis-fields';
+    var devisChecks = [];
+    VITRINE_DEVIS_OPTIONS.forEach(function(opt){
+      var row = document.createElement('label'); row.className = 'vitrine-devis-option';
+      var chk = document.createElement('input'); chk.type = 'checkbox';
+      var titreEl = document.createElement('span'); titreEl.className = 'vitrine-devis-option-titre'; titreEl.textContent = opt.titre;
+      var prixEl = document.createElement('span'); prixEl.className = 'vitrine-devis-option-prix'; prixEl.textContent = opt.prix + ' €';
+      row.appendChild(chk); row.appendChild(titreEl); row.appendChild(prixEl);
+      var qteInput = null;
+      if (opt.qte){
+        qteInput = document.createElement('input'); qteInput.className = 'vitrine-devis-option-qte'; qteInput.type = 'number';
+        qteInput.min = '1'; qteInput.value = '1';
+        row.appendChild(qteInput);
+      }
+      devisFields.appendChild(row);
+      devisChecks.push({ cle:opt.cle, chk:chk, qteInput:qteInput });
+    });
+    var libreRow = document.createElement('div'); libreRow.className = 'vitrine-devis-libre';
+    var libreTitre = document.createElement('input'); libreTitre.className = 'vitrine-devis-libre-titre';
+    libreTitre.type = 'text'; libreTitre.placeholder = 'Autre / sur devis (ex : vidéo drone)';
+    var librePrix = document.createElement('input'); librePrix.className = 'vitrine-devis-libre-prix';
+    librePrix.type = 'number'; librePrix.min = '0'; librePrix.placeholder = '€';
+    libreRow.appendChild(libreTitre); libreRow.appendChild(librePrix);
+    devisFields.appendChild(libreRow);
+    var devisGoBtn = document.createElement('button'); devisGoBtn.className = 'vitrine-devis-go'; devisGoBtn.type = 'button';
+    devisGoBtn.textContent = 'Générer le lien de paiement';
+    devisFields.appendChild(devisGoBtn);
+    var devisResult = document.createElement('div'); devisResult.className = 'vitrine-devis-result';
+    var devisResultUrl = document.createElement('span'); devisResultUrl.className = 'vitrine-devis-result-url';
+    var devisCopyBtn = document.createElement('button'); devisCopyBtn.className = 'vitrine-devis-copy'; devisCopyBtn.type = 'button';
+    devisCopyBtn.textContent = '📋 Copier';
+    devisResult.appendChild(devisResultUrl); devisResult.appendChild(devisCopyBtn);
+    devisFields.appendChild(devisResult);
+    if (s.devis_url){
+      devisResultUrl.textContent = s.devis_url;
+      devisResult.classList.add('open');
+    }
+    devisCopyBtn.addEventListener('click', function(){
+      var url = devisResultUrl.textContent;
+      if (!url) return;
+      if (navigator.clipboard && navigator.clipboard.writeText){ navigator.clipboard.writeText(url); }
+      toast('📋 Lien copié');
+    });
+    devisToggle.addEventListener('click', function(){ devisFields.classList.toggle('open'); });
+    devisGoBtn.addEventListener('click', function(){
+      var lignes = [];
+      devisChecks.forEach(function(dc){
+        if (dc.chk.checked){
+          var l = { cle:dc.cle };
+          if (dc.qteInput){ var q = parseInt(dc.qteInput.value, 10); l.quantite = (Number.isFinite(q) && q > 0) ? q : 1; }
+          lignes.push(l);
+        }
+      });
+      var ligneLibre = null;
+      var lt = libreTitre.value.trim();
+      var lp = parseFloat(librePrix.value);
+      if (lt && Number.isFinite(lp) && lp >= 0){ ligneLibre = { titre:lt, prix:lp }; }
+      if (!lignes.length && !ligneLibre){ toast('Coche au moins une option, ou remplis la ligne libre.'); return; }
+      devisGoBtn.disabled = true; devisGoBtn.textContent = '…';
+      var payload = { type:'devis', place_id:s.place_id, lignes:lignes };
+      if (ligneLibre) payload.ligne_libre = ligneLibre;
+      postVitrine(payload, function(resp){
+        devisGoBtn.disabled = false; devisGoBtn.textContent = 'Générer le lien de paiement';
+        devisResultUrl.textContent = resp.devis_url || '';
+        devisResult.classList.add('open');
+        devisToggle.textContent = '🧾 Revoir le devis';
+        toast('✅ Devis créé (' + (resp.total || '') + ' €) — lien prêt à copier');
+        vitrineRefresh();
+      }, function(err){ devisGoBtn.disabled = false; devisGoBtn.textContent = 'Générer le lien de paiement'; toast(err); });
+    });
+    devisBox.appendChild(devisToggle); devisBox.appendChild(devisFields);
+    card.appendChild(devisBox);
 
     // Statut de vente (comme Meute) : à appeler / appelé / acheté / à relancer / perdu.
     // "Perdu" est IRREVERSIBLE (supprime aussi le site sur Netlify, cote serveur) -- demande un
