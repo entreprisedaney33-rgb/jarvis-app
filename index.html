@@ -677,25 +677,21 @@
     white-space:nowrap;
   }
   .notes-tab.active{background:var(--gold-a); color:#1a1200}
-  #notes-form{
-    display:none; flex-direction:column; gap:8px; padding:0 14px 14px;
+  /* Barre unique en langage naturel (2026-07-25 soir, "notes intelligentes" etape 1) -- toujours
+     visible, aucun menu a remplir : une phrase, l'IA structure (categorie/assigne/echeance),
+     corrigeable ensuite via les puces sur chaque note (voir .notes-chip plus bas). */
+  #notes-bar{display:flex; gap:8px; padding:0 14px 12px; align-items:center}
+  #notes-bar-input{
+    flex:1; padding:11px 14px; border-radius:20px; border:0.5px solid rgba(255,255,255,.18);
+    background:#2E2E32; color:var(--ink); font-size:14.5px; font-family:inherit;
   }
-  #notes-form.open{display:flex}
-  #notes-form-contenu{
-    width:100%; min-height:64px; resize:vertical; padding:11px; border-radius:10px;
-    border:0.5px solid rgba(255,255,255,.18); background:#2E2E32; color:var(--ink);
-    font-size:14px; font-family:inherit;
+  #notes-bar-send{
+    width:38px; height:38px; border-radius:50%; border:0; flex:0 0 auto; background:var(--gold-a);
+    color:#1a1200; display:flex; align-items:center; justify-content:center; cursor:pointer;
+    -webkit-tap-highlight-color:transparent;
   }
-  #notes-form-row{display:flex; gap:8px}
-  #notes-form-categorie, #notes-form-assigne{
-    flex:1; padding:10px; border-radius:10px; border:0.5px solid rgba(255,255,255,.18);
-    background:#2E2E32; color:var(--ink); font-size:13.5px; font-family:inherit;
-  }
-  #notes-form-send{
-    padding:11px; border-radius:10px; border:0; background:var(--gold-a); color:#1a1200;
-    font-size:14px; font-weight:700; cursor:pointer; -webkit-tap-highlight-color:transparent;
-  }
-  #notes-form-send:disabled{opacity:.5}
+  #notes-bar-send:disabled{opacity:.5}
+  #notes-bar-send.busy svg{animation:meute-spin .8s linear infinite}
   #notes-list{flex:1; overflow-y:auto; -webkit-overflow-scrolling:touch; padding:0 14px calc(20px + env(safe-area-inset-bottom))}
   .notes-card{background:var(--surface); border-radius:14px; padding:12px 14px; margin-bottom:10px; display:flex; gap:10px; align-items:flex-start}
   .notes-card.fait{opacity:.55}
@@ -708,7 +704,18 @@
   .notes-body{flex:1; min-width:0}
   .notes-contenu{font-size:14.5px; line-height:1.4; display:block; word-break:break-word}
   .notes-card.fait .notes-contenu{text-decoration:line-through; color:var(--muted)}
-  .notes-meta{font-size:11.5px; color:var(--muted); display:block; margin-top:4px}
+  /* Puces tapables = correction "d'un tap apres coup" (categorie/assigne/echeance), sans reouvrir
+     un formulaire -- c'est ce qui rend la barre langage naturel utilisable meme si l'IA se trompe. */
+  .notes-chips{display:flex; gap:6px; flex-wrap:wrap; margin-top:7px}
+  .notes-chip{
+    font-size:11.5px; font-weight:700; padding:4px 10px; border-radius:99px; background:#2E2E32;
+    color:var(--ink); border:0; cursor:pointer; -webkit-tap-highlight-color:transparent;
+    -webkit-appearance:none; appearance:none; font-family:inherit;
+  }
+  .notes-chip.echeance{position:relative; overflow:hidden; display:inline-flex; align-items:center}
+  .notes-chip.echeance input[type=date]{position:absolute; inset:0; opacity:0; width:100%; height:100%; cursor:pointer}
+  .notes-chip.echeance.retard{background:rgba(255,59,48,.18); color:#FF6961}
+  .notes-provenance{font-size:11px; color:var(--muted); display:block; margin-top:6px}
   .notes-del{
     width:26px; height:26px; border-radius:50%; border:0; flex:0 0 auto; background:transparent;
     color:var(--muted); font-size:14px; cursor:pointer; -webkit-tap-highlight-color:transparent;
@@ -1254,7 +1261,6 @@
 <div id="notesview">
   <div id="notes-head">
     <b>🧠 Notes</b>
-    <button id="notes-add" type="button" aria-label="Ajouter une note">＋</button>
     <button id="notes-close" type="button" aria-label="Fermer">✕</button>
   </div>
   <div id="notes-tabs">
@@ -1263,21 +1269,11 @@
     <button class="notes-tab" data-cat="tache" type="button">✅ Tâches</button>
     <button class="notes-tab" data-cat="idee" type="button">💡 Idées</button>
   </div>
-  <div id="notes-form">
-    <textarea id="notes-form-contenu" placeholder="Écris ton idée, ta tâche ou ton objectif…"></textarea>
-    <div id="notes-form-row">
-      <select id="notes-form-categorie">
-        <option value="tache">✅ Tâche</option>
-        <option value="idee">💡 Idée</option>
-        <option value="objectif">🎯 Objectif</option>
-      </select>
-      <select id="notes-form-assigne">
-        <option value="Les deux">Pour les deux</option>
-        <option value="Matheo">Pour Mathéo</option>
-        <option value="Dorian">Pour Dorian</option>
-      </select>
-    </div>
-    <button id="notes-form-send" type="button">Ajouter</button>
+  <div id="notes-bar">
+    <input id="notes-bar-input" type="text" inputmode="text" placeholder="Écris une tâche, une idée, un objectif…" autocomplete="off" autocapitalize="sentences" autocorrect="on">
+    <button id="notes-bar-send" type="button" aria-label="Ajouter">
+      <svg width="16" height="16" viewBox="0 0 20 20" fill="currentColor"><path d="M10 17V5.5M10 3l-6 6.2M10 3l6 6.2" stroke="currentColor" stroke-width="2.6" fill="none" stroke-linecap="round" stroke-linejoin="round"/></svg>
+    </button>
   </div>
   <div id="notes-list"></div>
 </div>
@@ -1379,7 +1375,7 @@
 
 <script>
 (function(){
-  var APPV = 'v2.71';
+  var APPV = 'v2.72';
 
   // Debug : ?debug_modal=1 force l'affichage du modal "nouvelle version" sans attendre un vrai
   // déploiement. Capturé ICI, tout au début, car plus bas (login mémorisé, connexion) le code
@@ -2746,18 +2742,20 @@
   });
 
   // ---- Notes (cerveau de notes partagé Mathéo/Dorian : objectifs, tâches, idées) ----
+  // Etape 1 "notes intelligentes" (2026-07-25 soir) : une seule barre en langage naturel (l'IA
+  // structure categorie/assigne/echeance cote serveur), corrigeable ensuite par des puces tapables
+  // sur chaque note (voir notesChip) -- zero menu a remplir avant envoi.
   var notesview = document.getElementById('notesview');
   var notesList = document.getElementById('notes-list');
-  var notesForm = document.getElementById('notes-form');
-  var notesFormContenu = document.getElementById('notes-form-contenu');
-  var notesFormCategorie = document.getElementById('notes-form-categorie');
-  var notesFormAssigne = document.getElementById('notes-form-assigne');
-  var notesFormSend = document.getElementById('notes-form-send');
+  var notesBarInput = document.getElementById('notes-bar-input');
+  var notesBarSend = document.getElementById('notes-bar-send');
   var notesAll = [];
   var notesMoi = '';
   var notesTab = 'tout';
   var NOTES_CAT_LABEL = { objectif:'🎯 Objectif', tache:'✅ Tâche', idee:'💡 Idée' };
   var NOTES_ASSIGNE_LABEL = { Matheo:'Mathéo', Dorian:'Dorian', 'Les deux':'Les deux' };
+  var NOTES_CAT_CYCLE = ['tache', 'idee', 'objectif'];
+  var NOTES_ASSIGNE_CYCLE = ['Matheo', 'Dorian', 'Les deux'];
 
   function notesFmtDate(iso){
     if (!iso) return '';
@@ -2765,6 +2763,23 @@
       var d = new Date(iso);
       return d.toLocaleDateString('fr-FR', { day:'numeric', month:'short' });
     } catch(e){ return ''; }
+  }
+  function notesTodayISO(){
+    var d = new Date();
+    return d.getFullYear() + '-' + String(d.getMonth()+1).padStart(2,'0') + '-' + String(d.getDate()).padStart(2,'0');
+  }
+  function notesEcheanceLabel(iso){
+    if (!iso) return '+ Échéance';
+    try {
+      var d = new Date(iso + 'T00:00:00');
+      return d.toLocaleDateString('fr-FR', { day:'numeric', month:'short' });
+    } catch(e){ return iso; }
+  }
+
+  function notesChip(label, onClick){
+    var b = document.createElement('button'); b.className = 'notes-chip'; b.type = 'button'; b.textContent = label;
+    b.addEventListener('click', onClick);
+    return b;
   }
 
   function notesCard(n){
@@ -2783,10 +2798,42 @@
     var body = document.createElement('div'); body.className = 'notes-body';
     var contenu = document.createElement('span'); contenu.className = 'notes-contenu'; contenu.textContent = n.contenu || '';
     body.appendChild(contenu);
-    var meta = document.createElement('span'); meta.className = 'notes-meta';
-    var assigneLabel = NOTES_ASSIGNE_LABEL[n.assigne_a] || n.assigne_a || 'Les deux';
-    meta.textContent = (NOTES_CAT_LABEL[n.categorie] || n.categorie) + ' · pour ' + assigneLabel + ' · par ' + (n.auteur || '?') + (n.date ? ' · ' + notesFmtDate(n.date) : '');
-    body.appendChild(meta);
+
+    var chips = document.createElement('div'); chips.className = 'notes-chips';
+
+    var catChip = notesChip(NOTES_CAT_LABEL[n.categorie] || n.categorie, function(){
+      var next = NOTES_CAT_CYCLE[(NOTES_CAT_CYCLE.indexOf(n.categorie) + 1) % NOTES_CAT_CYCLE.length];
+      n.categorie = next; catChip.textContent = NOTES_CAT_LABEL[next];
+      postNotes({ type:'modifier', id:n.id, champ:'categorie', valeur:next }, function(){}, function(err){ toast(err); });
+    });
+    chips.appendChild(catChip);
+
+    var assigneChip = notesChip('Pour ' + (NOTES_ASSIGNE_LABEL[n.assigne_a] || n.assigne_a), function(){
+      var next = NOTES_ASSIGNE_CYCLE[(NOTES_ASSIGNE_CYCLE.indexOf(n.assigne_a) + 1) % NOTES_ASSIGNE_CYCLE.length];
+      n.assigne_a = next; assigneChip.textContent = 'Pour ' + NOTES_ASSIGNE_LABEL[next];
+      postNotes({ type:'modifier', id:n.id, champ:'assigne_a', valeur:next }, function(){}, function(err){ toast(err); });
+    });
+    chips.appendChild(assigneChip);
+
+    var echChip = document.createElement('label'); echChip.className = 'notes-chip echeance';
+    if (n.echeance && n.echeance < notesTodayISO() && n.statut !== 'fait') echChip.classList.add('retard');
+    var echText = document.createElement('span'); echText.textContent = notesEcheanceLabel(n.echeance);
+    var echInput = document.createElement('input'); echInput.type = 'date'; echInput.value = n.echeance || '';
+    echInput.addEventListener('change', function(){
+      var val = echInput.value || '';
+      n.echeance = val; echText.textContent = notesEcheanceLabel(val);
+      echChip.classList.toggle('retard', !!(val && val < notesTodayISO() && n.statut !== 'fait'));
+      postNotes({ type:'modifier', id:n.id, champ:'echeance', valeur:val }, function(){}, function(err){ toast(err); });
+    });
+    echChip.appendChild(echText); echChip.appendChild(echInput);
+    chips.appendChild(echChip);
+
+    body.appendChild(chips);
+
+    var prov = document.createElement('span'); prov.className = 'notes-provenance';
+    prov.textContent = 'par ' + (n.auteur || '?') + (n.date ? ' · ' + notesFmtDate(n.date) : '');
+    body.appendChild(prov);
+
     card.appendChild(body);
 
     var del = document.createElement('button'); del.className = 'notes-del'; del.type = 'button'; del.textContent = '🗑';
@@ -2831,14 +2878,9 @@
     notesList.innerHTML = '<p id="notes-loading">Chargement…</p>';
     notesRefresh();
   }
-  function notesClose(){ notesview.classList.remove('open'); notesForm.classList.remove('open'); }
+  function notesClose(){ notesview.classList.remove('open'); }
   document.getElementById('sh-notes').addEventListener('click', function(){ sheetOpen(false); notesOpen(); });
   document.getElementById('notes-close').addEventListener('click', notesClose);
-
-  document.getElementById('notes-add').addEventListener('click', function(){
-    notesForm.classList.toggle('open');
-    if (notesForm.classList.contains('open')) notesFormContenu.focus();
-  });
 
   Array.prototype.forEach.call(document.querySelectorAll('.notes-tab'), function(btn){
     btn.addEventListener('click', function(){
@@ -2849,24 +2891,23 @@
     });
   });
 
-  notesFormSend.addEventListener('click', function(){
-    var contenu = notesFormContenu.value.trim();
-    if (!contenu) { notesFormContenu.focus(); return; }
-    notesFormSend.disabled = true; notesFormSend.textContent = 'Ajout…';
-    postNotes({
-      type:'ajouter', contenu:contenu,
-      categorie: notesFormCategorie.value, assigne_a: notesFormAssigne.value,
-    }, function(){
-      notesFormContenu.value = '';
-      notesFormCategorie.value = 'tache';
-      notesFormAssigne.value = 'Les deux';
-      notesFormSend.disabled = false; notesFormSend.textContent = 'Ajouter';
-      notesForm.classList.remove('open');
+  function notesSubmit(){
+    var texte = notesBarInput.value.trim();
+    if (!texte) { notesBarInput.focus(); return; }
+    notesBarSend.disabled = true; notesBarSend.classList.add('busy');
+    notesBarInput.value = '';
+    postNotes({ type:'ajouter_nl', texte:texte }, function(){
+      notesBarSend.disabled = false; notesBarSend.classList.remove('busy');
       notesRefresh();
     }, function(err){
-      notesFormSend.disabled = false; notesFormSend.textContent = 'Ajouter';
+      notesBarSend.disabled = false; notesBarSend.classList.remove('busy');
+      notesBarInput.value = texte;
       toast(err);
     });
+  }
+  notesBarSend.addEventListener('click', notesSubmit);
+  notesBarInput.addEventListener('keydown', function(e){
+    if (e.key === 'Enter') { e.preventDefault(); notesSubmit(); }
   });
 
   // ---- Emails (indexes + tries par l'IA toutes les 20 min cote serveur) ----
