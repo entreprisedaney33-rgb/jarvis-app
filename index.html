@@ -677,6 +677,19 @@
     white-space:nowrap;
   }
   .notes-tab.active{background:var(--gold-a); color:#1a1200}
+  #notes-search-wrap{flex:0 0 auto; padding:0 14px 10px}
+  #notes-search{
+    width:100%; box-sizing:border-box; border:none; border-radius:12px;
+    background:var(--surface); color:var(--ink); font-size:14.5px; padding:10px 12px;
+    -webkit-appearance:none;
+  }
+  #notes-search::placeholder{color:var(--muted)}
+  .notes-card.pending{opacity:.55}
+  .notes-contenu-edit{
+    width:100%; box-sizing:border-box; border:0.5px solid rgba(255,255,255,.25); border-radius:8px;
+    background:#2E2E32; color:var(--ink); font-size:14.5px; font-family:inherit; padding:6px 8px;
+    resize:vertical; min-height:40px;
+  }
   /* Barre unique en langage naturel (2026-07-25 soir, "notes intelligentes" etape 1) -- toujours
      visible, aucun menu a remplir : une phrase, l'IA structure (categorie/assigne/echeance),
      corrigeable ensuite via les puces sur chaque note (voir .notes-chip plus bas). */
@@ -1264,10 +1277,17 @@
     <button id="notes-close" type="button" aria-label="Fermer">✕</button>
   </div>
   <div id="notes-tabs">
-    <button class="notes-tab active" data-cat="tout" type="button">Tout</button>
-    <button class="notes-tab" data-cat="objectif" type="button">🎯 Objectifs</button>
-    <button class="notes-tab" data-cat="tache" type="button">✅ Tâches</button>
-    <button class="notes-tab" data-cat="idee" type="button">💡 Idées</button>
+    <button class="notes-tab active" data-vue="tout" type="button">Tout</button>
+    <button class="notes-tab" data-vue="aujourdhui" type="button">📅 Aujourd'hui</button>
+    <button class="notes-tab" data-vue="retard" type="button">⏰ En retard</button>
+    <button class="notes-tab" data-vue="mes_taches" type="button">✅ Mes tâches</button>
+    <button class="notes-tab" data-vue="taches_autre" type="button">✅ Tâches de l'autre</button>
+    <button class="notes-tab" data-vue="objectif" type="button">🎯 Objectifs</button>
+    <button class="notes-tab" data-vue="idee" type="button">💡 Idées</button>
+    <button class="notes-tab" data-vue="fait" type="button">☑️ Fait</button>
+  </div>
+  <div id="notes-search-wrap">
+    <input id="notes-search" type="search" inputmode="search" placeholder="🔍 Rechercher dans les notes…" autocomplete="off" autocapitalize="off" autocorrect="off">
   </div>
   <div id="notes-bar">
     <input id="notes-bar-input" type="text" inputmode="text" placeholder="Écris une tâche, une idée, un objectif…" autocomplete="off" autocapitalize="sentences" autocorrect="on">
@@ -1375,7 +1395,7 @@
 
 <script>
 (function(){
-  var APPV = 'v2.72';
+  var APPV = 'v2.73';
 
   // Debug : ?debug_modal=1 force l'affichage du modal "nouvelle version" sans attendre un vrai
   // déploiement. Capturé ICI, tout au début, car plus bas (login mémorisé, connexion) le code
@@ -2742,16 +2762,23 @@
   });
 
   // ---- Notes (cerveau de notes partagé Mathéo/Dorian : objectifs, tâches, idées) ----
-  // Etape 1 "notes intelligentes" (2026-07-25 soir) : une seule barre en langage naturel (l'IA
-  // structure categorie/assigne/echeance cote serveur), corrigeable ensuite par des puces tapables
-  // sur chaque note (voir notesChip) -- zero menu a remplir avant envoi.
+  // Etape 1 "notes intelligentes" (2026-07-25 soir) : barre en langage naturel, l'IA structure
+  // categorie/assigne/echeance cote serveur, corrigeable par des puces tapables (notesChip).
+  // Etape 2 (meme soir, suite) : edition en place du texte, recherche, vues intelligentes
+  // (au-dela des simples categories), suppression avec "Annuler" (undo différé, meme mecanisme
+  // que archiveWithUndo pour les emails), creation optimiste (la note apparait avant meme la
+  // reponse de l'IA, remplacee par la version structuree des qu'elle arrive).
   var notesview = document.getElementById('notesview');
   var notesList = document.getElementById('notes-list');
+  var notesSearchInput = document.getElementById('notes-search');
   var notesBarInput = document.getElementById('notes-bar-input');
   var notesBarSend = document.getElementById('notes-bar-send');
   var notesAll = [];
   var notesMoi = '';
-  var notesTab = 'tout';
+  var notesMoiEnum = 'Matheo';
+  var notesAutreEnum = 'Dorian';
+  var notesVue = 'tout';
+  var notesQuery = '';
   var NOTES_CAT_LABEL = { objectif:'🎯 Objectif', tache:'✅ Tâche', idee:'💡 Idée' };
   var NOTES_ASSIGNE_LABEL = { Matheo:'Mathéo', Dorian:'Dorian', 'Les deux':'Les deux' };
   var NOTES_CAT_CYCLE = ['tache', 'idee', 'objectif'];
@@ -2775,6 +2802,9 @@
       return d.toLocaleDateString('fr-FR', { day:'numeric', month:'short' });
     } catch(e){ return iso; }
   }
+  function notesNorm(s){
+    return String(s || '').toLowerCase().normalize('NFD').replace(/[̀-ͯ]/g, '');
+  }
 
   function notesChip(label, onClick){
     var b = document.createElement('button'); b.className = 'notes-chip'; b.type = 'button'; b.textContent = label;
@@ -2783,12 +2813,13 @@
   }
 
   function notesCard(n){
-    var card = document.createElement('div'); card.className = 'notes-card' + (n.statut === 'fait' ? ' fait' : '');
+    var card = document.createElement('div'); card.className = 'notes-card' + (n.statut === 'fait' ? ' fait' : '') + (n.pending ? ' pending' : '');
 
     var check = document.createElement('button'); check.className = 'notes-check'; check.type = 'button';
     check.setAttribute('aria-label', n.statut === 'fait' ? 'Remettre à faire' : 'Marquer fait');
     if (n.statut === 'fait') check.textContent = '✓';
     check.addEventListener('click', function(){
+      if (n.pending) return;
       check.disabled = true;
       var action = n.statut === 'fait' ? 'reouvrir' : 'terminer';
       postNotes({ type:action, id:n.id }, function(){ notesRefresh(); }, function(err){ check.disabled = false; toast(err); });
@@ -2796,12 +2827,37 @@
     card.appendChild(check);
 
     var body = document.createElement('div'); body.className = 'notes-body';
+
+    // Edition en place : tap sur le texte -> textarea, Entree/blur sauvegarde, Echap annule.
     var contenu = document.createElement('span'); contenu.className = 'notes-contenu'; contenu.textContent = n.contenu || '';
+    if (!n.pending){
+      contenu.addEventListener('click', function(){
+        var edit = document.createElement('textarea'); edit.className = 'notes-contenu-edit'; edit.value = n.contenu || '';
+        body.replaceChild(edit, contenu);
+        edit.focus(); edit.setSelectionRange(edit.value.length, edit.value.length);
+        var termine = false;
+        function revenir(nouveauTexte){
+          if (termine) return; termine = true;
+          if (nouveauTexte != null && nouveauTexte.trim() && nouveauTexte.trim() !== n.contenu){
+            n.contenu = nouveauTexte.trim();
+            postNotes({ type:'modifier', id:n.id, champ:'contenu', valeur:n.contenu }, function(){}, function(err){ toast(err); });
+          }
+          contenu.textContent = n.contenu || '';
+          if (edit.parentNode) body.replaceChild(contenu, edit);
+        }
+        edit.addEventListener('blur', function(){ revenir(edit.value); });
+        edit.addEventListener('keydown', function(e){
+          if (e.key === 'Enter' && !e.shiftKey){ e.preventDefault(); edit.blur(); }
+          if (e.key === 'Escape'){ e.preventDefault(); termine = true; contenu.textContent = n.contenu || ''; if (edit.parentNode) body.replaceChild(contenu, edit); }
+        });
+      });
+    }
     body.appendChild(contenu);
 
     var chips = document.createElement('div'); chips.className = 'notes-chips';
 
     var catChip = notesChip(NOTES_CAT_LABEL[n.categorie] || n.categorie, function(){
+      if (n.pending) return;
       var next = NOTES_CAT_CYCLE[(NOTES_CAT_CYCLE.indexOf(n.categorie) + 1) % NOTES_CAT_CYCLE.length];
       n.categorie = next; catChip.textContent = NOTES_CAT_LABEL[next];
       postNotes({ type:'modifier', id:n.id, champ:'categorie', valeur:next }, function(){}, function(err){ toast(err); });
@@ -2809,6 +2865,7 @@
     chips.appendChild(catChip);
 
     var assigneChip = notesChip('Pour ' + (NOTES_ASSIGNE_LABEL[n.assigne_a] || n.assigne_a), function(){
+      if (n.pending) return;
       var next = NOTES_ASSIGNE_CYCLE[(NOTES_ASSIGNE_CYCLE.indexOf(n.assigne_a) + 1) % NOTES_ASSIGNE_CYCLE.length];
       n.assigne_a = next; assigneChip.textContent = 'Pour ' + NOTES_ASSIGNE_LABEL[next];
       postNotes({ type:'modifier', id:n.id, champ:'assigne_a', valeur:next }, function(){}, function(err){ toast(err); });
@@ -2820,6 +2877,7 @@
     var echText = document.createElement('span'); echText.textContent = notesEcheanceLabel(n.echeance);
     var echInput = document.createElement('input'); echInput.type = 'date'; echInput.value = n.echeance || '';
     echInput.addEventListener('change', function(){
+      if (n.pending) return;
       var val = echInput.value || '';
       n.echeance = val; echText.textContent = notesEcheanceLabel(val);
       echChip.classList.toggle('retard', !!(val && val < notesTodayISO() && n.statut !== 'fait'));
@@ -2831,43 +2889,61 @@
     body.appendChild(chips);
 
     var prov = document.createElement('span'); prov.className = 'notes-provenance';
-    prov.textContent = 'par ' + (n.auteur || '?') + (n.date ? ' · ' + notesFmtDate(n.date) : '');
+    prov.textContent = n.pending ? 'Enregistrement…' : ('par ' + (n.auteur || '?') + (n.date ? ' · ' + notesFmtDate(n.date) : ''));
     body.appendChild(prov);
 
     card.appendChild(body);
 
     var del = document.createElement('button'); del.className = 'notes-del'; del.type = 'button'; del.textContent = '🗑';
     del.setAttribute('aria-label', 'Supprimer');
-    var confirming = false, confirmTimer = null;
     del.addEventListener('click', function(){
-      if (!confirming){
-        confirming = true; del.classList.add('confirm'); del.textContent = '✕';
-        confirmTimer = setTimeout(function(){ confirming = false; del.classList.remove('confirm'); del.textContent = '🗑'; }, 2500);
-        return;
-      }
-      clearTimeout(confirmTimer);
-      del.disabled = true;
-      postNotes({ type:'supprimer', id:n.id }, function(){ notesRefresh(); }, function(err){ del.disabled = false; toast(err); });
+      if (n.pending) return;
+      notesDeleteWithUndo(n.id);
     });
     card.appendChild(del);
 
     return card;
   }
 
+  // Vues intelligentes : au-dela des categories brutes, elles croisent echeance/assignation/statut.
+  function notesMatchVue(n, vue){
+    if (vue === 'fait') return n.statut === 'fait';
+    if (n.statut === 'fait') return false; // toutes les autres vues n'affichent que ce qui reste a faire
+    if (vue === 'tout') return true;
+    if (vue === 'aujourdhui') return !!n.echeance && n.echeance === notesTodayISO();
+    if (vue === 'retard') return !!n.echeance && n.echeance < notesTodayISO();
+    if (vue === 'mes_taches') return n.categorie === 'tache' && (n.assigne_a === notesMoiEnum || n.assigne_a === 'Les deux');
+    if (vue === 'taches_autre') return n.categorie === 'tache' && (n.assigne_a === notesAutreEnum || n.assigne_a === 'Les deux');
+    if (vue === 'objectif') return n.categorie === 'objectif';
+    if (vue === 'idee') return n.categorie === 'idee';
+    return true;
+  }
+
   function notesRender(){
     notesList.innerHTML = '';
-    var filtered = notesTab === 'tout' ? notesAll : notesAll.filter(function(n){ return n.categorie === notesTab; });
+    var q = notesNorm(notesQuery);
+    var filtered = q
+      ? notesAll.filter(function(n){ return notesNorm(n.contenu).indexOf(q) !== -1; })
+      : notesAll.filter(function(n){ return notesMatchVue(n, notesVue); });
     if (!filtered.length){
-      notesList.innerHTML = '<p id="notes-empty">Aucune note ici pour l’instant.</p>';
+      notesList.innerHTML = '<p id="notes-empty">' + (q ? 'Aucune note ne correspond.' : 'Aucune note ici pour l’instant.') + '</p>';
       return;
     }
     filtered.forEach(function(n){ notesList.appendChild(notesCard(n)); });
+  }
+
+  function notesUpdateAutreLabel(){
+    var btn = document.querySelector('.notes-tab[data-vue="taches_autre"]');
+    if (btn) btn.textContent = '✅ Tâches de ' + (NOTES_ASSIGNE_LABEL[notesAutreEnum] || notesAutreEnum);
   }
 
   function notesRefresh(onDone){
     postNotes({ type:'list' }, function(j){
       notesAll = j.notes || [];
       notesMoi = j.moi || '';
+      notesMoiEnum = notesMoi === 'Dorian' ? 'Dorian' : 'Matheo';
+      notesAutreEnum = notesMoiEnum === 'Dorian' ? 'Matheo' : 'Dorian';
+      notesUpdateAutreLabel();
       notesRender();
       if (onDone) onDone();
     }, function(err){ notesList.innerHTML = '<p id="notes-empty">' + err + '</p>'; if (onDone) onDone(); });
@@ -2886,21 +2962,67 @@
     btn.addEventListener('click', function(){
       Array.prototype.forEach.call(document.querySelectorAll('.notes-tab'), function(b){ b.classList.remove('active'); });
       btn.classList.add('active');
-      notesTab = btn.getAttribute('data-cat');
+      notesVue = btn.getAttribute('data-vue');
       notesRender();
     });
   });
 
+  notesSearchInput.addEventListener('input', function(){
+    notesQuery = notesSearchInput.value;
+    notesRender();
+  });
+
+  // Suppression instantanee avec "Annuler" (undo différé ~4s, meme mecanisme que archiveWithUndo
+  // pour les emails) -- plus rapide et plus sur que l'ancien double-tap de confirmation.
+  function notesDeleteWithUndo(id){
+    var idx = notesAll.findIndex(function(x){ return x.id === id; });
+    var removed = idx !== -1 ? notesAll[idx] : null;
+    notesAll = notesAll.filter(function(x){ return x.id !== id; });
+    notesRender();
+    var cancelled = false;
+    var timer = setTimeout(function(){
+      if (cancelled) return;
+      postNotes({ type:'supprimer', id:id }, function(){}, function(err){
+        toast(err || 'Suppression impossible');
+        if (removed){ notesAll.splice(Math.min(idx, notesAll.length), 0, removed); notesRender(); }
+      });
+    }, 4000);
+    toastUndo('🗑 Supprimé', function(){
+      cancelled = true; clearTimeout(timer);
+      if (removed){ notesAll.splice(Math.min(idx, notesAll.length), 0, removed); notesRender(); }
+    });
+  }
+
+  // Creation optimiste : la note apparait tout de suite (etat "pending", chips desactivees),
+  // remplacee par la version structuree par l'IA des que la reponse arrive -- jamais de blocage
+  // pendant l'appel Claude cote serveur.
   function notesSubmit(){
     var texte = notesBarInput.value.trim();
     if (!texte) { notesBarInput.focus(); return; }
-    notesBarSend.disabled = true; notesBarSend.classList.add('busy');
     notesBarInput.value = '';
-    postNotes({ type:'ajouter_nl', texte:texte }, function(){
-      notesBarSend.disabled = false; notesBarSend.classList.remove('busy');
-      notesRefresh();
+    var tempId = 'tmp-' + Date.now();
+    notesAll.unshift({ id:tempId, contenu:texte, categorie:'tache', assigne_a:'Les deux', statut:'a_faire', auteur:notesMoi, date:'', echeance:'', pending:true });
+    if (notesQuery) { notesSearchInput.value = ''; notesQuery = ''; }
+    notesRender();
+    postNotes({ type:'ajouter_nl', texte:texte }, function(j){
+      var idx = notesAll.findIndex(function(x){ return x.id === tempId; });
+      var r = j.note || {};
+      // La reponse brute d'insertion utilise les noms de colonnes n8n (createdAt) -- on la
+      // normalise ici dans le meme format que la reponse "list" (date), sinon la date affichee
+      // reste vide jusqu'au prochain rechargement complet.
+      var normalise = {
+        id: r.id, contenu: r.contenu || texte, categorie: r.categorie || 'tache',
+        auteur: r.auteur || notesMoi, assigne_a: r.assigne_a || 'Les deux',
+        statut: r.statut || 'a_faire', date: r.createdAt || r.date || '',
+        echeance: r.echeance || '', source: r.source || 'manuel', valide: r.valide || 'oui',
+        lien_action: r.lien_action || '', date_faite: r.date_faite || '',
+      };
+      if (idx !== -1) notesAll.splice(idx, 1, normalise);
+      notesRender();
     }, function(err){
-      notesBarSend.disabled = false; notesBarSend.classList.remove('busy');
+      var idx = notesAll.findIndex(function(x){ return x.id === tempId; });
+      if (idx !== -1) notesAll.splice(idx, 1);
+      notesRender();
       notesBarInput.value = texte;
       toast(err);
     });
