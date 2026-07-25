@@ -1166,7 +1166,7 @@
 
 <script>
 (function(){
-  var APPV = 'v2.64';
+  var APPV = 'v2.65';
 
   // Debug : ?debug_modal=1 force l'affichage du modal "nouvelle version" sans attendre un vrai
   // déploiement. Capturé ICI, tout au début, car plus bas (login mémorisé, connexion) le code
@@ -2015,24 +2015,21 @@
   // Catalogue du devis (etape 4, Bloc 2) -- memes cles/prix que CATALOGUE_DEVIS cote n8n
   // (build-vitrine-cockpit.js). "video/drone" volontairement absent d'ici : son prix est sur
   // devis, donc toujours saisi via la ligne libre plutot qu'une case a 0€.
+  // 2026-07-25 (retour Mathéo) : photo_pro/domaine_perso/redaction_premium/formation retirees.
   var VITRINE_DEVIS_OPTIONS = [
     { cle:'base_1_page', titre:'Site web professionnel (1 page)', prix:490 },
     { cle:'page_supp', titre:'Page supplémentaire', prix:250, qte:true },
     { cle:'google_business', titre:'Fiche Google Business', prix:199 },
-    { cle:'photo_pro', titre:'Séance photo professionnelle', prix:390 },
     { cle:'devis_interactif', titre:'Formulaire de devis interactif', prix:129 },
     { cle:'logo', titre:'Logo / identité visuelle', prix:219 },
     { cle:'galerie_avancee', titre:'Galerie de réalisations avancée', prix:99 },
     { cle:'email_pro', titre:'Adresses email pro', prix:49 },
-    { cle:'domaine_perso', titre:'Nom de domaine personnalisé', prix:49 },
     { cle:'avis_widget', titre:'Avis Google intégrés (widget)', prix:49 },
-    { cle:'redaction_premium', titre:'Rédaction premium', prix:99 },
     { cle:'rdv_ligne', titre:'Prise de rendez-vous en ligne', prix:149 },
     { cle:'reseaux_sociaux', titre:'Réseaux sociaux (pages pro)', prix:99 },
     { cle:'analytics', titre:'Analytics + Search Console', prix:49 },
     { cle:'badges_confiance', titre:'Badges de confiance BTP', prix:49 },
     { cle:'multilingue', titre:'Multilingue (par langue)', prix:149 },
-    { cle:'formation', titre:'Formation prise en main', prix:99 },
   ];
   // Pipeline de vente en 4 dossiers (meme principe que Meute) : Nouveaux (jamais appelé) -> En
   // cours (contact etabli, mail envoyé, ou à relancer) -> Clients (acheté) / Perdus.
