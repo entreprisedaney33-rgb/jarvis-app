@@ -408,10 +408,12 @@
     padding:7px 14px; border-radius:8px; border:0; background:var(--gold-a); color:#1a1200;
     font-size:12.5px; font-weight:700; cursor:pointer; -webkit-tap-highlight-color:transparent;
   }
-  /* Panneau plein ecran "Sites Vitrine" — consultation seule (2026-07-25) : revue quotidienne des
-     demos generees par l'agent VITRINE (produit separe, backend 100% independant -- webhook
-     vitrine-liste dedie -- seul ce panneau frontend est partage avec Jarvis, meme principe deja
-     valide par "Meute" ci-dessus). Pas d'action d'ecriture pour l'instant (juste consulter/appeler). */
+  /* Panneau plein ecran "Sites Vitrine" — COCKPIT DE VENTE (etape 2 du plan, 2026-07-25) : au-dela
+     de la consultation, appel en 1 tap + mail pre-redige envoyable d'1 clic + suivi de statut de
+     vente + commande unique "lancer une recherche" (decouverte+generation chainees). Backend
+     100% independant -- webhook vitrine-liste dedie -- seul ce panneau frontend est partage avec
+     Jarvis, meme principe deja valide par "Meute" ci-dessus (memes classes .vitrine-* calquees sur
+     .meute-* pour rester coherent visuellement). */
   #vitrineview{
     position:fixed; inset:0; z-index:50; background:var(--bg);
     display:none; flex-direction:column;
@@ -425,26 +427,82 @@
     border-bottom:0.5px solid var(--hairline);
   }
   #vitrine-head b{font-size:16px; flex:1}
-  #vitrine-refresh, #vitrine-close{
+  #vitrine-lancer-toggle, #vitrine-refresh, #vitrine-close{
     width:32px; height:32px; border-radius:50%; border:0; flex:0 0 auto;
     background:var(--surface); color:var(--ink); font-size:15px;
     display:flex; align-items:center; justify-content:center; cursor:pointer;
     -webkit-tap-highlight-color:transparent;
   }
   #vitrine-refresh.spin svg{animation:meute-spin 1s linear infinite}
+  #vitrine-lancer-box{
+    flex:0 0 auto; display:none; flex-direction:column; gap:8px; padding:12px 14px;
+    border-bottom:0.5px solid var(--hairline); background:var(--surface);
+  }
+  #vitrine-lancer-box.open{display:flex}
+  #vitrine-lancer-row{display:flex; gap:8px}
+  #vitrine-lancer-secteur, #vitrine-lancer-ville, #vitrine-lancer-limit{
+    font:inherit; font-size:13px; color:var(--ink); background:#2E2E32;
+    border:0.5px solid rgba(255,255,255,.18); border-radius:9px; padding:8px 10px;
+  }
+  #vitrine-lancer-secteur{flex:1}
+  #vitrine-lancer-ville{flex:1; min-width:0}
+  #vitrine-lancer-limit{flex:0 0 56px; text-align:center}
+  #vitrine-lancer-go{
+    padding:9px; border-radius:10px; border:0; background:var(--gold-a); color:#1a1200;
+    font-size:13px; font-weight:700; cursor:pointer; -webkit-tap-highlight-color:transparent;
+  }
+  #vitrine-lancer-go:disabled{opacity:.5}
+  #vitrine-lancer-status{font-size:12px; color:var(--muted); text-align:center}
+  #vitrine-tabs{
+    flex:0 0 auto; display:flex; gap:8px; padding:10px 14px; overflow-x:auto; -webkit-overflow-scrolling:touch;
+    border-bottom:0.5px solid var(--hairline);
+  }
+  .vitrine-tab{
+    flex:0 0 auto; padding:8px 13px; border-radius:99px; border:0.5px solid rgba(255,255,255,.18);
+    background:#2E2E32; color:var(--muted); font-size:13px; font-weight:600; cursor:pointer;
+    -webkit-tap-highlight-color:transparent; white-space:nowrap;
+  }
+  .vitrine-tab.active{background:var(--gold-a); color:#1a1200; border-color:var(--gold-a)}
   #vitrine-list{flex:1; overflow-y:auto; -webkit-overflow-scrolling:touch; padding:10px 14px calc(20px + env(safe-area-inset-bottom))}
   .vitrine-card{background:var(--surface); border-radius:14px; padding:14px; margin-bottom:12px}
   .vitrine-nom{font-size:15px; font-weight:600; display:block; margin-bottom:2px}
   .vitrine-meta{font-size:12.5px; color:var(--muted); display:block; margin-bottom:10px}
-  .vitrine-actions{display:flex; gap:8px; flex-wrap:wrap; align-items:center}
+  .vitrine-actions{display:flex; gap:8px; flex-wrap:wrap; align-items:center; margin-bottom:10px}
   .vitrine-tel{font-size:13px; color:var(--blue,#0A84FF); text-decoration:none; padding:8px 4px}
   .vitrine-demo-link{
     font-size:13px; font-weight:700; color:#1a1200; background:var(--gold-a); text-decoration:none;
     border-radius:9px; padding:8px 13px;
   }
-  .vitrine-expir{font-size:12px; color:var(--muted); display:block; margin-top:8px}
+  .vitrine-expir{font-size:12px; color:var(--muted); display:block; margin-bottom:10px}
   .vitrine-expir.soon{color:#FF9F0A; font-weight:600}
   .vitrine-expir.expired{color:#FF453A; font-weight:600}
+  .vitrine-mail-box{margin-bottom:10px}
+  .vitrine-mail-toggle{
+    width:100%; padding:9px; border-radius:10px; border:0.5px solid rgba(255,255,255,.18); background:#2E2E32;
+    color:var(--ink); font-size:13px; font-weight:700; cursor:pointer; -webkit-tap-highlight-color:transparent;
+  }
+  .vitrine-mail-fields{display:none; flex-direction:column; gap:6px; margin-top:8px}
+  .vitrine-mail-fields.open{display:flex}
+  .vitrine-mail-email, .vitrine-mail-objet{
+    font:inherit; font-size:12.5px; color:var(--ink); background:#2E2E32;
+    border:0.5px solid rgba(255,255,255,.18); border-radius:9px; padding:8px 10px;
+  }
+  .vitrine-mail-corps{
+    width:100%; box-sizing:border-box; font:inherit; font-size:13px; color:var(--ink); background:#2E2E32;
+    border:0.5px solid rgba(255,255,255,.18); border-radius:10px; padding:9px 11px; resize:vertical;
+  }
+  .vitrine-mail-send{
+    padding:9px; border-radius:10px; border:0; background:var(--gold-a); color:#1a1200;
+    font-size:13px; font-weight:700; cursor:pointer; -webkit-tap-highlight-color:transparent;
+  }
+  .vitrine-mail-send:disabled{opacity:.5}
+  .vitrine-mail-envoye{font-size:12px; color:#34C759; font-weight:600; margin-top:2px; display:block}
+  .vitrine-statut-actions{display:flex; gap:8px; flex-wrap:wrap}
+  .vitrine-statut-btn{
+    flex:1; min-width:76px; padding:9px; border-radius:10px; border:0; font-size:12.5px; font-weight:700;
+    cursor:pointer; -webkit-tap-highlight-color:transparent; background:var(--bg); color:var(--ink);
+  }
+  .vitrine-statut-btn.active{background:var(--gold-a); color:#1a1200}
   #vitrine-empty, #vitrine-loading{color:var(--muted); text-align:center; padding:40px 20px; font-size:14px}
   /* Panneau plein ecran "Emails" — theme CLAIR dedie façon Mail iOS (le reste de l'app reste sombre :
      les couleurs sont re-definies en variables locales sur #emailsview, donc tous les elements
@@ -943,8 +1001,30 @@
 <div id="vitrineview">
   <div id="vitrine-head">
     <b>🏗️ Sites Vitrine</b>
+    <button id="vitrine-lancer-toggle" type="button" aria-label="Lancer une recherche">➕</button>
     <button id="vitrine-refresh" type="button" aria-label="Actualiser"><svg width="16" height="16" viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M17 10a7 7 0 1 1-2-4.9M17 3v4h-4"/></svg></button>
     <button id="vitrine-close" type="button" aria-label="Fermer">✕</button>
+  </div>
+  <div id="vitrine-lancer-box">
+    <div id="vitrine-lancer-row">
+      <select id="vitrine-lancer-secteur">
+        <option value="couvreur">Couvreur</option>
+        <option value="maçon">Maçon</option>
+        <option value="électricien">Électricien</option>
+        <option value="plombier">Plombier</option>
+        <option value="menuisier">Menuisier</option>
+      </select>
+      <input id="vitrine-lancer-ville" type="text" placeholder="Ville (ex: Mérignac)" autocomplete="off" autocapitalize="words">
+      <input id="vitrine-lancer-limit" type="number" min="1" max="10" value="5">
+    </div>
+    <button id="vitrine-lancer-go" type="button">🔎 Lancer la recherche</button>
+    <p id="vitrine-lancer-status"></p>
+  </div>
+  <div id="vitrine-tabs">
+    <button class="vitrine-tab active" data-tab="nouveaux" type="button">🆕 À appeler</button>
+    <button class="vitrine-tab" data-tab="encours" type="button">📞 En cours</button>
+    <button class="vitrine-tab" data-tab="clients" type="button">✅ Clients</button>
+    <button class="vitrine-tab" data-tab="perdus" type="button">❌ Perdus</button>
   </div>
   <div id="vitrine-list"></div>
 </div>
@@ -1046,7 +1126,7 @@
 
 <script>
 (function(){
-  var APPV = 'v2.60';
+  var APPV = 'v2.61';
 
   // Debug : ?debug_modal=1 force l'affichage du modal "nouvelle version" sans attendre un vrai
   // déploiement. Capturé ICI, tout au début, car plus bas (login mémorisé, connexion) le code
@@ -1871,11 +1951,35 @@
   // Verifie discretement (juste le badge) - appelee depuis enterApp() une fois connecte
   function meuteCheckBadge(){ postMeute({ type:'list' }, function(j){ meuteAll = j.structures || []; meuteUpdateBadge(); }, function(){}); }
 
-  // ---- Sites Vitrine (revue des demos generees par l'agent VITRINE, consultation seule) ----
+  // ---- Sites Vitrine : COCKPIT DE VENTE (etape 2 du plan, 2026-07-25) ----
+  // Appel en 1 tap (tel:) + mail pre-redige envoyable d'1 clic (relu/edite avant envoi, jamais
+  // d'auto-envoi) + suivi de statut de vente + commande unique "lancer une recherche" (decouverte
+  // + generation chainees cote serveur). Backend separe (webhook vitrine-liste), meme discipline
+  // d'isolation que "Meute".
   var vitrineview = document.getElementById('vitrineview');
   var vitrineList = document.getElementById('vitrine-list');
   var vitrineRefreshBtn = document.getElementById('vitrine-refresh');
+  var vitrineLancerToggle = document.getElementById('vitrine-lancer-toggle');
+  var vitrineLancerBox = document.getElementById('vitrine-lancer-box');
+  var vitrineLancerGo = document.getElementById('vitrine-lancer-go');
+  var vitrineLancerStatus = document.getElementById('vitrine-lancer-status');
   var vitrineAll = [];
+  var vitrineActiveTab = 'nouveaux';
+  var VITRINE_STATUTS = [
+    { v:'a_appeler', label:'À appeler' },
+    { v:'appele', label:'Appelé' },
+    { v:'achete', label:'Acheté' },
+    { v:'a_relancer', label:'À relancer' },
+    { v:'perdu', label:'Perdu' },
+  ];
+  // Pipeline de vente en 4 dossiers (meme principe que Meute) : Nouveaux (jamais appelé) -> En
+  // cours (contact etabli, mail envoyé, ou à relancer) -> Clients (acheté) / Perdus.
+  var VITRINE_TABS = {
+    nouveaux: function(s){ return !s.statut_vente || s.statut_vente === 'a_appeler'; },
+    encours: function(s){ return s.statut_vente === 'appele' || s.statut_vente === 'mail_envoye' || s.statut_vente === 'a_relancer'; },
+    clients: function(s){ return s.statut_vente === 'achete'; },
+    perdus: function(s){ return s.statut_vente === 'perdu'; },
+  };
 
   function vitrineCard(s){
     var card = document.createElement('div'); card.className = 'vitrine-card';
@@ -1909,20 +2013,69 @@
       else { expEl.textContent = '⏱ Valable jusqu’au ' + exp.toLocaleDateString('fr-FR', { day:'2-digit', month:'2-digit', hour:'2-digit', minute:'2-digit' }); }
       card.appendChild(expEl);
     }
+
+    // Mail pre-redige : replie par defaut, relu/edite AVANT tout envoi (jamais d'auto-envoi), un
+    // clic sur "Envoyer le mail" pendant l'appel comme decrit dans le plan.
+    var mailBox = document.createElement('div'); mailBox.className = 'vitrine-mail-box';
+    var mailToggle = document.createElement('button'); mailToggle.className = 'vitrine-mail-toggle'; mailToggle.type = 'button';
+    mailToggle.textContent = s.statut_vente === 'mail_envoye' ? '✉️ Revoir / renvoyer le mail' : '✉️ Voir le mail à envoyer';
+    var mailFields = document.createElement('div'); mailFields.className = 'vitrine-mail-fields';
+    var emailInput = document.createElement('input'); emailInput.className = 'vitrine-mail-email';
+    emailInput.type = 'email'; emailInput.placeholder = 'Email du contact'; emailInput.value = s.email || '';
+    var objetInput = document.createElement('input'); objetInput.className = 'vitrine-mail-objet';
+    objetInput.type = 'text'; objetInput.value = s.mail_objet || '';
+    var corpsArea = document.createElement('textarea'); corpsArea.className = 'vitrine-mail-corps'; corpsArea.rows = 8;
+    corpsArea.value = s.mail_corps || '';
+    var sendBtn = document.createElement('button'); sendBtn.className = 'vitrine-mail-send'; sendBtn.type = 'button';
+    sendBtn.textContent = s.statut_vente === 'mail_envoye' ? '✉️ Renvoyer le mail' : '✉️ Envoyer le mail';
+    mailFields.appendChild(emailInput); mailFields.appendChild(objetInput); mailFields.appendChild(corpsArea); mailFields.appendChild(sendBtn);
+    if (s.statut_vente === 'mail_envoye'){
+      var envoye = document.createElement('span'); envoye.className = 'vitrine-mail-envoye'; envoye.textContent = '✅ Mail déjà envoyé';
+      mailFields.appendChild(envoye);
+    }
+    mailToggle.addEventListener('click', function(){ mailFields.classList.toggle('open'); });
+    sendBtn.addEventListener('click', function(){
+      var em = emailInput.value.trim();
+      if (!em){ toast('Indique une adresse email d’abord.'); return; }
+      sendBtn.disabled = true; sendBtn.textContent = '…';
+      postVitrine({ type:'envoyer_mail', place_id:s.place_id, email:em, objet:objetInput.value.trim(), corps:corpsArea.value.trim() }, function(){
+        s.statut_vente = 'mail_envoye';
+        sendBtn.disabled = false; sendBtn.textContent = '✉️ Renvoyer le mail';
+        toast('✅ Mail envoyé');
+        vitrineRefresh();
+      }, function(err){ sendBtn.disabled = false; sendBtn.textContent = '✉️ Envoyer le mail'; toast(err); });
+    });
+    mailBox.appendChild(mailToggle); mailBox.appendChild(mailFields);
+    card.appendChild(mailBox);
+
+    // Statut de vente (comme Meute) : à appeler / appelé / acheté / à relancer / perdu.
+    var statutActions = document.createElement('div'); statutActions.className = 'vitrine-statut-actions';
+    VITRINE_STATUTS.forEach(function(st){
+      var btn = document.createElement('button'); btn.className = 'vitrine-statut-btn' + ((s.statut_vente || 'a_appeler') === st.v ? ' active' : '');
+      btn.type = 'button'; btn.textContent = st.label;
+      btn.addEventListener('click', function(){
+        postVitrine({ type:'statut', place_id:s.place_id, statut_vente:st.v }, function(){ vitrineRefresh(); }, function(err){ toast(err); });
+      });
+      statutActions.appendChild(btn);
+    });
+    card.appendChild(statutActions);
     return card;
   }
 
   function vitrineRender(){
     vitrineList.innerHTML = '';
-    if (!vitrineAll.length){
-      vitrineList.innerHTML = '<p id="vitrine-empty">Aucun site généré pour l’instant.</p>';
+    var filtre = VITRINE_TABS[vitrineActiveTab] || VITRINE_TABS.nouveaux;
+    var sites = vitrineAll.filter(filtre);
+    if (!sites.length){
+      var msg = vitrineActiveTab === 'nouveaux' ? 'Aucun site à appeler pour l’instant — touche ➕ pour lancer une recherche.' : 'Rien ici pour l’instant.';
+      vitrineList.innerHTML = '<p id="vitrine-empty">' + msg + '</p>';
       return;
     }
-    vitrineAll.forEach(function(s){ vitrineList.appendChild(vitrineCard(s)); });
+    sites.forEach(function(s){ vitrineList.appendChild(vitrineCard(s)); });
   }
 
   function vitrineRefresh(onDone){
-    postVitrine({}, function(j){
+    postVitrine({ type:'list' }, function(j){
       vitrineAll = j.sites || [];
       vitrineRender();
       if (onDone) onDone();
@@ -1941,6 +2094,38 @@
     if (vitrineRefreshBtn.classList.contains('spin')) return;
     vitrineRefreshBtn.classList.add('spin');
     vitrineRefresh(function(){ vitrineRefreshBtn.classList.remove('spin'); });
+  });
+  document.querySelectorAll('.vitrine-tab').forEach(function(btn){
+    btn.addEventListener('click', function(){
+      document.querySelectorAll('.vitrine-tab').forEach(function(b){ b.classList.toggle('active', b === btn); });
+      vitrineActiveTab = btn.dataset.tab;
+      vitrineRender(); // deja en cache, pas de rechargement serveur necessaire pour changer d'onglet
+    });
+  });
+
+  // "Lancer une recherche" (commande unique du plan) : decouverte + generation chainees cote
+  // serveur -- peut prendre 1 a plusieurs minutes (Tavily/Claude/Netlify par site), meme discipline
+  // d'attente affichee que le bouton "relancer" de Meute.
+  vitrineLancerToggle.addEventListener('click', function(){ vitrineLancerBox.classList.toggle('open'); });
+  vitrineLancerGo.addEventListener('click', function(){
+    if (vitrineLancerGo.disabled) return;
+    var secteur = document.getElementById('vitrine-lancer-secteur').value;
+    var ville = document.getElementById('vitrine-lancer-ville').value.trim();
+    var limit = parseInt(document.getElementById('vitrine-lancer-limit').value, 10) || 5;
+    if (!ville){ toast('Indique une ville.'); return; }
+    vitrineLancerGo.disabled = true; vitrineLancerGo.textContent = 'Recherche en cours…';
+    vitrineLancerStatus.textContent = 'Ça peut prendre plusieurs minutes (recherche puis génération des sites)…';
+    postVitrine({ type:'lancer', secteur:secteur, ville:ville, limit:limit }, function(j){
+      vitrineLancerGo.disabled = false; vitrineLancerGo.textContent = '🔎 Lancer la recherche';
+      vitrineLancerStatus.textContent = '';
+      toast('✅ ' + (j.total_generes || 0) + ' site(s) généré(s) sur ' + (j.total_prospects_trouves || 0) + ' prospect(s) trouvé(s)');
+      vitrineLancerBox.classList.remove('open');
+      vitrineRefresh();
+    }, function(err){
+      vitrineLancerGo.disabled = false; vitrineLancerGo.textContent = '🔎 Lancer la recherche';
+      vitrineLancerStatus.textContent = '';
+      toast(err);
+    });
   });
 
   // ---- Emails (indexes + tries par l'IA toutes les 20 min cote serveur) ----
