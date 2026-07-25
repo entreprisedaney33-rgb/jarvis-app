@@ -1126,7 +1126,7 @@
 
 <script>
 (function(){
-  var APPV = 'v2.62';
+  var APPV = 'v2.63';
 
   // Debug : ?debug_modal=1 force l'affichage du modal "nouvelle version" sans attendre un vrai
   // déploiement. Capturé ICI, tout au début, car plus bas (login mémorisé, connexion) le code
@@ -2000,8 +2000,13 @@
     }
     // Etape 3 du plan : a 72h le LIEN cesse de marcher (page "expiré" déployée par-dessus côté
     // serveur), mais le site n'est JAMAIS supprimé -- "Réactiver" le republie tel quel en quelques
-    // secondes (restauration du vrai déploiement Netlify, pas une régénération).
-    if (s.expire){
+    // secondes (restauration du vrai déploiement Netlify, pas une régénération). "supprime" est
+    // different et IRREVERSIBLE (prospect marqué perdu) : jamais de bouton Réactiver dans ce cas.
+    if (s.supprime){
+      var suppEl = document.createElement('span'); suppEl.className = 'vitrine-tel'; suppEl.style.color = 'var(--muted)';
+      suppEl.textContent = '🗑 Site supprimé (prospect perdu)';
+      actions.appendChild(suppEl);
+    } else if (s.expire){
       var reactBtn = document.createElement('button'); reactBtn.className = 'vitrine-demo-link'; reactBtn.type = 'button';
       reactBtn.textContent = '🔁 Réactiver le site';
       reactBtn.addEventListener('click', function(){
@@ -2018,7 +2023,9 @@
       actions.appendChild(link);
     }
     card.appendChild(actions);
-    if (s.expire){
+    if (s.supprime){
+      // pas de ligne d'expiration -- le message ci-dessus suffit, la démo n'existe plus du tout.
+    } else if (s.expire){
       var expEl2 = document.createElement('span'); expEl2.className = 'vitrine-expir expired'; expEl2.textContent = '⏱ Démo expirée — le lien ne fonctionne plus';
       card.appendChild(expEl2);
     } else if (s.date_expiration){
@@ -2065,13 +2072,33 @@
     card.appendChild(mailBox);
 
     // Statut de vente (comme Meute) : à appeler / appelé / acheté / à relancer / perdu.
+    // "Perdu" est IRREVERSIBLE (supprime aussi le site sur Netlify, cote serveur) -- demande un
+    // 2e tap de confirmation avant d'envoyer, jamais d'action a 1 seul tap pour celui-la.
     var statutActions = document.createElement('div'); statutActions.className = 'vitrine-statut-actions';
     VITRINE_STATUTS.forEach(function(st){
       var btn = document.createElement('button'); btn.className = 'vitrine-statut-btn' + ((s.statut_vente || 'a_appeler') === st.v ? ' active' : '');
       btn.type = 'button'; btn.textContent = st.label;
-      btn.addEventListener('click', function(){
-        postVitrine({ type:'statut', place_id:s.place_id, statut_vente:st.v }, function(){ vitrineRefresh(); }, function(err){ toast(err); });
-      });
+      if (st.v === 'perdu'){
+        var perduConfirming = false;
+        btn.addEventListener('click', function(){
+          if (!perduConfirming){
+            perduConfirming = true;
+            btn.textContent = '⚠️ Sûr ? (supprime le site)';
+            setTimeout(function(){ if (perduConfirming){ perduConfirming = false; btn.textContent = st.label; } }, 4000);
+            return;
+          }
+          perduConfirming = false;
+          btn.disabled = true; btn.textContent = '…';
+          postVitrine({ type:'statut', place_id:s.place_id, statut_vente:'perdu' }, function(){
+            toast('🗑 Prospect marqué perdu, site supprimé');
+            vitrineRefresh();
+          }, function(err){ btn.disabled = false; btn.textContent = st.label; toast(err); });
+        });
+      } else {
+        btn.addEventListener('click', function(){
+          postVitrine({ type:'statut', place_id:s.place_id, statut_vente:st.v }, function(){ vitrineRefresh(); }, function(err){ toast(err); });
+        });
+      }
       statutActions.appendChild(btn);
     });
     card.appendChild(statutActions);
