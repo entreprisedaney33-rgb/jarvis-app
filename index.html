@@ -735,6 +735,21 @@
   }
   .notes-del.confirm{color:#FF3B30; font-weight:700}
   #notes-empty, #notes-loading{color:var(--muted); text-align:center; padding:40px 20px; font-size:14px}
+  /* Section "a valider" (etape 3, capture depuis la conversation Jarvis, 2026-07-26) -- anti-depotoir :
+     regroupee en tete, badge distinct, tant qu'une note auto-capturee n'est pas validee/ignoree. */
+  #notes-pending-head{font-size:12.5px; font-weight:700; color:var(--gold-a); padding:0 2px 8px; text-transform:uppercase; letter-spacing:.03em}
+  .notes-card.pending-auto{border:1px solid rgba(232,178,92,.4)}
+  .notes-auto-badge{
+    font-size:10.5px; font-weight:700; padding:3px 8px; border-radius:99px; background:rgba(232,178,92,.18);
+    color:var(--gold-a); display:inline-block; margin-top:6px;
+  }
+  .notes-pending-actions{display:flex; gap:8px; margin-top:8px}
+  .notes-garder, .notes-ignorer{
+    flex:1; padding:8px; border-radius:9px; border:0; font-size:12.5px; font-weight:700;
+    cursor:pointer; -webkit-tap-highlight-color:transparent;
+  }
+  .notes-garder{background:var(--gold-a); color:#1a1200}
+  .notes-ignorer{background:#2E2E32; color:var(--muted)}
   /* Panneau plein ecran "Emails" — theme CLAIR dedie façon Mail iOS (le reste de l'app reste sombre :
      les couleurs sont re-definies en variables locales sur #emailsview, donc tous les elements
      enfants qui utilisent deja var(--bg)/var(--surface)/var(--ink)/var(--muted)/var(--hairline)
@@ -1395,7 +1410,7 @@
 
 <script>
 (function(){
-  var APPV = 'v2.73';
+  var APPV = 'v2.74';
 
   // Debug : ?debug_modal=1 force l'affichage du modal "nouvelle version" sans attendre un vrai
   // déploiement. Capturé ICI, tout au début, car plus bas (login mémorisé, connexion) le code
@@ -2905,6 +2920,53 @@
     return card;
   }
 
+  // Carte "à valider" (etape 3, capture depuis la conversation Jarvis) : memes puces de correction
+  // que notesCard (l'IA peut se tromper de categorie/assigne/echeance, corrigeable avant d'accepter),
+  // mais Garder/Ignorer remplacent la coche+suppression -- anti-depotoir : rien ne devient une vraie
+  // note tant que ce choix n'est pas fait.
+  function notesPendingCard(n){
+    var card = document.createElement('div'); card.className = 'notes-card pending-auto';
+
+    var body = document.createElement('div'); body.className = 'notes-body';
+    var contenu = document.createElement('span'); contenu.className = 'notes-contenu'; contenu.textContent = n.contenu || '';
+    body.appendChild(contenu);
+
+    var chips = document.createElement('div'); chips.className = 'notes-chips';
+    var catChip = notesChip(NOTES_CAT_LABEL[n.categorie] || n.categorie, function(){
+      var next = NOTES_CAT_CYCLE[(NOTES_CAT_CYCLE.indexOf(n.categorie) + 1) % NOTES_CAT_CYCLE.length];
+      n.categorie = next; catChip.textContent = NOTES_CAT_LABEL[next];
+      postNotes({ type:'modifier', id:n.id, champ:'categorie', valeur:next }, function(){}, function(err){ toast(err); });
+    });
+    chips.appendChild(catChip);
+    var assigneChip = notesChip('Pour ' + (NOTES_ASSIGNE_LABEL[n.assigne_a] || n.assigne_a), function(){
+      var next = NOTES_ASSIGNE_CYCLE[(NOTES_ASSIGNE_CYCLE.indexOf(n.assigne_a) + 1) % NOTES_ASSIGNE_CYCLE.length];
+      n.assigne_a = next; assigneChip.textContent = 'Pour ' + NOTES_ASSIGNE_LABEL[next];
+      postNotes({ type:'modifier', id:n.id, champ:'assigne_a', valeur:next }, function(){}, function(err){ toast(err); });
+    });
+    chips.appendChild(assigneChip);
+    body.appendChild(chips);
+
+    var badge = document.createElement('span'); badge.className = 'notes-auto-badge'; badge.textContent = '🤖 Capturé automatiquement';
+    body.appendChild(badge);
+
+    var actions = document.createElement('div'); actions.className = 'notes-pending-actions';
+    var garder = document.createElement('button'); garder.className = 'notes-garder'; garder.type = 'button'; garder.textContent = '✅ Garder';
+    garder.addEventListener('click', function(){
+      garder.disabled = true;
+      postNotes({ type:'modifier', id:n.id, champ:'valide', valeur:'oui' }, function(){ notesRefresh(); }, function(err){ garder.disabled = false; toast(err); });
+    });
+    var ignorer = document.createElement('button'); ignorer.className = 'notes-ignorer'; ignorer.type = 'button'; ignorer.textContent = '✕ Ignorer';
+    ignorer.addEventListener('click', function(){
+      ignorer.disabled = true;
+      postNotes({ type:'supprimer', id:n.id }, function(){ notesRefresh(); }, function(err){ ignorer.disabled = false; toast(err); });
+    });
+    actions.appendChild(garder); actions.appendChild(ignorer);
+    body.appendChild(actions);
+
+    card.appendChild(body);
+    return card;
+  }
+
   // Vues intelligentes : au-dela des categories brutes, elles croisent echeance/assignation/statut.
   function notesMatchVue(n, vue){
     if (vue === 'fait') return n.statut === 'fait';
@@ -2922,10 +2984,22 @@
   function notesRender(){
     notesList.innerHTML = '';
     var q = notesNorm(notesQuery);
+    var isPending = function(n){ return n.source === 'auto' && n.valide !== 'oui'; };
+    var pending = notesAll.filter(isPending);
+    var reste = notesAll.filter(function(n){ return !isPending(n); });
     var filtered = q
-      ? notesAll.filter(function(n){ return notesNorm(n.contenu).indexOf(q) !== -1; })
-      : notesAll.filter(function(n){ return notesMatchVue(n, notesVue); });
-    if (!filtered.length){
+      ? reste.filter(function(n){ return notesNorm(n.contenu).indexOf(q) !== -1; })
+      : reste.filter(function(n){ return notesMatchVue(n, notesVue); });
+    var pendingFiltered = q ? pending.filter(function(n){ return notesNorm(n.contenu).indexOf(q) !== -1; }) : pending;
+
+    if (pendingFiltered.length){
+      var head = document.createElement('div'); head.id = 'notes-pending-head';
+      head.textContent = '🤖 Capturé automatiquement — à valider (' + pendingFiltered.length + ')';
+      notesList.appendChild(head);
+      pendingFiltered.forEach(function(n){ notesList.appendChild(notesPendingCard(n)); });
+    }
+
+    if (!filtered.length && !pendingFiltered.length){
       notesList.innerHTML = '<p id="notes-empty">' + (q ? 'Aucune note ne correspond.' : 'Aucune note ici pour l’instant.') + '</p>';
       return;
     }
