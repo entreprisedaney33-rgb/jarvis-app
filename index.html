@@ -1126,7 +1126,7 @@
 
 <script>
 (function(){
-  var APPV = 'v2.61';
+  var APPV = 'v2.62';
 
   // Debug : ?debug_modal=1 force l'affichage du modal "nouvelle version" sans attendre un vrai
   // déploiement. Capturé ICI, tout au début, car plus bas (login mémorisé, connexion) le code
@@ -1998,18 +1998,34 @@
       tel.href = 'tel:' + s.telephone.replace(/\s+/g,''); tel.textContent = '📞 ' + s.telephone;
       actions.appendChild(tel);
     }
-    if (s.url_demo){
+    // Etape 3 du plan : a 72h le LIEN cesse de marcher (page "expiré" déployée par-dessus côté
+    // serveur), mais le site n'est JAMAIS supprimé -- "Réactiver" le republie tel quel en quelques
+    // secondes (restauration du vrai déploiement Netlify, pas une régénération).
+    if (s.expire){
+      var reactBtn = document.createElement('button'); reactBtn.className = 'vitrine-demo-link'; reactBtn.type = 'button';
+      reactBtn.textContent = '🔁 Réactiver le site';
+      reactBtn.addEventListener('click', function(){
+        reactBtn.disabled = true; reactBtn.textContent = '…';
+        postVitrine({ type:'reactiver', place_id:s.place_id }, function(){
+          toast('✅ Site réactivé, valable 72h à nouveau');
+          vitrineRefresh();
+        }, function(err){ reactBtn.disabled = false; reactBtn.textContent = '🔁 Réactiver le site'; toast(err); });
+      });
+      actions.appendChild(reactBtn);
+    } else if (s.url_demo){
       var link = document.createElement('a'); link.className = 'vitrine-demo-link';
       link.href = s.url_demo; link.target = '_blank'; link.rel = 'noopener'; link.textContent = '👁 Voir la démo';
       actions.appendChild(link);
     }
     card.appendChild(actions);
-    if (s.date_expiration){
+    if (s.expire){
+      var expEl2 = document.createElement('span'); expEl2.className = 'vitrine-expir expired'; expEl2.textContent = '⏱ Démo expirée — le lien ne fonctionne plus';
+      card.appendChild(expEl2);
+    } else if (s.date_expiration){
       var expEl = document.createElement('span'); expEl.className = 'vitrine-expir';
       var exp = new Date(s.date_expiration);
       var heuresRestantes = (exp.getTime() - Date.now()) / 3600000;
-      if (heuresRestantes <= 0){ expEl.textContent = '⏱ Démo expirée'; expEl.classList.add('expired'); }
-      else if (heuresRestantes <= 12){ expEl.textContent = '⏱ Expire dans moins de 12h'; expEl.classList.add('soon'); }
+      if (heuresRestantes <= 12){ expEl.textContent = '⏱ Expire dans moins de 12h'; expEl.classList.add('soon'); }
       else { expEl.textContent = '⏱ Valable jusqu’au ' + exp.toLocaleDateString('fr-FR', { day:'2-digit', month:'2-digit', hour:'2-digit', minute:'2-digit' }); }
       card.appendChild(expEl);
     }
