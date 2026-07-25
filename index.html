@@ -648,6 +648,73 @@
   .plume-journal-action{font-size:13px; font-weight:700; display:block; margin-bottom:2px}
   .plume-journal-detail{font-size:12.5px; color:var(--muted); line-height:1.4}
   #plume-empty, #plume-loading{color:var(--muted); text-align:center; padding:40px 20px; font-size:14px}
+  /* Panneau plein ecran "Notes" (2026-07-25) — cerveau de notes partage Matheo/Dorian (objectifs,
+     taches, idees, attribuables). Backend 100% independant (webhook dedie notes-liste, table dediee)
+     -- memes classes .notes-* calquees sur .plume-* et .vitrine-* pour rester coherent visuellement. */
+  #notesview{
+    position:fixed; inset:0; z-index:50; background:var(--bg);
+    display:none; flex-direction:column;
+    transform:translateY(100%); transition:transform .28s cubic-bezier(.2,.9,.25,1);
+  }
+  #notesview.open{display:flex; transform:translateY(0)}
+  @media (prefers-reduced-motion: reduce){#notesview{transition:none}}
+  #notes-head{
+    flex:0 0 auto; display:flex; align-items:center; gap:10px;
+    padding:calc(10px + env(safe-area-inset-top)) 14px 12px;
+    border-bottom:0.5px solid var(--hairline);
+  }
+  #notes-head b{font-size:16px; flex:1}
+  #notes-add, #notes-close{
+    width:32px; height:32px; border-radius:50%; border:0; flex:0 0 auto;
+    background:var(--surface); color:var(--ink); font-size:18px; font-weight:700;
+    display:flex; align-items:center; justify-content:center; cursor:pointer;
+    -webkit-tap-highlight-color:transparent;
+  }
+  #notes-tabs{display:flex; gap:8px; padding:0 14px 12px; overflow-x:auto; -webkit-overflow-scrolling:touch}
+  .notes-tab{
+    flex:0 0 auto; padding:8px 14px; border-radius:99px; border:0; font-size:13px; font-weight:700;
+    background:var(--surface); color:var(--muted); cursor:pointer; -webkit-tap-highlight-color:transparent;
+    white-space:nowrap;
+  }
+  .notes-tab.active{background:var(--gold-a); color:#1a1200}
+  #notes-form{
+    display:none; flex-direction:column; gap:8px; padding:0 14px 14px;
+  }
+  #notes-form.open{display:flex}
+  #notes-form-contenu{
+    width:100%; min-height:64px; resize:vertical; padding:11px; border-radius:10px;
+    border:0.5px solid rgba(255,255,255,.18); background:#2E2E32; color:var(--ink);
+    font-size:14px; font-family:inherit;
+  }
+  #notes-form-row{display:flex; gap:8px}
+  #notes-form-categorie, #notes-form-assigne{
+    flex:1; padding:10px; border-radius:10px; border:0.5px solid rgba(255,255,255,.18);
+    background:#2E2E32; color:var(--ink); font-size:13.5px; font-family:inherit;
+  }
+  #notes-form-send{
+    padding:11px; border-radius:10px; border:0; background:var(--gold-a); color:#1a1200;
+    font-size:14px; font-weight:700; cursor:pointer; -webkit-tap-highlight-color:transparent;
+  }
+  #notes-form-send:disabled{opacity:.5}
+  #notes-list{flex:1; overflow-y:auto; -webkit-overflow-scrolling:touch; padding:0 14px calc(20px + env(safe-area-inset-bottom))}
+  .notes-card{background:var(--surface); border-radius:14px; padding:12px 14px; margin-bottom:10px; display:flex; gap:10px; align-items:flex-start}
+  .notes-card.fait{opacity:.55}
+  .notes-check{
+    width:24px; height:24px; border-radius:50%; border:1.5px solid var(--muted); flex:0 0 auto;
+    background:transparent; cursor:pointer; -webkit-tap-highlight-color:transparent; margin-top:2px;
+    display:flex; align-items:center; justify-content:center; font-size:13px; color:#1a1200;
+  }
+  .notes-card.fait .notes-check{background:var(--gold-a); border-color:var(--gold-a)}
+  .notes-body{flex:1; min-width:0}
+  .notes-contenu{font-size:14.5px; line-height:1.4; display:block; word-break:break-word}
+  .notes-card.fait .notes-contenu{text-decoration:line-through; color:var(--muted)}
+  .notes-meta{font-size:11.5px; color:var(--muted); display:block; margin-top:4px}
+  .notes-del{
+    width:26px; height:26px; border-radius:50%; border:0; flex:0 0 auto; background:transparent;
+    color:var(--muted); font-size:14px; cursor:pointer; -webkit-tap-highlight-color:transparent;
+  }
+  .notes-del.confirm{color:#FF3B30; font-weight:700}
+  #notes-empty, #notes-loading{color:var(--muted); text-align:center; padding:40px 20px; font-size:14px}
   /* Panneau plein ecran "Emails" — theme CLAIR dedie façon Mail iOS (le reste de l'app reste sombre :
      les couleurs sont re-definies en variables locales sur #emailsview, donc tous les elements
      enfants qui utilisent deja var(--bg)/var(--surface)/var(--ink)/var(--muted)/var(--hairline)
@@ -1106,6 +1173,7 @@
     <button class="sh-item" id="sh-meute" type="button"><span class="sh-ic">🐺</span><span class="sh-label">Meute</span><span class="badge-count" id="menu-meute-badge" style="display:none"></span></button>
     <button class="sh-item" id="sh-vitrine" type="button"><span class="sh-ic">🏗️</span><span class="sh-label">Sites Vitrine</span></button>
     <button class="sh-item" id="sh-plume" type="button"><span class="sh-ic">🪶</span><span class="sh-label">SEO</span></button>
+    <button class="sh-item" id="sh-notes" type="button"><span class="sh-ic">🧠</span><span class="sh-label">Notes</span></button>
     <button class="sh-item" id="sh-push" type="button"><span class="sh-ic">🔔</span><span class="sh-label">Notifications</span><span class="sw" id="sw-push"><span class="sw-knob"></span></span></button>
   </div>
   <div class="sh-group">
@@ -1181,6 +1249,37 @@
     <button id="plume-close" type="button" aria-label="Fermer">✕</button>
   </div>
   <div id="plume-list"></div>
+</div>
+
+<div id="notesview">
+  <div id="notes-head">
+    <b>🧠 Notes</b>
+    <button id="notes-add" type="button" aria-label="Ajouter une note">＋</button>
+    <button id="notes-close" type="button" aria-label="Fermer">✕</button>
+  </div>
+  <div id="notes-tabs">
+    <button class="notes-tab active" data-cat="tout" type="button">Tout</button>
+    <button class="notes-tab" data-cat="objectif" type="button">🎯 Objectifs</button>
+    <button class="notes-tab" data-cat="tache" type="button">✅ Tâches</button>
+    <button class="notes-tab" data-cat="idee" type="button">💡 Idées</button>
+  </div>
+  <div id="notes-form">
+    <textarea id="notes-form-contenu" placeholder="Écris ton idée, ta tâche ou ton objectif…"></textarea>
+    <div id="notes-form-row">
+      <select id="notes-form-categorie">
+        <option value="tache">✅ Tâche</option>
+        <option value="idee">💡 Idée</option>
+        <option value="objectif">🎯 Objectif</option>
+      </select>
+      <select id="notes-form-assigne">
+        <option value="Les deux">Pour les deux</option>
+        <option value="Matheo">Pour Mathéo</option>
+        <option value="Dorian">Pour Dorian</option>
+      </select>
+    </div>
+    <button id="notes-form-send" type="button">Ajouter</button>
+  </div>
+  <div id="notes-list"></div>
 </div>
 
 <div id="emailsview">
@@ -1280,7 +1379,7 @@
 
 <script>
 (function(){
-  var APPV = 'v2.70';
+  var APPV = 'v2.71';
 
   // Debug : ?debug_modal=1 force l'affichage du modal "nouvelle version" sans attendre un vrai
   // déploiement. Capturé ICI, tout au début, car plus bas (login mémorisé, connexion) le code
@@ -1309,6 +1408,7 @@
   var API_MEUTE = 'https://mat22.app.n8n.cloud/webhook/meute-app';
   var API_VITRINE = 'https://mat22.app.n8n.cloud/webhook/vitrine-liste';
   var API_PLUME = 'https://mat22.app.n8n.cloud/webhook/plume-liste';
+  var API_NOTES = 'https://mat22.app.n8n.cloud/webhook/notes-liste';
   var login = document.getElementById('login');
   var app = document.getElementById('app');
   var chat = document.getElementById('chat');
@@ -1476,6 +1576,15 @@
   function postPlume(payload, onOk, onErr){
     payload.code = String(read('jarvisCode') || '').trim();
     fetch(API_PLUME, {
+      method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify(payload)
+    }).then(function(r){ return r.json(); }).then(function(j){
+      if (!j || j.ok === false){ onErr((j && j.erreur) || 'Erreur.'); } else { onOk(j); }
+    }).catch(function(){ onErr('Connexion impossible.'); });
+  }
+
+  function postNotes(payload, onOk, onErr){
+    payload.code = String(read('jarvisCode') || '').trim();
+    fetch(API_NOTES, {
       method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify(payload)
     }).then(function(r){ return r.json(); }).then(function(j){
       if (!j || j.ok === false){ onErr((j && j.erreur) || 'Erreur.'); } else { onOk(j); }
@@ -2634,6 +2743,130 @@
     if (plumeRefreshBtn.classList.contains('spin')) return;
     plumeRefreshBtn.classList.add('spin');
     plumeRefresh(function(){ plumeRefreshBtn.classList.remove('spin'); });
+  });
+
+  // ---- Notes (cerveau de notes partagé Mathéo/Dorian : objectifs, tâches, idées) ----
+  var notesview = document.getElementById('notesview');
+  var notesList = document.getElementById('notes-list');
+  var notesForm = document.getElementById('notes-form');
+  var notesFormContenu = document.getElementById('notes-form-contenu');
+  var notesFormCategorie = document.getElementById('notes-form-categorie');
+  var notesFormAssigne = document.getElementById('notes-form-assigne');
+  var notesFormSend = document.getElementById('notes-form-send');
+  var notesAll = [];
+  var notesMoi = '';
+  var notesTab = 'tout';
+  var NOTES_CAT_LABEL = { objectif:'🎯 Objectif', tache:'✅ Tâche', idee:'💡 Idée' };
+  var NOTES_ASSIGNE_LABEL = { Matheo:'Mathéo', Dorian:'Dorian', 'Les deux':'Les deux' };
+
+  function notesFmtDate(iso){
+    if (!iso) return '';
+    try {
+      var d = new Date(iso);
+      return d.toLocaleDateString('fr-FR', { day:'numeric', month:'short' });
+    } catch(e){ return ''; }
+  }
+
+  function notesCard(n){
+    var card = document.createElement('div'); card.className = 'notes-card' + (n.statut === 'fait' ? ' fait' : '');
+
+    var check = document.createElement('button'); check.className = 'notes-check'; check.type = 'button';
+    check.setAttribute('aria-label', n.statut === 'fait' ? 'Remettre à faire' : 'Marquer fait');
+    if (n.statut === 'fait') check.textContent = '✓';
+    check.addEventListener('click', function(){
+      check.disabled = true;
+      var action = n.statut === 'fait' ? 'reouvrir' : 'terminer';
+      postNotes({ type:action, id:n.id }, function(){ notesRefresh(); }, function(err){ check.disabled = false; toast(err); });
+    });
+    card.appendChild(check);
+
+    var body = document.createElement('div'); body.className = 'notes-body';
+    var contenu = document.createElement('span'); contenu.className = 'notes-contenu'; contenu.textContent = n.contenu || '';
+    body.appendChild(contenu);
+    var meta = document.createElement('span'); meta.className = 'notes-meta';
+    var assigneLabel = NOTES_ASSIGNE_LABEL[n.assigne_a] || n.assigne_a || 'Les deux';
+    meta.textContent = (NOTES_CAT_LABEL[n.categorie] || n.categorie) + ' · pour ' + assigneLabel + ' · par ' + (n.auteur || '?') + (n.date ? ' · ' + notesFmtDate(n.date) : '');
+    body.appendChild(meta);
+    card.appendChild(body);
+
+    var del = document.createElement('button'); del.className = 'notes-del'; del.type = 'button'; del.textContent = '🗑';
+    del.setAttribute('aria-label', 'Supprimer');
+    var confirming = false, confirmTimer = null;
+    del.addEventListener('click', function(){
+      if (!confirming){
+        confirming = true; del.classList.add('confirm'); del.textContent = '✕';
+        confirmTimer = setTimeout(function(){ confirming = false; del.classList.remove('confirm'); del.textContent = '🗑'; }, 2500);
+        return;
+      }
+      clearTimeout(confirmTimer);
+      del.disabled = true;
+      postNotes({ type:'supprimer', id:n.id }, function(){ notesRefresh(); }, function(err){ del.disabled = false; toast(err); });
+    });
+    card.appendChild(del);
+
+    return card;
+  }
+
+  function notesRender(){
+    notesList.innerHTML = '';
+    var filtered = notesTab === 'tout' ? notesAll : notesAll.filter(function(n){ return n.categorie === notesTab; });
+    if (!filtered.length){
+      notesList.innerHTML = '<p id="notes-empty">Aucune note ici pour l’instant.</p>';
+      return;
+    }
+    filtered.forEach(function(n){ notesList.appendChild(notesCard(n)); });
+  }
+
+  function notesRefresh(onDone){
+    postNotes({ type:'list' }, function(j){
+      notesAll = j.notes || [];
+      notesMoi = j.moi || '';
+      notesRender();
+      if (onDone) onDone();
+    }, function(err){ notesList.innerHTML = '<p id="notes-empty">' + err + '</p>'; if (onDone) onDone(); });
+  }
+
+  function notesOpen(){
+    notesview.classList.add('open');
+    notesList.innerHTML = '<p id="notes-loading">Chargement…</p>';
+    notesRefresh();
+  }
+  function notesClose(){ notesview.classList.remove('open'); notesForm.classList.remove('open'); }
+  document.getElementById('sh-notes').addEventListener('click', function(){ sheetOpen(false); notesOpen(); });
+  document.getElementById('notes-close').addEventListener('click', notesClose);
+
+  document.getElementById('notes-add').addEventListener('click', function(){
+    notesForm.classList.toggle('open');
+    if (notesForm.classList.contains('open')) notesFormContenu.focus();
+  });
+
+  Array.prototype.forEach.call(document.querySelectorAll('.notes-tab'), function(btn){
+    btn.addEventListener('click', function(){
+      Array.prototype.forEach.call(document.querySelectorAll('.notes-tab'), function(b){ b.classList.remove('active'); });
+      btn.classList.add('active');
+      notesTab = btn.getAttribute('data-cat');
+      notesRender();
+    });
+  });
+
+  notesFormSend.addEventListener('click', function(){
+    var contenu = notesFormContenu.value.trim();
+    if (!contenu) { notesFormContenu.focus(); return; }
+    notesFormSend.disabled = true; notesFormSend.textContent = 'Ajout…';
+    postNotes({
+      type:'ajouter', contenu:contenu,
+      categorie: notesFormCategorie.value, assigne_a: notesFormAssigne.value,
+    }, function(){
+      notesFormContenu.value = '';
+      notesFormCategorie.value = 'tache';
+      notesFormAssigne.value = 'Les deux';
+      notesFormSend.disabled = false; notesFormSend.textContent = 'Ajouter';
+      notesForm.classList.remove('open');
+      notesRefresh();
+    }, function(err){
+      notesFormSend.disabled = false; notesFormSend.textContent = 'Ajouter';
+      toast(err);
+    });
   });
 
   // ---- Emails (indexes + tries par l'IA toutes les 20 min cote serveur) ----
