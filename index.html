@@ -408,6 +408,44 @@
     padding:7px 14px; border-radius:8px; border:0; background:var(--gold-a); color:#1a1200;
     font-size:12.5px; font-weight:700; cursor:pointer; -webkit-tap-highlight-color:transparent;
   }
+  /* Panneau plein ecran "Sites Vitrine" — consultation seule (2026-07-25) : revue quotidienne des
+     demos generees par l'agent VITRINE (produit separe, backend 100% independant -- webhook
+     vitrine-liste dedie -- seul ce panneau frontend est partage avec Jarvis, meme principe deja
+     valide par "Meute" ci-dessus). Pas d'action d'ecriture pour l'instant (juste consulter/appeler). */
+  #vitrineview{
+    position:fixed; inset:0; z-index:50; background:var(--bg);
+    display:none; flex-direction:column;
+    transform:translateY(100%); transition:transform .28s cubic-bezier(.2,.9,.25,1);
+  }
+  #vitrineview.open{display:flex; transform:translateY(0)}
+  @media (prefers-reduced-motion: reduce){#vitrineview{transition:none}}
+  #vitrine-head{
+    flex:0 0 auto; display:flex; align-items:center; gap:10px;
+    padding:calc(10px + env(safe-area-inset-top)) 14px 12px;
+    border-bottom:0.5px solid var(--hairline);
+  }
+  #vitrine-head b{font-size:16px; flex:1}
+  #vitrine-refresh, #vitrine-close{
+    width:32px; height:32px; border-radius:50%; border:0; flex:0 0 auto;
+    background:var(--surface); color:var(--ink); font-size:15px;
+    display:flex; align-items:center; justify-content:center; cursor:pointer;
+    -webkit-tap-highlight-color:transparent;
+  }
+  #vitrine-refresh.spin svg{animation:meute-spin 1s linear infinite}
+  #vitrine-list{flex:1; overflow-y:auto; -webkit-overflow-scrolling:touch; padding:10px 14px calc(20px + env(safe-area-inset-bottom))}
+  .vitrine-card{background:var(--surface); border-radius:14px; padding:14px; margin-bottom:12px}
+  .vitrine-nom{font-size:15px; font-weight:600; display:block; margin-bottom:2px}
+  .vitrine-meta{font-size:12.5px; color:var(--muted); display:block; margin-bottom:10px}
+  .vitrine-actions{display:flex; gap:8px; flex-wrap:wrap; align-items:center}
+  .vitrine-tel{font-size:13px; color:var(--blue,#0A84FF); text-decoration:none; padding:8px 4px}
+  .vitrine-demo-link{
+    font-size:13px; font-weight:700; color:#1a1200; background:var(--gold-a); text-decoration:none;
+    border-radius:9px; padding:8px 13px;
+  }
+  .vitrine-expir{font-size:12px; color:var(--muted); display:block; margin-top:8px}
+  .vitrine-expir.soon{color:#FF9F0A; font-weight:600}
+  .vitrine-expir.expired{color:#FF453A; font-weight:600}
+  #vitrine-empty, #vitrine-loading{color:var(--muted); text-align:center; padding:40px 20px; font-size:14px}
   /* Panneau plein ecran "Emails" — theme CLAIR dedie façon Mail iOS (le reste de l'app reste sombre :
      les couleurs sont re-definies en variables locales sur #emailsview, donc tous les elements
      enfants qui utilisent deja var(--bg)/var(--surface)/var(--ink)/var(--muted)/var(--hairline)
@@ -864,6 +902,7 @@
     <button class="sh-item" id="sh-calendar" type="button"><span class="sh-ic">📅</span><span class="sh-label">Calendrier</span></button>
     <button class="sh-item" id="sh-docs" type="button"><span class="sh-ic">📄</span><span class="sh-label">Mes documents</span></button>
     <button class="sh-item" id="sh-meute" type="button"><span class="sh-ic">🐺</span><span class="sh-label">Meute</span><span class="badge-count" id="menu-meute-badge" style="display:none"></span></button>
+    <button class="sh-item" id="sh-vitrine" type="button"><span class="sh-ic">🏗️</span><span class="sh-label">Sites Vitrine</span></button>
     <button class="sh-item" id="sh-push" type="button"><span class="sh-ic">🔔</span><span class="sh-label">Notifications</span><span class="sw" id="sw-push"><span class="sw-knob"></span></span></button>
   </div>
   <div class="sh-group">
@@ -899,6 +938,15 @@
     <button class="meute-tab" data-tab="perdus" type="button">❌ Perdus</button>
   </div>
   <div id="meute-list"></div>
+</div>
+
+<div id="vitrineview">
+  <div id="vitrine-head">
+    <b>🏗️ Sites Vitrine</b>
+    <button id="vitrine-refresh" type="button" aria-label="Actualiser"><svg width="16" height="16" viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M17 10a7 7 0 1 1-2-4.9M17 3v4h-4"/></svg></button>
+    <button id="vitrine-close" type="button" aria-label="Fermer">✕</button>
+  </div>
+  <div id="vitrine-list"></div>
 </div>
 
 <div id="emailsview">
@@ -998,7 +1046,7 @@
 
 <script>
 (function(){
-  var APPV = 'v2.59';
+  var APPV = 'v2.60';
 
   // Debug : ?debug_modal=1 force l'affichage du modal "nouvelle version" sans attendre un vrai
   // déploiement. Capturé ICI, tout au début, car plus bas (login mémorisé, connexion) le code
@@ -1025,6 +1073,7 @@
   document.addEventListener('visibilitychange', function(){ if (!document.hidden) checkUpdate(); });
   var API = 'https://mat22.app.n8n.cloud/webhook/jarvis-msg';
   var API_MEUTE = 'https://mat22.app.n8n.cloud/webhook/meute-app';
+  var API_VITRINE = 'https://mat22.app.n8n.cloud/webhook/vitrine-liste';
   var login = document.getElementById('login');
   var app = document.getElementById('app');
   var chat = document.getElementById('chat');
@@ -1174,6 +1223,15 @@
   function postMeute(payload, onOk, onErr){
     payload.code = String(read('jarvisCode') || '').trim();
     fetch(API_MEUTE, {
+      method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify(payload)
+    }).then(function(r){ return r.json(); }).then(function(j){
+      if (!j || j.ok === false){ onErr((j && j.erreur) || 'Erreur.'); } else { onOk(j); }
+    }).catch(function(){ onErr('Connexion impossible.'); });
+  }
+
+  function postVitrine(payload, onOk, onErr){
+    payload.code = String(read('jarvisCode') || '').trim();
+    fetch(API_VITRINE, {
       method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify(payload)
     }).then(function(r){ return r.json(); }).then(function(j){
       if (!j || j.ok === false){ onErr((j && j.erreur) || 'Erreur.'); } else { onOk(j); }
@@ -1812,6 +1870,78 @@
   });
   // Verifie discretement (juste le badge) - appelee depuis enterApp() une fois connecte
   function meuteCheckBadge(){ postMeute({ type:'list' }, function(j){ meuteAll = j.structures || []; meuteUpdateBadge(); }, function(){}); }
+
+  // ---- Sites Vitrine (revue des demos generees par l'agent VITRINE, consultation seule) ----
+  var vitrineview = document.getElementById('vitrineview');
+  var vitrineList = document.getElementById('vitrine-list');
+  var vitrineRefreshBtn = document.getElementById('vitrine-refresh');
+  var vitrineAll = [];
+
+  function vitrineCard(s){
+    var card = document.createElement('div'); card.className = 'vitrine-card';
+    var nom = document.createElement('span'); nom.className = 'vitrine-nom'; nom.textContent = s.entreprise || '';
+    card.appendChild(nom);
+    var metaBits = [];
+    if (s.secteur) metaBits.push(s.secteur);
+    if (s.ville) metaBits.push(s.ville);
+    if (metaBits.length){
+      var meta = document.createElement('span'); meta.className = 'vitrine-meta'; meta.textContent = metaBits.join(' · ');
+      card.appendChild(meta);
+    }
+    var actions = document.createElement('div'); actions.className = 'vitrine-actions';
+    if (s.telephone){
+      var tel = document.createElement('a'); tel.className = 'vitrine-tel';
+      tel.href = 'tel:' + s.telephone.replace(/\s+/g,''); tel.textContent = '📞 ' + s.telephone;
+      actions.appendChild(tel);
+    }
+    if (s.url_demo){
+      var link = document.createElement('a'); link.className = 'vitrine-demo-link';
+      link.href = s.url_demo; link.target = '_blank'; link.rel = 'noopener'; link.textContent = '👁 Voir la démo';
+      actions.appendChild(link);
+    }
+    card.appendChild(actions);
+    if (s.date_expiration){
+      var expEl = document.createElement('span'); expEl.className = 'vitrine-expir';
+      var exp = new Date(s.date_expiration);
+      var heuresRestantes = (exp.getTime() - Date.now()) / 3600000;
+      if (heuresRestantes <= 0){ expEl.textContent = '⏱ Démo expirée'; expEl.classList.add('expired'); }
+      else if (heuresRestantes <= 12){ expEl.textContent = '⏱ Expire dans moins de 12h'; expEl.classList.add('soon'); }
+      else { expEl.textContent = '⏱ Valable jusqu’au ' + exp.toLocaleDateString('fr-FR', { day:'2-digit', month:'2-digit', hour:'2-digit', minute:'2-digit' }); }
+      card.appendChild(expEl);
+    }
+    return card;
+  }
+
+  function vitrineRender(){
+    vitrineList.innerHTML = '';
+    if (!vitrineAll.length){
+      vitrineList.innerHTML = '<p id="vitrine-empty">Aucun site généré pour l’instant.</p>';
+      return;
+    }
+    vitrineAll.forEach(function(s){ vitrineList.appendChild(vitrineCard(s)); });
+  }
+
+  function vitrineRefresh(onDone){
+    postVitrine({}, function(j){
+      vitrineAll = j.sites || [];
+      vitrineRender();
+      if (onDone) onDone();
+    }, function(err){ vitrineList.innerHTML = '<p id="vitrine-empty">' + err + '</p>'; if (onDone) onDone(); });
+  }
+
+  function vitrineOpen(){
+    vitrineview.classList.add('open');
+    vitrineList.innerHTML = '<p id="vitrine-loading">Chargement…</p>';
+    vitrineRefresh();
+  }
+  function vitrineClose(){ vitrineview.classList.remove('open'); }
+  document.getElementById('sh-vitrine').addEventListener('click', function(){ sheetOpen(false); vitrineOpen(); });
+  document.getElementById('vitrine-close').addEventListener('click', vitrineClose);
+  vitrineRefreshBtn.addEventListener('click', function(){
+    if (vitrineRefreshBtn.classList.contains('spin')) return;
+    vitrineRefreshBtn.classList.add('spin');
+    vitrineRefresh(function(){ vitrineRefreshBtn.classList.remove('spin'); });
+  });
 
   // ---- Emails (indexes + tries par l'IA toutes les 20 min cote serveur) ----
   var emailsview = document.getElementById('emailsview');
