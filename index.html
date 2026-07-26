@@ -1263,7 +1263,7 @@
         <option value="plombier">Plombier</option>
         <option value="menuisier">Menuisier</option>
       </select>
-      <input id="vitrine-lancer-ville" type="text" placeholder="Ville (ex: Mérignac)" autocomplete="off" autocapitalize="words">
+      <input id="vitrine-lancer-ville" type="text" placeholder="Ville (optionnel, défaut : Gironde)" autocomplete="off" autocapitalize="words">
       <input id="vitrine-lancer-limit" type="number" min="1" max="10" value="5">
     </div>
     <button id="vitrine-lancer-go" type="button">🔎 Lancer la recherche</button>
@@ -1411,7 +1411,7 @@
 
 <script>
 (function(){
-  var APPV = 'v2.75';
+  var APPV = 'v2.76';
 
   // Debug : ?debug_modal=1 force l'affichage du modal "nouvelle version" sans attendre un vrai
   // déploiement. Capturé ICI, tout au début, car plus bas (login mémorisé, connexion) le code
@@ -2557,7 +2557,6 @@
     var secteur = document.getElementById('vitrine-lancer-secteur').value;
     var ville = document.getElementById('vitrine-lancer-ville').value.trim();
     var limit = parseInt(document.getElementById('vitrine-lancer-limit').value, 10) || 5;
-    if (!ville){ toast('Indique une ville.'); return; }
     vitrineLancerGo.disabled = true; vitrineLancerGo.textContent = 'Recherche en cours…';
     vitrineLancerStatus.textContent = 'Ça peut prendre plusieurs minutes (recherche puis génération des sites)…';
     postVitrine({ type:'lancer', secteur:secteur, ville:ville, limit:limit }, function(j){
