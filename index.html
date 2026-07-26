@@ -728,6 +728,7 @@
   .notes-chip.echeance{position:relative; overflow:hidden; display:inline-flex; align-items:center}
   .notes-chip.echeance input[type=date]{position:absolute; inset:0; opacity:0; width:100%; height:100%; cursor:pointer}
   .notes-chip.echeance.retard{background:rgba(255,59,48,.18); color:#FF6961}
+  .notes-chip.lien{background:rgba(10,132,255,.18); color:var(--blue)}
   .notes-provenance{font-size:11px; color:var(--muted); display:block; margin-top:6px}
   .notes-del{
     width:26px; height:26px; border-radius:50%; border:0; flex:0 0 auto; background:transparent;
@@ -1410,7 +1411,7 @@
 
 <script>
 (function(){
-  var APPV = 'v2.74';
+  var APPV = 'v2.75';
 
   // Debug : ?debug_modal=1 force l'affichage du modal "nouvelle version" sans attendre un vrai
   // déploiement. Capturé ICI, tout au début, car plus bas (login mémorisé, connexion) le code
@@ -2827,6 +2828,21 @@
     return b;
   }
 
+  // Lien intelligent (etape 5, 2026-07-26) : ouvre directement l'onglet concerne (SEO/Sites Vitrine
+  // dans l'app) ou le Gestionnaire de fiches Google (externe, aucun id de fiche precis trace encore).
+  var NOTES_LIEN_LABEL = { gbp:'🔗 Fiche Google', seo:'🔗 Onglet SEO', vitrine:'🔗 Sites Vitrine' };
+  function notesLienChip(n){
+    if (!n.lien_action || !NOTES_LIEN_LABEL[n.lien_action]) return null;
+    var chip = notesChip(NOTES_LIEN_LABEL[n.lien_action], function(){
+      if (n.lien_action === 'gbp'){ window.open('https://business.google.com/', '_blank'); return; }
+      notesClose();
+      if (n.lien_action === 'seo') plumeOpen();
+      else if (n.lien_action === 'vitrine') vitrineOpen();
+    });
+    chip.classList.add('lien');
+    return chip;
+  }
+
   function notesCard(n){
     var card = document.createElement('div'); card.className = 'notes-card' + (n.statut === 'fait' ? ' fait' : '') + (n.pending ? ' pending' : '');
 
@@ -2901,6 +2917,9 @@
     echChip.appendChild(echText); echChip.appendChild(echInput);
     chips.appendChild(echChip);
 
+    var lienChip = notesLienChip(n);
+    if (lienChip) chips.appendChild(lienChip);
+
     body.appendChild(chips);
 
     var prov = document.createElement('span'); prov.className = 'notes-provenance';
@@ -2944,6 +2963,8 @@
       postNotes({ type:'modifier', id:n.id, champ:'assigne_a', valeur:next }, function(){}, function(err){ toast(err); });
     });
     chips.appendChild(assigneChip);
+    var lienChipP = notesLienChip(n);
+    if (lienChipP) chips.appendChild(lienChipP);
     body.appendChild(chips);
 
     var badge = document.createElement('span'); badge.className = 'notes-auto-badge'; badge.textContent = '🤖 Capturé automatiquement';
