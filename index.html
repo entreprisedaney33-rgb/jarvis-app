@@ -497,6 +497,28 @@
   }
   .vitrine-mail-send:disabled{opacity:.5}
   .vitrine-mail-envoye{font-size:12px; color:#34C759; font-weight:600; margin-top:2px; display:block}
+  .vitrine-notes-box{margin-bottom:10px}
+  .vitrine-notes-preview{
+    display:block; width:100%; text-align:left; font:inherit; font-size:12.5px; line-height:1.4; color:#3a2f0a;
+    background:#F5D67A; border:0; border-radius:10px; padding:9px 11px; cursor:pointer;
+    -webkit-tap-highlight-color:transparent; white-space:pre-wrap; word-break:break-word;
+  }
+  .vitrine-notes-empty{
+    display:block; width:100%; text-align:left; font:inherit; font-size:12.5px; color:var(--muted);
+    background:none; border:0.5px dashed rgba(255,255,255,.18); border-radius:10px; padding:8px 11px; cursor:pointer;
+    -webkit-tap-highlight-color:transparent;
+  }
+  .vitrine-notes-fields{display:none; flex-direction:column; gap:6px; margin-top:8px}
+  .vitrine-notes-fields.open{display:flex}
+  .vitrine-notes-area{
+    width:100%; box-sizing:border-box; font:inherit; font-size:13px; color:var(--ink); background:#2E2E32;
+    border:0.5px solid rgba(255,255,255,.18); border-radius:10px; padding:9px 11px; resize:vertical;
+  }
+  .vitrine-notes-save{
+    padding:9px; border-radius:10px; border:0; background:var(--gold-a); color:#1a1200;
+    font-size:13px; font-weight:700; cursor:pointer; -webkit-tap-highlight-color:transparent;
+  }
+  .vitrine-notes-save:disabled{opacity:.5}
   .vitrine-devis-box{margin-bottom:10px}
   .vitrine-devis-toggle{
     width:100%; padding:9px; border-radius:10px; border:0.5px solid rgba(255,255,255,.18); background:#2E2E32;
@@ -1411,7 +1433,7 @@
 
 <script>
 (function(){
-  var APPV = 'v2.77';
+  var APPV = 'v2.78';
 
   // Debug : ?debug_modal=1 force l'affichage du modal "nouvelle version" sans attendre un vrai
   // déploiement. Capturé ICI, tout au début, car plus bas (login mémorisé, connexion) le code
@@ -2356,6 +2378,42 @@
     // restent TOUJOURS fonctionnels -- seul "Perdu" les supprime pour de vrai). Le cas s.expire
     // ci-dessus reste géré (site historique déjà marqué expiré) mais aucun nouveau site ne peut
     // plus y arriver, le job nocturne qui posait ce statut est désactivé.
+
+    // Note libre par prospect (2026-07-27, demande Mathéo : se souvenir de ce qu'un client a dit
+    // au telephone avant de relancer). Toujours affichee EN CLAIR si elle existe (pas cachee
+    // derriere un depli comme mail/devis -- le but est justement de la voir d'un coup d'oeil avant
+    // de rappeler), remplacee au tap par un editeur simple. Colonne dediee `notes` sur
+    // vitrine_prospects (JAMAIS `infos_complementaires`, deja utilisee pour tout autre chose --
+    // les infos de recherche envoyees a Claude a la generation du site).
+    var notesBox = document.createElement('div'); notesBox.className = 'vitrine-notes-box';
+    var notesPreview = document.createElement('button'); notesPreview.type = 'button';
+    notesPreview.className = s.notes ? 'vitrine-notes-preview' : 'vitrine-notes-empty';
+    notesPreview.textContent = s.notes ? ('📝 ' + s.notes) : '📝 Ajouter une note';
+    var notesFields = document.createElement('div'); notesFields.className = 'vitrine-notes-fields';
+    var notesArea = document.createElement('textarea'); notesArea.className = 'vitrine-notes-area'; notesArea.rows = 3;
+    notesArea.placeholder = 'Ce que le client a dit, à se rappeler pour la prochaine fois…';
+    notesArea.value = s.notes || '';
+    var notesSave = document.createElement('button'); notesSave.className = 'vitrine-notes-save'; notesSave.type = 'button';
+    notesSave.textContent = '✅ Enregistrer';
+    notesFields.appendChild(notesArea); notesFields.appendChild(notesSave);
+    notesPreview.addEventListener('click', function(){
+      notesFields.classList.toggle('open');
+      if (notesFields.classList.contains('open')) notesArea.focus();
+    });
+    notesSave.addEventListener('click', function(){
+      var val = notesArea.value.trim();
+      notesSave.disabled = true; notesSave.textContent = '…';
+      postVitrine({ type:'notes', place_id:s.place_id, notes:val }, function(){
+        s.notes = val;
+        notesPreview.className = val ? 'vitrine-notes-preview' : 'vitrine-notes-empty';
+        notesPreview.textContent = val ? ('📝 ' + val) : '📝 Ajouter une note';
+        notesFields.classList.remove('open');
+        notesSave.disabled = false; notesSave.textContent = '✅ Enregistrer';
+        toast('✅ Note enregistrée');
+      }, function(err){ notesSave.disabled = false; notesSave.textContent = '✅ Enregistrer'; toast(err); });
+    });
+    notesBox.appendChild(notesPreview); notesBox.appendChild(notesFields);
+    card.appendChild(notesBox);
 
     // Mail pre-redige : replie par defaut, relu/edite AVANT tout envoi (jamais d'auto-envoi), un
     // clic sur "Envoyer le mail" pendant l'appel comme decrit dans le plan.
