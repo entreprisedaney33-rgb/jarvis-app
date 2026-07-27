@@ -1411,7 +1411,7 @@
 
 <script>
 (function(){
-  var APPV = 'v2.76';
+  var APPV = 'v2.77';
 
   // Debug : ?debug_modal=1 force l'affichage du modal "nouvelle version" sans attendre un vrai
   // déploiement. Capturé ICI, tout au début, car plus bas (login mémorisé, connexion) le code
@@ -2351,14 +2351,11 @@
     } else if (s.expire){
       var expEl2 = document.createElement('span'); expEl2.className = 'vitrine-expir expired'; expEl2.textContent = '⏱ Démo expirée — le lien ne fonctionne plus';
       card.appendChild(expEl2);
-    } else if (s.date_expiration){
-      var expEl = document.createElement('span'); expEl.className = 'vitrine-expir';
-      var exp = new Date(s.date_expiration);
-      var heuresRestantes = (exp.getTime() - Date.now()) / 3600000;
-      if (heuresRestantes <= 12){ expEl.textContent = '⏱ Expire dans moins de 12h'; expEl.classList.add('soon'); }
-      else { expEl.textContent = '⏱ Valable jusqu’au ' + exp.toLocaleDateString('fr-FR', { day:'2-digit', month:'2-digit', hour:'2-digit', minute:'2-digit' }); }
-      card.appendChild(expEl);
     }
+    // Plus de badge "Valable jusqu'au"/"Expire dans..." (2026-07-27, demande Mathéo : les sites
+    // restent TOUJOURS fonctionnels -- seul "Perdu" les supprime pour de vrai). Le cas s.expire
+    // ci-dessus reste géré (site historique déjà marqué expiré) mais aucun nouveau site ne peut
+    // plus y arriver, le job nocturne qui posait ce statut est désactivé.
 
     // Mail pre-redige : replie par defaut, relu/edite AVANT tout envoi (jamais d'auto-envoi), un
     // clic sur "Envoyer le mail" pendant l'appel comme decrit dans le plan.
