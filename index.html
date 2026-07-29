@@ -358,6 +358,10 @@
   .client-appareil .ca-compte{font-weight:600; font-size:14px}
   .client-appareil .ca-badge{font-size:11px; padding:2px 8px; border-radius:99px; background:var(--gold-a); color:#151517; font-weight:700}
   .client-appareil .ca-meta{font-size:12px; color:var(--muted)}
+  /* Fil de conversation d'un client, rendu comme le vrai chat (mêmes bulles .msg) : Mathéo
+     doit voir EXACTEMENT ce que voit son client, pas un journal technique. */
+  .clients-thread{display:flex; flex-direction:column; gap:8px; padding-top:4px}
+  .client-origine-badge{font-size:12px; margin-left:6px; opacity:.7}
   #clients-list{flex:1; overflow-y:auto; -webkit-overflow-scrolling:touch; padding:0 14px calc(20px + env(safe-area-inset-bottom))}
   .client-row{
     display:flex; align-items:center; gap:12px; width:100%; box-sizing:border-box;
@@ -1527,7 +1531,7 @@
 
 <script>
 (function(){
-  var APPV = 'v2.83';
+  var APPV = 'v2.84';
 
   // Debug : ?debug_modal=1 force l'affichage du modal "nouvelle version" sans attendre un vrai
   // déploiement. Capturé ICI, tout au début, car plus bas (login mémorisé, connexion) le code
@@ -2375,7 +2379,8 @@
       var row = document.createElement('div'); row.className = 'client-row';
       var badge = document.createElement('span'); badge.className = 'client-badge ' + f.resultat; badge.textContent = badgeLabel(f.resultat);
       var mid = document.createElement('span'); mid.className = 'client-mid';
-      var nom = document.createElement('span'); nom.className = 'client-nom'; nom.textContent = f.utilisateur + (f.canal ? ' · ' + f.canal : '');
+      var nom = document.createElement('span'); nom.className = 'client-nom';
+      nom.textContent = f.utilisateur + (f.canal ? ' · ' + f.canal : '') + (f.origine === 'administrateur' ? ' 🛠️' : '');
       var info = document.createElement('span'); info.className = 'client-info'; info.textContent = f.message_extrait || '';
       mid.appendChild(nom); mid.appendChild(info);
       var d = document.createElement('span'); d.className = 'client-date'; d.textContent = fmtClientsDate(f.date);
@@ -2406,7 +2411,8 @@
     items.forEach(function(c){
       var row = document.createElement('button'); row.className = 'client-row';
       var mid = document.createElement('span'); mid.className = 'client-mid';
-      var nom = document.createElement('span'); nom.className = 'client-nom'; nom.textContent = c.utilisateur;
+      var nom = document.createElement('span'); nom.className = 'client-nom';
+      nom.textContent = c.utilisateur + (c.origine === 'administrateur' ? ' 🛠️' : '');
       var info = document.createElement('span'); info.className = 'client-info'; info.textContent = c.nb_messages + ' message(s)';
       mid.appendChild(nom); mid.appendChild(info);
       var d = document.createElement('span'); d.className = 'client-date'; d.textContent = fmtClientsDate(c.dernier_message_at);
@@ -2457,15 +2463,19 @@
       var fil = j.fil || [];
       clientsList.innerHTML = '';
       if (!fil.length){ clientsList.innerHTML = '<p id="clients-empty">Conversation vide.</p>'; return; }
+      // Mêmes bulles .msg que le vrai chat (voir bubble()) : Mathéo doit voir EXACTEMENT
+      // ce que voit son client, pas un journal technique reformaté.
+      var wrap = document.createElement('div'); wrap.className = 'clients-thread';
       fil.forEach(function(m){
-        var d = document.createElement('div'); d.className = 'thread-msg';
-        var role = document.createElement('div'); role.className = 'thread-role' + (m.role === 'user' ? ' user' : '');
-        role.textContent = m.role === 'user' ? nom : 'Jarvis';
-        var content = document.createElement('div'); content.className = 'thread-content'; content.textContent = m.contenu || '';
-        var date2 = document.createElement('div'); date2.className = 'thread-date'; date2.textContent = fmtClientsDate(m.date);
-        d.appendChild(role); d.appendChild(content); d.appendChild(date2);
-        clientsList.appendChild(d);
+        var d = document.createElement('div');
+        d.className = 'msg ' + (m.role === 'user' ? 'user' : 'jarvis');
+        var txt = document.createElement('span'); txt.textContent = m.contenu || '';
+        d.appendChild(txt);
+        var tm = document.createElement('span'); tm.className = 'mtime'; tm.textContent = fmtTime(m.date);
+        d.appendChild(tm);
+        wrap.appendChild(d);
       });
+      clientsList.appendChild(wrap);
     }, function(err){ clientsList.innerHTML = '<p id="clients-empty">' + err + '</p>'; });
   }
 
