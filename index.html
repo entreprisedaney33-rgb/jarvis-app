@@ -315,7 +315,7 @@
   }
   .doc-folder:first-child{border-top:none}
   .doc-folder-nom{flex:1; font-size:15.5px; font-weight:600}
-  /* Panneau plein ecran "Clients" (observation MCS, lecture seule) */
+  /* Panneau plein ecran "Clients" (observation des tenants secondaires, lecture seule) */
   #clientsview{
     position:fixed; inset:0; z-index:50; background:var(--bg);
     display:none; flex-direction:column;
@@ -348,6 +348,16 @@
     font-size:13px; padding:7px 10px; -webkit-appearance:none;
   }
   #clients-filter-texte{flex:1; min-width:120px}
+  #clients-admin-toggle-wrap{display:flex; align-items:center; gap:6px; font-size:12.5px; color:var(--muted); padding:0 4px}
+  #clients-admin-toggle-wrap input{width:auto; padding:0}
+  .client-appareil{
+    display:flex; flex-direction:column; gap:2px; width:100%; box-sizing:border-box;
+    padding:10px 12px; border-radius:12px; background:var(--surface); margin-bottom:8px;
+  }
+  .client-appareil .ca-top{display:flex; align-items:center; justify-content:space-between; gap:8px}
+  .client-appareil .ca-compte{font-weight:600; font-size:14px}
+  .client-appareil .ca-badge{font-size:11px; padding:2px 8px; border-radius:99px; background:var(--gold-a); color:#151517; font-weight:700}
+  .client-appareil .ca-meta{font-size:12px; color:var(--muted)}
   #clients-list{flex:1; overflow-y:auto; -webkit-overflow-scrolling:touch; padding:0 14px calc(20px + env(safe-area-inset-bottom))}
   .client-row{
     display:flex; align-items:center; gap:12px; width:100%; box-sizing:border-box;
@@ -1324,11 +1334,13 @@
   <div id="clients-tabs" style="display:none">
     <button class="clients-tab active" data-tab="frictions" type="button">⚠️ Frictions</button>
     <button class="clients-tab" data-tab="conversations" type="button">💬 Conversations</button>
+    <button class="clients-tab" data-tab="appareils" type="button">📱 Appareils</button>
   </div>
   <div id="clients-filters" style="display:none">
     <select id="clients-filter-user"><option value="">Tous les utilisateurs</option></select>
     <input id="clients-filter-date" type="date">
     <input id="clients-filter-texte" type="search" placeholder="🔍 Rechercher…" autocomplete="off" autocapitalize="off" autocorrect="off">
+    <label id="clients-admin-toggle-wrap"><input id="clients-admin-toggle" type="checkbox"> Inclure mes tests</label>
   </div>
   <div id="clients-list"></div>
 </div>
@@ -1514,7 +1526,7 @@
 
 <script>
 (function(){
-  var APPV = 'v2.81';
+  var APPV = 'v2.82';
 
   // Debug : ?debug_modal=1 force l'affichage du modal "nouvelle version" sans attendre un vrai
   // déploiement. Capturé ICI, tout au début, car plus bas (login mémorisé, connexion) le code
@@ -1539,7 +1551,7 @@
   checkUpdate();
   setInterval(checkUpdate, 60000);
   document.addEventListener('visibilitychange', function(){ if (!document.hidden) checkUpdate(); });
-  // Routage par préfixe de code : un code "mcs-..." parle au workflow Jarvis MCS
+  // Routage par préfixe de code : un code "mcs-..." parle au workflow d'un tenant secondaire
   // (webhooks mcs-*, tables mcs_*, entièrement séparé) ; tout le reste parle au
   // workflow labo historique (webhooks jarvis-*). Voir clients/mcs/config-mcs.json.
   function isMcsCode(){ return String(read('jarvisCode') || '').trim().toLowerCase().indexOf('mcs-') === 0; }
@@ -1650,6 +1662,19 @@
     return null;
   }
 
+  // Identifiant d'APPAREIL (pas de personne) : généré une fois, gardé en localStorage
+  // (même granularité que jarvisCode — un profil de navigateur = un appareil). Sert
+  // uniquement à distinguer, côté tenant secondaire, un usage réel client d'un test
+  // depuis son propre appareil, sans jamais identifier la personne elle-même.
+  function getDeviceId(){
+    var id = read('jarvisDeviceId');
+    if (!id){
+      try { id = crypto.randomUUID(); } catch(e){ id = 'dev-' + Date.now().toString(36) + '-' + Math.random().toString(36).slice(2); }
+      store('jarvisDeviceId', id);
+    }
+    return id;
+  }
+
   function fmtTime(ts){
     var d = ts ? new Date(ts) : new Date();
     if (isNaN(d.getTime())) d = new Date();
@@ -1685,6 +1710,7 @@
 
   function post(payload, onOk, onErr){
     payload.code = String(read('jarvisCode') || '').trim();
+    payload.deviceId = getDeviceId();
     fetch(API_URL(), {
       method:'POST',
       headers:{'Content-Type':'application/json'},
@@ -1893,26 +1919,27 @@
     subline.textContent = (nom ? ('Assistant de ' + nom + ' — en ligne') : 'en ligne') + ' · ' + APPV + ' · H' + window.innerHeight + '/' + ((screen && screen.height) || '?');
     renderHistory(msgs, extras);
     if (forceModalTest) showUpdateModal(); else maybeOfferPushOnUpdate();
-    // Un compte MCS n'a ni les outils métier de M22 (Meute/Vitrine/SEO, ses propres
-    // workflows séparés, non dupliqués pour MCS) ni encore d'accès Gmail/Calendrier
-    // (voir CLAUDE-MCS.md — Décision A pas encore tranchée) : ces entrées sont
-    // masquées plutôt que de laisser un bouton qui échouerait silencieusement.
+    // Un compte tenant secondaire n'a ni les outils métier du compte principal
+    // (Meute/Vitrine/SEO, ses propres workflows séparés, non dupliqués pour lui) ni
+    // encore d'accès Gmail/Calendrier (détail dans la doc privée du dépôt) : ces
+    // entrées sont masquées plutôt que de laisser un bouton qui échouerait silencieusement.
     var mcs = isMcsCode();
-    // hcallbtn masqué aussi : l'assistant Vapi vocal (VAPI_ASSISTANT) est celui de M22
-    // (jarvis-vocal), pas de risque de fuite (l'auth s'y ferait sur web_acces de M22,
-    // un code mcs- y échoue proprement) mais l'appel échouerait quand même — plus honnête
-    // de le cacher tant que MCS n'a pas son propre assistant vocal (téléphonie hors périmètre).
-    // sh-clients (observation MCS) masqué aussi côté MCS — n'a de sens que pour M22.
-    // La vraie protection reste côté serveur (code d'observation mcs-admin-lecture,
-    // jamais donné à Mickael/Bruno, table séparée) : masquer ici n'est qu'un confort
-    // visuel, pas la garantie — voir clients/mcs/CLAUDE-MCS.md.
+    // hcallbtn masqué aussi : l'assistant Vapi vocal (VAPI_ASSISTANT) est celui du compte
+    // principal (jarvis-vocal), pas de risque de fuite (l'auth s'y ferait sur web_acces du
+    // compte principal, un code de tenant secondaire y échoue proprement) mais l'appel
+    // échouerait quand même — plus honnête de le cacher tant qu'un tenant secondaire n'a
+    // pas son propre assistant vocal (téléphonie hors périmètre).
+    // sh-clients (observation) masqué aussi côté tenant secondaire — n'a de sens que pour
+    // le compte principal. La vraie protection reste côté serveur (code d'observation
+    // dédié, jamais donné aux comptes clients, table séparée) : masquer ici n'est qu'un
+    // confort visuel, pas la garantie — voir la doc privée du dépôt.
     ['sh-meute', 'sh-vitrine', 'sh-plume', 'sh-notes', 'sh-emails', 'sh-calendar', 'hcallbtn', 'sh-clients'].forEach(function(id){
       var el = document.getElementById(id);
       if (el) el.style.display = mcs ? 'none' : '';
     });
     if (!mcs) meuteCheckBadge();
-    // Transparence (Phase 5) : visible seulement côté MCS — c'est CE compte-là que
-    // le support peut consulter, l'inverse exact de la liste ci-dessus.
+    // Transparence (Phase 5) : visible seulement côté tenant secondaire — c'est CE
+    // compte-là que le support peut consulter, l'inverse exact de la liste ci-dessus.
     var privacyNote = document.getElementById('privacy-note');
     if (privacyNote) privacyNote.style.display = mcs ? '' : 'none';
   }
@@ -2198,8 +2225,9 @@
   var clientsFilterDate = document.getElementById('clients-filter-date');
   var clientsFilterTexte = document.getElementById('clients-filter-texte');
   var clientsState = 'root'; // root | detail | thread
-  var clientsTab = 'frictions'; // frictions | conversations
-  var frictionsAll = [], conversationsAll = [];
+  var clientsTab = 'frictions'; // frictions | conversations | appareils
+  var clientsIncludeAdmin = false; // "Inclure mes tests" — off par défaut (les tours/appareils de Mathéo n'encombrent pas la vue)
+  var frictionsAll = [], conversationsAll = [], appareilsAll = [];
 
   function normClients(s){ return String(s || '').toLowerCase().normalize('NFD').replace(/[̀-ͯ]/g, ''); }
 
@@ -2224,7 +2252,7 @@
     clientsTabsEl.style.display = 'none';
     clientsFiltersEl.style.display = 'none';
     clientsList.innerHTML =
-      '<div id="clients-setup">Panneau en lecture seule : frictions et conversations de vos clients Jarvis (ex. MCS). ' +
+      '<div id="clients-setup">Panneau en lecture seule : frictions et conversations de vos clients Jarvis. ' +
       'Entrez votre code d’observation (différent de votre code de connexion habituel, fourni séparément) :' +
       '<input id="clients-admin-input" type="text" placeholder="Code d’observation" autocomplete="off" autocapitalize="off" autocorrect="off">' +
       '<button id="clients-admin-save" type="button">Valider</button></div>';
@@ -2236,29 +2264,43 @@
     });
   }
 
+  // La liste (nom + description) vient TOUJOURS du serveur (canal mcs-admin-lecture, dédié à
+  // ce client) — jamais un nom d'entreprise en dur ici : ce fichier finit sur un dépôt public.
+  var clientsCourant = null; // { id, nom, description } du client actuellement ouvert
   function clientsShowRoot(){
     clientsState = 'root';
     clientsTitleEl.textContent = '🏢 Clients';
     clientsBack.style.display = 'none';
     clientsTabsEl.style.display = 'none';
     clientsFiltersEl.style.display = 'none';
-    clientsList.innerHTML = '';
-    var row = document.createElement('button');
-    row.className = 'client-row';
-    row.innerHTML = '<span class="client-mid"><span class="client-nom">MCS</span>' +
-      '<span class="client-info">SARL MCS — dératisation, désinsectisation, VMC</span></span><span class="client-date">›</span>';
-    row.addEventListener('click', clientsOpenDetail);
-    clientsList.appendChild(row);
+    clientsList.innerHTML = '<p id="clients-loading">Chargement…</p>';
+    adminPost({ action:'clients' }, function(j){
+      var liste = j.clients || [];
+      clientsList.innerHTML = '';
+      if (!liste.length){ clientsList.innerHTML = '<p id="clients-empty">Aucun client à observer.</p>'; return; }
+      liste.forEach(function(c){
+        var row = document.createElement('button');
+        row.className = 'client-row';
+        var nomSpan = document.createElement('span'); nomSpan.className = 'client-nom'; nomSpan.textContent = c.nom || c.id;
+        var infoSpan = document.createElement('span'); infoSpan.className = 'client-info'; infoSpan.textContent = c.description || '';
+        var mid = document.createElement('span'); mid.className = 'client-mid'; mid.appendChild(nomSpan); mid.appendChild(infoSpan);
+        var chev = document.createElement('span'); chev.className = 'client-date'; chev.textContent = '›';
+        row.appendChild(mid); row.appendChild(chev);
+        row.addEventListener('click', function(){ clientsCourant = c; clientsOpenDetail(); });
+        clientsList.appendChild(row);
+      });
+    }, function(err){ clientsList.innerHTML = '<p id="clients-empty">' + err + '</p>'; });
   }
 
   function clientsOpenDetail(){
     clientsState = 'detail';
-    clientsTitleEl.textContent = 'MCS';
+    clientsTitleEl.textContent = (clientsCourant && clientsCourant.nom) || '';
     clientsBack.style.display = 'flex';
     clientsTabsEl.style.display = 'flex';
     clientsFiltersEl.style.display = 'flex';
     clientsFilterDate.value = '';
     clientsFilterTexte.value = '';
+    document.getElementById('clients-admin-toggle').checked = clientsIncludeAdmin;
     clientsSetTab('frictions');
   }
 
@@ -2267,7 +2309,17 @@
     Array.prototype.forEach.call(clientsTabsEl.querySelectorAll('.clients-tab'), function(b){
       b.classList.toggle('active', b.getAttribute('data-tab') === tab);
     });
-    if (tab === 'frictions') clientsLoadFrictions(); else clientsLoadConversations();
+    // Le filtre "utilisateur"/date/texte et le bascule "Inclure mes tests" n'ont de sens
+    // que pour Frictions/Conversations — la vue Appareils montre toujours tout (c'est
+    // justement là qu'on veut voir un appareil administrateur, pour le marquer).
+    var showFilters = tab !== 'appareils';
+    clientsFilterUser.style.display = showFilters ? '' : 'none';
+    clientsFilterDate.style.display = showFilters ? '' : 'none';
+    clientsFilterTexte.style.display = showFilters ? '' : 'none';
+    document.getElementById('clients-admin-toggle-wrap').style.display = showFilters ? '' : 'none';
+    if (tab === 'frictions') clientsLoadFrictions();
+    else if (tab === 'conversations') clientsLoadConversations();
+    else clientsLoadAppareils();
   }
 
   function badgeLabel(r){
@@ -2280,7 +2332,7 @@
 
   function clientsLoadFrictions(){
     clientsList.innerHTML = '<p id="clients-loading">Chargement…</p>';
-    adminPost({ action:'frictions' }, function(j){
+    adminPost({ action:'frictions', inclureAdmin: clientsIncludeAdmin }, function(j){
       frictionsAll = j.frictions || [];
       clientsRebuildUserFilter(frictionsAll.map(function(f){ return f.utilisateur; }));
       clientsRenderFrictions();
@@ -2320,7 +2372,7 @@
 
   function clientsLoadConversations(){
     clientsList.innerHTML = '<p id="clients-loading">Chargement…</p>';
-    adminPost({ action:'conversations' }, function(j){
+    adminPost({ action:'conversations', inclureAdmin: clientsIncludeAdmin }, function(j){
       conversationsAll = j.conversations || [];
       clientsRebuildUserFilter(conversationsAll.map(function(c){ return c.utilisateur; }));
       clientsRenderConversations();
@@ -2347,6 +2399,37 @@
       row.appendChild(mid); row.appendChild(d);
       row.addEventListener('click', function(){ clientsOpenThread(c.chat_id, c.utilisateur); });
       clientsList.appendChild(row);
+    });
+  }
+
+  function clientsLoadAppareils(){
+    clientsList.innerHTML = '<p id="clients-loading">Chargement…</p>';
+    adminPost({ action:'appareils' }, function(j){
+      appareilsAll = j.appareils || [];
+      clientsRenderAppareils();
+    }, function(err){ clientsList.innerHTML = '<p id="clients-empty">' + err + '</p>'; });
+  }
+
+  function clientsRenderAppareils(){
+    clientsList.innerHTML = '';
+    if (!appareilsAll.length){ clientsList.innerHTML = '<p id="clients-empty">Aucun appareil vu pour l’instant.</p>'; return; }
+    appareilsAll.forEach(function(a){
+      var card = document.createElement('div'); card.className = 'client-appareil';
+      var top = document.createElement('div'); top.className = 'ca-top';
+      var compte = document.createElement('span'); compte.className = 'ca-compte'; compte.textContent = a.compte_utilise || '(compte inconnu)';
+      top.appendChild(compte);
+      if (a.administrateur){
+        var badge = document.createElement('span'); badge.className = 'ca-badge'; badge.textContent = '🛠️ Administrateur';
+        top.appendChild(badge);
+      }
+      card.appendChild(top);
+      var meta = document.createElement('span'); meta.className = 'ca-meta';
+      meta.textContent = 'Vu pour la 1ère fois le ' + fmtClientsDate(a.first_seen) + ' · dernière fois le ' + fmtClientsDate(a.last_seen);
+      card.appendChild(meta);
+      var idLine = document.createElement('span'); idLine.className = 'ca-meta';
+      idLine.textContent = 'Appareil : ' + (a.device_id || '?');
+      card.appendChild(idLine);
+      clientsList.appendChild(card);
     });
   }
 
@@ -2387,6 +2470,10 @@
   clientsFilterUser.addEventListener('change', function(){ clientsTab === 'frictions' ? clientsRenderFrictions() : clientsRenderConversations(); });
   clientsFilterDate.addEventListener('change', function(){ clientsTab === 'frictions' ? clientsRenderFrictions() : clientsRenderConversations(); });
   clientsFilterTexte.addEventListener('input', function(){ clientsTab === 'frictions' ? clientsRenderFrictions() : clientsRenderConversations(); });
+  document.getElementById('clients-admin-toggle').addEventListener('change', function(e){
+    clientsIncludeAdmin = !!e.target.checked;
+    if (clientsTab === 'frictions') clientsLoadFrictions(); else if (clientsTab === 'conversations') clientsLoadConversations();
+  });
   document.getElementById('sh-clients').addEventListener('click', function(){ sheetOpen(false); clientsOpen(); });
   document.getElementById('clients-close').addEventListener('click', clientsClose);
 
