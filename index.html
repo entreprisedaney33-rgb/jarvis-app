@@ -315,6 +315,67 @@
   }
   .doc-folder:first-child{border-top:none}
   .doc-folder-nom{flex:1; font-size:15.5px; font-weight:600}
+  /* Panneau plein ecran "Clients" (observation MCS, lecture seule) */
+  #clientsview{
+    position:fixed; inset:0; z-index:50; background:var(--bg);
+    display:none; flex-direction:column;
+    transform:translateY(100%); transition:transform .28s cubic-bezier(.2,.9,.25,1);
+  }
+  #clientsview.open{display:flex; transform:translateY(0)}
+  @media (prefers-reduced-motion: reduce){#clientsview{transition:none}}
+  #clients-head{
+    flex:0 0 auto; display:flex; align-items:center; gap:10px;
+    padding:calc(10px + env(safe-area-inset-top)) 14px 12px;
+    border-bottom:0.5px solid var(--hairline);
+  }
+  #clients-head b{font-size:16px; flex:1; white-space:nowrap; overflow:hidden; text-overflow:ellipsis}
+  #clients-close, #clients-back{
+    width:32px; height:32px; border-radius:50%; border:0; flex:0 0 auto;
+    background:var(--surface); color:var(--ink); font-size:16px;
+    display:flex; align-items:center; justify-content:center; cursor:pointer;
+    -webkit-tap-highlight-color:transparent;
+  }
+  #clients-tabs{display:flex; gap:8px; padding:8px 14px; flex:0 0 auto; overflow-x:auto}
+  .clients-tab{
+    border:0; border-radius:99px; padding:7px 14px; font-size:13.5px; font-weight:600;
+    background:var(--surface); color:var(--muted); white-space:nowrap; cursor:pointer;
+    -webkit-tap-highlight-color:transparent;
+  }
+  .clients-tab.active{background:var(--gold-a); color:#151517}
+  #clients-filters{display:flex; gap:8px; padding:2px 14px 10px; flex:0 0 auto; flex-wrap:wrap}
+  #clients-filters select, #clients-filters input{
+    border:none; border-radius:10px; background:var(--surface); color:var(--ink);
+    font-size:13px; padding:7px 10px; -webkit-appearance:none;
+  }
+  #clients-filter-texte{flex:1; min-width:120px}
+  #clients-list{flex:1; overflow-y:auto; -webkit-overflow-scrolling:touch; padding:0 14px calc(20px + env(safe-area-inset-bottom))}
+  .client-row{
+    display:flex; align-items:center; gap:12px; width:100%; box-sizing:border-box;
+    padding:14px 4px; border-top:0.5px solid rgba(84,84,88,.4);
+    color:inherit; text-decoration:none; background:none; border-left:none; border-right:none; border-bottom:none;
+    text-align:left; cursor:pointer; font:inherit; -webkit-tap-highlight-color:transparent;
+  }
+  .client-row:first-child{border-top:none}
+  .client-badge{font-size:11px; font-weight:700; border-radius:99px; padding:3px 9px; flex:0 0 auto; text-transform:uppercase; letter-spacing:.02em}
+  .client-badge.ok{background:rgba(48,209,88,.15); color:var(--ok)}
+  .client-badge.incompris{background:rgba(232,185,106,.15); color:var(--gold-a)}
+  .client-badge.bloque{background:rgba(255,69,58,.15); color:var(--no)}
+  .client-badge.erreur{background:rgba(255,69,58,.25); color:var(--no)}
+  .client-badge.abandonne{background:rgba(152,152,158,.2); color:var(--muted)}
+  .client-mid{flex:1; min-width:0}
+  .client-nom{font-size:15px; font-weight:600; display:block}
+  .client-info{font-size:12.5px; color:var(--muted); display:block; margin-top:2px; white-space:nowrap; overflow:hidden; text-overflow:ellipsis}
+  .client-date{font-size:11.5px; color:var(--muted); flex:0 0 auto}
+  #clients-empty, #clients-loading{color:var(--muted); text-align:center; padding:40px 20px; font-size:14px}
+  #clients-setup{padding:20px 16px; color:var(--muted); font-size:13.5px; line-height:1.5}
+  #clients-setup input{width:100%; box-sizing:border-box; border:none; border-radius:12px; background:var(--surface); color:var(--ink); font-size:15px; padding:10px 12px; margin:10px 0}
+  #clients-setup button{width:100%; border:none; border-radius:12px; background:var(--gold-a); color:#151517; font-size:15px; font-weight:700; padding:11px; cursor:pointer}
+  .thread-msg{padding:10px 4px; border-top:0.5px solid rgba(84,84,88,.4)}
+  .thread-msg:first-child{border-top:none}
+  .thread-role{font-size:11px; font-weight:700; text-transform:uppercase; color:var(--muted); letter-spacing:.03em}
+  .thread-role.user{color:var(--blue)}
+  .thread-content{font-size:14.5px; margin-top:3px; white-space:pre-wrap; word-break:break-word}
+  .thread-date{font-size:11px; color:var(--muted); margin-top:3px}
   .doc-folder-count{font-size:13px; color:var(--muted); background:var(--surface); border-radius:99px; padding:2px 9px; flex:0 0 auto}
   .doc-folder-chev{font-size:18px; color:var(--muted); flex:0 0 auto}
   /* Panneau plein ecran "Meute" (partenariats multi-sites) */
@@ -1232,12 +1293,14 @@
     <button class="sh-item" id="sh-vitrine" type="button"><span class="sh-ic">🏗️</span><span class="sh-label">Sites Vitrine</span></button>
     <button class="sh-item" id="sh-plume" type="button"><span class="sh-ic">🪶</span><span class="sh-label">SEO</span></button>
     <button class="sh-item" id="sh-notes" type="button"><span class="sh-ic">🧠</span><span class="sh-label">Notes</span></button>
+    <button class="sh-item" id="sh-clients" type="button"><span class="sh-ic">🏢</span><span class="sh-label">Clients</span></button>
     <button class="sh-item" id="sh-push" type="button"><span class="sh-ic">🔔</span><span class="sh-label">Notifications</span><span class="sw" id="sw-push"><span class="sw-knob"></span></span></button>
   </div>
   <div class="sh-group">
     <button class="sh-item danger" id="sh-logout" type="button"><span class="sh-ic">🚪</span><span class="sh-label">Se déconnecter</span></button>
   </div>
   <p class="sh-ver" id="subline">Jarvis</p>
+  <p class="sh-ver" id="privacy-note" style="display:none; padding:0 20px; line-height:1.4">🔒 Le support M22Vision peut consulter vos conversations avec Jarvis pour améliorer l'outil (jamais leur contenu diffusé ailleurs). Conservées 90 jours.</p>
 </div>
 
 <div id="docsview">
@@ -1250,6 +1313,24 @@
     <input id="docs-search" type="search" inputmode="search" placeholder="🔍 Rechercher un document…" autocomplete="off" autocapitalize="off" autocorrect="off">
   </div>
   <div id="docs-list"></div>
+</div>
+
+<div id="clientsview">
+  <div id="clients-head">
+    <button id="clients-back" type="button" aria-label="Retour" style="display:none">←</button>
+    <b id="clients-title">🏢 Clients</b>
+    <button id="clients-close" type="button" aria-label="Fermer">✕</button>
+  </div>
+  <div id="clients-tabs" style="display:none">
+    <button class="clients-tab active" data-tab="frictions" type="button">⚠️ Frictions</button>
+    <button class="clients-tab" data-tab="conversations" type="button">💬 Conversations</button>
+  </div>
+  <div id="clients-filters" style="display:none">
+    <select id="clients-filter-user"><option value="">Tous les utilisateurs</option></select>
+    <input id="clients-filter-date" type="date">
+    <input id="clients-filter-texte" type="search" placeholder="🔍 Rechercher…" autocomplete="off" autocapitalize="off" autocorrect="off">
+  </div>
+  <div id="clients-list"></div>
 </div>
 
 
@@ -1433,7 +1514,7 @@
 
 <script>
 (function(){
-  var APPV = 'v2.78';
+  var APPV = 'v2.81';
 
   // Debug : ?debug_modal=1 force l'affichage du modal "nouvelle version" sans attendre un vrai
   // déploiement. Capturé ICI, tout au début, car plus bas (login mémorisé, connexion) le code
@@ -1458,7 +1539,11 @@
   checkUpdate();
   setInterval(checkUpdate, 60000);
   document.addEventListener('visibilitychange', function(){ if (!document.hidden) checkUpdate(); });
-  var API = 'https://mat22.app.n8n.cloud/webhook/jarvis-msg';
+  // Routage par préfixe de code : un code "mcs-..." parle au workflow Jarvis MCS
+  // (webhooks mcs-*, tables mcs_*, entièrement séparé) ; tout le reste parle au
+  // workflow labo historique (webhooks jarvis-*). Voir clients/mcs/config-mcs.json.
+  function isMcsCode(){ return String(read('jarvisCode') || '').trim().toLowerCase().indexOf('mcs-') === 0; }
+  function API_URL(){ return 'https://mat22.app.n8n.cloud/webhook/' + (isMcsCode() ? 'mcs-msg' : 'jarvis-msg'); }
   var API_MEUTE = 'https://mat22.app.n8n.cloud/webhook/meute-app';
   var API_VITRINE = 'https://mat22.app.n8n.cloud/webhook/vitrine-liste';
   var API_PLUME = 'https://mat22.app.n8n.cloud/webhook/plume-liste';
@@ -1600,7 +1685,7 @@
 
   function post(payload, onOk, onErr){
     payload.code = String(read('jarvisCode') || '').trim();
-    fetch(API, {
+    fetch(API_URL(), {
       method:'POST',
       headers:{'Content-Type':'application/json'},
       body: JSON.stringify(payload)
@@ -1808,7 +1893,28 @@
     subline.textContent = (nom ? ('Assistant de ' + nom + ' — en ligne') : 'en ligne') + ' · ' + APPV + ' · H' + window.innerHeight + '/' + ((screen && screen.height) || '?');
     renderHistory(msgs, extras);
     if (forceModalTest) showUpdateModal(); else maybeOfferPushOnUpdate();
-    meuteCheckBadge();
+    // Un compte MCS n'a ni les outils métier de M22 (Meute/Vitrine/SEO, ses propres
+    // workflows séparés, non dupliqués pour MCS) ni encore d'accès Gmail/Calendrier
+    // (voir CLAUDE-MCS.md — Décision A pas encore tranchée) : ces entrées sont
+    // masquées plutôt que de laisser un bouton qui échouerait silencieusement.
+    var mcs = isMcsCode();
+    // hcallbtn masqué aussi : l'assistant Vapi vocal (VAPI_ASSISTANT) est celui de M22
+    // (jarvis-vocal), pas de risque de fuite (l'auth s'y ferait sur web_acces de M22,
+    // un code mcs- y échoue proprement) mais l'appel échouerait quand même — plus honnête
+    // de le cacher tant que MCS n'a pas son propre assistant vocal (téléphonie hors périmètre).
+    // sh-clients (observation MCS) masqué aussi côté MCS — n'a de sens que pour M22.
+    // La vraie protection reste côté serveur (code d'observation mcs-admin-lecture,
+    // jamais donné à Mickael/Bruno, table séparée) : masquer ici n'est qu'un confort
+    // visuel, pas la garantie — voir clients/mcs/CLAUDE-MCS.md.
+    ['sh-meute', 'sh-vitrine', 'sh-plume', 'sh-notes', 'sh-emails', 'sh-calendar', 'hcallbtn', 'sh-clients'].forEach(function(id){
+      var el = document.getElementById(id);
+      if (el) el.style.display = mcs ? 'none' : '';
+    });
+    if (!mcs) meuteCheckBadge();
+    // Transparence (Phase 5) : visible seulement côté MCS — c'est CE compte-là que
+    // le support peut consulter, l'inverse exact de la liste ci-dessus.
+    var privacyNote = document.getElementById('privacy-note');
+    if (privacyNote) privacyNote.style.display = mcs ? '' : 'none';
   }
 
   // ---- Login ----
@@ -1915,7 +2021,7 @@
       if (perm === 'granted'){
         var reg = await navigator.serviceWorker.ready;
         var sub = await reg.pushManager.subscribe({ userVisibleOnly: true, applicationServerKey: urlB64ToUint8Array(VAPID_PUBLIC) });
-        var r = await fetch(API, { method:'POST', headers:{'Content-Type':'application/json'},
+        var r = await fetch(API_URL(), { method:'POST', headers:{'Content-Type':'application/json'},
           body: JSON.stringify({ type:'push-subscribe', code: String(read('jarvisCode')||'').trim(), subscription: sub.toJSON() }) });
         var j = await r.json();
         if (j && j.ok){ pushCurrentSub = sub; setSwOn(true); ok = true; }
@@ -1935,7 +2041,7 @@
         await pushCurrentSub.unsubscribe();
         pushCurrentSub = null;
         setSwOn(false);
-        await fetch(API, { method:'POST', headers:{'Content-Type':'application/json'},
+        await fetch(API_URL(), { method:'POST', headers:{'Content-Type':'application/json'},
           body: JSON.stringify({ type:'push-unsubscribe', code: String(read('jarvisCode')||'').trim(), endpoint: endpoint }) });
       } catch(e){ bubble('Notifications : ' + e.message, 'err'); refreshPushToggle(); }
       swPush.classList.remove('busy');
@@ -2074,6 +2180,215 @@
   docsBack.addEventListener('click', function(){ docsSearch.value = ''; renderFolders(); });
   document.getElementById('sh-docs').addEventListener('click', function(){ sheetOpen(false); docsOpen(); });
   document.getElementById('docs-close').addEventListener('click', docsClose);
+
+  // ---- Clients (observation, lecture seule — jamais d'action depuis cette vue) ----
+  // Appelle un webhook n8n séparé et dédié (mcs-admin-lecture), authentifié par un
+  // code d'observation DISTINCT du code de connexion habituel, jamais celui d'un
+  // utilisateur ni d'un compte de test. Ce code n'est JAMAIS écrit en dur ici (ce
+  // fichier finit sur un dépôt public) : saisi une fois par Mathéo, gardé en
+  // localStorage sous une clé séparée ('mcsAdminCode'), comme jarvisCode.
+  var ADMIN_API = 'https://mat22.app.n8n.cloud/webhook/mcs-admin-lecture';
+  var clientsview = document.getElementById('clientsview');
+  var clientsList = document.getElementById('clients-list');
+  var clientsTitleEl = document.getElementById('clients-title');
+  var clientsBack = document.getElementById('clients-back');
+  var clientsTabsEl = document.getElementById('clients-tabs');
+  var clientsFiltersEl = document.getElementById('clients-filters');
+  var clientsFilterUser = document.getElementById('clients-filter-user');
+  var clientsFilterDate = document.getElementById('clients-filter-date');
+  var clientsFilterTexte = document.getElementById('clients-filter-texte');
+  var clientsState = 'root'; // root | detail | thread
+  var clientsTab = 'frictions'; // frictions | conversations
+  var frictionsAll = [], conversationsAll = [];
+
+  function normClients(s){ return String(s || '').toLowerCase().normalize('NFD').replace(/[̀-ͯ]/g, ''); }
+
+  function adminPost(body, ok, ko){
+    var code = read('mcsAdminCode');
+    if (!code){ ko('Code d’observation non configuré.'); return; }
+    var payload = Object.assign({ code: code }, body);
+    fetch(ADMIN_API, { method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify(payload) })
+      .then(function(r){ return r.json().catch(function(){ return {}; }).then(function(j){ return { status:r.status, body:j }; }); })
+      .then(function(res){
+        if (res.status !== 200){ ko((res.body && res.body.error) || 'Accès refusé.'); return; }
+        ok(res.body);
+      })
+      .catch(function(){ ko('Connexion impossible.'); });
+  }
+
+  function clientsClose(){ clientsview.classList.remove('open'); }
+
+  function clientsShowSetup(){
+    clientsTitleEl.textContent = '🏢 Clients';
+    clientsBack.style.display = 'none';
+    clientsTabsEl.style.display = 'none';
+    clientsFiltersEl.style.display = 'none';
+    clientsList.innerHTML =
+      '<div id="clients-setup">Panneau en lecture seule : frictions et conversations de vos clients Jarvis (ex. MCS). ' +
+      'Entrez votre code d’observation (différent de votre code de connexion habituel, fourni séparément) :' +
+      '<input id="clients-admin-input" type="text" placeholder="Code d’observation" autocomplete="off" autocapitalize="off" autocorrect="off">' +
+      '<button id="clients-admin-save" type="button">Valider</button></div>';
+    document.getElementById('clients-admin-save').addEventListener('click', function(){
+      var v = document.getElementById('clients-admin-input').value.trim().toLowerCase();
+      if (!v) return;
+      store('mcsAdminCode', v);
+      clientsShowRoot();
+    });
+  }
+
+  function clientsShowRoot(){
+    clientsState = 'root';
+    clientsTitleEl.textContent = '🏢 Clients';
+    clientsBack.style.display = 'none';
+    clientsTabsEl.style.display = 'none';
+    clientsFiltersEl.style.display = 'none';
+    clientsList.innerHTML = '';
+    var row = document.createElement('button');
+    row.className = 'client-row';
+    row.innerHTML = '<span class="client-mid"><span class="client-nom">MCS</span>' +
+      '<span class="client-info">SARL MCS — dératisation, désinsectisation, VMC</span></span><span class="client-date">›</span>';
+    row.addEventListener('click', clientsOpenDetail);
+    clientsList.appendChild(row);
+  }
+
+  function clientsOpenDetail(){
+    clientsState = 'detail';
+    clientsTitleEl.textContent = 'MCS';
+    clientsBack.style.display = 'flex';
+    clientsTabsEl.style.display = 'flex';
+    clientsFiltersEl.style.display = 'flex';
+    clientsFilterDate.value = '';
+    clientsFilterTexte.value = '';
+    clientsSetTab('frictions');
+  }
+
+  function clientsSetTab(tab){
+    clientsTab = tab;
+    Array.prototype.forEach.call(clientsTabsEl.querySelectorAll('.clients-tab'), function(b){
+      b.classList.toggle('active', b.getAttribute('data-tab') === tab);
+    });
+    if (tab === 'frictions') clientsLoadFrictions(); else clientsLoadConversations();
+  }
+
+  function badgeLabel(r){
+    return ({ ok:'OK', incompris:'Incompris', bloque:'Bloqué', erreur:'Erreur', abandonne:'Abandonné' })[r] || r;
+  }
+  function fmtClientsDate(iso){
+    try { return new Date(iso).toLocaleString('fr-FR', { day:'2-digit', month:'2-digit', hour:'2-digit', minute:'2-digit' }); }
+    catch (e) { return ''; }
+  }
+
+  function clientsLoadFrictions(){
+    clientsList.innerHTML = '<p id="clients-loading">Chargement…</p>';
+    adminPost({ action:'frictions' }, function(j){
+      frictionsAll = j.frictions || [];
+      clientsRebuildUserFilter(frictionsAll.map(function(f){ return f.utilisateur; }));
+      clientsRenderFrictions();
+    }, function(err){ clientsList.innerHTML = '<p id="clients-empty">' + err + '</p>'; });
+  }
+
+  function clientsRebuildUserFilter(noms){
+    var uniq = Array.from(new Set(noms.filter(Boolean)));
+    var current = clientsFilterUser.value;
+    clientsFilterUser.innerHTML = '<option value="">Tous les utilisateurs</option>' +
+      uniq.map(function(n){ return '<option value="' + n.replace(/"/g, '') + '">' + n + '</option>'; }).join('');
+    clientsFilterUser.value = uniq.indexOf(current) !== -1 ? current : '';
+  }
+
+  function clientsRenderFrictions(){
+    var user = clientsFilterUser.value, date = clientsFilterDate.value, texte = normClients(clientsFilterTexte.value);
+    var items = frictionsAll.filter(function(f){
+      if (user && f.utilisateur !== user) return false;
+      if (date && String(f.date || '').slice(0, 10) !== date) return false;
+      if (texte && normClients(f.message_extrait).indexOf(texte) === -1) return false;
+      return true;
+    });
+    clientsList.innerHTML = '';
+    if (!items.length){ clientsList.innerHTML = '<p id="clients-empty">Aucune friction.</p>'; return; }
+    items.forEach(function(f){
+      var row = document.createElement('div'); row.className = 'client-row';
+      var badge = document.createElement('span'); badge.className = 'client-badge ' + f.resultat; badge.textContent = badgeLabel(f.resultat);
+      var mid = document.createElement('span'); mid.className = 'client-mid';
+      var nom = document.createElement('span'); nom.className = 'client-nom'; nom.textContent = f.utilisateur + (f.canal ? ' · ' + f.canal : '');
+      var info = document.createElement('span'); info.className = 'client-info'; info.textContent = f.message_extrait || '';
+      mid.appendChild(nom); mid.appendChild(info);
+      var d = document.createElement('span'); d.className = 'client-date'; d.textContent = fmtClientsDate(f.date);
+      row.appendChild(badge); row.appendChild(mid); row.appendChild(d);
+      clientsList.appendChild(row);
+    });
+  }
+
+  function clientsLoadConversations(){
+    clientsList.innerHTML = '<p id="clients-loading">Chargement…</p>';
+    adminPost({ action:'conversations' }, function(j){
+      conversationsAll = j.conversations || [];
+      clientsRebuildUserFilter(conversationsAll.map(function(c){ return c.utilisateur; }));
+      clientsRenderConversations();
+    }, function(err){ clientsList.innerHTML = '<p id="clients-empty">' + err + '</p>'; });
+  }
+
+  function clientsRenderConversations(){
+    var user = clientsFilterUser.value, date = clientsFilterDate.value, texte = normClients(clientsFilterTexte.value);
+    var items = conversationsAll.filter(function(c){
+      if (user && c.utilisateur !== user) return false;
+      if (date && String(c.dernier_message_at || '').slice(0, 10) !== date) return false;
+      if (texte && normClients(c.utilisateur).indexOf(texte) === -1) return false;
+      return true;
+    });
+    clientsList.innerHTML = '';
+    if (!items.length){ clientsList.innerHTML = '<p id="clients-empty">Aucune conversation.</p>'; return; }
+    items.forEach(function(c){
+      var row = document.createElement('button'); row.className = 'client-row';
+      var mid = document.createElement('span'); mid.className = 'client-mid';
+      var nom = document.createElement('span'); nom.className = 'client-nom'; nom.textContent = c.utilisateur;
+      var info = document.createElement('span'); info.className = 'client-info'; info.textContent = c.nb_messages + ' message(s)';
+      mid.appendChild(nom); mid.appendChild(info);
+      var d = document.createElement('span'); d.className = 'client-date'; d.textContent = fmtClientsDate(c.dernier_message_at);
+      row.appendChild(mid); row.appendChild(d);
+      row.addEventListener('click', function(){ clientsOpenThread(c.chat_id, c.utilisateur); });
+      clientsList.appendChild(row);
+    });
+  }
+
+  function clientsOpenThread(chatId, nom){
+    clientsState = 'thread';
+    clientsTitleEl.textContent = nom;
+    clientsTabsEl.style.display = 'none';
+    clientsFiltersEl.style.display = 'none';
+    clientsList.innerHTML = '<p id="clients-loading">Chargement…</p>';
+    adminPost({ action:'conversation', chat_id: chatId }, function(j){
+      var fil = j.fil || [];
+      clientsList.innerHTML = '';
+      if (!fil.length){ clientsList.innerHTML = '<p id="clients-empty">Conversation vide.</p>'; return; }
+      fil.forEach(function(m){
+        var d = document.createElement('div'); d.className = 'thread-msg';
+        var role = document.createElement('div'); role.className = 'thread-role' + (m.role === 'user' ? ' user' : '');
+        role.textContent = m.role === 'user' ? nom : 'Jarvis';
+        var content = document.createElement('div'); content.className = 'thread-content'; content.textContent = m.contenu || '';
+        var date2 = document.createElement('div'); date2.className = 'thread-date'; date2.textContent = fmtClientsDate(m.date);
+        d.appendChild(role); d.appendChild(content); d.appendChild(date2);
+        clientsList.appendChild(d);
+      });
+    }, function(err){ clientsList.innerHTML = '<p id="clients-empty">' + err + '</p>'; });
+  }
+
+  function clientsOpen(){
+    clientsview.classList.add('open');
+    if (!read('mcsAdminCode')) clientsShowSetup(); else clientsShowRoot();
+  }
+
+  clientsBack.addEventListener('click', function(){
+    if (clientsState === 'thread') clientsOpenDetail();
+    else if (clientsState === 'detail') clientsShowRoot();
+  });
+  Array.prototype.forEach.call(clientsTabsEl.querySelectorAll('.clients-tab'), function(b){
+    b.addEventListener('click', function(){ clientsSetTab(b.getAttribute('data-tab')); });
+  });
+  clientsFilterUser.addEventListener('change', function(){ clientsTab === 'frictions' ? clientsRenderFrictions() : clientsRenderConversations(); });
+  clientsFilterDate.addEventListener('change', function(){ clientsTab === 'frictions' ? clientsRenderFrictions() : clientsRenderConversations(); });
+  clientsFilterTexte.addEventListener('input', function(){ clientsTab === 'frictions' ? clientsRenderFrictions() : clientsRenderConversations(); });
+  document.getElementById('sh-clients').addEventListener('click', function(){ sheetOpen(false); clientsOpen(); });
+  document.getElementById('clients-close').addEventListener('click', clientsClose);
 
   // ---- Meute (partenariats conciergeries multi-sites) : pipeline de prospection Matheo/Dorian ----
   var meuteview = document.getElementById('meuteview');
