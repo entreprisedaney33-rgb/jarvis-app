@@ -1309,7 +1309,6 @@
     <button class="sh-item" id="sh-notes" type="button"><span class="sh-ic">🧠</span><span class="sh-label">Notes</span></button>
     <button class="sh-item" id="sh-clients" type="button"><span class="sh-ic">🏢</span><span class="sh-label">Clients</span></button>
     <button class="sh-item" id="sh-push" type="button"><span class="sh-ic">🔔</span><span class="sh-label">Notifications</span><span class="sw" id="sw-push"><span class="sw-knob"></span></span></button>
-    <button class="sh-item" id="sh-deviceid" type="button"><span class="sh-ic">📱</span><span class="sh-label">Copier l'identifiant de cet appareil</span></button>
   </div>
   <div class="sh-group">
     <button class="sh-item danger" id="sh-logout" type="button"><span class="sh-ic">🚪</span><span class="sh-label">Se déconnecter</span></button>
@@ -1531,7 +1530,7 @@
 
 <script>
 (function(){
-  var APPV = 'v2.84';
+  var APPV = 'v2.85';
 
   // Debug : ?debug_modal=1 force l'affichage du modal "nouvelle version" sans attendre un vrai
   // déploiement. Capturé ICI, tout au début, car plus bas (login mémorisé, connexion) le code
@@ -2063,19 +2062,6 @@
     swPush.classList.remove('busy');
     return ok;
   }
-  // Copie l'identifiant d'appareil (voir getDeviceId()) — sert à Mathéo pour marquer,
-  // via un script séparé côté serveur, l'un de ses propres appareils comme
-  // "administrateur" (observation, ne pollue pas les stats réelles des clients).
-  // Le même identifiant vaut pour ce profil de navigateur quel que soit le compte
-  // utilisé dessus (vérifié : il ne change pas quand on se reconnecte avec un autre code).
-  document.getElementById('sh-deviceid').addEventListener('click', function(){
-    var id = getDeviceId();
-    if (navigator.clipboard && navigator.clipboard.writeText){
-      navigator.clipboard.writeText(id).then(function(){ toast('Identifiant copié'); }).catch(function(){ toast(id); });
-    } else {
-      toast(id);
-    }
-  });
   document.getElementById('sh-push').addEventListener('click', async function(){
     if (pushCurrentSub){
       // ---- Désactiver ----
