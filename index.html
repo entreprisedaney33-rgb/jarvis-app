@@ -384,6 +384,39 @@
   #clients-setup{padding:20px 16px; color:var(--muted); font-size:13.5px; line-height:1.5}
   #clients-setup input{width:100%; box-sizing:border-box; border:none; border-radius:12px; background:var(--surface); color:var(--ink); font-size:15px; padding:10px 12px; margin:10px 0}
   #clients-setup button{width:100%; border:none; border-radius:12px; background:var(--gold-a); color:#151517; font-size:15px; font-weight:700; padding:11px; cursor:pointer}
+  /* Panneau plein ecran "Devis a valider" (compte patron d'un tenant secondaire uniquement) */
+  #devisview{
+    position:fixed; inset:0; z-index:50; background:var(--bg);
+    display:none; flex-direction:column;
+    transform:translateY(100%); transition:transform .28s cubic-bezier(.2,.9,.25,1);
+  }
+  #devisview.open{display:flex; transform:translateY(0)}
+  @media (prefers-reduced-motion: reduce){#devisview{transition:none}}
+  #devis-head{
+    flex:0 0 auto; display:flex; align-items:center; gap:10px;
+    padding:calc(10px + env(safe-area-inset-top)) 14px 12px;
+    border-bottom:0.5px solid var(--hairline);
+  }
+  #devis-head b{font-size:16px; flex:1; white-space:nowrap; overflow:hidden; text-overflow:ellipsis}
+  #devis-close{
+    width:32px; height:32px; border-radius:50%; border:0; flex:0 0 auto;
+    background:var(--surface); color:var(--ink); font-size:16px;
+    display:flex; align-items:center; justify-content:center; cursor:pointer;
+    -webkit-tap-highlight-color:transparent;
+  }
+  #devis-list{flex:1; overflow-y:auto; -webkit-overflow-scrolling:touch; padding:14px 14px calc(20px + env(safe-area-inset-bottom))}
+  .devis-card{
+    display:flex; flex-direction:column; gap:6px; width:100%; box-sizing:border-box;
+    padding:14px; border-radius:14px; background:var(--surface); margin-bottom:12px;
+  }
+  .devis-card .dv-nom{font-weight:700; font-size:15.5px}
+  .devis-card .dv-objet{font-size:13.5px; color:var(--ink); opacity:.9}
+  .devis-card .dv-meta{font-size:12px; color:var(--muted)}
+  .devis-card .dv-montant{font-weight:700; color:var(--gold-a); font-size:15px}
+  .devis-card .dv-pdf{font-size:12.5px; color:var(--blue); text-decoration:none; display:inline-block; margin-top:2px}
+  .devis-card .dv-actions{display:flex; gap:8px; margin-top:6px}
+  .devis-card .dv-actions .vc-ok, .devis-card .dv-actions .vc-no{padding:9px; font-size:14px}
+  #devis-empty, #devis-loading{color:var(--muted); text-align:center; padding:40px 20px; font-size:14px}
   .thread-msg{padding:10px 4px; border-top:0.5px solid rgba(84,84,88,.4)}
   .thread-msg:first-child{border-top:none}
   .thread-role{font-size:11px; font-weight:700; text-transform:uppercase; color:var(--muted); letter-spacing:.03em}
@@ -1308,6 +1341,7 @@
     <button class="sh-item" id="sh-plume" type="button"><span class="sh-ic">🪶</span><span class="sh-label">SEO</span></button>
     <button class="sh-item" id="sh-notes" type="button"><span class="sh-ic">🧠</span><span class="sh-label">Notes</span></button>
     <button class="sh-item" id="sh-clients" type="button"><span class="sh-ic">🏢</span><span class="sh-label">Clients</span></button>
+    <button class="sh-item" id="sh-devis-attente" type="button" style="display:none"><span class="sh-ic">📝</span><span class="sh-label">Devis à valider</span><span class="badge-count" id="menu-devis-badge" style="display:none"></span></button>
     <button class="sh-item" id="sh-push" type="button"><span class="sh-ic">🔔</span><span class="sh-label">Notifications</span><span class="sw" id="sw-push"><span class="sw-knob"></span></span></button>
   </div>
   <div class="sh-group">
@@ -1347,6 +1381,14 @@
     <label id="clients-admin-toggle-wrap"><input id="clients-admin-toggle" type="checkbox"> Inclure mes tests</label>
   </div>
   <div id="clients-list"></div>
+</div>
+
+<div id="devisview">
+  <div id="devis-head">
+    <b id="devis-title">📝 Devis à valider</b>
+    <button id="devis-close" type="button" aria-label="Fermer">✕</button>
+  </div>
+  <div id="devis-list"></div>
 </div>
 
 
@@ -1530,7 +1572,7 @@
 
 <script>
 (function(){
-  var APPV = 'v2.89';
+  var APPV = 'v2.90';
 
   // Debug : ?debug_modal=1 force l'affichage du modal "nouvelle version" sans attendre un vrai
   // déploiement. Capturé ICI, tout au début, car plus bas (login mémorisé, connexion) le code
@@ -1564,6 +1606,8 @@
   var API_VITRINE = 'https://n8n-self-hosted-t0pz.onrender.com/webhook/vitrine-liste';
   var API_PLUME = 'https://n8n-self-hosted-t0pz.onrender.com/webhook/plume-liste';
   var API_NOTES = 'https://n8n-self-hosted-t0pz.onrender.com/webhook/notes-liste';
+  var API_DEVIS_ATTENTE = 'https://n8n-self-hosted-t0pz.onrender.com/webhook/mcs-devis-attente';
+  var API_DEVIS_VALIDER = 'https://n8n-self-hosted-t0pz.onrender.com/webhook/mcs-devis-valider';
   var login = document.getElementById('login');
   var app = document.getElementById('app');
   var chat = document.getElementById('chat');
@@ -1732,6 +1776,21 @@
       if (!j || j.ok === false){ onErr((j && j.erreur) || 'Erreur.'); } else { onOk(j); }
     }).catch(function(){ onErr('Connexion impossible.'); });
   }
+
+  // Devis a valider (compte patron d'un tenant secondaire uniquement) : 2 webhooks dedies,
+  // separes du gros webhook de chat principal (meme principe deja utilise pour mcs-admin-lecture).
+  function postDevisWeb(url, payload, onOk, onErr){
+    payload.code = String(read('jarvisCode') || '').trim();
+    fetch(url, {
+      method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify(payload)
+    }).then(function(r){ return r.json().catch(function(){ return {}; }).then(function(j){ return { status:r.status, body:j }; }); })
+      .then(function(res){
+        if (res.status !== 200){ onErr((res.body && res.body.error) || 'Accès refusé.'); return; }
+        onOk(res.body);
+      }).catch(function(){ onErr('Connexion impossible.'); });
+  }
+  function postDevisAttente(payload, onOk, onErr){ postDevisWeb(API_DEVIS_ATTENTE, payload, onOk, onErr); }
+  function postDevisValider(payload, onOk, onErr){ postDevisWeb(API_DEVIS_VALIDER, payload, onOk, onErr); }
 
   function postVitrine(payload, onOk, onErr){
     payload.code = String(read('jarvisCode') || '').trim();
@@ -1954,6 +2013,11 @@
       var el = document.getElementById(id);
       if (el) el.style.display = mcsSalarie ? 'none' : '';
     });
+    // "Devis à valider" : visible UNIQUEMENT pour un compte patron d'un tenant secondaire
+    // (jamais pour le compte principal, jamais pour un salarié — la protection réelle reste
+    // côté serveur, ce masquage n'est qu'un confort visuel, comme pour l'onglet Clients).
+    var devisBtn = document.getElementById('sh-devis-attente');
+    if (devisBtn) devisBtn.style.display = (mcs && role === 'patron') ? '' : 'none';
     // Transparence (Phase 5) : visible seulement côté tenant secondaire — c'est CE
     // compte-là que le support peut consulter, l'inverse exact de la liste ci-dessus.
     var privacyNote = document.getElementById('privacy-note');
@@ -2262,6 +2326,55 @@
   }
 
   function clientsClose(){ clientsview.classList.remove('open'); }
+
+  // ---- Devis a valider (compte patron d'un tenant secondaire uniquement) ----
+  var devisview = document.getElementById('devisview');
+  var devisList = document.getElementById('devis-list');
+  function devisAttenteClose(){ devisview.classList.remove('open'); }
+  function fmtDevisDate(iso){
+    try { return new Date(iso).toLocaleString('fr-FR', { day:'2-digit', month:'2-digit', hour:'2-digit', minute:'2-digit' }); }
+    catch (e) { return ''; }
+  }
+  function devisAgir(token, choix, card, okBtn, noBtn){
+    okBtn.disabled = true; noBtn.disabled = true;
+    postDevisValider({ token: token, choix: choix }, function(j){
+      toast(choix === 'confirmer' ? (j.testMode ? '✅ Envoyé (mode test → Altaestima, pas le vrai client)' : '✅ Devis envoyé au client') : '❌ Devis rejeté');
+      card.remove();
+      if (!devisList.children.length) devisList.innerHTML = '<p id="devis-empty">Aucun devis en attente.</p>';
+    }, function(err){ okBtn.disabled = false; noBtn.disabled = false; toast(err); });
+  }
+  function devisAttenteOpen(){
+    devisview.classList.add('open');
+    devisList.innerHTML = '<p id="devis-loading">Chargement…</p>';
+    postDevisAttente({}, function(j){
+      var items = j.devis || [];
+      devisList.innerHTML = '';
+      if (!items.length){ devisList.innerHTML = '<p id="devis-empty">Aucun devis en attente.</p>'; return; }
+      items.forEach(function(dv){
+        var card = document.createElement('div'); card.className = 'devis-card';
+        var nom = document.createElement('span'); nom.className = 'dv-nom'; nom.textContent = dv.nom || '(client non précisé)';
+        card.appendChild(nom);
+        if (dv.objet){ var objet = document.createElement('span'); objet.className = 'dv-objet'; objet.textContent = dv.objet; card.appendChild(objet); }
+        var meta = document.createElement('span'); meta.className = 'dv-meta';
+        meta.textContent = (dv.createurRole === 'salarie' ? 'Préparé par un salarié' : 'Préparé par vous') + ' · ' + fmtDevisDate(dv.createdAt);
+        card.appendChild(meta);
+        if (dv.montant){ var montant = document.createElement('span'); montant.className = 'dv-montant'; montant.textContent = dv.montant + ' € TTC'; card.appendChild(montant); }
+        var pdf = document.createElement('a'); pdf.className = 'dv-pdf'; pdf.textContent = '📄 Voir le PDF'; pdf.target = '_blank';
+        pdf.href = 'https://n8n-self-hosted-t0pz.onrender.com' + dv.url + '&code=' + encodeURIComponent(String(read('jarvisCode') || '').trim());
+        card.appendChild(pdf);
+        var actions = document.createElement('div'); actions.className = 'dv-actions';
+        var okBtn = document.createElement('button'); okBtn.className = 'vc-ok'; okBtn.type = 'button'; okBtn.textContent = '✅ Confirmer et envoyer';
+        var noBtn = document.createElement('button'); noBtn.className = 'vc-no'; noBtn.type = 'button'; noBtn.textContent = '❌ Rejeter';
+        okBtn.addEventListener('click', function(){ devisAgir(dv.token, 'confirmer', card, okBtn, noBtn); });
+        noBtn.addEventListener('click', function(){ devisAgir(dv.token, 'rejeter', card, okBtn, noBtn); });
+        actions.appendChild(okBtn); actions.appendChild(noBtn);
+        card.appendChild(actions);
+        devisList.appendChild(card);
+      });
+    }, function(err){ devisList.innerHTML = '<p id="devis-empty">' + err + '</p>'; });
+  }
+  document.getElementById('devis-close').addEventListener('click', devisAttenteClose);
+  document.getElementById('sh-devis-attente').addEventListener('click', function(){ sheetOpen(false); devisAttenteOpen(); });
 
   function clientsShowSetup(){
     clientsTitleEl.textContent = '🏢 Clients';
