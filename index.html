@@ -1300,7 +1300,7 @@
 <div id="sheet">
   <div class="sh-handle"></div>
   <div class="sh-group">
-    <button class="sh-item" id="sh-emails" type="button"><span class="sh-ic">✉️</span><span class="sh-label">Emails</span><span class="badge-count" id="menu-email-badge" style="display:none"></span></button>
+    <button class="sh-item" id="sh-emails" type="button" style="display:none"><span class="sh-ic">✉️</span><span class="sh-label">Emails</span><span class="badge-count" id="menu-email-badge" style="display:none"></span></button>
     <button class="sh-item" id="sh-calendar" type="button"><span class="sh-ic">📅</span><span class="sh-label">Calendrier</span></button>
     <button class="sh-item" id="sh-docs" type="button"><span class="sh-ic">📄</span><span class="sh-label">Mes documents</span></button>
     <button class="sh-item" id="sh-meute" type="button"><span class="sh-ic">🐺</span><span class="sh-label">Meute</span><span class="badge-count" id="menu-meute-badge" style="display:none"></span></button>
@@ -1530,7 +1530,7 @@
 
 <script>
 (function(){
-  var APPV = 'v2.88';
+  var APPV = 'v2.89';
 
   // Debug : ?debug_modal=1 force l'affichage du modal "nouvelle version" sans attendre un vrai
   // déploiement. Capturé ICI, tout au début, car plus bas (login mémorisé, connexion) le code
@@ -1937,7 +1937,7 @@
     // le compte principal. La vraie protection reste côté serveur (code d'observation
     // dédié, jamais donné aux comptes clients, table séparée) : masquer ici n'est qu'un
     // confort visuel, pas la garantie — voir la doc privée du dépôt.
-    ['sh-meute', 'sh-vitrine', 'sh-plume', 'sh-notes', 'sh-emails', 'sh-calendar', 'hcallbtn', 'sh-clients'].forEach(function(id){
+    ['sh-meute', 'sh-vitrine', 'sh-plume', 'sh-notes', 'sh-calendar', 'hcallbtn', 'sh-clients'].forEach(function(id){
       var el = document.getElementById(id);
       if (el) el.style.display = mcs ? 'none' : '';
     });
