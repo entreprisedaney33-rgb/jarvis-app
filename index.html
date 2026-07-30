@@ -1530,7 +1530,7 @@
 
 <script>
 (function(){
-  var APPV = 'v2.87';
+  var APPV = 'v2.88';
 
   // Debug : ?debug_modal=1 force l'affichage du modal "nouvelle version" sans attendre un vrai
   // déploiement. Capturé ICI, tout au début, car plus bas (login mémorisé, connexion) le code
@@ -1942,6 +1942,18 @@
       if (el) el.style.display = mcs ? 'none' : '';
     });
     if (!mcs) meuteCheckBadge();
+    // Rôle salarié (tenant secondaire uniquement) : un compte salarié n'a qu'un usage - dicter/
+    // écrire un devis (déclenché par un mot-clé dans le champ de texte, indépendant de ce menu).
+    // Le menu est donc réduit au minimum (juste Se déconnecter) - Documents et Notifications
+    // restent pour un compte patron, inutiles pour un salarié. Rôle transmis par le serveur
+    // (jamais déduit du code côté client) et gardé en localStorage pour que l'ouverture
+    // instantanée (cache) applique déjà la bonne restriction avant même la 1ère réponse serveur.
+    var role = (extras && extras.role) || read('jarvisRole') || '';
+    var mcsSalarie = mcs && role === 'salarie';
+    ['sh-docs', 'sh-push'].forEach(function(id){
+      var el = document.getElementById(id);
+      if (el) el.style.display = mcsSalarie ? 'none' : '';
+    });
     // Transparence (Phase 5) : visible seulement côté tenant secondaire — c'est CE
     // compte-là que le support peut consulter, l'inverse exact de la liste ci-dessus.
     var privacyNote = document.getElementById('privacy-note');
@@ -1957,6 +1969,7 @@
     post({ type:'history' }, function(j){
       loginbtn.disabled = false;
       if (j.nom) store('jarvisNom', j.nom);
+      if (j.role) store('jarvisRole', j.role);
       try { localStorage.setItem('jarvisHist', JSON.stringify({ nom: j.nom, messages: j.messages })); } catch(e){}
       enterApp(j.nom, j.messages, j);
     }, function(err){
@@ -4676,6 +4689,7 @@
     post({ type:'history' }, function(j){
       refreshing = false;
       if (j.nom) store('jarvisNom', j.nom);
+      if (j.role) store('jarvisRole', j.role);
       var frais = JSON.stringify({ nom: j.nom, messages: j.messages });
       var prevCached = null;
       try { prevCached = localStorage.getItem('jarvisHist'); } catch(e){}
@@ -4761,6 +4775,7 @@
     }
     post({ type:'history' }, function(j){
       if (j.nom) store('jarvisNom', j.nom);
+      if (j.role) store('jarvisRole', j.role);
       var frais = JSON.stringify({ nom: j.nom, messages: j.messages });
       if (!cached || frais !== JSON.stringify(cached)){
         enterApp(j.nom || read('jarvisNom'), j.messages, j);
