@@ -1530,7 +1530,7 @@
 
 <script>
 (function(){
-  var APPV = 'v2.85';
+  var APPV = 'v2.86';
 
   // Debug : ?debug_modal=1 force l'affichage du modal "nouvelle version" sans attendre un vrai
   // déploiement. Capturé ICI, tout au début, car plus bas (login mémorisé, connexion) le code
@@ -1559,11 +1559,11 @@
   // (webhooks mcs-*, tables mcs_*, entièrement séparé) ; tout le reste parle au
   // workflow labo historique (webhooks jarvis-*). Voir clients/mcs/config-mcs.json.
   function isMcsCode(){ return String(read('jarvisCode') || '').trim().toLowerCase().indexOf('mcs-') === 0; }
-  function API_URL(){ return 'https://mat22.app.n8n.cloud/webhook/' + (isMcsCode() ? 'mcs-msg' : 'jarvis-msg'); }
-  var API_MEUTE = 'https://mat22.app.n8n.cloud/webhook/meute-app';
-  var API_VITRINE = 'https://mat22.app.n8n.cloud/webhook/vitrine-liste';
-  var API_PLUME = 'https://mat22.app.n8n.cloud/webhook/plume-liste';
-  var API_NOTES = 'https://mat22.app.n8n.cloud/webhook/notes-liste';
+  function API_URL(){ return 'https://n8n-self-hosted-t0pz.onrender.com/webhook/' + (isMcsCode() ? 'mcs-msg' : 'jarvis-msg'); }
+  var API_MEUTE = 'https://n8n-self-hosted-t0pz.onrender.com/webhook/meute-app';
+  var API_VITRINE = 'https://n8n-self-hosted-t0pz.onrender.com/webhook/vitrine-liste';
+  var API_PLUME = 'https://n8n-self-hosted-t0pz.onrender.com/webhook/plume-liste';
+  var API_NOTES = 'https://n8n-self-hosted-t0pz.onrender.com/webhook/notes-liste';
   var login = document.getElementById('login');
   var app = document.getElementById('app');
   var chat = document.getElementById('chat');
@@ -1771,7 +1771,7 @@
       if (j.validation.fichier && j.validation.fichier.url){
         var att = document.createElement('a');
         att.className = 'vc-attach';
-        att.href = 'https://mat22.app.n8n.cloud' + j.validation.fichier.url + '&code=' + encodeURIComponent(String(read('jarvisCode') || '').trim());
+        att.href = 'https://n8n-self-hosted-t0pz.onrender.com' + j.validation.fichier.url + '&code=' + encodeURIComponent(String(read('jarvisCode') || '').trim());
         att.target = '_blank'; att.rel = 'noopener';
         var ic = document.createElement('span'); ic.className = 'vc-attach-ic'; ic.textContent = '📎';
         var txt = document.createElement('span'); txt.className = 'vc-attach-txt';
@@ -1811,7 +1811,7 @@
     (j.fichiers || []).forEach(function(f){
       var a = document.createElement('a');
       a.className = 'msg jarvis fbtn';
-      a.href = 'https://mat22.app.n8n.cloud' + f.url + '&code=' + encodeURIComponent(String(read('jarvisCode') || '').trim());
+      a.href = 'https://n8n-self-hosted-t0pz.onrender.com' + f.url + '&code=' + encodeURIComponent(String(read('jarvisCode') || '').trim());
       a.target = '_blank'; a.rel = 'noopener';
       var b = document.createElement('b'); b.textContent = '📄 ' + (f.nom || 'document');
       a.appendChild(b);
@@ -2134,7 +2134,7 @@
   function docRow(d){
     var a = document.createElement('a');
     a.className = 'doc-row';
-    a.href = 'https://mat22.app.n8n.cloud' + d.url + '&code=' + encodeURIComponent(String(read('jarvisCode') || '').trim());
+    a.href = 'https://n8n-self-hosted-t0pz.onrender.com' + d.url + '&code=' + encodeURIComponent(String(read('jarvisCode') || '').trim());
     a.target = '_blank'; a.rel = 'noopener';
     var emo = document.createElement('span'); emo.className = 'doc-emo'; emo.textContent = d.emoji || '📄';
     var mid = document.createElement('span'); mid.className = 'doc-mid';
@@ -2218,7 +2218,7 @@
   // utilisateur ni d'un compte de test. Ce code n'est JAMAIS écrit en dur ici (ce
   // fichier finit sur un dépôt public) : saisi une fois par Mathéo, gardé en
   // localStorage sous une clé séparée ('mcsAdminCode'), comme jarvisCode.
-  var ADMIN_API = 'https://mat22.app.n8n.cloud/webhook/mcs-admin-lecture';
+  var ADMIN_API = 'https://n8n-self-hosted-t0pz.onrender.com/webhook/mcs-admin-lecture';
   var clientsview = document.getElementById('clientsview');
   var clientsList = document.getElementById('clients-list');
   var clientsTitleEl = document.getElementById('clients-title');
@@ -3861,7 +3861,7 @@
       var wrap = document.createElement('div'); wrap.className = 'ed-attachments';
       j.attachments.forEach(function(a){
         var link = document.createElement('a'); link.className = 'vc-attach';
-        link.href = 'https://mat22.app.n8n.cloud' + a.url + '&code=' + encodeURIComponent(String(read('jarvisCode') || '').trim());
+        link.href = 'https://n8n-self-hosted-t0pz.onrender.com' + a.url + '&code=' + encodeURIComponent(String(read('jarvisCode') || '').trim());
         link.target = '_blank'; link.rel = 'noopener';
         var ic = document.createElement('span'); ic.className = 'vc-attach-ic'; ic.textContent = '📎';
         var txt = document.createElement('span'); txt.className = 'vc-attach-txt';
