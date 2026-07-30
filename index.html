@@ -1530,7 +1530,7 @@
 
 <script>
 (function(){
-  var APPV = 'v2.86';
+  var APPV = 'v2.87';
 
   // Debug : ?debug_modal=1 force l'affichage du modal "nouvelle version" sans attendre un vrai
   // déploiement. Capturé ICI, tout au début, car plus bas (login mémorisé, connexion) le code
@@ -2305,7 +2305,7 @@
     clientsFilterDate.value = '';
     clientsFilterTexte.value = '';
     document.getElementById('clients-admin-toggle').checked = clientsIncludeAdmin;
-    clientsSetTab('frictions');
+    clientsSetTab('conversations');
   }
 
   function clientsSetTab(tab){
