@@ -1572,7 +1572,7 @@
 
 <script>
 (function(){
-  var APPV = 'v2.90';
+  var APPV = 'v2.91';
 
   // Debug : ?debug_modal=1 force l'affichage du modal "nouvelle version" sans attendre un vrai
   // déploiement. Capturé ICI, tout au début, car plus bas (login mémorisé, connexion) le code
@@ -2206,6 +2206,19 @@
     administratif:'🪪 Administratif & Identité', autre:'📄 Autres', 'non classé':'⏳ Non classés'
   };
   var CAT_ORDER = ['rib_banque','facture','devis','impot','contrat_assurance','vehicule','chantier','administratif','autre','non classé'];
+  // Tri intelligent (2026-07-30, demande Mathéo : "sans 26 cases, un tri intelligent") : les
+  // categories brutes sont regroupees en 4 grands dossiers a l'ouverture ; le detail (categorie
+  // precise) reste visible sur chaque document via la puce doc-cat, deja affichee dans docRow().
+  var META_GROUPS = {
+    finances: { label:'💰 Finances',                 cats:['rib_banque','facture','devis','impot'] },
+    contrats: { label:'📃 Contrats & Administratif',  cats:['contrat_assurance','administratif','vehicule'] },
+    chantier: { label:'🏗️ Chantiers',                cats:['chantier'] },
+    autre:    { label:'📄 Autres',                    cats:['autre','non classé'] }
+  };
+  var META_ORDER = ['finances','contrats','chantier','autre'];
+  var CAT_TO_META = {};
+  META_ORDER.forEach(function(mk){ META_GROUPS[mk].cats.forEach(function(c){ CAT_TO_META[c] = mk; }); });
+  function metaOf(categorie){ return CAT_TO_META[categorie || 'non classé'] || 'autre'; }
   function normDoc(s){ return String(s||'').toLowerCase().normalize('NFD').replace(/[̀-ͯ]/g,''); }
 
   function docRow(d){
@@ -2227,7 +2240,7 @@
     var a = document.createElement('a');
     a.className = 'doc-folder';
     a.href = 'javascript:void(0)';
-    var label = CAT_LABELS[key] || ('📄 ' + key);
+    var label = (META_GROUPS[key] && META_GROUPS[key].label) || CAT_LABELS[key] || ('📄 ' + key);
     var parts = label.split(' ');
     var emo = document.createElement('span'); emo.className = 'doc-emo'; emo.textContent = parts.shift();
     var nom = document.createElement('span'); nom.className = 'doc-folder-nom'; nom.textContent = parts.join(' ');
@@ -2244,20 +2257,18 @@
     docsList.innerHTML = '';
     if (!docsAll.length){ docsList.innerHTML = '<p id="docs-empty">Aucun document trouvé pour l’instant.</p>'; return; }
     var groups = {};
-    docsAll.forEach(function(d){ var k = d.categorie || 'non classé'; (groups[k] = groups[k] || []).push(d); });
-    var seen = {};
-    CAT_ORDER.concat(Object.keys(groups)).forEach(function(key){
-      if (seen[key] || !groups[key] || !groups[key].length) return;
-      seen[key] = true;
+    docsAll.forEach(function(d){ var k = metaOf(d.categorie); (groups[k] = groups[k] || []).push(d); });
+    META_ORDER.forEach(function(key){
+      if (!groups[key] || !groups[key].length) return;
       docsList.appendChild(folderRow(key, groups[key].length, function(){ openCategory(key); }));
     });
   }
 
   function openCategory(key){
-    docsTitle.textContent = CAT_LABELS[key] || key;
+    docsTitle.textContent = (META_GROUPS[key] && META_GROUPS[key].label) || key;
     docsBack.style.display = 'flex';
     docsSearch.value = '';
-    var items = docsAll.filter(function(d){ return (d.categorie || 'non classé') === key; });
+    var items = docsAll.filter(function(d){ return metaOf(d.categorie) === key; });
     docsList.innerHTML = '';
     if (!items.length){ docsList.innerHTML = '<p id="docs-empty">Aucun document dans ce dossier.</p>'; return; }
     items.forEach(function(d){ docsList.appendChild(docRow(d)); });
