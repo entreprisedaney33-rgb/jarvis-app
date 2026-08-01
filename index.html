@@ -450,6 +450,8 @@
   .renta-card .rc-desc{font-size:12.5px; color:var(--muted); display:block; margin-top:3px; line-height:1.35}
   .renta-card .rc-estimate{font-size:12px; color:var(--muted); margin-top:6px}
   .renta-card .rc-value{font-weight:700; color:var(--gold-a); font-size:20px}
+  .renta-marge{border:0.5px solid rgba(232,185,106,.35)}
+  .renta-marge .renta-marge-val{font-size:24px; margin:2px 0}
   .renta-card .rc-adjust{display:none; margin-top:8px}
   .renta-card.on .rc-adjust{display:block}
   .renta-card .rc-slider-row{display:flex; align-items:center; gap:10px}
@@ -1661,7 +1663,7 @@
 
 <script>
 (function(){
-  var APPV = 'v2.92';
+  var APPV = 'v2.93';
 
   // Debug : ?debug_modal=1 force l'affichage du modal "nouvelle version" sans attendre un vrai
   // déploiement. Capturé ICI, tout au début, car plus bas (login mémorisé, connexion) le code
@@ -2646,8 +2648,18 @@
         l4: { on:false, val:d.levier4_contrats.saisieDefaut },
       };
       rentaList.innerHTML = '';
-      var src = document.createElement('p'); src.id = 'renta-source'; src.textContent = 'Chiffres calculés depuis ' + d.sourceLabel + ' — coche un levier pour voir son impact.';
+      var srcTxt = 'Chiffres calculés depuis ' + d.sourceLabel + ' — coche un levier pour voir son impact.';
+      if (d.ca.facturesEnAttenteExport) srcTxt += ' (dont ' + d.ca.facturesEnAttenteExport + ' facture' + (d.ca.facturesEnAttenteExport > 1 ? 's' : '') + ' reçue' + (d.ca.facturesEnAttenteExport > 1 ? 's' : '') + ' par email depuis.)';
+      var src = document.createElement('p'); src.id = 'renta-source'; src.textContent = srcTxt;
       rentaList.appendChild(src);
+      if (d.achats && d.ca.annualiseHT){
+        var marge = document.createElement('div'); marge.className = 'renta-card renta-marge';
+        var mTitre = document.createElement('span'); mTitre.className = 'rc-title'; mTitre.textContent = 'Marge brute estimée (sur 1 an)';
+        var mVal = document.createElement('span'); mVal.className = 'rc-value renta-marge-val'; mVal.textContent = fmtEuro(d.ca.annualiseHT - d.achats.achatsAnnualise);
+        var mDesc = document.createElement('span'); mDesc.className = 'rc-desc'; mDesc.textContent = 'CA annualisé ' + fmtEuro(d.ca.annualiseHT) + ' − achats annualisés ' + fmtEuro(d.achats.achatsAnnualise) + ' (source : balance comptable, mise à jour ' + d.achats.misAJourLe + ').';
+        marge.appendChild(mTitre); marge.appendChild(mVal); marge.appendChild(mDesc);
+        rentaList.appendChild(marge);
+      }
       RENTA_LEVERS.forEach(function(l){ rentaList.appendChild(rentaBuildCard(l, d)); });
       rentaUpdateTotal();
     }, function(err){ rentaList.innerHTML = '<p id="renta-empty">' + err + '</p>'; });
