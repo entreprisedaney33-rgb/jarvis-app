@@ -421,6 +421,13 @@
     -webkit-appearance:none;
   }
   #devis-search::placeholder{color:var(--muted)}
+  .df-filter-group{flex:0 0 auto; display:flex; gap:8px; padding:10px 14px 2px; overflow-x:auto; -webkit-overflow-scrolling:touch}
+  .df-chip{
+    flex:0 0 auto; padding:7px 12px; border-radius:99px; border:0.5px solid rgba(255,255,255,.18);
+    background:transparent; color:var(--muted); font-size:12.5px; font-weight:600; cursor:pointer;
+    -webkit-tap-highlight-color:transparent; white-space:nowrap; opacity:.5;
+  }
+  .df-chip.active{opacity:1; background:#2E2E32; color:var(--ink); border-color:rgba(255,255,255,.3)}
   .df-badge{font-size:11px; font-weight:700; border-radius:99px; padding:2px 9px; flex:0 0 auto}
   .df-badge.attente{background:rgba(232,185,106,.15); color:var(--gold-a)}
   .df-badge.envoye{background:rgba(10,132,255,.15); color:var(--blue)}
@@ -487,6 +494,12 @@
   .renta-month-row .rm-val.benef.pos{color:var(--ok); font-weight:700}
   .renta-month-row .rm-val.benef.neg{color:var(--no); font-weight:700}
   #renta-maj{font-size:11.5px; color:var(--muted); text-align:center; margin:4px 0 18px}
+  #renta-overview{margin-bottom:18px}
+  #renta-overview .ro-title{font-size:12.5px; font-weight:700; color:var(--gold-a); text-transform:uppercase; letter-spacing:.03em; margin-bottom:8px}
+  .ro-grid{display:grid; grid-template-columns:1fr 1fr; gap:10px}
+  .ro-stat{background:var(--surface); border-radius:12px; padding:11px 12px; display:flex; flex-direction:column; gap:3px}
+  .ro-stat .ro-label{font-size:11.5px; color:var(--muted); line-height:1.25}
+  .ro-stat .ro-val{font-size:17px; font-weight:700}
   #renta-perso-toggle{
     width:100%; box-sizing:border-box; text-align:left; background:none; border:none;
     color:var(--gold-a); font-size:14px; font-weight:600; padding:10px 2px; cursor:pointer;
@@ -509,30 +522,6 @@
   .renta-card .rc-desc{font-size:12.5px; color:var(--muted); display:block; margin-top:3px; line-height:1.35}
   .renta-card .rc-estimate{font-size:12px; color:var(--muted); margin-top:6px}
   .renta-card .rc-value{font-weight:700; color:var(--gold-a); font-size:20px}
-  .renta-card .rc-adjust{display:none; margin-top:8px}
-  .renta-card.on .rc-adjust{display:block}
-  .renta-card .rc-slider-row{display:flex; align-items:center; gap:10px}
-  .renta-card input[type=range]{
-    -webkit-appearance:none; appearance:none; flex:1; height:4px; border-radius:2px;
-    background:rgba(255,255,255,.18); outline:none; margin:0;
-  }
-  .renta-card input[type=range]::-webkit-slider-thumb{
-    -webkit-appearance:none; width:22px; height:22px; border-radius:50%;
-    background:linear-gradient(145deg,var(--gold-a),var(--gold-b));
-    border:2px solid #0b0b0d; box-shadow:0 1px 3px rgba(0,0,0,.4); cursor:pointer;
-  }
-  .renta-card input[type=range]::-moz-range-thumb{
-    width:20px; height:20px; border-radius:50%; border:2px solid #0b0b0d;
-    background:linear-gradient(145deg,var(--gold-a),var(--gold-b)); cursor:pointer;
-  }
-  .renta-card .rc-slider-pct{font-size:13px; color:var(--ink); font-weight:600; flex:0 0 auto; width:40px; text-align:right}
-  .renta-card .rc-stepper{display:flex; align-items:center; gap:12px}
-  .renta-card .rc-step-btn{
-    width:32px; height:32px; border-radius:50%; border:0; background:rgba(255,255,255,.1);
-    color:var(--ink); font-size:18px; font-weight:700; display:flex; align-items:center;
-    justify-content:center; cursor:pointer; flex:0 0 auto; -webkit-tap-highlight-color:transparent;
-  }
-  .renta-card .rc-step-val{font-size:16px; font-weight:700; min-width:70px; text-align:center}
   .renta-card .rc-info-btn{
     flex:0 0 auto; width:22px; height:22px; border-radius:50%; border:0.5px solid var(--muted);
     background:transparent; color:var(--muted); font-size:12px; cursor:pointer; line-height:1;
@@ -1523,6 +1512,15 @@
   <div id="devis-search-wrap">
     <input id="devis-search" type="search" inputmode="search" placeholder="🔍 Rechercher un client…" autocomplete="off" autocapitalize="off" autocorrect="off">
   </div>
+  <div class="df-filter-group" id="df-filter-devis">
+    <button class="df-chip active" data-val="attente" type="button">⏳ En attente</button>
+    <button class="df-chip active" data-val="valides" type="button">✅ Validés</button>
+    <button class="df-chip active" data-val="rejetes" type="button">❌ Rejetés</button>
+  </div>
+  <div class="df-filter-group" id="df-filter-factures" style="display:none">
+    <button class="df-chip active" data-val="payees" type="button">✅ Payées</button>
+    <button class="df-chip active" data-val="impayees" type="button">🔴 Impayées</button>
+  </div>
   <div id="devis-list"></div>
 </div>
 
@@ -1715,7 +1713,7 @@
 
 <script>
 (function(){
-  var APPV = 'v2.95';
+  var APPV = 'v2.96';
 
   // Debug : ?debug_modal=1 force l'affichage du modal "nouvelle version" sans attendre un vrai
   // déploiement. Capturé ICI, tout au début, car plus bas (login mémorisé, connexion) le code
@@ -2491,6 +2489,10 @@
   var devisSearchInput = document.getElementById('devis-search');
   var devisData = null; // { aValider, devis, factures }
   var devisActiveTab = 'avalider';
+  var devisFilterDevis = { attente:true, valides:true, rejetes:true };
+  var devisFilterFactures = { payees:true, impayees:true };
+  function devisCatDevis(dv){ return (dv.statut === 'brouillon' || dv.statut === 'envoye') ? 'attente' : (dv.statut === 'accepte' ? 'valides' : 'rejetes'); }
+  function devisCatFacture(f){ return f.paye ? 'payees' : 'impayees'; }
   function devisAttenteClose(){ devisview.classList.remove('open'); }
   function fmtDevisDate(iso){
     try { return new Date(iso).toLocaleString('fr-FR', { day:'2-digit', month:'2-digit', hour:'2-digit', minute:'2-digit' }); }
@@ -2568,16 +2570,18 @@
     if (!devisData) return;
     var q = normDoc(devisSearchInput.value.trim());
     devisList.innerHTML = '';
+    document.getElementById('df-filter-devis').style.display = devisActiveTab === 'devis' ? '' : 'none';
+    document.getElementById('df-filter-factures').style.display = devisActiveTab === 'factures' ? '' : 'none';
     if (devisActiveTab === 'avalider'){
       var itemsA = (devisData.aValider || []).filter(function(dv){ return !q || normDoc(dv.nom).indexOf(q) !== -1; });
       if (!itemsA.length){ devisList.innerHTML = '<p id="devis-empty">Aucun devis en attente.</p>'; return; }
       itemsA.forEach(function(dv){ devisList.appendChild(devisBuildCardAValider(dv)); });
     } else if (devisActiveTab === 'devis'){
-      var itemsD = (devisData.devis || []).filter(function(dv){ return !q || normDoc(dv.nom).indexOf(q) !== -1; });
+      var itemsD = (devisData.devis || []).filter(function(dv){ return devisFilterDevis[devisCatDevis(dv)] && (!q || normDoc(dv.nom).indexOf(q) !== -1); });
       if (!itemsD.length){ devisList.innerHTML = '<p id="devis-empty">Aucun devis trouvé.</p>'; return; }
       itemsD.forEach(function(dv){ devisList.appendChild(devisRenderRowDevis(dv)); });
     } else {
-      var itemsF = (devisData.factures || []).filter(function(f){ return !q || normDoc(f.nom).indexOf(q) !== -1; });
+      var itemsF = (devisData.factures || []).filter(function(f){ return devisFilterFactures[devisCatFacture(f)] && (!q || normDoc(f.nom).indexOf(q) !== -1); });
       if (!itemsF.length){ devisList.innerHTML = '<p id="devis-empty">Aucune facture trouvée.</p>'; return; }
       itemsF.forEach(function(f){ devisList.appendChild(devisRenderRowFacture(f)); });
     }
@@ -2597,25 +2601,36 @@
       devisApplyFilter();
     });
   });
+  document.querySelectorAll('#df-filter-devis .df-chip').forEach(function(chip){
+    chip.addEventListener('click', function(){
+      devisFilterDevis[chip.dataset.val] = !devisFilterDevis[chip.dataset.val];
+      chip.classList.toggle('active', devisFilterDevis[chip.dataset.val]);
+      devisApplyFilter();
+    });
+  });
+  document.querySelectorAll('#df-filter-factures .df-chip').forEach(function(chip){
+    chip.addEventListener('click', function(){
+      devisFilterFactures[chip.dataset.val] = !devisFilterFactures[chip.dataset.val];
+      chip.classList.toggle('active', devisFilterFactures[chip.dataset.val]);
+      devisApplyFilter();
+    });
+  });
   devisSearchInput.addEventListener('input', devisApplyFilter);
   document.getElementById('devis-close').addEventListener('click', devisAttenteClose);
   document.getElementById('sh-devis-attente').addEventListener('click', function(){ sheetOpen(false); devisAttenteOpen(); });
 
   // ---- Rentabilité (compte patron d'un tenant secondaire uniquement) ----
-  // 4 leviers ancrés sur les vraies données MEG du client (jamais un pourcentage générique) :
-  // 3 curseurs % (impayés/devis/saisonnalité, chacun ancré sur une vraie répartition par âge)
-  // + 1 champ saisi à la main (contrats, aucune donnée ne distingue un client convertible d'un
-  // client ponctuel jamais reconvertible — la saisie est plus honnête qu'un curseur inventé).
+  // Vue mensuelle simple en coeur de panneau + 2 widgets optionnels d'information pure (aucun
+  // curseur/estimation : "juste pour voir", pas pour lancer une action -- la relance automatique
+  // des impayés est un chantier séparé, pas fait ici sur demande explicite de Mathéo).
   var rentaview = document.getElementById('rentaview');
   var rentaList = document.getElementById('renta-list');
   var rentaData = null;
-  var rentaState = {}; // { l1:{on,val}, l2:{on,val}, l3:{on,val}, l4:{on,val} } -- curseur interne de chaque widget, une fois ajoute au tableau
 
   function fmtEuro(n){
     n = Math.round(n || 0);
     return n.toLocaleString('fr-FR') + ' €';
   }
-  function fmtPct(x){ return Math.round(x * 100) + ' %'; }
   var MOIS_NOMS = ['janvier','février','mars','avril','mai','juin','juillet','août','septembre','octobre','novembre','décembre'];
   function moisLabel(mm){
     var p = mm.split('-');
@@ -2634,114 +2649,50 @@
     try { localStorage.setItem('mcsRentaWidgets', JSON.stringify(arr)); } catch (e) {}
   }
 
+  // Seulement 2 widgets : de la pure information ("juste pour voir"), plus de curseur ni de
+  // simulation d'impact -- "lisser les creux saisonniers" et "vendre le contrat aux clients
+  // ponctuels" supprimés sur demande de Mathéo (jugés inutiles/pas prioritaires).
   var RENTA_LEVERS = [
     {
-      key: 'l1', titre: 'Relancer les impayés en retard',
-      type: 'slider', sliderLabel: 'Taux de récupération',
-      base: function(d){ return d.levier1_impayes.montantRisque; },
-      curseur: function(d){ return d.levier1_impayes; },
+      key: 'l1', titre: 'Voir les impayés en retard',
+      valeur: function(d){ return d.levier1_impayes.montantRisque; },
       desc: function(d){
         var l = d.levier1_impayes;
         return fmtEuro(l.totalImpaye) + ' de factures validées sont encore impayées, dont ' + fmtEuro(l.montantRisque) + ' ont plus de 60 jours de retard.';
       },
       detail: function(d){
         var l = d.levier1_impayes;
-        return 'Source : ' + d.sourceLabel + '. Montant à risque = factures validées non payées de plus de 60 jours (' + fmtEuro(l.detail.j61_90) + ' entre 61 et 90 jours + ' + fmtEuro(l.detail.plus90) + ' à plus de 90 jours — la tranche la plus proche d\'une perte définitive). Le curseur applique un taux de récupération à cette somme.';
+        return 'Source : ' + d.sourceLabel + '. Montant à risque = factures validées non payées de plus de 60 jours (' + fmtEuro(l.detail.j61_90) + ' entre 61 et 90 jours + ' + fmtEuro(l.detail.plus90) + ' à plus de 90 jours — la tranche la plus proche d\'une perte définitive).';
       },
     },
     {
-      key: 'l2', titre: 'Relancer les devis dormants',
-      type: 'slider', sliderLabel: 'Taux de conversion',
-      base: function(d){ return d.levier2_devis.stockPondere; },
-      curseur: function(d){ return d.levier2_devis; },
+      key: 'l2', titre: 'Montant des devis dormants',
+      valeur: function(d){ return d.levier2_devis.stockPondere; },
       desc: function(d){
         var l = d.levier2_devis;
         return l.nbDevis + ' devis (' + fmtEuro(l.stockBrut) + ') sont restés sans suite, certains depuis plusieurs mois.';
       },
       detail: function(d){
         var a = d.levier2_devis.detailAge;
-        return 'Source : ' + d.sourceLabel + '. Répartition par ancienneté : ' + fmtEuro(a.le7) + ' (≤7j) · ' + fmtEuro(a.j8_30) + ' (8-30j) · ' + fmtEuro(a.j31_90) + ' (31-90j) · ' + fmtEuro(a.plus90) + ' (+90j). Les devis de plus de 90 jours pèsent 40 % de leur montant dans le calcul (ils convertissent moins souvent) — le curseur applique un taux de conversion à ce stock ainsi pondéré.';
-      },
-    },
-    {
-      key: 'l3', titre: 'Lisser les creux saisonniers',
-      type: 'slider', sliderLabel: 'Part du creux comblée',
-      base: function(d){ return d.levier3_saisonnalite.gapTotal; },
-      curseur: function(d){ return d.levier3_saisonnalite; },
-      desc: function(d){
-        return 'Sur les mois pleins observés, certains mois tombent nettement sous la moyenne (' + fmtEuro(d.levier3_saisonnalite.moyenneMoisPleins) + '/mois).';
-      },
-      detail: function(d){
-        var mp = d.levier3_saisonnalite.moisPleins;
-        var txt = Object.keys(mp).sort().map(function(k){ return k.slice(5) + '/' + k.slice(2,4) + ' : ' + fmtEuro(mp[k]); }).join(' · ');
-        return 'Source : ' + d.sourceLabel + '. CA réel par mois plein : ' + txt + '. ⚠️ Estimation prudente : seulement quelques mois pleins de recul, à affiner avec un historique plus long.';
-      },
-    },
-    {
-      key: 'l4', titre: 'Vendre le contrat aux clients ponctuels',
-      type: 'stepper', stepperLabel: 'Clients à convertir cette année',
-      desc: function(d){
-        var l = d.levier4_contrats;
-        return l.nbClientsUnAchat + ' de ses ' + l.nbClientsTotal + ' clients (' + Math.round(l.nbClientsUnAchat / l.nbClientsTotal * 100) + ' %) n\'ont acheté qu\'une seule fois.';
-      },
-      detail: function(d){
-        var l = d.levier4_contrats;
-        return 'Source : ' + d.sourceLabel + '. Ces ' + l.nbClientsUnAchat + ' clients représentent ' + fmtEuro(l.caClientsUnAchat) + ' de CA. Valeur annuelle moyenne d\'un client réellement récurrent (calculée sur ses vrais clients à 2 achats ou plus) : ' + fmtEuro(l.valeurClientRecurrentAn) + '/an. Saisis combien de ces clients ponctuels tu penses pouvoir convertir en contrat — mélange particuliers et copros/pros, seul le patron sait lesquels ont vraiment un usage récurrent.';
+        return 'Source : ' + d.sourceLabel + '. Répartition par ancienneté : ' + fmtEuro(a.le7) + ' (≤7j) · ' + fmtEuro(a.j8_30) + ' (8-30j) · ' + fmtEuro(a.j31_90) + ' (31-90j) · ' + fmtEuro(a.plus90) + ' (+90j). Montant pondéré : les devis de plus de 90 jours ne comptent que pour 40 % de leur montant (ils aboutissent moins souvent).';
       },
     },
   ];
 
-  function rentaImpact(lever, d){
-    var st = rentaState[lever.key];
-    if (!st || !st.on) return 0;
-    if (lever.type === 'stepper') return st.val * d.levier4_contrats.valeurClientRecurrentAn;
-    return lever.base(d) * st.val;
-  }
   function rentaBuildCard(lever, d){
-    var st = rentaState[lever.key];
     var card = document.createElement('div'); card.className = 'renta-card';
     var row = document.createElement('div'); row.className = 'rc-row';
     var tw = document.createElement('div'); tw.className = 'rc-titlewrap';
     var titre = document.createElement('span'); titre.className = 'rc-title'; titre.textContent = lever.titre;
     var desc = document.createElement('span'); desc.className = 'rc-desc'; desc.textContent = lever.desc(d);
     tw.appendChild(titre); tw.appendChild(desc);
-    var sw = document.createElement('span'); sw.className = 'sw'; var knob = document.createElement('span'); knob.className = 'sw-knob'; sw.appendChild(knob);
-    row.appendChild(tw); row.appendChild(sw);
+    row.appendChild(tw);
     card.appendChild(row);
 
     var estimate = document.createElement('div'); estimate.className = 'rc-estimate';
-    var valueEl = document.createElement('span'); valueEl.className = 'rc-value';
+    var valueEl = document.createElement('span'); valueEl.className = 'rc-value'; valueEl.textContent = fmtEuro(lever.valeur(d));
     estimate.appendChild(valueEl);
     card.appendChild(estimate);
-
-    var adjust = document.createElement('div'); adjust.className = 'rc-adjust';
-    if (lever.type === 'slider'){
-      var c = lever.curseur(d);
-      var sliderRow = document.createElement('div'); sliderRow.className = 'rc-slider-row';
-      var range = document.createElement('input'); range.type = 'range';
-      range.min = Math.round(c.curseurMin * 100); range.max = Math.round(c.curseurMax * 100);
-      range.value = Math.round(st.val * 100);
-      var pct = document.createElement('span'); pct.className = 'rc-slider-pct'; pct.textContent = fmtPct(st.val);
-      range.addEventListener('input', function(){
-        st.val = parseInt(range.value, 10) / 100;
-        pct.textContent = fmtPct(st.val);
-        refreshCard();
-      });
-      sliderRow.appendChild(range); sliderRow.appendChild(pct);
-      adjust.appendChild(sliderRow);
-    } else {
-      var stepper = document.createElement('div'); stepper.className = 'rc-stepper';
-      var minus = document.createElement('button'); minus.type = 'button'; minus.className = 'rc-step-btn'; minus.textContent = '−';
-      var valSpan = document.createElement('span'); valSpan.className = 'rc-step-val';
-      var plus = document.createElement('button'); plus.type = 'button'; plus.className = 'rc-step-btn'; plus.textContent = '+';
-      function renderStepVal(){ valSpan.textContent = st.val + ' client' + (st.val > 1 ? 's' : ''); }
-      renderStepVal();
-      minus.addEventListener('click', function(){ if (st.val > 0){ st.val--; renderStepVal(); refreshCard(); } });
-      plus.addEventListener('click', function(){ if (st.val < d.levier4_contrats.saisieMax){ st.val++; renderStepVal(); refreshCard(); } });
-      stepper.appendChild(minus); stepper.appendChild(valSpan); stepper.appendChild(plus);
-      adjust.appendChild(stepper);
-    }
-    card.appendChild(adjust);
 
     var infoRow = document.createElement('div'); infoRow.className = 'rc-row';
     var infoBtn = document.createElement('button'); infoBtn.type = 'button'; infoBtn.className = 'rc-info-btn'; infoBtn.textContent = 'ⓘ'; infoBtn.setAttribute('aria-label', 'Voir la source du calcul');
@@ -2750,16 +2701,34 @@
     var detail = document.createElement('div'); detail.className = 'rc-detail'; detail.textContent = lever.detail(d);
     card.appendChild(detail);
     infoBtn.addEventListener('click', function(){ detail.classList.toggle('open'); });
-
-    function refreshCard(){
-      valueEl.textContent = st.on ? fmtEuro(rentaImpact(lever, d)) : 'Estimation : ' + fmtEuro(lever.type === 'stepper' ? d.levier4_contrats.saisieDefaut * d.levier4_contrats.valeurClientRecurrentAn : lever.base(d) * lever.curseur(d).curseurMin) + ' – ' + fmtEuro(lever.type === 'stepper' ? d.levier4_contrats.saisieMax * d.levier4_contrats.valeurClientRecurrentAn : lever.base(d) * lever.curseur(d).curseurMax);
-      card.classList.toggle('on', !!st.on);
-    }
-    sw.addEventListener('click', function(){ st.on = !st.on; sw.classList.toggle('on', st.on); refreshCard(); });
-    refreshCard();
     return card;
   }
   function rentaAttenteClose(){ rentaview.classList.remove('open'); }
+
+  function rentaBuildOverview(d){
+    var wrap = document.createElement('div'); wrap.id = 'renta-overview';
+    var titre = document.createElement('div'); titre.className = 'ro-title'; titre.textContent = 'Vue d\'ensemble de l\'entreprise';
+    wrap.appendChild(titre);
+    var grid = document.createElement('div'); grid.className = 'ro-grid';
+    function tile(label, val){
+      var t = document.createElement('div'); t.className = 'ro-stat';
+      var l = document.createElement('span'); l.className = 'ro-label'; l.textContent = label;
+      var v = document.createElement('span'); v.className = 'ro-val'; v.textContent = val;
+      t.appendChild(l); t.appendChild(v);
+      return t;
+    }
+    grid.appendChild(tile('CA sur la période', fmtEuro(d.ca.reelHT)));
+    grid.appendChild(tile('CA annualisé estimé', fmtEuro(d.ca.annualiseHT)));
+    if (d.achats && d.achats.achatsAnnualise != null){
+      grid.appendChild(tile('Marge annualisée estimée', fmtEuro(d.ca.annualiseHT - d.achats.achatsAnnualise)));
+    }
+    grid.appendChild(tile('Panier moyen par facture', fmtEuro(d.ca.panierMoyenHT)));
+    grid.appendChild(tile('Nombre de factures', String(d.ca.nbFactures)));
+    grid.appendChild(tile('Nombre de clients', String(d.levier4_contrats.nbClientsTotal)));
+    grid.appendChild(tile('Total actuellement impayé', fmtEuro(d.levier1_impayes.totalImpaye)));
+    wrap.appendChild(grid);
+    return wrap;
+  }
 
   function rentaBuildHero(d){
     var wrap = document.createElement('div');
@@ -2852,14 +2821,9 @@
       var d = j.donnees;
       if (!d){ rentaList.innerHTML = '<p id="renta-empty">Pas encore de données de rentabilité — relance le script de calcul.</p>'; return; }
       rentaData = d;
-      rentaState = {
-        l1: { on:false, val:d.levier1_impayes.curseurDefaut },
-        l2: { on:false, val:d.levier2_devis.curseurDefaut },
-        l3: { on:false, val:d.levier3_saisonnalite.curseurDefaut },
-        l4: { on:false, val:d.levier4_contrats.saisieDefaut },
-      };
       rentaList.innerHTML = '';
       rentaList.appendChild(rentaBuildHero(d));
+      rentaList.appendChild(rentaBuildOverview(d));
       rentaList.appendChild(rentaBuildPerso(d));
       var widgets = document.createElement('div'); widgets.id = 'renta-widgets';
       rentaList.appendChild(widgets);
