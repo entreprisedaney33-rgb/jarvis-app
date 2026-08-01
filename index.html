@@ -499,7 +499,21 @@
   .ro-stat .ro-label{font-size:11.5px; color:var(--muted); line-height:1.25}
   .ro-stat .ro-val{font-size:17px; font-weight:700}
   .ro-stat .ro-caption{font-size:10.5px; color:var(--muted); opacity:.75; line-height:1.25}
+  .ro-stat .ro-val.ro-pos{color:var(--ok)}
+  .ro-stat .ro-val.ro-neg{color:var(--no)}
   #ro-note{font-size:11.5px; color:var(--muted); line-height:1.45; margin:10px 2px 18px}
+  #renta-resultat-comptable{margin-bottom:18px}
+  #renta-resultat-comptable .ro-title{font-size:12.5px; font-weight:700; color:var(--gold-a); text-transform:uppercase; letter-spacing:.03em; margin-bottom:8px}
+  #renta-resultat-comptable .ro-grid{grid-template-columns:1fr 1fr 1fr}
+  .rc-list-box{background:var(--surface); border-radius:14px; padding:12px 14px; margin-top:10px}
+  .rc-list-title{font-size:12px; font-weight:700; color:var(--ink); margin-bottom:8px}
+  .rc-list-row{display:flex; align-items:baseline; gap:8px; padding-top:8px}
+  .rc-list-box .rc-list-row:first-of-type{padding-top:0}
+  .rc-list-label{flex:1; font-size:12.5px; color:var(--ink); min-width:0}
+  .rc-list-val{font-size:12.5px; font-weight:700; color:var(--ink)}
+  .rc-list-pct{font-size:11px; color:var(--muted); min-width:36px; text-align:right}
+  .rc-list-bar{height:4px; border-radius:2px; background:var(--hairline); margin:4px 0 2px; overflow:hidden}
+  .rc-list-fill{height:100%; background:var(--gold-a); border-radius:2px}
   #renta-perso-toggle{
     width:100%; box-sizing:border-box; text-align:left; background:none; border:none;
     color:var(--gold-a); font-size:14px; font-weight:600; padding:10px 2px; cursor:pointer;
@@ -1712,7 +1726,7 @@
 
 <script>
 (function(){
-  var APPV = 'v2.97';
+  var APPV = 'v2.98';
 
   // Debug : ?debug_modal=1 force l'affichage du modal "nouvelle version" sans attendre un vrai
   // déploiement. Capturé ICI, tout au début, car plus bas (login mémorisé, connexion) le code
@@ -2720,26 +2734,70 @@
       ? (fmtDevisDateSimple(d.periode.debut) + ' → ' + fmtDevisDateSimple(d.periode.fin))
       : null;
     grid.appendChild(tile('CA sur la période', fmtEuro(d.ca.reelHT), periodeTxt));
-    grid.appendChild(tile('CA annualisé estimé', fmtEuro(d.ca.annualiseHT), periodeTxt ? ('projection sur 365 j depuis ces ' + (d.periode.jours || '?') + ' jours réels') : null));
     grid.appendChild(tile('Panier moyen par facture', fmtEuro(d.ca.panierMoyenHT)));
     grid.appendChild(tile('Nombre de factures', String(d.ca.nbFactures)));
     grid.appendChild(tile('Nombre de clients', String(d.levier4_contrats.nbClientsTotal)));
     grid.appendChild(tile('Total actuellement impayé', fmtEuro(d.levier1_impayes.totalImpaye)));
-    if (d.achats && d.achats.achatsPeriode != null){
-      var achatsCaption = (d.achats.periodeDebut && d.achats.periodeFin)
-        ? (fmtDevisDateSimple(d.achats.periodeDebut) + ' → ' + fmtDevisDateSimple(d.achats.periodeFin))
-        : null;
-      grid.appendChild(tile('Achats connus (relevé comptable)', fmtEuro(d.achats.achatsPeriode), achatsCaption));
-    }
     wrap.appendChild(grid);
 
     var note = document.createElement('p'); note.id = 'ro-note';
-    var noteTxt = 'Le CA couvre les factures réellement émises sur sa période (aucun document ne manque : la 1ère facture MEG date du tout début de cette période). ';
-    noteTxt += 'Les achats, eux, viennent du dernier relevé de la comptable et couvrent une AUTRE période, pas encore alignée avec le CA';
-    if (d.achats && d.achats.misAJourLe) noteTxt += ' (relevé reçu le ' + fmtDevisDateSimple(d.achats.misAJourLe) + ')';
-    noteTxt += ' — c\'est pour ça qu\'il n\'y a pas encore de "marge" globale affichée ici : mélanger deux périodes différentes donnerait un chiffre trompeur. Dès que les relevés de comptable couvriront les mêmes mois que le CA, une vraie marge apparaîtra dans le tableau mensuel ci-dessus.';
-    note.textContent = noteTxt;
+    note.textContent = 'Le CA ci-dessus couvre les factures réellement émises sur sa période (aucun document ne manque : la 1ère facture MEG date du tout début de cette période). Un vrai résultat (basé sur TOUTES les charges, pas une estimation) est disponible juste en dessous — mais sur la période couverte par le relevé de la comptable, différente de celle-ci.';
     wrap.appendChild(note);
+    return wrap;
+  }
+
+  function rentaBuildRepartitionList(titre, dict, totalRef){
+    var box = document.createElement('div'); box.className = 'rc-list-box';
+    var t = document.createElement('div'); t.className = 'rc-list-title'; t.textContent = titre;
+    box.appendChild(t);
+    var entries = Object.keys(dict).map(function(k){ return [k, dict[k]]; }).sort(function(a,b){ return b[1] - a[1]; });
+    var total = totalRef || entries.reduce(function(s,e){ return s + e[1]; }, 0);
+    entries.forEach(function(e){
+      var row = document.createElement('div'); row.className = 'rc-list-row';
+      var lbl = document.createElement('span'); lbl.className = 'rc-list-label'; lbl.textContent = e[0];
+      var val = document.createElement('span'); val.className = 'rc-list-val'; val.textContent = fmtEuro(e[1]);
+      var pct = document.createElement('span'); pct.className = 'rc-list-pct';
+      pct.textContent = total > 0 ? (Math.round((e[1] / total) * 1000) / 10) + '%' : '';
+      row.appendChild(lbl); row.appendChild(val); row.appendChild(pct);
+      box.appendChild(row);
+      var bar = document.createElement('div'); bar.className = 'rc-list-bar';
+      var fill = document.createElement('div'); fill.className = 'rc-list-fill';
+      fill.style.width = (total > 0 ? Math.max(1, (e[1] / total) * 100) : 0) + '%';
+      bar.appendChild(fill);
+      box.appendChild(bar);
+    });
+    return box;
+  }
+
+  function rentaBuildResultatComptable(d){
+    var rc = d.resultatComptable;
+    if (!rc) return null;
+    var wrap = document.createElement('div'); wrap.id = 'renta-resultat-comptable';
+    var titre = document.createElement('div'); titre.className = 'ro-title'; titre.textContent = 'Résultat comptable réel (relevé de la comptable)';
+    wrap.appendChild(titre);
+    var periodeTxt = (rc.periodeDebut && rc.periodeFin)
+      ? (fmtDevisDateSimple(rc.periodeDebut) + ' → ' + fmtDevisDateSimple(rc.periodeFin))
+      : null;
+    var grid = document.createElement('div'); grid.className = 'ro-grid';
+    function tile(label, val, cls, caption){
+      var t = document.createElement('div'); t.className = 'ro-stat';
+      var l = document.createElement('span'); l.className = 'ro-label'; l.textContent = label;
+      var v = document.createElement('span'); v.className = 'ro-val' + (cls ? ' ' + cls : ''); v.textContent = val;
+      t.appendChild(l); t.appendChild(v);
+      if (caption){ var c = document.createElement('span'); c.className = 'ro-caption'; c.textContent = caption; t.appendChild(c); }
+      return t;
+    }
+    grid.appendChild(tile('CA comptable réel', fmtEuro(rc.caNet), null, periodeTxt));
+    grid.appendChild(tile('Charges réelles totales', fmtEuro(rc.chargesNet), null, periodeTxt));
+    grid.appendChild(tile('Résultat net', fmtEuro(rc.resultatNet), rc.resultatNet >= 0 ? 'ro-pos' : 'ro-neg', periodeTxt));
+    wrap.appendChild(grid);
+
+    var note = document.createElement('p'); note.id = 'ro-note';
+    note.textContent = 'Chiffres réels tirés du relevé comptable complet (toutes les charges, pas seulement les achats de matières) — aucune estimation ici, contrairement au tableau mensuel plus haut.' + (rc.misAJourLe ? (' Relevé reçu le ' + fmtDevisDateSimple(rc.misAJourLe) + '.') : '');
+    wrap.appendChild(note);
+
+    if (rc.chargesParPoste) wrap.appendChild(rentaBuildRepartitionList('Répartition des charges par poste', rc.chargesParPoste, rc.chargesNet));
+    if (rc.caParPrestation) wrap.appendChild(rentaBuildRepartitionList('CA par type de prestation', rc.caParPrestation, rc.caNet));
     return wrap;
   }
 
@@ -2839,6 +2897,8 @@
       rentaList.innerHTML = '';
       rentaList.appendChild(rentaBuildHero(d));
       rentaList.appendChild(rentaBuildOverview(d));
+      var rcSection = rentaBuildResultatComptable(d);
+      if (rcSection) rentaList.appendChild(rcSection);
       rentaList.appendChild(rentaBuildPerso(d));
       var widgets = document.createElement('div'); widgets.id = 'renta-widgets';
       rentaList.appendChild(widgets);
