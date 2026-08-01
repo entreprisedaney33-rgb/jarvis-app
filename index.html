@@ -477,29 +477,29 @@
     text-align:center;
   }
   #renta-hero .rh-mois{font-size:13px; color:var(--muted); text-transform:uppercase; letter-spacing:.03em; margin-bottom:10px}
-  #renta-hero .rh-row{display:flex; justify-content:space-around; gap:8px}
-  #renta-hero .rh-stat{display:flex; flex-direction:column; gap:2px}
-  #renta-hero .rh-label{font-size:12px; color:var(--muted)}
-  #renta-hero .rh-val{font-size:22px; font-weight:800}
-  #renta-hero .rh-val.ca{color:var(--blue)}
-  #renta-hero .rh-val.dep{color:var(--no)}
-  #renta-hero .rh-val.benef.pos{color:var(--ok)}
-  #renta-hero .rh-val.benef.neg{color:var(--no)}
-  #renta-months{background:var(--surface); border-radius:16px; padding:4px 14px; margin-bottom:6px}
-  .renta-month-row{display:flex; align-items:center; gap:8px; padding:11px 0; border-top:0.5px solid var(--hairline)}
-  .renta-month-row:first-child{border-top:none}
-  .renta-month-row .rm-mois{flex:1; font-size:14px; font-weight:600; min-width:0}
-  .renta-month-row .rm-val{font-size:13px; color:var(--muted); text-align:right; min-width:64px}
-  .renta-month-row .rm-val.ca{color:var(--ink)}
-  .renta-month-row .rm-val.benef.pos{color:var(--ok); font-weight:700}
-  .renta-month-row .rm-val.benef.neg{color:var(--no); font-weight:700}
-  #renta-maj{font-size:11.5px; color:var(--muted); text-align:center; margin:4px 0 18px}
+  .rh-row{display:flex; justify-content:space-around; gap:8px}
+  .rh-stat{display:flex; flex-direction:column; gap:2px}
+  .rh-label{font-size:12px; color:var(--muted)}
+  .rh-val{font-size:22px; font-weight:800}
+  .rh-val.ca{color:var(--blue)}
+  .rh-val.dep{color:var(--no)}
+  .rh-val.benef.pos{color:var(--ok)}
+  .rh-val.benef.neg{color:var(--no)}
+  .rh-row.rh-small .rh-label{font-size:11px}
+  .rh-row.rh-small .rh-val{font-size:15px}
+  #renta-months{background:var(--surface); border-radius:16px; padding:12px 14px; margin-bottom:6px}
+  .renta-month-row{padding:10px 0; border-top:0.5px solid var(--hairline)}
+  .renta-month-row:first-child{border-top:none; padding-top:0}
+  .renta-month-row .rm-mois{font-size:12.5px; color:var(--muted); text-transform:uppercase; letter-spacing:.03em; margin-bottom:6px}
+  #renta-maj{font-size:11.5px; color:var(--muted); text-align:center; margin:4px 0 18px; line-height:1.4}
   #renta-overview{margin-bottom:18px}
   #renta-overview .ro-title{font-size:12.5px; font-weight:700; color:var(--gold-a); text-transform:uppercase; letter-spacing:.03em; margin-bottom:8px}
   .ro-grid{display:grid; grid-template-columns:1fr 1fr; gap:10px}
   .ro-stat{background:var(--surface); border-radius:12px; padding:11px 12px; display:flex; flex-direction:column; gap:3px}
   .ro-stat .ro-label{font-size:11.5px; color:var(--muted); line-height:1.25}
   .ro-stat .ro-val{font-size:17px; font-weight:700}
+  .ro-stat .ro-caption{font-size:10.5px; color:var(--muted); opacity:.75; line-height:1.25}
+  #ro-note{font-size:11.5px; color:var(--muted); line-height:1.45; margin:10px 2px 18px}
   #renta-perso-toggle{
     width:100%; box-sizing:border-box; text-align:left; background:none; border:none;
     color:var(--gold-a); font-size:14px; font-weight:600; padding:10px 2px; cursor:pointer;
@@ -1514,8 +1514,7 @@
   </div>
   <div class="df-filter-group" id="df-filter-devis">
     <button class="df-chip active" data-val="attente" type="button">⏳ En attente</button>
-    <button class="df-chip active" data-val="valides" type="button">✅ Validés</button>
-    <button class="df-chip active" data-val="rejetes" type="button">❌ Rejetés</button>
+    <button class="df-chip" data-val="valides" type="button">✅ Validés</button>
   </div>
   <div class="df-filter-group" id="df-filter-factures" style="display:none">
     <button class="df-chip active" data-val="payees" type="button">✅ Payées</button>
@@ -1713,7 +1712,7 @@
 
 <script>
 (function(){
-  var APPV = 'v2.96';
+  var APPV = 'v2.97';
 
   // Debug : ?debug_modal=1 force l'affichage du modal "nouvelle version" sans attendre un vrai
   // déploiement. Capturé ICI, tout au début, car plus bas (login mémorisé, connexion) le code
@@ -2489,7 +2488,7 @@
   var devisSearchInput = document.getElementById('devis-search');
   var devisData = null; // { aValider, devis, factures }
   var devisActiveTab = 'avalider';
-  var devisFilterDevis = { attente:true, valides:true, rejetes:true };
+  var devisFilterDevisVal = 'attente'; // choix unique : attente OU valides (rejetés jamais affichés, sur demande de Mathéo)
   var devisFilterFactures = { payees:true, impayees:true };
   function devisCatDevis(dv){ return (dv.statut === 'brouillon' || dv.statut === 'envoye') ? 'attente' : (dv.statut === 'accepte' ? 'valides' : 'rejetes'); }
   function devisCatFacture(f){ return f.paye ? 'payees' : 'impayees'; }
@@ -2577,7 +2576,7 @@
       if (!itemsA.length){ devisList.innerHTML = '<p id="devis-empty">Aucun devis en attente.</p>'; return; }
       itemsA.forEach(function(dv){ devisList.appendChild(devisBuildCardAValider(dv)); });
     } else if (devisActiveTab === 'devis'){
-      var itemsD = (devisData.devis || []).filter(function(dv){ return devisFilterDevis[devisCatDevis(dv)] && (!q || normDoc(dv.nom).indexOf(q) !== -1); });
+      var itemsD = (devisData.devis || []).filter(function(dv){ return devisCatDevis(dv) === devisFilterDevisVal && (!q || normDoc(dv.nom).indexOf(q) !== -1); });
       if (!itemsD.length){ devisList.innerHTML = '<p id="devis-empty">Aucun devis trouvé.</p>'; return; }
       itemsD.forEach(function(dv){ devisList.appendChild(devisRenderRowDevis(dv)); });
     } else {
@@ -2603,8 +2602,8 @@
   });
   document.querySelectorAll('#df-filter-devis .df-chip').forEach(function(chip){
     chip.addEventListener('click', function(){
-      devisFilterDevis[chip.dataset.val] = !devisFilterDevis[chip.dataset.val];
-      chip.classList.toggle('active', devisFilterDevis[chip.dataset.val]);
+      devisFilterDevisVal = chip.dataset.val;
+      document.querySelectorAll('#df-filter-devis .df-chip').forEach(function(b){ b.classList.toggle('active', b === chip); });
       devisApplyFilter();
     });
   });
@@ -2635,10 +2634,6 @@
   function moisLabel(mm){
     var p = mm.split('-');
     return MOIS_NOMS[parseInt(p[1], 10) - 1] + ' ' + p[0];
-  }
-  function moisLabelCourt(mm){
-    var p = mm.split('-');
-    return MOIS_NOMS[parseInt(p[1], 10) - 1].slice(0, 3) + ' ' + p[0].slice(2);
   }
   // Widgets optionnels ("Personnaliser mon tableau") -- persistes sur l'appareil, decochés par
   // défaut au tout premier lancement pour que la vue par défaut reste simple.
@@ -2710,26 +2705,60 @@
     var titre = document.createElement('div'); titre.className = 'ro-title'; titre.textContent = 'Vue d\'ensemble de l\'entreprise';
     wrap.appendChild(titre);
     var grid = document.createElement('div'); grid.className = 'ro-grid';
-    function tile(label, val){
+    function tile(label, val, caption){
       var t = document.createElement('div'); t.className = 'ro-stat';
       var l = document.createElement('span'); l.className = 'ro-label'; l.textContent = label;
       var v = document.createElement('span'); v.className = 'ro-val'; v.textContent = val;
       t.appendChild(l); t.appendChild(v);
+      if (caption){
+        var c = document.createElement('span'); c.className = 'ro-caption'; c.textContent = caption;
+        t.appendChild(c);
+      }
       return t;
     }
-    grid.appendChild(tile('CA sur la période', fmtEuro(d.ca.reelHT)));
-    grid.appendChild(tile('CA annualisé estimé', fmtEuro(d.ca.annualiseHT)));
-    if (d.achats && d.achats.achatsAnnualise != null){
-      grid.appendChild(tile('Marge annualisée estimée', fmtEuro(d.ca.annualiseHT - d.achats.achatsAnnualise)));
-    }
+    var periodeTxt = (d.periode && d.periode.debut && d.periode.fin)
+      ? (fmtDevisDateSimple(d.periode.debut) + ' → ' + fmtDevisDateSimple(d.periode.fin))
+      : null;
+    grid.appendChild(tile('CA sur la période', fmtEuro(d.ca.reelHT), periodeTxt));
+    grid.appendChild(tile('CA annualisé estimé', fmtEuro(d.ca.annualiseHT), periodeTxt ? ('projection sur 365 j depuis ces ' + (d.periode.jours || '?') + ' jours réels') : null));
     grid.appendChild(tile('Panier moyen par facture', fmtEuro(d.ca.panierMoyenHT)));
     grid.appendChild(tile('Nombre de factures', String(d.ca.nbFactures)));
     grid.appendChild(tile('Nombre de clients', String(d.levier4_contrats.nbClientsTotal)));
     grid.appendChild(tile('Total actuellement impayé', fmtEuro(d.levier1_impayes.totalImpaye)));
+    if (d.achats && d.achats.achatsPeriode != null){
+      var achatsCaption = (d.achats.periodeDebut && d.achats.periodeFin)
+        ? (fmtDevisDateSimple(d.achats.periodeDebut) + ' → ' + fmtDevisDateSimple(d.achats.periodeFin))
+        : null;
+      grid.appendChild(tile('Achats connus (relevé comptable)', fmtEuro(d.achats.achatsPeriode), achatsCaption));
+    }
     wrap.appendChild(grid);
+
+    var note = document.createElement('p'); note.id = 'ro-note';
+    var noteTxt = 'Le CA couvre les factures réellement émises sur sa période (aucun document ne manque : la 1ère facture MEG date du tout début de cette période). ';
+    noteTxt += 'Les achats, eux, viennent du dernier relevé de la comptable et couvrent une AUTRE période, pas encore alignée avec le CA';
+    if (d.achats && d.achats.misAJourLe) noteTxt += ' (relevé reçu le ' + fmtDevisDateSimple(d.achats.misAJourLe) + ')';
+    noteTxt += ' — c\'est pour ça qu\'il n\'y a pas encore de "marge" globale affichée ici : mélanger deux périodes différentes donnerait un chiffre trompeur. Dès que les relevés de comptable couvriront les mêmes mois que le CA, une vraie marge apparaîtra dans le tableau mensuel ci-dessus.';
+    note.textContent = noteTxt;
+    wrap.appendChild(note);
     return wrap;
   }
 
+  function rentaStatTile(label, val, cls, estime){
+    var s = document.createElement('div'); s.className = 'rh-stat';
+    var l = document.createElement('span'); l.className = 'rh-label'; l.textContent = label + (estime ? ' *' : '');
+    var v = document.createElement('span'); v.className = 'rh-val ' + cls; v.textContent = val;
+    s.appendChild(l); s.appendChild(v);
+    return s;
+  }
+  function rentaStatRow(m, tag){
+    var row = document.createElement('div'); row.className = 'rh-row ' + tag;
+    row.appendChild(rentaStatTile('Rentré', fmtEuro(m.ca), 'ca', false));
+    row.appendChild(rentaStatTile('Sorti', m.depenses == null ? '—' : fmtEuro(m.depenses), 'dep', m.estime));
+    var benefTxt = m.benefice == null ? '—' : fmtEuro(m.benefice);
+    var benefCls = 'benef ' + (m.benefice == null ? '' : (m.benefice >= 0 ? 'pos' : 'neg'));
+    row.appendChild(rentaStatTile('Reste', benefTxt, benefCls, m.estime));
+    return row;
+  }
   function rentaBuildHero(d){
     var wrap = document.createElement('div');
     var mois = d.moisRentabilite || [];
@@ -2741,39 +2770,25 @@
     var hero = document.createElement('div'); hero.id = 'renta-hero';
     var moisLbl = document.createElement('div'); moisLbl.className = 'rh-mois'; moisLbl.textContent = moisLabel(courant.mois);
     hero.appendChild(moisLbl);
-    var row = document.createElement('div'); row.className = 'rh-row';
-    function stat(label, val, cls){
-      var s = document.createElement('div'); s.className = 'rh-stat';
-      var l = document.createElement('span'); l.className = 'rh-label'; l.textContent = label;
-      var v = document.createElement('span'); v.className = 'rh-val ' + cls; v.textContent = val;
-      s.appendChild(l); s.appendChild(v);
-      return s;
-    }
-    row.appendChild(stat('Rentré', fmtEuro(courant.ca), 'ca'));
-    row.appendChild(stat('Sorti', courant.depenses == null ? '—' : fmtEuro(courant.depenses), 'dep'));
-    var benefTxt = courant.benefice == null ? '—' : fmtEuro(courant.benefice);
-    var benefCls = 'benef ' + (courant.benefice == null ? '' : (courant.benefice >= 0 ? 'pos' : 'neg'));
-    row.appendChild(stat('Reste', benefTxt, benefCls));
-    hero.appendChild(row);
+    hero.appendChild(rentaStatRow(courant, 'rh-big'));
     wrap.appendChild(hero);
 
     if (mois.length > 1){
       var list = document.createElement('div'); list.id = 'renta-months';
       mois.slice(1).forEach(function(m){
         var r = document.createElement('div'); r.className = 'renta-month-row';
-        var lbl = document.createElement('span'); lbl.className = 'rm-mois'; lbl.textContent = moisLabelCourt(m.mois);
-        var ca = document.createElement('span'); ca.className = 'rm-val ca'; ca.textContent = fmtEuro(m.ca);
-        var benef = document.createElement('span');
-        benef.className = 'rm-val benef ' + (m.benefice == null ? '' : (m.benefice >= 0 ? 'pos' : 'neg'));
-        benef.textContent = m.benefice == null ? '—' : fmtEuro(m.benefice);
-        r.appendChild(lbl); r.appendChild(ca); r.appendChild(benef);
+        var lbl = document.createElement('div'); lbl.className = 'rm-mois'; lbl.textContent = moisLabel(m.mois);
+        r.appendChild(lbl);
+        r.appendChild(rentaStatRow(m, 'rh-small'));
         list.appendChild(r);
       });
       wrap.appendChild(list);
     }
-    if (d.achats && d.achats.misAJourLe){
+    if (mois.some(function(m){ return m.estime; })){
       var maj = document.createElement('p'); maj.id = 'renta-maj';
-      maj.textContent = 'Dépenses mises à jour le ' + fmtDevisDateSimple(d.achats.misAJourLe) + (mois.some(function(m){ return m.estime; }) ? ' (estimation en attendant un 2e relevé de la comptable)' : '');
+      var majTxt = '* dépenses estimées (réparties sur la période connue) — deviendront exactes dès qu\'un 2e relevé de la comptable arrivera';
+      if (d.achats && d.achats.misAJourLe) majTxt += '. Dernier relevé reçu le ' + fmtDevisDateSimple(d.achats.misAJourLe) + '.';
+      maj.textContent = majTxt;
       wrap.appendChild(maj);
     }
     return wrap;
