@@ -404,6 +404,31 @@
     display:flex; align-items:center; justify-content:center; cursor:pointer;
     -webkit-tap-highlight-color:transparent;
   }
+  #devis-tabs{
+    flex:0 0 auto; display:flex; gap:8px; padding:10px 14px; overflow-x:auto; -webkit-overflow-scrolling:touch;
+    border-bottom:0.5px solid var(--hairline);
+  }
+  .devis-tab{
+    flex:0 0 auto; padding:8px 13px; border-radius:99px; border:0.5px solid rgba(255,255,255,.18);
+    background:#2E2E32; color:var(--muted); font-size:13px; font-weight:600; cursor:pointer;
+    -webkit-tap-highlight-color:transparent; white-space:nowrap;
+  }
+  .devis-tab.active{background:var(--gold-a); color:#1a1200; border-color:var(--gold-a)}
+  #devis-search-wrap{flex:0 0 auto; padding:10px 14px 0}
+  #devis-search{
+    width:100%; box-sizing:border-box; border:none; border-radius:12px;
+    background:var(--surface); color:var(--ink); font-size:15px; padding:10px 12px;
+    -webkit-appearance:none;
+  }
+  #devis-search::placeholder{color:var(--muted)}
+  .df-badge{font-size:11px; font-weight:700; border-radius:99px; padding:2px 9px; flex:0 0 auto}
+  .df-badge.attente{background:rgba(232,185,106,.15); color:var(--gold-a)}
+  .df-badge.envoye{background:rgba(10,132,255,.15); color:var(--blue)}
+  .df-badge.rejete, .df-badge.impaye{background:rgba(255,69,58,.15); color:var(--no)}
+  .df-badge.brouillon{background:rgba(255,255,255,.1); color:var(--muted)}
+  .df-badge.accepte, .df-badge.paye{background:rgba(48,209,88,.15); color:var(--ok)}
+  .df-row-top{display:flex; align-items:center; gap:8px}
+  .df-row-top .dv-nom{flex:1}
   #devis-list{flex:1; overflow-y:auto; -webkit-overflow-scrolling:touch; padding:14px 14px calc(20px + env(safe-area-inset-bottom))}
   .devis-card{
     display:flex; flex-direction:column; gap:6px; width:100%; box-sizing:border-box;
@@ -437,8 +462,42 @@
     display:flex; align-items:center; justify-content:center; cursor:pointer;
     -webkit-tap-highlight-color:transparent;
   }
-  #renta-list{flex:1; overflow-y:auto; -webkit-overflow-scrolling:touch; padding:14px 14px calc(150px + env(safe-area-inset-bottom))}
+  #renta-list{flex:1; overflow-y:auto; -webkit-overflow-scrolling:touch; padding:14px 14px calc(20px + env(safe-area-inset-bottom))}
   #renta-empty, #renta-loading{color:var(--muted); text-align:center; padding:40px 20px; font-size:14px}
+  /* Vue mensuelle (coeur du panneau) */
+  #renta-hero{
+    background:var(--surface); border-radius:16px; padding:16px; margin-bottom:14px;
+    text-align:center;
+  }
+  #renta-hero .rh-mois{font-size:13px; color:var(--muted); text-transform:uppercase; letter-spacing:.03em; margin-bottom:10px}
+  #renta-hero .rh-row{display:flex; justify-content:space-around; gap:8px}
+  #renta-hero .rh-stat{display:flex; flex-direction:column; gap:2px}
+  #renta-hero .rh-label{font-size:12px; color:var(--muted)}
+  #renta-hero .rh-val{font-size:22px; font-weight:800}
+  #renta-hero .rh-val.ca{color:var(--blue)}
+  #renta-hero .rh-val.dep{color:var(--no)}
+  #renta-hero .rh-val.benef.pos{color:var(--ok)}
+  #renta-hero .rh-val.benef.neg{color:var(--no)}
+  #renta-months{background:var(--surface); border-radius:16px; padding:4px 14px; margin-bottom:6px}
+  .renta-month-row{display:flex; align-items:center; gap:8px; padding:11px 0; border-top:0.5px solid var(--hairline)}
+  .renta-month-row:first-child{border-top:none}
+  .renta-month-row .rm-mois{flex:1; font-size:14px; font-weight:600; min-width:0}
+  .renta-month-row .rm-val{font-size:13px; color:var(--muted); text-align:right; min-width:64px}
+  .renta-month-row .rm-val.ca{color:var(--ink)}
+  .renta-month-row .rm-val.benef.pos{color:var(--ok); font-weight:700}
+  .renta-month-row .rm-val.benef.neg{color:var(--no); font-weight:700}
+  #renta-maj{font-size:11.5px; color:var(--muted); text-align:center; margin:4px 0 18px}
+  #renta-perso-toggle{
+    width:100%; box-sizing:border-box; text-align:left; background:none; border:none;
+    color:var(--gold-a); font-size:14px; font-weight:600; padding:10px 2px; cursor:pointer;
+    display:flex; align-items:center; gap:6px; -webkit-tap-highlight-color:transparent;
+  }
+  #renta-perso-options{display:none; padding:2px 2px 14px}
+  #renta-perso-options.open{display:block}
+  .renta-perso-item{display:flex; align-items:center; gap:10px; padding:9px 0; border-top:0.5px solid var(--hairline)}
+  .renta-perso-item:first-child{border-top:none}
+  .renta-perso-item input[type=checkbox]{width:20px; height:20px; accent-color:var(--gold-a); flex:0 0 auto}
+  .renta-perso-item span{font-size:14px}
   #renta-source{font-size:11.5px; color:var(--muted); text-align:center; margin:0 0 14px}
   .renta-card{
     display:flex; flex-direction:column; gap:8px; width:100%; box-sizing:border-box;
@@ -450,8 +509,6 @@
   .renta-card .rc-desc{font-size:12.5px; color:var(--muted); display:block; margin-top:3px; line-height:1.35}
   .renta-card .rc-estimate{font-size:12px; color:var(--muted); margin-top:6px}
   .renta-card .rc-value{font-weight:700; color:var(--gold-a); font-size:20px}
-  .renta-marge{border:0.5px solid rgba(232,185,106,.35)}
-  .renta-marge .renta-marge-val{font-size:24px; margin:2px 0}
   .renta-card .rc-adjust{display:none; margin-top:8px}
   .renta-card.on .rc-adjust{display:block}
   .renta-card .rc-slider-row{display:flex; align-items:center; gap:10px}
@@ -486,15 +543,6 @@
     margin-top:2px; padding-top:8px; border-top:0.5px solid var(--hairline);
   }
   .renta-card .rc-detail.open{display:block}
-  #renta-bar{
-    position:absolute; left:0; right:0; bottom:0; z-index:2;
-    padding:14px 18px calc(14px + env(safe-area-inset-bottom));
-    background:rgba(23,23,27,.92); -webkit-backdrop-filter:blur(14px); backdrop-filter:blur(14px);
-    border-top:0.5px solid var(--hairline);
-    display:flex; flex-direction:column; align-items:center; gap:2px;
-  }
-  #renta-bar .rb-label{font-size:11.5px; color:var(--muted); text-transform:uppercase; letter-spacing:.03em}
-  #renta-bar .rb-value{font-size:28px; font-weight:800; color:var(--gold-a)}
   .thread-msg{padding:10px 4px; border-top:0.5px solid rgba(84,84,88,.4)}
   .thread-msg:first-child{border-top:none}
   .thread-role{font-size:11px; font-weight:700; text-transform:uppercase; color:var(--muted); letter-spacing:.03em}
@@ -1419,7 +1467,7 @@
     <button class="sh-item" id="sh-plume" type="button"><span class="sh-ic">🪶</span><span class="sh-label">SEO</span></button>
     <button class="sh-item" id="sh-notes" type="button"><span class="sh-ic">🧠</span><span class="sh-label">Notes</span></button>
     <button class="sh-item" id="sh-clients" type="button"><span class="sh-ic">🏢</span><span class="sh-label">Clients</span></button>
-    <button class="sh-item" id="sh-devis-attente" type="button" style="display:none"><span class="sh-ic">📝</span><span class="sh-label">Devis à valider</span><span class="badge-count" id="menu-devis-badge" style="display:none"></span></button>
+    <button class="sh-item" id="sh-devis-attente" type="button" style="display:none"><span class="sh-ic">📝</span><span class="sh-label">Devis et factures</span><span class="badge-count" id="menu-devis-badge" style="display:none"></span></button>
     <button class="sh-item" id="sh-rentabilite" type="button" style="display:none"><span class="sh-ic">💹</span><span class="sh-label">Rentabilité</span></button>
     <button class="sh-item" id="sh-push" type="button"><span class="sh-ic">🔔</span><span class="sh-label">Notifications</span><span class="sw" id="sw-push"><span class="sw-knob"></span></span></button>
   </div>
@@ -1464,8 +1512,16 @@
 
 <div id="devisview">
   <div id="devis-head">
-    <b id="devis-title">📝 Devis à valider</b>
+    <b id="devis-title">📝 Devis et factures</b>
     <button id="devis-close" type="button" aria-label="Fermer">✕</button>
+  </div>
+  <div id="devis-tabs">
+    <button class="devis-tab active" data-tab="avalider" type="button">À valider</button>
+    <button class="devis-tab" data-tab="devis" type="button">Devis</button>
+    <button class="devis-tab" data-tab="factures" type="button">Factures</button>
+  </div>
+  <div id="devis-search-wrap">
+    <input id="devis-search" type="search" inputmode="search" placeholder="🔍 Rechercher un client…" autocomplete="off" autocapitalize="off" autocorrect="off">
   </div>
   <div id="devis-list"></div>
 </div>
@@ -1476,10 +1532,6 @@
     <button id="renta-close" type="button" aria-label="Fermer">✕</button>
   </div>
   <div id="renta-list"></div>
-  <div id="renta-bar">
-    <span class="rb-label">Impact total estimé / an</span>
-    <span class="rb-value" id="renta-total">0 €</span>
-  </div>
 </div>
 
 
@@ -1663,7 +1715,7 @@
 
 <script>
 (function(){
-  var APPV = 'v2.93';
+  var APPV = 'v2.94';
 
   // Debug : ?debug_modal=1 force l'affichage du modal "nouvelle version" sans attendre un vrai
   // déploiement. Capturé ICI, tout au début, car plus bas (login mémorisé, connexion) le code
@@ -1697,7 +1749,7 @@
   var API_VITRINE = 'https://n8n-self-hosted-t0pz.onrender.com/webhook/vitrine-liste';
   var API_PLUME = 'https://n8n-self-hosted-t0pz.onrender.com/webhook/plume-liste';
   var API_NOTES = 'https://n8n-self-hosted-t0pz.onrender.com/webhook/notes-liste';
-  var API_DEVIS_ATTENTE = 'https://n8n-self-hosted-t0pz.onrender.com/webhook/mcs-devis-attente';
+  var API_DEVIS_FACTURES = 'https://n8n-self-hosted-t0pz.onrender.com/webhook/mcs-devis-factures';
   var API_DEVIS_VALIDER = 'https://n8n-self-hosted-t0pz.onrender.com/webhook/mcs-devis-valider';
   var API_RENTABILITE = 'https://n8n-self-hosted-t0pz.onrender.com/webhook/mcs-rentabilite';
   var login = document.getElementById('login');
@@ -1881,7 +1933,7 @@
         onOk(res.body);
       }).catch(function(){ onErr('Connexion impossible.'); });
   }
-  function postDevisAttente(payload, onOk, onErr){ postDevisWeb(API_DEVIS_ATTENTE, payload, onOk, onErr); }
+  function postDevisFactures(payload, onOk, onErr){ postDevisWeb(API_DEVIS_FACTURES, payload, onOk, onErr); }
   function postDevisValider(payload, onOk, onErr){ postDevisWeb(API_DEVIS_VALIDER, payload, onOk, onErr); }
   function postRentabilite(payload, onOk, onErr){ postDevisWeb(API_RENTABILITE, payload, onOk, onErr); }
 
@@ -2106,11 +2158,11 @@
       var el = document.getElementById(id);
       if (el) el.style.display = mcsSalarie ? 'none' : '';
     });
-    // "Devis à valider" : visible UNIQUEMENT pour un compte patron d'un tenant secondaire
-    // (jamais pour le compte principal, jamais pour un salarié — la protection réelle reste
-    // côté serveur, ce masquage n'est qu'un confort visuel, comme pour l'onglet Clients).
+    // "Devis et factures" : visible pour tout compte d'un tenant secondaire (patron ET salarié,
+    // Bruno doit pouvoir chercher un devis/une facture aussi) — jamais pour le compte principal.
+    // L'onglet "À valider" à l'intérieur reste réservé au patron (protection réelle côté serveur).
     var devisBtn = document.getElementById('sh-devis-attente');
-    if (devisBtn) devisBtn.style.display = (mcs && role === 'patron') ? '' : 'none';
+    if (devisBtn) devisBtn.style.display = mcs ? '' : 'none';
     // "Rentabilité" : même garde que "Devis à valider" — patron d'un tenant secondaire uniquement.
     var rentaBtn = document.getElementById('sh-rentabilite');
     if (rentaBtn) rentaBtn.style.display = (mcs && role === 'patron') ? '' : 'none';
@@ -2434,52 +2486,119 @@
 
   function clientsClose(){ clientsview.classList.remove('open'); }
 
-  // ---- Devis a valider (compte patron d'un tenant secondaire uniquement) ----
+  // ---- Devis et factures (tenant secondaire uniquement ; "À valider" reste patron-only) ----
   var devisview = document.getElementById('devisview');
   var devisList = document.getElementById('devis-list');
+  var devisSearchInput = document.getElementById('devis-search');
+  var devisData = null; // { aValider, devis, factures }
+  var devisActiveTab = 'avalider';
   function devisAttenteClose(){ devisview.classList.remove('open'); }
   function fmtDevisDate(iso){
     try { return new Date(iso).toLocaleString('fr-FR', { day:'2-digit', month:'2-digit', hour:'2-digit', minute:'2-digit' }); }
     catch (e) { return ''; }
   }
-  function devisAgir(token, choix, card, okBtn, noBtn){
+  function fmtDevisDateSimple(iso){
+    if (!iso) return '';
+    try { return new Date(iso).toLocaleDateString('fr-FR', { day:'2-digit', month:'2-digit', year:'numeric' }); }
+    catch (e) { return ''; }
+  }
+  function devisBuildCardAValider(dv){
+    var card = document.createElement('div'); card.className = 'devis-card';
+    var nom = document.createElement('span'); nom.className = 'dv-nom'; nom.textContent = dv.nom || '(client non précisé)';
+    card.appendChild(nom);
+    if (dv.objet){ var objet = document.createElement('span'); objet.className = 'dv-objet'; objet.textContent = dv.objet; card.appendChild(objet); }
+    var meta = document.createElement('span'); meta.className = 'dv-meta';
+    meta.textContent = (dv.createurRole === 'salarie' ? 'Préparé par un salarié' : 'Préparé par vous') + ' · ' + fmtDevisDate(dv.createdAt);
+    card.appendChild(meta);
+    if (dv.montant){ var montant = document.createElement('span'); montant.className = 'dv-montant'; montant.textContent = dv.montant + ' € TTC'; card.appendChild(montant); }
+    var pdf = document.createElement('a'); pdf.className = 'dv-pdf'; pdf.textContent = '📄 Voir le PDF'; pdf.target = '_blank';
+    pdf.href = 'https://n8n-self-hosted-t0pz.onrender.com' + dv.url + '&code=' + encodeURIComponent(String(read('jarvisCode') || '').trim());
+    card.appendChild(pdf);
+    var actions = document.createElement('div'); actions.className = 'dv-actions';
+    var okBtn = document.createElement('button'); okBtn.className = 'vc-ok'; okBtn.type = 'button'; okBtn.textContent = '✅ Confirmer et envoyer';
+    var noBtn = document.createElement('button'); noBtn.className = 'vc-no'; noBtn.type = 'button'; noBtn.textContent = '❌ Rejeter';
+    okBtn.addEventListener('click', function(){ devisAgir(dv.token, 'confirmer', okBtn, noBtn); });
+    noBtn.addEventListener('click', function(){ devisAgir(dv.token, 'rejeter', okBtn, noBtn); });
+    actions.appendChild(okBtn); actions.appendChild(noBtn);
+    card.appendChild(actions);
+    return card;
+  }
+  function devisAgir(token, choix, okBtn, noBtn){
     okBtn.disabled = true; noBtn.disabled = true;
     postDevisValider({ token: token, choix: choix }, function(j){
       toast(choix === 'confirmer' ? (j.testMode ? '✅ Envoyé (mode test → Altaestima, pas le vrai client)' : '✅ Devis envoyé au client') : '❌ Devis rejeté');
-      card.remove();
-      if (!devisList.children.length) devisList.innerHTML = '<p id="devis-empty">Aucun devis en attente.</p>';
+      if (devisData) devisData.aValider = (devisData.aValider || []).filter(function(dv){ return dv.token !== token; });
+      devisApplyFilter();
     }, function(err){ okBtn.disabled = false; noBtn.disabled = false; toast(err); });
+  }
+  var DEVIS_STATUT_LABEL = { envoye: 'Envoyé', rejete: 'Rejeté', accepte: 'Accepté (MEG)', brouillon: 'Devis MEG (en attente)' };
+  function devisRenderRowDevis(dv){
+    var row = document.createElement('div'); row.className = 'devis-card';
+    var top = document.createElement('div'); top.className = 'df-row-top';
+    var nom = document.createElement('span'); nom.className = 'dv-nom'; nom.textContent = dv.nom || '(client non précisé)';
+    var badge = document.createElement('span'); badge.className = 'df-badge ' + (dv.statut || 'brouillon');
+    badge.textContent = DEVIS_STATUT_LABEL[dv.statut] || dv.statut || '';
+    top.appendChild(nom); top.appendChild(badge);
+    row.appendChild(top);
+    if (dv.objet){ var objet = document.createElement('span'); objet.className = 'dv-objet'; objet.textContent = dv.objet; row.appendChild(objet); }
+    var meta = document.createElement('span'); meta.className = 'dv-meta'; meta.textContent = fmtDevisDateSimple(dv.date);
+    row.appendChild(meta);
+    if (dv.montant){ var montant = document.createElement('span'); montant.className = 'dv-montant'; montant.textContent = dv.montant + ' € TTC'; row.appendChild(montant); }
+    if (dv.source === 'jarvis' && dv.url){
+      var pdf = document.createElement('a'); pdf.className = 'dv-pdf'; pdf.textContent = '📄 Voir le PDF'; pdf.target = '_blank';
+      pdf.href = 'https://n8n-self-hosted-t0pz.onrender.com' + dv.url + '&code=' + encodeURIComponent(String(read('jarvisCode') || '').trim());
+      row.appendChild(pdf);
+    }
+    return row;
+  }
+  function devisRenderRowFacture(f){
+    var row = document.createElement('div'); row.className = 'devis-card';
+    var top = document.createElement('div'); top.className = 'df-row-top';
+    var nom = document.createElement('span'); nom.className = 'dv-nom'; nom.textContent = f.nom || '(client non précisé)';
+    var badge = document.createElement('span'); badge.className = 'df-badge ' + (f.paye ? 'paye' : 'impaye');
+    badge.textContent = f.paye ? 'Payée' : 'Impayée';
+    top.appendChild(nom); top.appendChild(badge);
+    row.appendChild(top);
+    var meta = document.createElement('span'); meta.className = 'dv-meta'; meta.textContent = (f.numero || '') + ' · ' + fmtDevisDateSimple(f.date);
+    row.appendChild(meta);
+    var montant = document.createElement('span'); montant.className = 'dv-montant'; montant.textContent = f.montantTtc + ' € TTC';
+    row.appendChild(montant);
+    return row;
+  }
+  function devisApplyFilter(){
+    if (!devisData) return;
+    var q = normDoc(devisSearchInput.value.trim());
+    devisList.innerHTML = '';
+    if (devisActiveTab === 'avalider'){
+      var itemsA = (devisData.aValider || []).filter(function(dv){ return !q || normDoc(dv.nom).indexOf(q) !== -1; });
+      if (!itemsA.length){ devisList.innerHTML = '<p id="devis-empty">Aucun devis en attente.</p>'; return; }
+      itemsA.forEach(function(dv){ devisList.appendChild(devisBuildCardAValider(dv)); });
+    } else if (devisActiveTab === 'devis'){
+      var itemsD = (devisData.devis || []).filter(function(dv){ return !q || normDoc(dv.nom).indexOf(q) !== -1; });
+      if (!itemsD.length){ devisList.innerHTML = '<p id="devis-empty">Aucun devis trouvé.</p>'; return; }
+      itemsD.forEach(function(dv){ devisList.appendChild(devisRenderRowDevis(dv)); });
+    } else {
+      var itemsF = (devisData.factures || []).filter(function(f){ return !q || normDoc(f.nom).indexOf(q) !== -1; });
+      if (!itemsF.length){ devisList.innerHTML = '<p id="devis-empty">Aucune facture trouvée.</p>'; return; }
+      itemsF.forEach(function(f){ devisList.appendChild(devisRenderRowFacture(f)); });
+    }
   }
   function devisAttenteOpen(){
     devisview.classList.add('open');
     devisList.innerHTML = '<p id="devis-loading">Chargement…</p>';
-    postDevisAttente({}, function(j){
-      var items = j.devis || [];
-      devisList.innerHTML = '';
-      if (!items.length){ devisList.innerHTML = '<p id="devis-empty">Aucun devis en attente.</p>'; return; }
-      items.forEach(function(dv){
-        var card = document.createElement('div'); card.className = 'devis-card';
-        var nom = document.createElement('span'); nom.className = 'dv-nom'; nom.textContent = dv.nom || '(client non précisé)';
-        card.appendChild(nom);
-        if (dv.objet){ var objet = document.createElement('span'); objet.className = 'dv-objet'; objet.textContent = dv.objet; card.appendChild(objet); }
-        var meta = document.createElement('span'); meta.className = 'dv-meta';
-        meta.textContent = (dv.createurRole === 'salarie' ? 'Préparé par un salarié' : 'Préparé par vous') + ' · ' + fmtDevisDate(dv.createdAt);
-        card.appendChild(meta);
-        if (dv.montant){ var montant = document.createElement('span'); montant.className = 'dv-montant'; montant.textContent = dv.montant + ' € TTC'; card.appendChild(montant); }
-        var pdf = document.createElement('a'); pdf.className = 'dv-pdf'; pdf.textContent = '📄 Voir le PDF'; pdf.target = '_blank';
-        pdf.href = 'https://n8n-self-hosted-t0pz.onrender.com' + dv.url + '&code=' + encodeURIComponent(String(read('jarvisCode') || '').trim());
-        card.appendChild(pdf);
-        var actions = document.createElement('div'); actions.className = 'dv-actions';
-        var okBtn = document.createElement('button'); okBtn.className = 'vc-ok'; okBtn.type = 'button'; okBtn.textContent = '✅ Confirmer et envoyer';
-        var noBtn = document.createElement('button'); noBtn.className = 'vc-no'; noBtn.type = 'button'; noBtn.textContent = '❌ Rejeter';
-        okBtn.addEventListener('click', function(){ devisAgir(dv.token, 'confirmer', card, okBtn, noBtn); });
-        noBtn.addEventListener('click', function(){ devisAgir(dv.token, 'rejeter', card, okBtn, noBtn); });
-        actions.appendChild(okBtn); actions.appendChild(noBtn);
-        card.appendChild(actions);
-        devisList.appendChild(card);
-      });
+    postDevisFactures({}, function(j){
+      devisData = j;
+      devisApplyFilter();
     }, function(err){ devisList.innerHTML = '<p id="devis-empty">' + err + '</p>'; });
   }
+  document.querySelectorAll('.devis-tab').forEach(function(btn){
+    btn.addEventListener('click', function(){
+      document.querySelectorAll('.devis-tab').forEach(function(b){ b.classList.toggle('active', b === btn); });
+      devisActiveTab = btn.dataset.tab;
+      devisApplyFilter();
+    });
+  });
+  devisSearchInput.addEventListener('input', devisApplyFilter);
   document.getElementById('devis-close').addEventListener('click', devisAttenteClose);
   document.getElementById('sh-devis-attente').addEventListener('click', function(){ sheetOpen(false); devisAttenteOpen(); });
 
@@ -2490,15 +2609,31 @@
   // client ponctuel jamais reconvertible — la saisie est plus honnête qu'un curseur inventé).
   var rentaview = document.getElementById('rentaview');
   var rentaList = document.getElementById('renta-list');
-  var rentaTotalEl = document.getElementById('renta-total');
   var rentaData = null;
-  var rentaState = {}; // { l1:{on,val}, l2:{on,val}, l3:{on,val}, l4:{on,val} }
+  var rentaState = {}; // { l1:{on,val}, l2:{on,val}, l3:{on,val}, l4:{on,val} } -- curseur interne de chaque widget, une fois ajoute au tableau
 
   function fmtEuro(n){
     n = Math.round(n || 0);
     return n.toLocaleString('fr-FR') + ' €';
   }
   function fmtPct(x){ return Math.round(x * 100) + ' %'; }
+  var MOIS_NOMS = ['janvier','février','mars','avril','mai','juin','juillet','août','septembre','octobre','novembre','décembre'];
+  function moisLabel(mm){
+    var p = mm.split('-');
+    return MOIS_NOMS[parseInt(p[1], 10) - 1] + ' ' + p[0];
+  }
+  function moisLabelCourt(mm){
+    var p = mm.split('-');
+    return MOIS_NOMS[parseInt(p[1], 10) - 1].slice(0, 3) + ' ' + p[0].slice(2);
+  }
+  // Widgets optionnels ("Personnaliser mon tableau") -- persistes sur l'appareil, decochés par
+  // défaut au tout premier lancement pour que la vue par défaut reste simple.
+  function rentaWidgetsGet(){
+    try { return JSON.parse(localStorage.getItem('mcsRentaWidgets') || '[]'); } catch (e) { return []; }
+  }
+  function rentaWidgetsSet(arr){
+    try { localStorage.setItem('mcsRentaWidgets', JSON.stringify(arr)); } catch (e) {}
+  }
 
   var RENTA_LEVERS = [
     {
@@ -2563,12 +2698,6 @@
     if (lever.type === 'stepper') return st.val * d.levier4_contrats.valeurClientRecurrentAn;
     return lever.base(d) * st.val;
   }
-  function rentaUpdateTotal(){
-    if (!rentaData) return;
-    var total = 0;
-    RENTA_LEVERS.forEach(function(l){ total += rentaImpact(l, rentaData); });
-    rentaTotalEl.textContent = fmtEuro(total);
-  }
   function rentaBuildCard(lever, d){
     var st = rentaState[lever.key];
     var card = document.createElement('div'); card.className = 'renta-card';
@@ -2626,17 +2755,100 @@
     function refreshCard(){
       valueEl.textContent = st.on ? fmtEuro(rentaImpact(lever, d)) : 'Estimation : ' + fmtEuro(lever.type === 'stepper' ? d.levier4_contrats.saisieDefaut * d.levier4_contrats.valeurClientRecurrentAn : lever.base(d) * lever.curseur(d).curseurMin) + ' – ' + fmtEuro(lever.type === 'stepper' ? d.levier4_contrats.saisieMax * d.levier4_contrats.valeurClientRecurrentAn : lever.base(d) * lever.curseur(d).curseurMax);
       card.classList.toggle('on', !!st.on);
-      rentaUpdateTotal();
     }
     sw.addEventListener('click', function(){ st.on = !st.on; sw.classList.toggle('on', st.on); refreshCard(); });
     refreshCard();
     return card;
   }
   function rentaAttenteClose(){ rentaview.classList.remove('open'); }
+
+  function rentaBuildHero(d){
+    var wrap = document.createElement('div');
+    var mois = d.moisRentabilite || [];
+    if (!mois.length){
+      wrap.innerHTML = '<p id="renta-empty">Pas encore de chiffre d\'affaires mensuel à afficher.</p>';
+      return wrap;
+    }
+    var courant = mois[0];
+    var hero = document.createElement('div'); hero.id = 'renta-hero';
+    var moisLbl = document.createElement('div'); moisLbl.className = 'rh-mois'; moisLbl.textContent = moisLabel(courant.mois);
+    hero.appendChild(moisLbl);
+    var row = document.createElement('div'); row.className = 'rh-row';
+    function stat(label, val, cls){
+      var s = document.createElement('div'); s.className = 'rh-stat';
+      var l = document.createElement('span'); l.className = 'rh-label'; l.textContent = label;
+      var v = document.createElement('span'); v.className = 'rh-val ' + cls; v.textContent = val;
+      s.appendChild(l); s.appendChild(v);
+      return s;
+    }
+    row.appendChild(stat('Rentré', fmtEuro(courant.ca), 'ca'));
+    row.appendChild(stat('Sorti', courant.depenses == null ? '—' : fmtEuro(courant.depenses), 'dep'));
+    var benefTxt = courant.benefice == null ? '—' : fmtEuro(courant.benefice);
+    var benefCls = 'benef ' + (courant.benefice == null ? '' : (courant.benefice >= 0 ? 'pos' : 'neg'));
+    row.appendChild(stat('Reste', benefTxt, benefCls));
+    hero.appendChild(row);
+    wrap.appendChild(hero);
+
+    if (mois.length > 1){
+      var list = document.createElement('div'); list.id = 'renta-months';
+      mois.slice(1).forEach(function(m){
+        var r = document.createElement('div'); r.className = 'renta-month-row';
+        var lbl = document.createElement('span'); lbl.className = 'rm-mois'; lbl.textContent = moisLabelCourt(m.mois);
+        var ca = document.createElement('span'); ca.className = 'rm-val ca'; ca.textContent = fmtEuro(m.ca);
+        var benef = document.createElement('span');
+        benef.className = 'rm-val benef ' + (m.benefice == null ? '' : (m.benefice >= 0 ? 'pos' : 'neg'));
+        benef.textContent = m.benefice == null ? '—' : fmtEuro(m.benefice);
+        r.appendChild(lbl); r.appendChild(ca); r.appendChild(benef);
+        list.appendChild(r);
+      });
+      wrap.appendChild(list);
+    }
+    if (d.achats && d.achats.misAJourLe){
+      var maj = document.createElement('p'); maj.id = 'renta-maj';
+      maj.textContent = 'Dépenses mises à jour le ' + fmtDevisDateSimple(d.achats.misAJourLe) + (mois.some(function(m){ return m.estime; }) ? ' (estimation en attendant un 2e relevé de la comptable)' : '');
+      wrap.appendChild(maj);
+    }
+    return wrap;
+  }
+
+  function rentaBuildPerso(d){
+    var wrap = document.createElement('div');
+    var toggle = document.createElement('button'); toggle.id = 'renta-perso-toggle'; toggle.type = 'button';
+    toggle.textContent = '➕ Personnaliser mon tableau';
+    var options = document.createElement('div'); options.id = 'renta-perso-options';
+    var checked = rentaWidgetsGet();
+    RENTA_LEVERS.forEach(function(l){
+      var item = document.createElement('label'); item.className = 'renta-perso-item';
+      var cb = document.createElement('input'); cb.type = 'checkbox'; cb.checked = checked.indexOf(l.key) !== -1;
+      var span = document.createElement('span'); span.textContent = l.titre;
+      item.appendChild(cb); item.appendChild(span);
+      cb.addEventListener('change', function(){
+        var cur = rentaWidgetsGet();
+        if (cb.checked){ if (cur.indexOf(l.key) === -1) cur.push(l.key); }
+        else { cur = cur.filter(function(k){ return k !== l.key; }); }
+        rentaWidgetsSet(cur);
+        rentaRenderWidgets(d);
+      });
+      options.appendChild(item);
+    });
+    toggle.addEventListener('click', function(){ options.classList.toggle('open'); });
+    wrap.appendChild(toggle); wrap.appendChild(options);
+    return wrap;
+  }
+
+  function rentaRenderWidgets(d){
+    var container = document.getElementById('renta-widgets');
+    if (!container) return;
+    container.innerHTML = '';
+    var checked = rentaWidgetsGet();
+    RENTA_LEVERS.filter(function(l){ return checked.indexOf(l.key) !== -1; }).forEach(function(l){
+      container.appendChild(rentaBuildCard(l, d));
+    });
+  }
+
   function rentabiliteOpen(){
     rentaview.classList.add('open');
     rentaList.innerHTML = '<p id="renta-loading">Chargement…</p>';
-    rentaTotalEl.textContent = '0 €';
     postRentabilite({}, function(j){
       var d = j.donnees;
       if (!d){ rentaList.innerHTML = '<p id="renta-empty">Pas encore de données de rentabilité — relance le script de calcul.</p>'; return; }
@@ -2648,20 +2860,11 @@
         l4: { on:false, val:d.levier4_contrats.saisieDefaut },
       };
       rentaList.innerHTML = '';
-      var srcTxt = 'Chiffres calculés depuis ' + d.sourceLabel + ' — coche un levier pour voir son impact.';
-      if (d.ca.facturesEnAttenteExport) srcTxt += ' (dont ' + d.ca.facturesEnAttenteExport + ' facture' + (d.ca.facturesEnAttenteExport > 1 ? 's' : '') + ' reçue' + (d.ca.facturesEnAttenteExport > 1 ? 's' : '') + ' par email depuis.)';
-      var src = document.createElement('p'); src.id = 'renta-source'; src.textContent = srcTxt;
-      rentaList.appendChild(src);
-      if (d.achats && d.ca.annualiseHT){
-        var marge = document.createElement('div'); marge.className = 'renta-card renta-marge';
-        var mTitre = document.createElement('span'); mTitre.className = 'rc-title'; mTitre.textContent = 'Marge brute estimée (sur 1 an)';
-        var mVal = document.createElement('span'); mVal.className = 'rc-value renta-marge-val'; mVal.textContent = fmtEuro(d.ca.annualiseHT - d.achats.achatsAnnualise);
-        var mDesc = document.createElement('span'); mDesc.className = 'rc-desc'; mDesc.textContent = 'CA annualisé ' + fmtEuro(d.ca.annualiseHT) + ' − achats annualisés ' + fmtEuro(d.achats.achatsAnnualise) + ' (source : balance comptable, mise à jour ' + d.achats.misAJourLe + ').';
-        marge.appendChild(mTitre); marge.appendChild(mVal); marge.appendChild(mDesc);
-        rentaList.appendChild(marge);
-      }
-      RENTA_LEVERS.forEach(function(l){ rentaList.appendChild(rentaBuildCard(l, d)); });
-      rentaUpdateTotal();
+      rentaList.appendChild(rentaBuildHero(d));
+      rentaList.appendChild(rentaBuildPerso(d));
+      var widgets = document.createElement('div'); widgets.id = 'renta-widgets';
+      rentaList.appendChild(widgets);
+      rentaRenderWidgets(d);
     }, function(err){ rentaList.innerHTML = '<p id="renta-empty">' + err + '</p>'; });
   }
   document.getElementById('renta-close').addEventListener('click', rentaAttenteClose);
