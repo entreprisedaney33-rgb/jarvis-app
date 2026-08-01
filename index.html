@@ -1715,7 +1715,7 @@
 
 <script>
 (function(){
-  var APPV = 'v2.94';
+  var APPV = 'v2.95';
 
   // Debug : ?debug_modal=1 force l'affichage du modal "nouvelle version" sans attendre un vrai
   // déploiement. Capturé ICI, tout au début, car plus bas (login mémorisé, connexion) le code
@@ -2158,11 +2158,10 @@
       var el = document.getElementById(id);
       if (el) el.style.display = mcsSalarie ? 'none' : '';
     });
-    // "Devis et factures" : visible pour tout compte d'un tenant secondaire (patron ET salarié,
-    // Bruno doit pouvoir chercher un devis/une facture aussi) — jamais pour le compte principal.
-    // L'onglet "À valider" à l'intérieur reste réservé au patron (protection réelle côté serveur).
+    // "Devis et factures" : patron d'un tenant secondaire uniquement (jamais Bruno, jamais le
+    // compte principal) — la protection réelle est côté serveur (webhook mcs-devis-factures).
     var devisBtn = document.getElementById('sh-devis-attente');
-    if (devisBtn) devisBtn.style.display = mcs ? '' : 'none';
+    if (devisBtn) devisBtn.style.display = (mcs && role === 'patron') ? '' : 'none';
     // "Rentabilité" : même garde que "Devis à valider" — patron d'un tenant secondaire uniquement.
     var rentaBtn = document.getElementById('sh-rentabilite');
     if (rentaBtn) rentaBtn.style.display = (mcs && role === 'patron') ? '' : 'none';
