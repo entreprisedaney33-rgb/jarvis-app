@@ -1231,9 +1231,10 @@
   @media (prefers-reduced-motion: reduce){#cal-form{transition:none}}
   #cal-form b{font-size:16px}
   #cal-form label{display:flex; flex-direction:column; gap:5px; font-size:12.5px; color:var(--muted); position:relative}
-  #cal-form input{
+  #cal-form input, #cal-form textarea, #cal-form select{
     font:inherit; font-size:15px; color:var(--ink); background:var(--surface);
     border:0.5px solid var(--hairline); border-radius:10px; padding:9px 11px; box-sizing:border-box;
+    resize:vertical;
   }
   #cf-err{color:#FF453A; font-size:12.5px; min-height:1em}
   #cf-row{display:flex; gap:8px}
@@ -1246,6 +1247,67 @@
   #cf-sug li{padding:10px 11px; font-size:13.5px; color:var(--ink); border-bottom:0.5px solid rgba(255,255,255,.12); cursor:pointer}
   #cf-sug li:last-child{border-bottom:none}
   #cf-sug li:active{background:rgba(255,255,255,.1)}
+  /* Lien Waze : masque par defaut, revele en JS des qu'un lieu est saisi */
+  #cf-waze{
+    display:none; align-items:center; gap:6px; font-size:13px; font-weight:600; color:var(--blue,#0A84FF);
+    text-decoration:none; padding:2px 0 2px;
+  }
+  #cf-waze.show{display:flex}
+  /* Champs "façon Google Agenda" (couleur/description/telephone/invites/rappel) : reserves a un
+     compte MCS -- masques par defaut, reveles en JS (isMcsCode()) dans calOpenForm(). Le calendrier
+     du compte principal (vrai Google Agenda) n'affiche pas ces champs, qui n'auraient aucun effet
+     cote serveur pour lui (workflow M22 non touche par ce chantier). */
+  #cf-mcs-extra{display:none; flex-direction:column; gap:10px}
+  #cf-mcs-extra.show{display:flex}
+  #cf-mcs-extra textarea{min-height:52px}
+  #cf-couleurs{display:flex; flex-wrap:wrap; gap:8px; padding-top:2px}
+  .cf-couleur{
+    width:26px; height:26px; border-radius:50%; border:2px solid transparent; cursor:pointer;
+    -webkit-tap-highlight-color:transparent; padding:0;
+  }
+  .cf-couleur.selected{border-color:var(--ink)}
+  .cf-couleur.selected::after{content:'✓'; display:block; color:#fff; font-size:13px; font-weight:700; text-align:center; line-height:22px; text-shadow:0 0 2px rgba(0,0,0,.6)}
+  /* Calendrier MCS (chantier 12 audit) : fond blanc facon Google Agenda, scope a l'ecran
+     calendrier uniquement (le calendrier du compte principal reste sur le theme sombre premium).
+     Les regles du calendrier lisent deja var(--bg)/var(--surface)/var(--ink)/var(--muted)/
+     var(--hairline) -- il suffit de les redefinir ici pour re-themer toute la grille/liste/jour
+     d'un coup. Le formulaire (#cal-form, #cf-sug) est un FRERE de #calendarview dans le DOM (pas
+     un descendant), donc override explicite en plus, via la meme classe sur <body>. */
+  body.cal-mcs-light #calendarview{
+    --bg:#FFFFFF; --surface:#F2F2F7; --hairline:rgba(60,60,67,.22); --ink:#1D1D1F; --muted:#6E6E73;
+  }
+  body.cal-mcs-light #cal-form{background:#FFFFFF; color:#1D1D1F}
+  body.cal-mcs-light #cal-form input, body.cal-mcs-light #cal-form textarea, body.cal-mcs-light #cal-form select{
+    background:#F2F2F7; color:#1D1D1F; border-color:rgba(60,60,67,.22);
+  }
+  body.cal-mcs-light #cf-sug{background:#FFFFFF; border-color:rgba(60,60,67,.22)}
+  body.cal-mcs-light #cf-sug li{color:#1D1D1F; border-bottom-color:rgba(60,60,67,.14)}
+  body.cal-mcs-light #cf-sug li:active{background:rgba(60,60,67,.08)}
+  /* Grille du mois façon Google Agenda (MCS uniquement) : jour en haut/centre/noir, case plus
+     haute que large pour laisser la place a des chips d'evenements colores (au lieu d'un simple
+     point), au plus proche visuellement de Google Agenda. */
+  body.cal-mcs-light .cal-cell{
+    aspect-ratio:auto; min-height:64px; justify-content:flex-start; align-items:center;
+    padding-top:4px; gap:2px; border-radius:8px;
+  }
+  body.cal-mcs-light .cal-cell .cal-daynum{color:#000000; font-weight:700; font-size:12.5px}
+  body.cal-mcs-light .cal-cell.today .cal-daynum{
+    background:var(--gold-a); color:#1A130A; width:20px; height:20px; border-radius:50%;
+    display:flex; align-items:center; justify-content:center;
+  }
+  body.cal-mcs-light .cal-cell.selected{background:rgba(232,185,106,.28)}
+  body.cal-mcs-light .cal-cell.selected .cal-daynum{color:#000000}
+  body.cal-mcs-light .cal-cell.selected.today .cal-daynum{color:#1A130A}
+  body.cal-mcs-light .cal-chips{display:flex; flex-direction:column; gap:2px; width:100%; padding:0 3px}
+  body.cal-mcs-light .cal-chip{
+    font-size:9.5px; line-height:13px; color:#fff; border-radius:3px; padding:0 4px;
+    white-space:nowrap; overflow:hidden; text-overflow:ellipsis; text-align:left;
+  }
+  body.cal-mcs-light .cal-chip-more{font-size:9px; color:var(--muted); text-align:left; padding:0 4px}
+  /* Liste du jour : barre de couleur a gauche + lien Waze inline (MCS uniquement) */
+  body.cal-mcs-light .cal-ev{border-left:4px solid var(--gold-a); align-items:flex-start}
+  body.cal-mcs-light .cal-ev-waze{font-size:11.5px; color:var(--blue,#0A84FF); font-weight:600; margin-top:2px; display:inline-block}
+  body.cal-mcs-light .cal-ev-desc{font-size:12px; color:var(--muted); margin-top:2px; white-space:normal}
   /* Fiche client devis (démo MCS) */
   #devis-form-bg{position:fixed; inset:0; background:rgba(0,0,0,.5); display:none; z-index:52}
   #devis-form-bg.open{display:block}
@@ -1678,6 +1740,22 @@
     <input id="cf-lieu" type="text" placeholder="Adresse ou nom du lieu" autocomplete="off">
     <ul id="cf-sug"></ul>
   </label>
+  <a id="cf-waze" href="#" target="_blank" rel="noopener">🚗 Ouvrir dans Waze</a>
+  <div id="cf-mcs-extra">
+    <label>Couleur<div id="cf-couleurs"></div></label>
+    <label>Description (optionnel) <textarea id="cf-description" rows="2" placeholder="Détails de l'intervention…"></textarea></label>
+    <label>Téléphone du client (optionnel) <input id="cf-telephone" type="tel" placeholder="06 12 34 56 78"></label>
+    <label>Invités (optionnel) <input id="cf-invites" type="text" placeholder="Ex : Bruno"></label>
+    <label>Rappel
+      <select id="cf-rappel">
+        <option value="">Aucun</option>
+        <option value="10">10 min avant</option>
+        <option value="30">30 min avant</option>
+        <option value="60">1 h avant</option>
+        <option value="1440">1 jour avant</option>
+      </select>
+    </label>
+  </div>
   <div id="cf-err"></div>
   <div id="cf-row">
     <button id="cf-delete" type="button" class="vc-no" style="display:none">🗑 Supprimer</button>
@@ -1726,7 +1804,7 @@
 
 <script>
 (function(){
-  var APPV = 'v2.98';
+  var APPV = 'v2.99';
 
   // Debug : ?debug_modal=1 force l'affichage du modal "nouvelle version" sans attendre un vrai
   // déploiement. Capturé ICI, tout au début, car plus bas (login mémorisé, connexion) le code
@@ -2152,7 +2230,7 @@
     // le compte principal. La vraie protection reste côté serveur (code d'observation
     // dédié, jamais donné aux comptes clients, table séparée) : masquer ici n'est qu'un
     // confort visuel, pas la garantie — voir la doc privée du dépôt.
-    ['sh-meute', 'sh-vitrine', 'sh-plume', 'sh-notes', 'sh-calendar', 'hcallbtn', 'sh-clients'].forEach(function(id){
+    ['sh-meute', 'sh-vitrine', 'sh-plume', 'sh-notes', 'hcallbtn', 'sh-clients'].forEach(function(id){
       var el = document.getElementById(id);
       if (el) el.style.display = mcs ? 'none' : '';
     });
@@ -2169,6 +2247,11 @@
       var el = document.getElementById(id);
       if (el) el.style.display = mcsSalarie ? 'none' : '';
     });
+    // Calendrier : visible pour le compte principal (inchangé) ET pour un patron de tenant
+    // secondaire (chantier 12 audit MCS) — jamais pour un salarié (même garde que Devis/Rentabilité).
+    // Backend indépendant côté MCS (table mcs_rdv_terrain, pas de vrai Google Agenda).
+    var calBtn = document.getElementById('sh-calendar');
+    if (calBtn) calBtn.style.display = (!mcs || role === 'patron') ? '' : 'none';
     // "Devis et factures" : patron d'un tenant secondaire uniquement (jamais Bruno, jamais le
     // compte principal) — la protection réelle est côté serveur (webhook mcs-devis-factures).
     var devisBtn = document.getElementById('sh-devis-attente');
@@ -4735,9 +4818,39 @@
   var cfLieu = document.getElementById('cf-lieu');
   var cfSug = document.getElementById('cf-sug');
   var cfAdrTimer = null;
+  var cfWaze = document.getElementById('cf-waze');
+  var cfMcsExtra = document.getElementById('cf-mcs-extra');
+  var cfCouleurs = document.getElementById('cf-couleurs');
+  var cfCouleurChoisie = '';
+  // Palette Google Agenda (11 couleurs officielles, nom conserve en titre/accessibilite)
+  var CAL_PALETTE = [
+    {hex:'#7986CB', nom:'Lavande'}, {hex:'#33B679', nom:'Sauge'}, {hex:'#8E24AA', nom:'Raisin'},
+    {hex:'#E67C73', nom:'Flamant'}, {hex:'#F6BF26', nom:'Banane'}, {hex:'#F4511E', nom:'Mandarine'},
+    {hex:'#039BE5', nom:'Paon'}, {hex:'#616161', nom:'Graphite'}, {hex:'#3F51B5', nom:'Myrtille'},
+    {hex:'#0B8043', nom:'Basilic'}, {hex:'#D50000', nom:'Tomate'}
+  ];
+  CAL_PALETTE.forEach(function(c){
+    var b = document.createElement('button');
+    b.type = 'button'; b.className = 'cf-couleur'; b.title = c.nom;
+    b.style.background = c.hex;
+    b.addEventListener('click', function(){
+      cfCouleurChoisie = (cfCouleurChoisie === c.hex) ? '' : c.hex;
+      cfCouleurs.querySelectorAll('.cf-couleur').forEach(function(el){ el.classList.remove('selected'); });
+      if (cfCouleurChoisie) b.classList.add('selected');
+    });
+    b.dataset.hex = c.hex;
+    cfCouleurs.appendChild(b);
+  });
+  function cfUpdateWaze(){
+    var q = cfLieu.value.trim();
+    if (!q){ cfWaze.classList.remove('show'); return; }
+    cfWaze.href = 'https://waze.com/ul?q=' + encodeURIComponent(q) + '&navigate=yes';
+    cfWaze.classList.add('show');
+  }
 
   // Autocompletion adresse sur le lieu du rdv : meme API que la fiche devis (Base Adresse Nationale)
   cfLieu.addEventListener('input', function(){
+    cfUpdateWaze();
     clearTimeout(cfAdrTimer);
     var q = cfLieu.value.trim();
     if (q.length < 3){ cfSug.innerHTML = ''; cfSug.classList.remove('open'); return; }
@@ -4753,6 +4866,7 @@
             li.addEventListener('click', function(){
               cfLieu.value = f.properties.label;
               cfSug.innerHTML = ''; cfSug.classList.remove('open');
+              cfUpdateWaze();
             });
             cfSug.appendChild(li);
           });
@@ -4791,7 +4905,23 @@
       var num = document.createElement('div'); num.className = 'cal-daynum'; num.textContent = day;
       cell.appendChild(num);
       var evs = byDay[k2] || [];
-      if (evs.length){
+      if (evs.length && isMcsCode()){
+        // Façon Google Agenda : chips colorés avec heure+titre, plutôt qu'un simple point
+        var sorted = evs.slice().sort(function(a,b){ return new Date(a.start) - new Date(b.start); });
+        var chips = document.createElement('div'); chips.className = 'cal-chips';
+        sorted.slice(0, 2).forEach(function(ev){
+          var chip = document.createElement('div'); chip.className = 'cal-chip';
+          chip.style.background = ev.color || '#E8B96A';
+          var heure = ev.allDay ? '' : (new Date(ev.start).toLocaleTimeString('fr-FR', { hour:'2-digit', minute:'2-digit' }) + ' ');
+          chip.textContent = heure + ev.title;
+          chips.appendChild(chip);
+        });
+        if (sorted.length > 2){
+          var more = document.createElement('div'); more.className = 'cal-chip-more'; more.textContent = '+' + (sorted.length - 2);
+          chips.appendChild(more);
+        }
+        cell.appendChild(chips);
+      } else if (evs.length){
         var dots = document.createElement('div'); dots.className = 'cal-dots';
         for (var di = 0; di < Math.min(3, evs.length); di++){ var dot = document.createElement('span'); dot.className = 'cal-dot'; dots.appendChild(dot); }
         cell.appendChild(dots);
@@ -4812,12 +4942,23 @@
     }
     evs.forEach(function(ev){
       var row = document.createElement('div'); row.className = 'cal-ev';
+      if (ev.color) row.style.borderLeftColor = ev.color;
       var t = document.createElement('div'); t.className = 'cal-ev-time';
       t.textContent = ev.allDay ? 'Jour' : new Date(ev.start).toLocaleTimeString('fr-FR', { hour: '2-digit', minute: '2-digit' });
       var info = document.createElement('div'); info.className = 'cal-ev-info';
       var ti = document.createElement('div'); ti.className = 'cal-ev-title'; ti.textContent = ev.title;
       info.appendChild(ti);
       if (ev.location){ var loc = document.createElement('div'); loc.className = 'cal-ev-loc'; loc.textContent = ev.location; info.appendChild(loc); }
+      if (isMcsCode() && ev.description){ var d = document.createElement('div'); d.className = 'cal-ev-desc'; d.textContent = ev.description; info.appendChild(d); }
+      if (isMcsCode() && ev.location){
+        var wz = document.createElement('a'); wz.className = 'cal-ev-waze'; wz.textContent = '🚗 Waze';
+        wz.target = '_blank'; wz.rel = 'noopener';
+        wz.href = (ev.lat != null && ev.lon != null)
+          ? ('https://waze.com/ul?ll=' + ev.lat + ',' + ev.lon + '&navigate=yes')
+          : ('https://waze.com/ul?q=' + encodeURIComponent(ev.location) + '&navigate=yes');
+        wz.addEventListener('click', function(e){ e.stopPropagation(); });
+        info.appendChild(wz);
+      }
       row.appendChild(t); row.appendChild(info);
       row.addEventListener('click', function(){ calOpenForm('edit', ev); });
       calDayEl.appendChild(row);
@@ -4868,6 +5009,17 @@
     document.getElementById('cf-err').textContent = '';
     document.getElementById('cf-delete').style.display = mode === 'edit' ? '' : 'none';
     cfSug.innerHTML = ''; cfSug.classList.remove('open');
+    cfUpdateWaze();
+    // Champs "façon Google Agenda" : réservés à un compte MCS (voir CSS #cf-mcs-extra)
+    cfMcsExtra.classList.toggle('show', isMcsCode());
+    document.getElementById('cf-description').value = mode === 'edit' ? (ev.description || '') : '';
+    document.getElementById('cf-telephone').value = mode === 'edit' ? (ev.phone || '') : '';
+    document.getElementById('cf-invites').value = mode === 'edit' ? (ev.guests || '') : '';
+    document.getElementById('cf-rappel').value = mode === 'edit' ? (ev.reminder || '') : '';
+    cfCouleurChoisie = mode === 'edit' ? (ev.color || '') : '';
+    cfCouleurs.querySelectorAll('.cf-couleur').forEach(function(el){
+      el.classList.toggle('selected', el.dataset.hex === cfCouleurChoisie);
+    });
     calFormBg.classList.add('open');
     calForm.classList.add('open');
   }
@@ -4897,7 +5049,12 @@
     if (!debut || !fin){ document.getElementById('cf-err').textContent = 'Indique un début et une fin.'; return; }
     calPropose({
       type: 'calendar-propose', calAction: calEditingId ? 'update' : 'create',
-      titre: titre, debut: debut + ':00', fin: fin + ':00', lieu: lieu, eventId: calEditingId
+      titre: titre, debut: debut + ':00', fin: fin + ':00', lieu: lieu, eventId: calEditingId,
+      couleur: cfCouleurChoisie,
+      description: document.getElementById('cf-description').value.trim(),
+      telephone: document.getElementById('cf-telephone').value.trim(),
+      invites: document.getElementById('cf-invites').value.trim(),
+      rappel: document.getElementById('cf-rappel').value
     }, calEditingId ? '✅ Rendez-vous modifié.' : '✅ Rendez-vous créé.');
   });
   document.getElementById('cf-delete').addEventListener('click', function(){
@@ -4908,6 +5065,7 @@
 
   function calendarClose(){ calendarview.classList.remove('open'); calCloseForm(); }
   function calendarOpen(){
+    document.body.classList.toggle('cal-mcs-light', isMcsCode());
     calendarview.classList.add('open');
     calCurrentMonth = new Date();
     calSelectedKey = calDateKey(new Date());
