@@ -503,6 +503,77 @@
   .rl-form .rl-form-actions button{flex:1; padding:9px; font-size:13.5px; border-radius:10px; border:0; cursor:pointer}
   .rl-form .rl-confirm{background:var(--gold-a); color:#1a1200; font-weight:700}
   .rl-form .rl-cancel{background:#2E2E32; color:var(--muted)}
+  /* Panneau plein ecran "Carnet bleu" (fiches techniques des residences MCS -- codes d'entree,
+     courroies, groupe VMC, cles -- compte patron d'un tenant secondaire uniquement). Coffre-fort :
+     chaque champ est editable en place (meme mecanisme que .notes-contenu-edit) et verrouillable
+     individuellement contre une mise a jour automatique depuis un message/mail (icone cadenas). */
+  #carnetview{
+    position:fixed; inset:0; z-index:50; background:var(--bg);
+    display:none; flex-direction:column;
+    transform:translateY(100%); transition:transform .28s cubic-bezier(.2,.9,.25,1);
+  }
+  #carnetview.open{display:flex; transform:translateY(0)}
+  @media (prefers-reduced-motion: reduce){#carnetview{transition:none}}
+  #carnet-head{
+    flex:0 0 auto; display:flex; align-items:center; gap:10px;
+    padding:calc(10px + env(safe-area-inset-top)) 14px 12px;
+    border-bottom:0.5px solid var(--hairline);
+  }
+  #carnet-head b{font-size:16px; flex:1}
+  #carnet-add, #carnet-close{
+    width:32px; height:32px; border-radius:50%; border:0; flex:0 0 auto;
+    background:var(--surface); color:var(--ink); font-size:18px; font-weight:700;
+    display:flex; align-items:center; justify-content:center; cursor:pointer;
+    -webkit-tap-highlight-color:transparent;
+  }
+  #carnet-search-wrap{flex:0 0 auto; padding:10px 14px 0}
+  #carnet-search{
+    width:100%; box-sizing:border-box; border:none; border-radius:12px;
+    background:var(--surface); color:var(--ink); font-size:15px; padding:10px 12px;
+    -webkit-appearance:none;
+  }
+  #carnet-search::placeholder{color:var(--muted)}
+  #carnet-list{flex:1; overflow-y:auto; -webkit-overflow-scrolling:touch; padding:10px 14px calc(20px + env(safe-area-inset-bottom))}
+  #carnet-empty, #carnet-loading{color:var(--muted); text-align:center; padding:40px 20px; font-size:14px}
+  .carnet-card{background:var(--surface); border-radius:14px; padding:14px; margin-bottom:12px}
+  .carnet-nom{font-size:15.5px; font-weight:700; display:block; margin-bottom:2px}
+  .carnet-sub{font-size:11.5px; color:var(--muted); display:block; margin-bottom:10px}
+  .carnet-field{display:flex; align-items:flex-start; gap:8px; padding:8px 0; border-top:0.5px solid var(--hairline)}
+  .carnet-field:first-of-type{border-top:none}
+  .carnet-field-main{flex:1; min-width:0}
+  .carnet-field-label{font-size:11px; color:var(--muted); text-transform:uppercase; letter-spacing:.03em; display:block; margin-bottom:3px}
+  .carnet-field-value{font-size:14.5px; line-height:1.4; display:block; word-break:break-word; min-height:1.4em}
+  .carnet-field-value.empty{color:var(--muted); font-style:italic}
+  .carnet-field-edit{
+    width:100%; box-sizing:border-box; border:0.5px solid rgba(255,255,255,.25); border-radius:8px;
+    background:#2E2E32; color:var(--ink); font-size:14.5px; line-height:1.4; font-family:inherit;
+    padding:6px 8px; resize:none; overflow:hidden; min-height:34px;
+  }
+  .carnet-ancien{font-size:11px; color:var(--muted); display:block; margin-top:3px}
+  .carnet-lock{
+    width:30px; height:30px; border-radius:50%; border:0; flex:0 0 auto; margin-top:16px;
+    background:transparent; font-size:15px; cursor:pointer; -webkit-tap-highlight-color:transparent;
+    display:flex; align-items:center; justify-content:center;
+  }
+  .carnet-field.locked{background:rgba(255,69,58,.06); margin:0 -14px; padding:8px 14px; border-radius:8px}
+  .carnet-field.locked .carnet-lock{color:#FF453A}
+  .carnet-maj-chat{font-size:11px; color:var(--gold-a); display:block; margin-top:8px}
+  #carnet-add-bg{position:fixed; inset:0; background:rgba(0,0,0,.5); display:none; z-index:52}
+  #carnet-add-bg.open{display:block}
+  #carnet-add-form{
+    position:fixed; left:14px; right:14px; top:50%; transform:translateY(-50%) scale(.96); z-index:53;
+    background:#1C1C1E; border-radius:16px; padding:18px 18px calc(18px + env(safe-area-inset-bottom));
+    display:none; flex-direction:column; gap:10px;
+    opacity:0; transition:opacity .2s ease, transform .2s ease;
+  }
+  #carnet-add-form.open{display:flex; opacity:1; transform:translateY(-50%) scale(1)}
+  @media (prefers-reduced-motion: reduce){#carnet-add-form{transition:none}}
+  #carnet-add-form b{font-size:16px}
+  #carnet-add-form input{
+    font:inherit; font-size:15px; color:var(--ink); background:var(--surface);
+    border:0.5px solid var(--hairline); border-radius:10px; padding:9px 11px; box-sizing:border-box;
+  }
+  #caf-err{color:#FF453A; font-size:12.5px; min-height:1em; margin:0}
   /* Panneau plein ecran "Rentabilite" (compte patron d'un tenant secondaire uniquement) */
   #rentaview{
     position:fixed; inset:0; z-index:50; background:var(--bg);
@@ -1000,8 +1071,8 @@
   .notes-card.pending{opacity:.55}
   .notes-contenu-edit{
     width:100%; box-sizing:border-box; border:0.5px solid rgba(255,255,255,.25); border-radius:8px;
-    background:#2E2E32; color:var(--ink); font-size:14.5px; font-family:inherit; padding:6px 8px;
-    resize:vertical; min-height:40px;
+    background:#2E2E32; color:var(--ink); font-size:14.5px; line-height:1.4; font-family:inherit; padding:6px 8px;
+    resize:none; overflow:hidden; min-height:40px;
   }
   /* Barre unique en langage naturel (2026-07-25 soir, "notes intelligentes" etape 1) -- toujours
      visible, aucun menu a remplir : une phrase, l'IA structure (categorie/assigne/echeance),
@@ -1630,6 +1701,7 @@
     <button class="sh-item" id="sh-devis-attente" type="button" style="display:none"><span class="sh-ic">📝</span><span class="sh-label">Devis et factures</span><span class="badge-count" id="menu-devis-badge" style="display:none"></span></button>
     <button class="sh-item" id="sh-rentabilite" type="button" style="display:none"><span class="sh-ic">💹</span><span class="sh-label">Rentabilité</span></button>
     <button class="sh-item" id="sh-relances" type="button" style="display:none"><span class="sh-ic">📨</span><span class="sh-label">Relances clients</span><span class="badge-count" id="menu-relances-badge" style="display:none"></span></button>
+    <button class="sh-item" id="sh-carnet" type="button" style="display:none"><span class="sh-ic">📘</span><span class="sh-label">Carnet bleu</span></button>
     <button class="sh-item" id="sh-push" type="button"><span class="sh-ic">🔔</span><span class="sh-label">Notifications</span><span class="sw" id="sw-push"><span class="sw-knob"></span></span></button>
   </div>
   <div class="sh-group">
@@ -1720,6 +1792,27 @@
   <div id="relances-list"></div>
 </div>
 
+<div id="carnetview">
+  <div id="carnet-head">
+    <b id="carnet-title">📘 Carnet bleu</b>
+    <button id="carnet-add" type="button" aria-label="Ajouter une résidence">＋</button>
+    <button id="carnet-close" type="button" aria-label="Fermer">✕</button>
+  </div>
+  <div id="carnet-search-wrap">
+    <input id="carnet-search" type="search" inputmode="search" placeholder="🔍 Rechercher une résidence…" autocomplete="off" autocapitalize="off" autocorrect="off">
+  </div>
+  <div id="carnet-list"></div>
+</div>
+<div id="carnet-add-bg"></div>
+<div id="carnet-add-form">
+  <b>Nouvelle résidence</b>
+  <label>Nom <input id="caf-nom" type="text" placeholder="Ex : Résidence Les Cerisiers" autocomplete="off"></label>
+  <p id="caf-err"></p>
+  <div id="cf-row">
+    <button id="caf-cancel" class="vc-no" type="button">Annuler</button>
+    <button id="caf-save" class="vc-ok" type="button">Ajouter</button>
+  </div>
+</div>
 
 <div id="meuteview">
   <div id="meute-head">
@@ -1931,7 +2024,7 @@
 
 <script>
 (function(){
-  var APPV = 'v3.01';
+  var APPV = 'v3.02';
 
   // Debug : ?debug_modal=1 force l'affichage du modal "nouvelle version" sans attendre un vrai
   // déploiement. Capturé ICI, tout au début, car plus bas (login mémorisé, connexion) le code
@@ -1964,12 +2057,13 @@
   var API_MEUTE = 'https://n8n-self-hosted-t0pz.onrender.com/webhook/meute-app';
   var API_VITRINE = 'https://n8n-self-hosted-t0pz.onrender.com/webhook/vitrine-liste';
   var API_PLUME = 'https://n8n-self-hosted-t0pz.onrender.com/webhook/plume-liste';
-  var API_NOTES = 'https://n8n-self-hosted-t0pz.onrender.com/webhook/notes-liste';
+  function API_NOTES(){ return 'https://n8n-self-hosted-t0pz.onrender.com/webhook/' + (isMcsCode() ? 'mcs-notes-liste' : 'notes-liste'); }
   var API_DEVIS_FACTURES = 'https://n8n-self-hosted-t0pz.onrender.com/webhook/mcs-devis-factures';
   var API_DEVIS_VALIDER = 'https://n8n-self-hosted-t0pz.onrender.com/webhook/mcs-devis-valider';
   var API_RENTABILITE = 'https://n8n-self-hosted-t0pz.onrender.com/webhook/mcs-rentabilite';
   var API_RELANCES = 'https://n8n-self-hosted-t0pz.onrender.com/webhook/mcs-relances';
   var API_RELANCES_ACTION = 'https://n8n-self-hosted-t0pz.onrender.com/webhook/mcs-relances-action';
+  var API_CARNET = 'https://n8n-self-hosted-t0pz.onrender.com/webhook/mcs-carnet';
   var login = document.getElementById('login');
   var app = document.getElementById('app');
   var chat = document.getElementById('chat');
@@ -2156,6 +2250,7 @@
   function postRentabilite(payload, onOk, onErr){ postDevisWeb(API_RENTABILITE, payload, onOk, onErr); }
   function postRelances(payload, onOk, onErr){ postDevisWeb(API_RELANCES, payload, onOk, onErr); }
   function postRelancesAction(payload, onOk, onErr){ postDevisWeb(API_RELANCES_ACTION, payload, onOk, onErr); }
+  function postCarnet(payload, onOk, onErr){ postDevisWeb(API_CARNET, payload, onOk, onErr); }
 
   function postVitrine(payload, onOk, onErr){
     payload.code = String(read('jarvisCode') || '').trim();
@@ -2177,7 +2272,7 @@
 
   function postNotes(payload, onOk, onErr){
     payload.code = String(read('jarvisCode') || '').trim();
-    fetch(API_NOTES, {
+    fetch(API_NOTES(), {
       method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify(payload)
     }).then(function(r){ return r.json(); }).then(function(j){
       if (!j || j.ok === false){ onErr((j && j.erreur) || 'Erreur.'); } else { onOk(j); }
@@ -2386,7 +2481,7 @@
     // le compte principal. La vraie protection reste côté serveur (code d'observation
     // dédié, jamais donné aux comptes clients, table séparée) : masquer ici n'est qu'un
     // confort visuel, pas la garantie — voir la doc privée du dépôt.
-    ['sh-meute', 'sh-vitrine', 'sh-plume', 'sh-notes', 'hcallbtn', 'sh-clients'].forEach(function(id){
+    ['sh-meute', 'sh-vitrine', 'sh-plume', 'hcallbtn', 'sh-clients'].forEach(function(id){
       var el = document.getElementById(id);
       if (el) el.style.display = mcs ? 'none' : '';
     });
@@ -2409,6 +2504,11 @@
     // Backend indépendant côté MCS (table mcs_rdv_terrain, pas de vrai Google Agenda).
     var calBtn = document.getElementById('sh-calendar');
     if (calBtn) calBtn.style.display = (!mcs || role === 'patron') ? '' : 'none';
+    // "Notes" (vide-cerveau) : visible côté compte principal (inchangé) ET côté patron d'un
+    // tenant secondaire (même garde que Calendrier) — jamais pour un salarié. Backend séparé
+    // par tenant (notes-liste pour le principal, mcs-notes-liste pour MCS, cf. postNotes()).
+    var notesBtn = document.getElementById('sh-notes');
+    if (notesBtn) notesBtn.style.display = (!mcs || role === 'patron') ? '' : 'none';
     // "Devis et factures" : patron d'un tenant secondaire uniquement (jamais Bruno, jamais le
     // compte principal) — la protection réelle est côté serveur (webhook mcs-devis-factures).
     var devisBtn = document.getElementById('sh-devis-attente');
@@ -2420,6 +2520,10 @@
     // uniquement, jamais Bruno, jamais le compte principal.
     var relancesBtn = document.getElementById('sh-relances');
     if (relancesBtn) relancesBtn.style.display = (mcs && role === 'patron') ? '' : 'none';
+    // "Carnet bleu" (fiches techniques des résidences) : même garde — patron d'un tenant
+    // secondaire uniquement, jamais Bruno, jamais le compte principal.
+    var carnetBtn = document.getElementById('sh-carnet');
+    if (carnetBtn) carnetBtn.style.display = (mcs && role === 'patron') ? '' : 'none';
     // Transparence (Phase 5) : visible seulement côté tenant secondaire — c'est CE
     // compte-là que le support peut consulter, l'inverse exact de la liste ci-dessus.
     var privacyNote = document.getElementById('privacy-note');
@@ -3289,6 +3393,141 @@
   relancesSearchInput.addEventListener('input', relancesApplyFilter);
   document.getElementById('relances-close').addEventListener('click', relancesClose);
   document.getElementById('sh-relances').addEventListener('click', function(){ sheetOpen(false); relancesOpen(); });
+
+  // ---- Carnet bleu (fiches techniques des résidences MCS -- chantier 1 de l'audit, 2026-08-02) ----
+  // Coffre-fort par résidence : code d'entrée/digicode, courroies, groupe VMC, clés. Chaque champ
+  // est éditable en place (même mécanisme que .notes-contenu-edit, auto-agrandi) et verrouillable
+  // individuellement (🔒) contre une mise à jour automatique déclenchée par le cerveau MCS quand un
+  // message/mail relayé annonce un nouveau code -- verrouiller un champ = seule la main compte.
+  var carnetview = document.getElementById('carnetview');
+  var carnetList = document.getElementById('carnet-list');
+  var carnetSearchInput = document.getElementById('carnet-search');
+  var carnetAll = [];
+  var carnetQuery = '';
+  var CARNET_FIELDS = [
+    { key:'digicode', label:"Code d'entrée (digicode)" },
+    { key:'courroies', label:'Courroies' },
+    { key:'groupeVmc', label:'Groupe VMC' },
+    { key:'cles', label:'Clés' },
+  ];
+  var CARNET_CHAMP_API = { digicode:'digicode', courroies:'courroies', groupeVmc:'groupe_vmc', cles:'cles' };
+
+  function carnetNorm(s){ return String(s || '').toLowerCase().normalize('NFD').replace(/[̀-ͯ]/g, ''); }
+
+  function carnetFieldRow(r, f){
+    var apiChamp = CARNET_CHAMP_API[f.key];
+    var isLocked = !!(r.verrous && r.verrous[apiChamp]);
+    var row = document.createElement('div'); row.className = 'carnet-field' + (isLocked ? ' locked' : '');
+    var main = document.createElement('div'); main.className = 'carnet-field-main';
+    var label = document.createElement('span'); label.className = 'carnet-field-label'; label.textContent = f.label;
+    main.appendChild(label);
+    var val = document.createElement('span');
+    val.className = 'carnet-field-value' + (!r[f.key] ? ' empty' : '');
+    val.textContent = r[f.key] || 'Non renseigné — touche pour ajouter';
+    main.appendChild(val);
+    val.addEventListener('click', function(){
+      var edit = document.createElement('textarea'); edit.className = 'carnet-field-edit'; edit.value = r[f.key] || '';
+      main.replaceChild(edit, val);
+      function autoGrow(){ edit.style.height = 'auto'; edit.style.height = edit.scrollHeight + 'px'; }
+      autoGrow(); edit.addEventListener('input', autoGrow);
+      edit.focus(); edit.setSelectionRange(edit.value.length, edit.value.length);
+      var termine = false;
+      function revenir(nouveauTexte){
+        if (termine) return; termine = true;
+        if (nouveauTexte != null && nouveauTexte.trim() !== (r[f.key] || '')){
+          var nv = nouveauTexte.trim();
+          postCarnet({ type:'modifier', id:r.id, champ:apiChamp, valeur:nv }, function(){
+            if (apiChamp === 'digicode' && r.digicode) r.digicodePrecedent = r.digicode;
+            r[f.key] = nv;
+            r.majSource = 'manuel'; r.majDate = new Date().toISOString();
+            carnetRender();
+          }, function(err){ toast(err); carnetRender(); });
+        } else {
+          carnetRender();
+        }
+      }
+      edit.addEventListener('blur', function(){ revenir(edit.value); });
+      edit.addEventListener('keydown', function(e){
+        if (e.key === 'Enter' && !e.shiftKey){ e.preventDefault(); edit.blur(); }
+        if (e.key === 'Escape'){ e.preventDefault(); termine = true; carnetRender(); }
+      });
+    });
+    if (f.key === 'digicode' && r.digicodePrecedent){
+      var anc = document.createElement('span'); anc.className = 'carnet-ancien'; anc.textContent = 'Ancien code : ' + r.digicodePrecedent;
+      main.appendChild(anc);
+    }
+    row.appendChild(main);
+    var lock = document.createElement('button'); lock.className = 'carnet-lock'; lock.type = 'button';
+    lock.textContent = isLocked ? '🔒' : '🔓';
+    lock.setAttribute('aria-label', isLocked ? 'Déverrouiller ce champ' : 'Verrouiller ce champ contre une modification automatique');
+    lock.addEventListener('click', function(){
+      lock.disabled = true;
+      postCarnet({ type:'verrou', id:r.id, champ:apiChamp, valeur:!isLocked }, function(){
+        r.verrous = r.verrous || {}; r.verrous[apiChamp] = !isLocked;
+        carnetRender();
+      }, function(err){ lock.disabled = false; toast(err); });
+    });
+    row.appendChild(lock);
+    return row;
+  }
+
+  function carnetCard(r){
+    var card = document.createElement('div'); card.className = 'carnet-card';
+    var nom = document.createElement('span'); nom.className = 'carnet-nom'; nom.textContent = r.nom;
+    card.appendChild(nom);
+    var sub = document.createElement('span'); sub.className = 'carnet-sub';
+    sub.textContent = r.majDate
+      ? ('Dernière mise à jour ' + (r.majSource === 'chat' ? 'automatique' : 'manuelle') + ' · ' + new Date(r.majDate).toLocaleDateString('fr-FR'))
+      : 'Aucune information technique encore renseignée';
+    card.appendChild(sub);
+    CARNET_FIELDS.forEach(function(f){ card.appendChild(carnetFieldRow(r, f)); });
+    return card;
+  }
+
+  function carnetRender(){
+    carnetList.innerHTML = '';
+    var q = carnetNorm(carnetQuery);
+    var filtered = q ? carnetAll.filter(function(r){ return carnetNorm(r.nom).indexOf(q) !== -1; }) : carnetAll;
+    if (!filtered.length){
+      carnetList.innerHTML = '<p id="carnet-empty">' + (q ? 'Aucune résidence ne correspond.' : 'Aucune résidence pour l’instant — touche ＋ pour en ajouter une.') + '</p>';
+      return;
+    }
+    filtered.forEach(function(r){ carnetList.appendChild(carnetCard(r)); });
+  }
+
+  function carnetOpen(){
+    carnetview.classList.add('open');
+    carnetList.innerHTML = '<p id="carnet-loading">Chargement…</p>';
+    postCarnet({ type:'lister' }, function(j){
+      carnetAll = j.residences || [];
+      carnetRender();
+    }, function(err){ carnetList.innerHTML = '<p id="carnet-empty">' + err + '</p>'; });
+  }
+  function carnetClose(){ carnetview.classList.remove('open'); }
+  document.getElementById('carnet-close').addEventListener('click', carnetClose);
+  document.getElementById('sh-carnet').addEventListener('click', function(){ sheetOpen(false); carnetOpen(); });
+  carnetSearchInput.addEventListener('input', function(){ carnetQuery = carnetSearchInput.value; carnetRender(); });
+
+  var carnetAddBg = document.getElementById('carnet-add-bg');
+  var carnetAddForm = document.getElementById('carnet-add-form');
+  var cafNom = document.getElementById('caf-nom');
+  var cafErr = document.getElementById('caf-err');
+  function carnetAddOpen(){ cafNom.value = ''; cafErr.textContent = ''; carnetAddBg.classList.add('open'); carnetAddForm.classList.add('open'); cafNom.focus(); }
+  function carnetAddCloseForm(){ carnetAddBg.classList.remove('open'); carnetAddForm.classList.remove('open'); }
+  document.getElementById('carnet-add').addEventListener('click', carnetAddOpen);
+  document.getElementById('caf-cancel').addEventListener('click', carnetAddCloseForm);
+  carnetAddBg.addEventListener('click', carnetAddCloseForm);
+  document.getElementById('caf-save').addEventListener('click', function(){
+    var nom = cafNom.value.trim();
+    if (!nom){ cafErr.textContent = 'Le nom est obligatoire.'; return; }
+    var btn = document.getElementById('caf-save'); btn.disabled = true;
+    postCarnet({ type:'ajouter', nom:nom }, function(j){
+      btn.disabled = false;
+      carnetAll.push({ id:j.id, nom:j.nom, personnes:'', notes:'', digicode:'', digicodePrecedent:'', courroies:'', groupeVmc:'', cles:'', verrous:{}, majSource:'', majDate:'' });
+      carnetRender();
+      carnetAddCloseForm();
+    }, function(err){ btn.disabled = false; cafErr.textContent = err; });
+  });
 
   function clientsShowSetup(){
     clientsTitleEl.textContent = '🏢 Clients';
@@ -4302,6 +4541,10 @@
   var notesVue = 'tout';
   var notesQuery = '';
   var NOTES_CAT_LABEL = { objectif:'🎯 Objectif', tache:'✅ Tâche', idee:'💡 Idée' };
+  // Pour un tenant secondaire, un seul utilisateur a accès aux Notes (patron uniquement,
+  // cf. garde côté serveur) -- pas d'axe "assigné à l'autre" : le cycle/libellé n'a qu'une valeur,
+  // recalculés dans notesRefresh() une fois "moi" connu (Mathéo/Dorian pour le compte principal,
+  // le prénom du patron pour un tenant secondaire). Valeurs par défaut ci-dessous = celles du compte principal.
   var NOTES_ASSIGNE_LABEL = { Matheo:'Mathéo', Dorian:'Dorian', 'Les deux':'Les deux' };
   var NOTES_CAT_CYCLE = ['tache', 'idee', 'objectif'];
   var NOTES_ASSIGNE_CYCLE = ['Matheo', 'Dorian', 'Les deux'];
@@ -4371,6 +4614,11 @@
       contenu.addEventListener('click', function(){
         var edit = document.createElement('textarea'); edit.className = 'notes-contenu-edit'; edit.value = n.contenu || '';
         body.replaceChild(edit, contenu);
+        // Auto-agrandissement a la taille du contenu (une note longue ne doit jamais se retrouver
+        // coincee dans une boite de 2 lignes avec scroll interne -- bug trouve le 02/08 en testant).
+        function autoGrow(){ edit.style.height = 'auto'; edit.style.height = edit.scrollHeight + 'px'; }
+        autoGrow();
+        edit.addEventListener('input', autoGrow);
         edit.focus(); edit.setSelectionRange(edit.value.length, edit.value.length);
         var termine = false;
         function revenir(nouveauTexte){
@@ -4542,8 +4790,19 @@
     postNotes({ type:'list' }, function(j){
       notesAll = j.notes || [];
       notesMoi = j.moi || '';
-      notesMoiEnum = notesMoi === 'Dorian' ? 'Dorian' : 'Matheo';
-      notesAutreEnum = notesMoiEnum === 'Dorian' ? 'Matheo' : 'Dorian';
+      if (isMcsCode()){
+        // Tenant secondaire (MCS) : un seul utilisateur a accès aux Notes (garde patron côté
+        // serveur) -- pas d'axe "assigné à l'autre", le cycle/libellé n'a qu'une seule valeur.
+        notesMoiEnum = notesMoi || 'Patron';
+        notesAutreEnum = '';
+        NOTES_ASSIGNE_LABEL = {}; NOTES_ASSIGNE_LABEL[notesMoiEnum] = notesMoiEnum;
+        NOTES_ASSIGNE_CYCLE = [notesMoiEnum];
+      } else {
+        notesMoiEnum = notesMoi === 'Dorian' ? 'Dorian' : 'Matheo';
+        notesAutreEnum = notesMoiEnum === 'Dorian' ? 'Matheo' : 'Dorian';
+        NOTES_ASSIGNE_LABEL = { Matheo:'Mathéo', Dorian:'Dorian', 'Les deux':'Les deux' };
+        NOTES_ASSIGNE_CYCLE = ['Matheo', 'Dorian', 'Les deux'];
+      }
       notesUpdateAutreLabel();
       notesRender();
       if (onDone) onDone();
@@ -4552,6 +4811,14 @@
 
   function notesOpen(){
     notesview.classList.add('open');
+    var mcsNotes = isMcsCode();
+    Array.prototype.forEach.call(document.querySelectorAll('.notes-tab[data-vue="mes_taches"], .notes-tab[data-vue="taches_autre"]'), function(b){
+      b.style.display = mcsNotes ? 'none' : '';
+    });
+    if (mcsNotes && (notesVue === 'mes_taches' || notesVue === 'taches_autre')){
+      notesVue = 'tout';
+      Array.prototype.forEach.call(document.querySelectorAll('.notes-tab'), function(b){ b.classList.toggle('active', b.dataset.vue === 'tout'); });
+    }
     notesList.innerHTML = '<p id="notes-loading">Chargement…</p>';
     notesRefresh();
   }
