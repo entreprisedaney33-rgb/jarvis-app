@@ -574,6 +574,52 @@
     border:0.5px solid var(--hairline); border-radius:10px; padding:9px 11px; box-sizing:border-box;
   }
   #caf-err{color:#FF453A; font-size:12.5px; min-height:1em; margin:0}
+  /* Panneau plein ecran "Portefeuille clients" (chantier 10 audit -- compte patron d'un tenant
+     secondaire uniquement). Memes classes de base que Relances (#relancesview) pour rester
+     coherent visuellement, prefixe pf- pour ses specificites. */
+  #portefeuilleview{
+    position:fixed; inset:0; z-index:50; background:var(--bg);
+    display:none; flex-direction:column;
+    transform:translateY(100%); transition:transform .28s cubic-bezier(.2,.9,.25,1);
+  }
+  #portefeuilleview.open{display:flex; transform:translateY(0)}
+  @media (prefers-reduced-motion: reduce){#portefeuilleview{transition:none}}
+  #portefeuille-head{
+    flex:0 0 auto; display:flex; align-items:center; gap:10px;
+    padding:calc(10px + env(safe-area-inset-top)) 14px 12px;
+    border-bottom:0.5px solid var(--hairline);
+  }
+  #portefeuille-head b{font-size:16px; flex:1}
+  #portefeuille-close{
+    width:32px; height:32px; border-radius:50%; border:0; flex:0 0 auto;
+    background:var(--surface); color:var(--ink); font-size:16px;
+    display:flex; align-items:center; justify-content:center; cursor:pointer;
+    -webkit-tap-highlight-color:transparent;
+  }
+  #portefeuille-tabs{
+    flex:0 0 auto; display:flex; gap:8px; padding:10px 14px; overflow-x:auto; -webkit-overflow-scrolling:touch;
+    border-bottom:0.5px solid var(--hairline);
+  }
+  .pf-tab{
+    flex:0 0 auto; padding:8px 14px; border-radius:99px; border:0; font-size:13px; font-weight:700;
+    background:var(--surface); color:var(--muted); cursor:pointer; -webkit-tap-highlight-color:transparent;
+    white-space:nowrap;
+  }
+  .pf-tab.active{background:var(--gold-a); color:#1a1200}
+  #portefeuille-search-wrap{flex:0 0 auto; padding:10px 14px 0}
+  #portefeuille-search{
+    width:100%; box-sizing:border-box; border:none; border-radius:12px;
+    background:var(--surface); color:var(--ink); font-size:15px; padding:10px 12px;
+    -webkit-appearance:none;
+  }
+  #portefeuille-search::placeholder{color:var(--muted)}
+  #portefeuille-note{font-size:12px; color:var(--muted); text-align:center; margin:10px 14px 0; line-height:1.4}
+  #portefeuille-list{flex:1; overflow-y:auto; -webkit-overflow-scrolling:touch; padding:10px 14px calc(20px + env(safe-area-inset-bottom))}
+  #portefeuille-empty, #portefeuille-loading{color:var(--muted); text-align:center; padding:40px 20px; font-size:14px}
+  .pf-card{background:var(--surface); border-radius:14px; padding:12px 14px; margin-bottom:10px}
+  .pf-nom{font-size:15px; font-weight:700; display:block}
+  .pf-meta{font-size:12.5px; color:var(--muted); display:block; margin-top:3px}
+  .pf-montant{font-size:14px; font-weight:700; color:var(--gold-a); display:block; margin-top:4px}
   /* Panneau plein ecran "Rentabilite" (compte patron d'un tenant secondaire uniquement) */
   #rentaview{
     position:fixed; inset:0; z-index:50; background:var(--bg);
@@ -1551,6 +1597,13 @@
   /* Cartes de validation (brouillons email, rendez-vous...) */
   .vcard{max-width:88%}
   .vc-resume{white-space:pre-wrap; font-size:15px; line-height:1.45; background:rgba(255,255,255,.07); border-radius:12px; padding:10px 12px; margin-bottom:10px; word-wrap:break-word}
+  /* Texte du mail envoye au client (devis/facture), editable en place avant l'envoi reel --
+     meme mecanisme d'auto-agrandissement que .notes-contenu-edit/.carnet-field-edit. */
+  .vc-docsend-edit{
+    width:100%; box-sizing:border-box; border:0.5px solid rgba(255,255,255,.25); border-radius:12px;
+    background:rgba(255,255,255,.07); color:var(--ink); font-size:15px; line-height:1.45; font-family:inherit;
+    padding:10px 12px; margin-bottom:10px; resize:none; overflow:hidden; min-height:60px;
+  }
   .vc-row{display:flex; gap:8px}
   .vc-ok,.vc-no{flex:1; font:inherit; font-size:16px; font-weight:600; padding:12px; border-radius:12px; border:none; cursor:pointer}
   .vc-ok{background:#30D158; color:#03240F}
@@ -1702,6 +1755,7 @@
     <button class="sh-item" id="sh-rentabilite" type="button" style="display:none"><span class="sh-ic">💹</span><span class="sh-label">Rentabilité</span></button>
     <button class="sh-item" id="sh-relances" type="button" style="display:none"><span class="sh-ic">📨</span><span class="sh-label">Relances clients</span><span class="badge-count" id="menu-relances-badge" style="display:none"></span></button>
     <button class="sh-item" id="sh-carnet" type="button" style="display:none"><span class="sh-ic">📘</span><span class="sh-label">Carnet bleu</span></button>
+    <button class="sh-item" id="sh-portefeuille" type="button" style="display:none"><span class="sh-ic">📇</span><span class="sh-label">Portefeuille clients</span></button>
     <button class="sh-item" id="sh-push" type="button"><span class="sh-ic">🔔</span><span class="sh-label">Notifications</span><span class="sw" id="sw-push"><span class="sw-knob"></span></span></button>
   </div>
   <div class="sh-group">
@@ -1802,6 +1856,23 @@
     <input id="carnet-search" type="search" inputmode="search" placeholder="🔍 Rechercher une résidence…" autocomplete="off" autocapitalize="off" autocorrect="off">
   </div>
   <div id="carnet-list"></div>
+</div>
+
+<div id="portefeuilleview">
+  <div id="portefeuille-head">
+    <b>📇 Portefeuille clients</b>
+    <button id="portefeuille-close" type="button" aria-label="Fermer">✕</button>
+  </div>
+  <div id="portefeuille-tabs">
+    <button class="pf-tab active" data-tab="ponctuel" type="button">Ponctuels</button>
+    <button class="pf-tab" data-tab="recurrent" type="button">Récurrents</button>
+    <button class="pf-tab" data-tab="sans_vente_periode" type="button">Sans vente (période)</button>
+  </div>
+  <div id="portefeuille-search-wrap">
+    <input id="portefeuille-search" type="search" inputmode="search" placeholder="🔍 Rechercher un client…" autocomplete="off" autocapitalize="off" autocorrect="off">
+  </div>
+  <p id="portefeuille-note"></p>
+  <div id="portefeuille-list"></div>
 </div>
 <div id="carnet-add-bg"></div>
 <div id="carnet-add-form">
@@ -2024,7 +2095,7 @@
 
 <script>
 (function(){
-  var APPV = 'v3.02';
+  var APPV = 'v3.03';
 
   // Debug : ?debug_modal=1 force l'affichage du modal "nouvelle version" sans attendre un vrai
   // déploiement. Capturé ICI, tout au début, car plus bas (login mémorisé, connexion) le code
@@ -2064,6 +2135,7 @@
   var API_RELANCES = 'https://n8n-self-hosted-t0pz.onrender.com/webhook/mcs-relances';
   var API_RELANCES_ACTION = 'https://n8n-self-hosted-t0pz.onrender.com/webhook/mcs-relances-action';
   var API_CARNET = 'https://n8n-self-hosted-t0pz.onrender.com/webhook/mcs-carnet';
+  var API_PORTEFEUILLE = 'https://n8n-self-hosted-t0pz.onrender.com/webhook/mcs-portefeuille';
   var login = document.getElementById('login');
   var app = document.getElementById('app');
   var chat = document.getElementById('chat');
@@ -2251,6 +2323,7 @@
   function postRelances(payload, onOk, onErr){ postDevisWeb(API_RELANCES, payload, onOk, onErr); }
   function postRelancesAction(payload, onOk, onErr){ postDevisWeb(API_RELANCES_ACTION, payload, onOk, onErr); }
   function postCarnet(payload, onOk, onErr){ postDevisWeb(API_CARNET, payload, onOk, onErr); }
+  function postPortefeuille(payload, onOk, onErr){ postDevisWeb(API_PORTEFEUILLE, payload, onOk, onErr); }
 
   function postVitrine(payload, onOk, onErr){
     payload.code = String(read('jarvisCode') || '').trim();
@@ -2287,6 +2360,20 @@
       var pre = document.createElement('div'); pre.className = 'vc-resume';
       pre.textContent = j.validation.resume || '';
       card.appendChild(pre);
+      // Envoi de devis/facture (chantier 1, 2026-08-02) : le texte du mail est visible ET
+      // modifiable EN PLACE avant l'envoi réel -- jamais d'envoi automatique, le patron doit
+      // voir exactement ce qui part et pouvoir corriger "à la main" (même mécanisme d'auto-
+      // agrandissement que l'édition d'une note/d'un champ du carnet bleu).
+      var docsendEdit = null;
+      if (j.validation.kind === 'docsend'){
+        docsendEdit = document.createElement('textarea');
+        docsendEdit.className = 'vc-docsend-edit';
+        docsendEdit.value = j.validation.corps || '';
+        function docsendAutoGrow(){ docsendEdit.style.height = 'auto'; docsendEdit.style.height = docsendEdit.scrollHeight + 'px'; }
+        card.appendChild(docsendEdit);
+        setTimeout(docsendAutoGrow, 0);
+        docsendEdit.addEventListener('input', docsendAutoGrow);
+      }
       if (j.validation.fichier && j.validation.fichier.url){
         var att = document.createElement('a');
         att.className = 'vc-attach';
@@ -2307,17 +2394,22 @@
         card.appendChild(edit);
       }
       var row = document.createElement('div'); row.className = 'vc-row';
-      var ok = document.createElement('button'); ok.type = 'button'; ok.className = 'vc-ok'; ok.textContent = '✅ Valider';
+      var ok = document.createElement('button'); ok.type = 'button'; ok.className = 'vc-ok';
+      ok.textContent = j.validation.kind === 'docsend' ? '✅ Envoyer' : '✅ Valider';
       var no = document.createElement('button'); no.type = 'button'; no.className = 'vc-no'; no.textContent = '❌ Annuler';
       row.appendChild(ok); row.appendChild(no); card.appendChild(row);
       function act(choix){
         ok.disabled = no.disabled = true;
         if (edit) edit.disabled = true;
-        post({ type:'action', kind: j.validation.kind, choix: choix }, function(r){
+        if (docsendEdit) docsendEdit.disabled = true;
+        var payload = { type:'action', kind: j.validation.kind, choix: choix };
+        if (docsendEdit) payload.corpsEdite = docsendEdit.value;
+        post(payload, function(r){
           row.remove();
           if (edit) edit.remove();
+          if (docsendEdit) docsendEdit.remove();
           bubble(r.reply || 'Fait.', 'jarvis');
-        }, function(err){ ok.disabled = no.disabled = false; if (edit) edit.disabled = false; bubble(err, 'err'); });
+        }, function(err){ ok.disabled = no.disabled = false; if (edit) edit.disabled = false; if (docsendEdit) docsendEdit.disabled = false; bubble(err, 'err'); });
       }
       ok.addEventListener('click', function(){ act('oui'); });
       no.addEventListener('click', function(){ act('non'); });
@@ -2524,6 +2616,10 @@
     // secondaire uniquement, jamais Bruno, jamais le compte principal.
     var carnetBtn = document.getElementById('sh-carnet');
     if (carnetBtn) carnetBtn.style.display = (mcs && role === 'patron') ? '' : 'none';
+    // "Portefeuille clients" (chantier 10 audit) : même garde — patron d'un tenant secondaire
+    // uniquement, jamais Bruno, jamais le compte principal.
+    var portefeuilleBtn = document.getElementById('sh-portefeuille');
+    if (portefeuilleBtn) portefeuilleBtn.style.display = (mcs && role === 'patron') ? '' : 'none';
     // Transparence (Phase 5) : visible seulement côté tenant secondaire — c'est CE
     // compte-là que le support peut consulter, l'inverse exact de la liste ci-dessus.
     var privacyNote = document.getElementById('privacy-note');
@@ -2888,9 +2984,18 @@
   function devisAgir(token, choix, okBtn, noBtn){
     okBtn.disabled = true; noBtn.disabled = true;
     postDevisValider({ token: token, choix: choix }, function(j){
-      toast(choix === 'confirmer' ? (j.testMode ? '✅ Envoyé (mode test → Altaestima, pas le vrai client)' : '✅ Devis envoyé au client') : '❌ Devis rejeté');
       if (devisData) devisData.aValider = (devisData.aValider || []).filter(function(dv){ return dv.token !== token; });
       devisApplyFilter();
+      if (j.brouillon){
+        // Ne part plus tout seul (2026-08-02) : un brouillon personnalisé attend maintenant
+        // dans la conversation, éditable, avec un vrai bouton Envoyer/Annuler -- on y amène
+        // le patron directement plutôt que de le laisser le découvrir par hasard.
+        toast('📝 Brouillon prêt — va voir la conversation pour l’envoyer');
+        devisAttenteClose();
+        refreshFromServer(true);
+      } else {
+        toast('❌ Devis rejeté');
+      }
     }, function(err){ okBtn.disabled = false; noBtn.disabled = false; toast(err); });
   }
   var DEVIS_STATUT_LABEL = { envoye: 'Envoyé', rejete: 'Rejeté', accepte: 'Accepté (MEG)', brouillon: 'Devis MEG (en attente)' };
@@ -3394,7 +3499,7 @@
   document.getElementById('relances-close').addEventListener('click', relancesClose);
   document.getElementById('sh-relances').addEventListener('click', function(){ sheetOpen(false); relancesOpen(); });
 
-  // ---- Carnet bleu (fiches techniques des résidences MCS -- chantier 1 de l'audit, 2026-08-02) ----
+  // ---- Carnet bleu (fiches techniques des résidences MCS -- chantier 2 de l'audit, 2026-08-02) ----
   // Coffre-fort par résidence : code d'entrée/digicode, courroies, groupe VMC, clés. Chaque champ
   // est éditable en place (même mécanisme que .notes-contenu-edit, auto-agrandi) et verrouillable
   // individuellement (🔒) contre une mise à jour automatique déclenchée par le cerveau MCS quand un
@@ -3528,6 +3633,74 @@
       carnetAddCloseForm();
     }, function(err){ btn.disabled = false; cafErr.textContent = err; });
   });
+
+  // ---- Portefeuille clients (chantier 10 audit, 2026-08-02) ----
+  // Croise la vraie liste clients MEG avec les vraies ventes -- calculé à la main
+  // (clients/mcs/scripts/calculer-portefeuille-mcs.py), pas de live MEG. Seules 2 catégories
+  // sont un vrai signal actionnable (ponctuel/récurrent) -- "sans_vente_periode" reste
+  // disponible mais présenté avec sa limite honnête (fenêtre de données trop courte pour
+  // parler de client "dormant").
+  var portefeuilleview = document.getElementById('portefeuilleview');
+  var portefeuilleList = document.getElementById('portefeuille-list');
+  var portefeuilleSearchInput = document.getElementById('portefeuille-search');
+  var portefeuilleNote = document.getElementById('portefeuille-note');
+  var portefeuilleData = null;
+  var portefeuilleTab = 'ponctuel';
+  var portefeuilleQuery = '';
+
+  function pfNorm(s){ return String(s || '').toLowerCase().normalize('NFD').replace(/[̀-ͯ]/g, ''); }
+
+  var PF_CAT_LABEL = { ponctuel:'Ponctuel', recurrent:'Récurrent', sans_vente_periode:'Sans vente (période)' };
+
+  function portefeuilleCard(c){
+    var card = document.createElement('div'); card.className = 'pf-card';
+    var nom = document.createElement('span'); nom.className = 'pf-nom'; nom.textContent = c.nom;
+    card.appendChild(nom);
+    var meta = document.createElement('span'); meta.className = 'pf-meta';
+    var bits = [];
+    if (c.nbAchats) bits.push(c.nbAchats + ' achat' + (c.nbAchats > 1 ? 's' : ''));
+    if (c.dernierAchat) bits.push('dernier le ' + new Date(c.dernierAchat).toLocaleDateString('fr-FR'));
+    if (!bits.length) bits.push(PF_CAT_LABEL[c.categorie] || c.categorie);
+    meta.textContent = bits.join(' · ');
+    card.appendChild(meta);
+    if (c.montantTotal){ var m = document.createElement('span'); m.className = 'pf-montant'; m.textContent = c.montantTotal.toFixed(2) + ' € TTC'; card.appendChild(m); }
+    return card;
+  }
+
+  function portefeuilleApplyFilter(){
+    portefeuilleList.innerHTML = '';
+    if (!portefeuilleData){ portefeuilleList.innerHTML = '<p id="portefeuille-empty">Chargement…</p>'; return; }
+    var q = pfNorm(portefeuilleQuery);
+    var filtered = (portefeuilleData.clients || []).filter(function(c){ return c.categorie === portefeuilleTab; });
+    if (q) filtered = filtered.filter(function(c){ return pfNorm(c.nom).indexOf(q) !== -1; });
+    filtered.sort(function(a, b){ return (b.montantTotal || 0) - (a.montantTotal || 0); });
+    if (!filtered.length){
+      portefeuilleList.innerHTML = '<p id="portefeuille-empty">' + (q ? 'Aucun client ne correspond.' : 'Aucun client dans cette catégorie.') + '</p>';
+      return;
+    }
+    filtered.forEach(function(c){ portefeuilleList.appendChild(portefeuilleCard(c)); });
+  }
+
+  function portefeuilleOpen(){
+    portefeuilleview.classList.add('open');
+    portefeuilleList.innerHTML = '<p id="portefeuille-loading">Chargement…</p>';
+    postPortefeuille({}, function(j){
+      portefeuilleData = j.donnees;
+      portefeuilleNote.textContent = (portefeuilleData && portefeuilleData.note) || '';
+      portefeuilleApplyFilter();
+    }, function(err){ portefeuilleList.innerHTML = '<p id="portefeuille-empty">' + err + '</p>'; });
+  }
+  function portefeuilleClose(){ portefeuilleview.classList.remove('open'); }
+  document.getElementById('portefeuille-close').addEventListener('click', portefeuilleClose);
+  document.getElementById('sh-portefeuille').addEventListener('click', function(){ sheetOpen(false); portefeuilleOpen(); });
+  document.querySelectorAll('#portefeuille-tabs .pf-tab').forEach(function(btn){
+    btn.addEventListener('click', function(){
+      document.querySelectorAll('#portefeuille-tabs .pf-tab').forEach(function(b){ b.classList.toggle('active', b === btn); });
+      portefeuilleTab = btn.dataset.tab;
+      portefeuilleApplyFilter();
+    });
+  });
+  portefeuilleSearchInput.addEventListener('input', function(){ portefeuilleQuery = portefeuilleSearchInput.value; portefeuilleApplyFilter(); });
 
   function clientsShowSetup(){
     clientsTitleEl.textContent = '🏢 Clients';
