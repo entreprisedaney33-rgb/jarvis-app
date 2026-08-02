@@ -1165,7 +1165,7 @@
   @media (prefers-reduced-motion: reduce){#toastUndo{transition:none}}
   /* Calendrier premium (mois, custom, sans lib externe) */
   #calendarview{
-    position:fixed; inset:0; z-index:50; background:var(--bg);
+    position:fixed; inset:0; z-index:50; background:var(--bg); color:var(--ink);
     display:none; flex-direction:column;
     transform:translateY(100%); transition:transform .28s cubic-bezier(.2,.9,.25,1);
   }
@@ -1219,6 +1219,41 @@
     background:var(--gold-a); color:#1A130A; cursor:pointer; -webkit-tap-highlight-color:transparent;
     box-shadow:0 6px 18px rgba(0,0,0,.35);
   }
+  /* Sélecteur de vue (Mois/Semaine/3 jours/Jour), façon Google Agenda */
+  #cal-viewswitch{
+    flex:0 0 auto; display:flex; gap:4px; padding:8px 14px; border-bottom:0.5px solid var(--hairline);
+  }
+  #cal-viewswitch button{
+    flex:1; font:inherit; font-size:12.5px; font-weight:600; padding:7px 4px; border-radius:8px;
+    border:0; background:var(--surface); color:var(--muted); cursor:pointer; -webkit-tap-highlight-color:transparent;
+  }
+  #cal-viewswitch button.active{background:var(--gold-a); color:#1A130A}
+  /* Vue agenda horaire (semaine/3 jours/jour) : gouttière d'heures a gauche + colonnes par jour,
+     evenements positionnes en absolu selon horaire (hauteur proportionnelle a la duree). */
+  #cal-agenda{display:none; flex:1; min-height:0; flex-direction:column}
+  #cal-agenda-days{flex:0 0 auto; display:flex; border-bottom:0.5px solid var(--hairline)}
+  .cal-agenda-gutter{width:38px; flex:0 0 auto}
+  .cal-agenda-daycol{flex:1; text-align:center; padding:6px 2px; min-width:0}
+  .cal-agenda-dow{font-size:10px; color:var(--muted); text-transform:uppercase}
+  .cal-agenda-daynum{font-size:15px; font-weight:700; margin-top:2px}
+  .cal-agenda-daycol.today .cal-agenda-daynum{
+    background:var(--gold-a); color:#1A130A; width:24px; height:24px; border-radius:50%;
+    display:flex; align-items:center; justify-content:center; margin:2px auto 0;
+  }
+  #cal-agenda-scroll{flex:1; min-height:0; overflow-y:auto; -webkit-overflow-scrolling:touch; display:flex; position:relative}
+  #cal-agenda-hours{width:38px; flex:0 0 auto; position:relative}
+  .cal-agenda-hourlabel{position:absolute; right:6px; transform:translateY(-50%); font-size:10px; color:var(--muted)}
+  #cal-agenda-cols{flex:1; display:flex; position:relative}
+  .cal-agenda-col{
+    flex:1; position:relative; border-left:0.5px solid var(--hairline); min-width:0;
+    background-image:repeating-linear-gradient(to bottom, var(--hairline) 0, var(--hairline) 1px, transparent 1px, transparent 48px);
+  }
+  .cal-agenda-ev{
+    position:absolute; border-radius:5px; padding:2px 5px; overflow:hidden; cursor:pointer;
+    color:#fff; font-size:10.5px; line-height:1.25; box-sizing:border-box; box-shadow:0 1px 2px rgba(0,0,0,.25);
+  }
+  .cal-agenda-ev b{display:block; font-size:11px; overflow:hidden; text-overflow:ellipsis; white-space:nowrap}
+  .cal-agenda-ev span{display:block; opacity:.85; overflow:hidden; text-overflow:ellipsis; white-space:nowrap}
   #cal-form-bg{position:fixed; inset:0; background:rgba(0,0,0,.5); display:none; z-index:52}
   #cal-form-bg.open{display:block}
   #cal-form{
@@ -1267,6 +1302,9 @@
   }
   .cf-couleur.selected{border-color:var(--ink)}
   .cf-couleur.selected::after{content:'✓'; display:block; color:#fff; font-size:13px; font-weight:700; text-align:center; line-height:22px; text-shadow:0 0 2px rgba(0,0,0,.6)}
+  #cal-form label.cf-check{flex-direction:row; align-items:center; gap:8px; font-size:14.5px; color:var(--ink)}
+  #cal-form label.cf-check input{width:auto; padding:0}
+  #cf-invite-statut{font-size:12px; color:var(--muted); margin-top:-4px}
   /* Calendrier MCS (chantier 12 audit) : fond blanc facon Google Agenda, scope a l'ecran
      calendrier uniquement (le calendrier du compte principal reste sur le theme sombre premium).
      Les regles du calendrier lisent deja var(--bg)/var(--surface)/var(--ink)/var(--muted)/
@@ -1276,7 +1314,10 @@
   body.cal-mcs-light #calendarview{
     --bg:#FFFFFF; --surface:#F2F2F7; --hairline:rgba(60,60,67,.22); --ink:#1D1D1F; --muted:#6E6E73;
   }
-  body.cal-mcs-light #cal-form{background:#FFFFFF; color:#1D1D1F}
+  body.cal-mcs-light #cal-form{
+    background:#FFFFFF; color:#1D1D1F;
+    --ink:#1D1D1F; --muted:#6E6E73; --surface:#F2F2F7; --hairline:rgba(60,60,67,.22);
+  }
   body.cal-mcs-light #cal-form input, body.cal-mcs-light #cal-form textarea, body.cal-mcs-light #cal-form select{
     background:#F2F2F7; color:#1D1D1F; border-color:rgba(60,60,67,.22);
   }
@@ -1722,12 +1763,25 @@
     <button id="cal-close" type="button" aria-label="Fermer">✕</button>
   </div>
   <div id="cal-nav">
-    <button id="cal-prev" type="button" aria-label="Mois précédent">‹</button>
+    <button id="cal-prev" type="button" aria-label="Précédent">‹</button>
     <span id="cal-month-label"></span>
-    <button id="cal-next" type="button" aria-label="Mois suivant">›</button>
+    <button id="cal-next" type="button" aria-label="Suivant">›</button>
+  </div>
+  <div id="cal-viewswitch">
+    <button type="button" data-view="month" class="active">Mois</button>
+    <button type="button" data-view="week">Semaine</button>
+    <button type="button" data-view="3days">3 jours</button>
+    <button type="button" data-view="day">Jour</button>
   </div>
   <div id="cal-grid"></div>
   <div id="cal-day"></div>
+  <div id="cal-agenda">
+    <div id="cal-agenda-days"></div>
+    <div id="cal-agenda-scroll">
+      <div id="cal-agenda-hours"></div>
+      <div id="cal-agenda-cols"></div>
+    </div>
+  </div>
   <button id="cal-add" type="button" aria-label="Nouveau rendez-vous">＋</button>
 </div>
 <div id="cal-form-bg"></div>
@@ -1745,7 +1799,8 @@
     <label>Couleur<div id="cf-couleurs"></div></label>
     <label>Description (optionnel) <textarea id="cf-description" rows="2" placeholder="Détails de l'intervention…"></textarea></label>
     <label>Téléphone du client (optionnel) <input id="cf-telephone" type="tel" placeholder="06 12 34 56 78"></label>
-    <label>Invités (optionnel) <input id="cf-invites" type="text" placeholder="Ex : Bruno"></label>
+    <label class="cf-check"><input id="cf-invite-bruno" type="checkbox"> Inviter Bruno à ce rendez-vous</label>
+    <div id="cf-invite-statut"></div>
     <label>Rappel
       <select id="cf-rappel">
         <option value="">Aucun</option>
@@ -1804,7 +1859,7 @@
 
 <script>
 (function(){
-  var APPV = 'v2.99';
+  var APPV = 'v3.00';
 
   // Debug : ?debug_modal=1 force l'affichage du modal "nouvelle version" sans attendre un vrai
   // déploiement. Capturé ICI, tout au début, car plus bas (login mémorisé, connexion) le code
@@ -2111,6 +2166,31 @@
       if (f.info){ var sp = document.createElement('span'); sp.textContent = f.info; a.appendChild(sp); }
       chat.appendChild(a);
     });
+    // Invitations à un rendez-vous (chantier 12 audit MCS) : même famille visuelle que les
+    // cartes de validation ✅/❌ déjà existantes — Bruno (chat-only, pas d'écran Calendrier)
+    // confirme/décline directement ici.
+    (j.invitations || []).forEach(function(inv){
+      var card = document.createElement('div'); card.className = 'msg jarvis vcard';
+      var pre = document.createElement('div'); pre.className = 'vc-resume';
+      var dt = new Date(inv.debut);
+      var dateTxt = isNaN(dt.getTime()) ? inv.debut : dt.toLocaleString('fr-FR', { weekday:'long', day:'numeric', month:'long', hour:'2-digit', minute:'2-digit' });
+      pre.textContent = '🗓️ Tu es invité(e) : ' + inv.titre + '\n' + dateTxt + (inv.lieu ? ('\n' + inv.lieu) : '');
+      card.appendChild(pre);
+      var row = document.createElement('div'); row.className = 'vc-row';
+      var ok = document.createElement('button'); ok.type = 'button'; ok.className = 'vc-ok'; ok.textContent = '✅ Accepter';
+      var no = document.createElement('button'); no.type = 'button'; no.className = 'vc-no'; no.textContent = '❌ Décliner';
+      row.appendChild(ok); row.appendChild(no); card.appendChild(row);
+      function repondre(reponse){
+        ok.disabled = no.disabled = true;
+        post({ type:'invitation-reponse', id: inv.id, reponse: reponse }, function(){
+          row.remove();
+          pre.textContent += reponse === 'confirme' ? '\n\n✅ Présence confirmée.' : '\n\n❌ Décliné.';
+        }, function(err){ ok.disabled = no.disabled = false; bubble(err, 'err'); });
+      }
+      ok.addEventListener('click', function(){ repondre('confirme'); });
+      no.addEventListener('click', function(){ repondre('decline'); });
+      chat.appendChild(card);
+    });
     chat.scrollTop = chat.scrollHeight;
   }
 
@@ -2237,16 +2317,17 @@
     if (!mcs) meuteCheckBadge();
     // Rôle salarié (tenant secondaire uniquement) : un compte salarié n'a qu'un usage - dicter/
     // écrire un devis (déclenché par un mot-clé dans le champ de texte, indépendant de ce menu).
-    // Le menu est donc réduit au minimum (juste Se déconnecter) - Documents et Notifications
-    // restent pour un compte patron, inutiles pour un salarié. Rôle transmis par le serveur
-    // (jamais déduit du code côté client) et gardé en localStorage pour que l'ouverture
-    // instantanée (cache) applique déjà la bonne restriction avant même la 1ère réponse serveur.
+    // Menu réduit au minimum (Se déconnecter) - Documents reste réservé au patron, inutile pour
+    // un salarié. Rôle transmis par le serveur (jamais déduit du code côté client) et gardé en
+    // localStorage pour que l'ouverture instantanée (cache) applique déjà la bonne restriction
+    // avant même la 1ère réponse serveur.
     var role = (extras && extras.role) || read('jarvisRole') || '';
     var mcsSalarie = mcs && role === 'salarie';
-    ['sh-docs', 'sh-push'].forEach(function(id){
-      var el = document.getElementById(id);
-      if (el) el.style.display = mcsSalarie ? 'none' : '';
-    });
+    var docsBtn = document.getElementById('sh-docs');
+    if (docsBtn) docsBtn.style.display = mcsSalarie ? 'none' : '';
+    // Notifications : PAS masquées pour un salarié MCS (chantier 12 audit) — Bruno doit pouvoir
+    // les activer pour recevoir rappels et invitations de rendez-vous (poussés par le cron/la
+    // synchro d'invités côté serveur), même s'il n'a pas d'écran Calendrier visuel.
     // Calendrier : visible pour le compte principal (inchangé) ET pour un patron de tenant
     // secondaire (chantier 12 audit MCS) — jamais pour un salarié (même garde que Devis/Rentabilité).
     // Backend indépendant côté MCS (table mcs_rdv_terrain, pas de vrai Google Agenda).
@@ -4880,6 +4961,42 @@
   function calDtLocal(d){ return calDateKey(d) + 'T' + pad2(d.getHours()) + ':' + pad2(d.getMinutes()); }
   function calMonthParam(d){ return d.getFullYear() + '-' + pad2(d.getMonth() + 1); }
 
+  // Vues façon Google Agenda (chantier 12 audit) : 'month' (grille, inchangée) ou 'week'/'3days'/
+  // 'day' (grille horaire, nouvelle). calRangeStart = ancre du 1er jour affiché pour ces 3 vues.
+  var calView = 'month';
+  var calRangeStart = new Date();
+  var calAgendaDays = document.getElementById('cal-agenda-days');
+  var calAgendaHours = document.getElementById('cal-agenda-hours');
+  var calAgendaCols = document.getElementById('cal-agenda-cols');
+  var CAL_ROW_H = 48; // px par heure dans la grille horaire
+
+  function calRangeDays(){ return calView === 'week' ? 7 : (calView === '3days' ? 3 : 1); }
+  function calVisibleRange(){
+    if (calView === 'month'){
+      var y = calCurrentMonth.getFullYear(), m = calCurrentMonth.getMonth();
+      return { start: new Date(y, m, 1), end: new Date(y, m + 1, 1) };
+    }
+    var start = new Date(calRangeStart.getFullYear(), calRangeStart.getMonth(), calRangeStart.getDate());
+    var end = new Date(start); end.setDate(end.getDate() + calRangeDays());
+    return { start: start, end: end };
+  }
+  function calMonthsTouching(range){
+    var months = {};
+    var d = new Date(range.start.getFullYear(), range.start.getMonth(), 1);
+    while (d < range.end){ months[calMonthParam(d)] = true; d = new Date(d.getFullYear(), d.getMonth() + 1, 1); }
+    return Object.keys(months);
+  }
+  function calUpdateLabel(){
+    if (calView === 'month'){ calMonthLabel.textContent = calCurrentMonth.toLocaleDateString('fr-FR', { month:'long', year:'numeric' }); return; }
+    var range = calVisibleRange();
+    var endIncl = new Date(range.end); endIncl.setDate(endIncl.getDate() - 1);
+    if (calView === 'day'){
+      calMonthLabel.textContent = range.start.toLocaleDateString('fr-FR', { weekday:'long', day:'numeric', month:'long' });
+    } else {
+      calMonthLabel.textContent = range.start.toLocaleDateString('fr-FR', { day:'numeric', month:'short' }) + ' – ' + endIncl.toLocaleDateString('fr-FR', { day:'numeric', month:'long', year:'numeric' });
+    }
+  }
+
   function calRenderGrid(){
     calGrid.innerHTML = '';
     CAL_DOW.forEach(function(d){ var e = document.createElement('div'); e.className = 'cal-dow'; e.textContent = d; calGrid.appendChild(e); });
@@ -4965,37 +5082,154 @@
     });
   }
 
-  function calLoadMonth(){
-    post({ type: 'calendar-month', month: calMonthParam(calCurrentMonth) }, function(j){
-      calEvents = j.events || [];
-      calMonthLabel.textContent = j.moisLabel || '';
-      calRenderGrid();
-      calRenderDay();
-    }, function(err){ calDayEl.innerHTML = '<p id="cal-day-empty">' + (err || 'Impossible de charger le calendrier.') + '</p>'; });
+  function calRenderAgenda(){
+    var range = calVisibleRange();
+    var days = [];
+    var d = new Date(range.start);
+    while (d < range.end){ days.push(new Date(d)); d.setDate(d.getDate() + 1); }
+    var todayKey = calDateKey(new Date());
+
+    calAgendaDays.innerHTML = '';
+    var gutter = document.createElement('div'); gutter.className = 'cal-agenda-gutter'; calAgendaDays.appendChild(gutter);
+    days.forEach(function(day){
+      var k = calDateKey(day);
+      var head = document.createElement('div'); head.className = 'cal-agenda-daycol' + (k === todayKey ? ' today' : '');
+      var dow = document.createElement('div'); dow.className = 'cal-agenda-dow'; dow.textContent = CAL_DOW[(day.getDay() + 6) % 7];
+      var num = document.createElement('div'); num.className = 'cal-agenda-daynum'; num.textContent = day.getDate();
+      head.appendChild(dow); head.appendChild(num);
+      calAgendaDays.appendChild(head);
+    });
+
+    calAgendaHours.innerHTML = '';
+    calAgendaHours.style.height = (24 * CAL_ROW_H) + 'px';
+    for (var h = 0; h < 24; h++){
+      var hl = document.createElement('div'); hl.className = 'cal-agenda-hourlabel';
+      hl.style.top = (h * CAL_ROW_H) + 'px';
+      hl.textContent = (h < 10 ? '0' : '') + h + ':00';
+      calAgendaHours.appendChild(hl);
+    }
+
+    calAgendaCols.innerHTML = '';
+    days.forEach(function(day){
+      var k = calDateKey(day);
+      var col = document.createElement('div'); col.className = 'cal-agenda-col';
+      col.style.height = (24 * CAL_ROW_H) + 'px';
+      col.addEventListener('click', function(e){
+        if (e.target !== col) return; // ignore les clics qui remontent depuis un bloc d'evenement
+        var rect = col.getBoundingClientRect();
+        var totalMin = Math.round(((e.clientY - rect.top) / CAL_ROW_H) * 60 / 15) * 15;
+        totalMin = Math.max(0, Math.min(23 * 60 + 45, totalMin));
+        calSelectedKey = k;
+        calOpenForm('create', null, new Date(day.getFullYear(), day.getMonth(), day.getDate(), Math.floor(totalMin / 60), totalMin % 60));
+      });
+      var evs = calEvents.filter(function(ev){ var d2 = new Date(ev.start); return !isNaN(d2.getTime()) && calDateKey(d2) === k; });
+      evs.sort(function(a, b){ return new Date(a.start) - new Date(b.start); });
+      // Chevauchement : empilement simple par colonnes (pas l'algorithme complet de Google Agenda,
+      // mais evite que 2 rdv simultanes se recouvrent illisiblement)
+      var placed = [];
+      evs.forEach(function(ev){
+        var s = new Date(ev.start), e2 = new Date(ev.end);
+        if (isNaN(s.getTime())) return;
+        var startMin = s.getHours() * 60 + s.getMinutes();
+        var endMin = Math.max(startMin + 15, isNaN(e2.getTime()) ? startMin + 60 : (e2.getHours() * 60 + e2.getMinutes()));
+        var overlapping = placed.filter(function(p){ return p.startMin < endMin && startMin < p.endMin; });
+        var colIdx = 0;
+        while (overlapping.some(function(p){ return p.col === colIdx; })) colIdx++;
+        placed.push({ startMin: startMin, endMin: endMin, col: colIdx });
+        var totalCols = Math.max(colIdx + 1, overlapping.length + 1, 1);
+        var block = document.createElement('div'); block.className = 'cal-agenda-ev';
+        block.style.top = (startMin / 60 * CAL_ROW_H) + 'px';
+        block.style.height = Math.max(18, (endMin - startMin) / 60 * CAL_ROW_H) + 'px';
+        block.style.left = (colIdx * (100 / totalCols)) + '%';
+        block.style.width = (100 / totalCols) + '%';
+        block.style.background = ev.color || '#E8B96A';
+        var bTitre = document.createElement('b'); bTitre.textContent = ev.title || '';
+        block.appendChild(bTitre);
+        if (ev.location){ var sp = document.createElement('span'); sp.textContent = ev.location; block.appendChild(sp); }
+        block.addEventListener('click', function(e2b){ e2b.stopPropagation(); calOpenForm('edit', ev); });
+        col.appendChild(block);
+      });
+      calAgendaCols.appendChild(col);
+    });
+
+    var scrollWrap = document.getElementById('cal-agenda-scroll');
+    scrollWrap.scrollTop = Math.max(0, 7 * CAL_ROW_H - 40);
   }
 
-  // ⚠️ calSelectedKey doit toujours pointer vers un jour DU MOIS AFFICHÉ : sinon "Nouveau
-  // rendez-vous" (calOpenForm) pré-remplit une date restée sur l'ancien mois (ex: on navigue
-  // vers août mais le formulaire propose encore une date de juillet) -- un rdv créé sans
-  // corriger cette date atterrit dans un mois différent de celui affiché, invisible dans la
-  // grille au retour, sans qu'on s'en rende compte.
-  document.getElementById('cal-prev').addEventListener('click', function(){
-    calCurrentMonth = new Date(calCurrentMonth.getFullYear(), calCurrentMonth.getMonth() - 1, 1);
-    calSelectedKey = calDateKey(calCurrentMonth);
-    calLoadMonth();
-  });
-  document.getElementById('cal-next').addEventListener('click', function(){
-    calCurrentMonth = new Date(calCurrentMonth.getFullYear(), calCurrentMonth.getMonth() + 1, 1);
-    calSelectedKey = calDateKey(calCurrentMonth);
-    calLoadMonth();
+  function calRenderCurrentView(){
+    calUpdateLabel();
+    if (calView === 'month'){ calRenderGrid(); calRenderDay(); }
+    else { calRenderAgenda(); }
+  }
+
+  function calLoadData(){
+    var range = calVisibleRange();
+    var months = calMonthsTouching(range);
+    var results = [];
+    var pending = months.length, failed = false;
+    months.forEach(function(mo){
+      post({ type: 'calendar-month', month: mo }, function(j){
+        if (failed) return;
+        results = results.concat(j.events || []);
+        pending--;
+        if (pending === 0){ calEvents = results; calRenderCurrentView(); }
+      }, function(err){
+        failed = true;
+        calDayEl.innerHTML = '<p id="cal-day-empty">' + (err || 'Impossible de charger le calendrier.') + '</p>';
+      });
+    });
+  }
+  var calLoadMonth = calLoadData; // alias : conserve le nom historique là où il est encore appelé
+
+  function calSwitchView(v){
+    if (v === calView) return;
+    if (calView === 'month' && v !== 'month'){
+      var base = new Date();
+      if (calSelectedKey){ var p = calSelectedKey.split('-'); base = new Date(+p[0], +p[1] - 1, +p[2]); }
+      calRangeStart = base;
+    }
+    calView = v;
+    document.querySelectorAll('#cal-viewswitch button').forEach(function(b){ b.classList.toggle('active', b.dataset.view === v); });
+    calGrid.style.display = v === 'month' ? '' : 'none';
+    calDayEl.style.display = v === 'month' ? '' : 'none';
+    document.getElementById('cal-agenda').style.display = v === 'month' ? 'none' : 'flex';
+    calLoadData();
+  }
+  document.querySelectorAll('#cal-viewswitch button').forEach(function(btn){
+    btn.addEventListener('click', function(){ calSwitchView(btn.dataset.view); });
   });
 
-  function calOpenForm(mode, ev){
+  // ⚠️ calSelectedKey/calRangeStart doivent toujours pointer vers la periode AFFICHEE : sinon
+  // "Nouveau rendez-vous" (calOpenForm) pré-remplit une date restée sur l'ancienne periode -- un
+  // rdv créé sans corriger cette date atterrit hors de ce qui est affiché, invisible au retour.
+  document.getElementById('cal-prev').addEventListener('click', function(){
+    if (calView === 'month'){
+      calCurrentMonth = new Date(calCurrentMonth.getFullYear(), calCurrentMonth.getMonth() - 1, 1);
+      calSelectedKey = calDateKey(calCurrentMonth);
+    } else {
+      calRangeStart = new Date(calRangeStart.getFullYear(), calRangeStart.getMonth(), calRangeStart.getDate() - calRangeDays());
+      calSelectedKey = calDateKey(calRangeStart);
+    }
+    calLoadData();
+  });
+  document.getElementById('cal-next').addEventListener('click', function(){
+    if (calView === 'month'){
+      calCurrentMonth = new Date(calCurrentMonth.getFullYear(), calCurrentMonth.getMonth() + 1, 1);
+      calSelectedKey = calDateKey(calCurrentMonth);
+    } else {
+      calRangeStart = new Date(calRangeStart.getFullYear(), calRangeStart.getMonth(), calRangeStart.getDate() + calRangeDays());
+      calSelectedKey = calDateKey(calRangeStart);
+    }
+    calLoadData();
+  });
+
+  function calOpenForm(mode, ev, presetBase){
     calEditingId = mode === 'edit' ? ev.id : '';
     document.getElementById('cal-form-title').textContent = mode === 'edit' ? 'Modifier le rendez-vous' : 'Nouveau rendez-vous';
     document.getElementById('cf-titre').value = mode === 'edit' ? ev.title : '';
     var base;
     if (mode === 'edit') base = new Date(ev.start);
+    else if (presetBase) base = new Date(presetBase);
     else {
       base = new Date();
       if (calSelectedKey){ var parts = calSelectedKey.split('-'); base = new Date(+parts[0], +parts[1] - 1, +parts[2], base.getHours(), 0, 0); }
@@ -5014,8 +5248,13 @@
     cfMcsExtra.classList.toggle('show', isMcsCode());
     document.getElementById('cf-description').value = mode === 'edit' ? (ev.description || '') : '';
     document.getElementById('cf-telephone').value = mode === 'edit' ? (ev.phone || '') : '';
-    document.getElementById('cf-invites').value = mode === 'edit' ? (ev.guests || '') : '';
     document.getElementById('cf-rappel').value = mode === 'edit' ? (ev.reminder || '') : '';
+    // Invitation de Bruno (chantier 12 audit) : reconstruite depuis ev.invites (chargé avec le
+    // rdv, chantier 12 suite) — coche + affiche le statut si déjà invité en édition.
+    var invBruno = (mode === 'edit' && Array.isArray(ev.invites)) ? ev.invites.find(function(i){ return i.personne === 'mcs-bruno'; }) : null;
+    document.getElementById('cf-invite-bruno').checked = !!invBruno;
+    var statutTxt = { attente: '⏳ En attente de réponse', confirme: '✅ Bruno a confirmé', decline: '❌ Bruno a décliné' };
+    document.getElementById('cf-invite-statut').textContent = invBruno ? (statutTxt[invBruno.statut] || '') : '';
     cfCouleurChoisie = mode === 'edit' ? (ev.color || '') : '';
     cfCouleurs.querySelectorAll('.cf-couleur').forEach(function(el){
       el.classList.toggle('selected', el.dataset.hex === cfCouleurChoisie);
@@ -5053,7 +5292,7 @@
       couleur: cfCouleurChoisie,
       description: document.getElementById('cf-description').value.trim(),
       telephone: document.getElementById('cf-telephone').value.trim(),
-      invites: document.getElementById('cf-invites').value.trim(),
+      invites: document.getElementById('cf-invite-bruno').checked ? ['mcs-bruno'] : [],
       rappel: document.getElementById('cf-rappel').value
     }, calEditingId ? '✅ Rendez-vous modifié.' : '✅ Rendez-vous créé.');
   });
@@ -5069,9 +5308,14 @@
     calendarview.classList.add('open');
     calCurrentMonth = new Date();
     calSelectedKey = calDateKey(new Date());
+    // Toujours rouvrir sur la vue Mois (previsible) meme si une autre vue etait active la
+    // derniere fois -- evite la confusion "pourquoi ca s'ouvre sur une grille horaire vide".
+    calView = 'month';
+    document.querySelectorAll('#cal-viewswitch button').forEach(function(b){ b.classList.toggle('active', b.dataset.view === 'month'); });
+    calGrid.style.display = ''; calDayEl.style.display = ''; document.getElementById('cal-agenda').style.display = 'none';
     calGrid.innerHTML = '';
     calDayEl.innerHTML = '<p id="cal-day-empty">Chargement…</p>';
-    calLoadMonth();
+    calLoadData();
   }
   document.getElementById('sh-calendar').addEventListener('click', function(){ sheetOpen(false); calendarOpen(); });
   document.getElementById('cal-close').addEventListener('click', calendarClose);
