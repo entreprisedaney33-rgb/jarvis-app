@@ -449,6 +449,60 @@
   .devis-card .dv-actions{display:flex; gap:8px; margin-top:6px}
   .devis-card .dv-actions .vc-ok, .devis-card .dv-actions .vc-no{padding:9px; font-size:14px}
   #devis-empty, #devis-loading{color:var(--muted); text-align:center; padding:40px 20px; font-size:14px}
+  /* Panneau plein ecran "Relances clients" (chantier 3 audit MCS, patron uniquement) */
+  #relancesview{
+    position:fixed; inset:0; z-index:50; background:var(--bg);
+    display:none; flex-direction:column;
+    transform:translateY(100%); transition:transform .28s cubic-bezier(.2,.9,.25,1);
+  }
+  #relancesview.open{display:flex; transform:translateY(0)}
+  @media (prefers-reduced-motion: reduce){#relancesview{transition:none}}
+  #relances-head{
+    flex:0 0 auto; display:flex; align-items:center; gap:10px;
+    padding:calc(10px + env(safe-area-inset-top)) 14px 12px;
+    border-bottom:0.5px solid var(--hairline);
+  }
+  #relances-head b{font-size:16px; flex:1; white-space:nowrap; overflow:hidden; text-overflow:ellipsis}
+  #relances-close{
+    width:32px; height:32px; border-radius:50%; border:0; flex:0 0 auto;
+    background:var(--surface); color:var(--ink); font-size:16px;
+    display:flex; align-items:center; justify-content:center; cursor:pointer;
+    -webkit-tap-highlight-color:transparent;
+  }
+  #relances-tabs{
+    flex:0 0 auto; display:flex; gap:8px; padding:10px 14px; overflow-x:auto; -webkit-overflow-scrolling:touch;
+    border-bottom:0.5px solid var(--hairline);
+  }
+  #relances-search-wrap{flex:0 0 auto; padding:10px 14px 0}
+  #relances-search{
+    width:100%; box-sizing:border-box; border:none; border-radius:12px;
+    background:var(--surface); color:var(--ink); font-size:15px; padding:10px 12px;
+    -webkit-appearance:none;
+  }
+  #relances-search::placeholder{color:var(--muted)}
+  #relances-summary{font-size:12.5px; color:var(--muted); text-align:center; margin:10px 14px 0}
+  #relances-list{flex:1; overflow-y:auto; -webkit-overflow-scrolling:touch; padding:10px 14px calc(20px + env(safe-area-inset-bottom))}
+  #relances-empty, #relances-loading{color:var(--muted); text-align:center; padding:40px 20px; font-size:14px}
+  .df-badge.r1{background:rgba(232,185,106,.15); color:var(--gold-a)}
+  .df-badge.r2{background:rgba(255,69,58,.15); color:var(--no)}
+  .df-badge.suspendu{background:rgba(255,255,255,.1); color:var(--muted)}
+  .rl-card .dv-actions{flex-wrap:wrap}
+  .rl-card .dv-actions button{padding:9px 12px; font-size:13px; border-radius:99px; border:0; cursor:pointer; -webkit-tap-highlight-color:transparent}
+  .rl-card .rl-marquer{background:var(--gold-a); color:#1a1200; font-weight:700}
+  .rl-card .rl-suspendre{background:#2E2E32; color:var(--ink)}
+  .rl-card .rl-reprendre{background:var(--ok); color:#04210c; font-weight:700}
+  .rl-suspend-note{font-size:12px; color:var(--muted); margin-top:2px}
+  .rl-form{display:none; flex-direction:column; gap:8px; margin-top:8px; padding-top:8px; border-top:0.5px solid var(--hairline)}
+  .rl-form.open{display:flex}
+  .rl-form input[type=date], .rl-form textarea{
+    width:100%; box-sizing:border-box; border:none; border-radius:10px;
+    background:var(--surface); color:var(--ink); font-size:14px; padding:9px 10px; font-family:inherit;
+  }
+  .rl-form textarea{resize:vertical; min-height:44px}
+  .rl-form .rl-form-actions{display:flex; gap:8px}
+  .rl-form .rl-form-actions button{flex:1; padding:9px; font-size:13.5px; border-radius:10px; border:0; cursor:pointer}
+  .rl-form .rl-confirm{background:var(--gold-a); color:#1a1200; font-weight:700}
+  .rl-form .rl-cancel{background:#2E2E32; color:var(--muted)}
   /* Panneau plein ecran "Rentabilite" (compte patron d'un tenant secondaire uniquement) */
   #rentaview{
     position:fixed; inset:0; z-index:50; background:var(--bg);
@@ -1575,6 +1629,7 @@
     <button class="sh-item" id="sh-clients" type="button"><span class="sh-ic">🏢</span><span class="sh-label">Clients</span></button>
     <button class="sh-item" id="sh-devis-attente" type="button" style="display:none"><span class="sh-ic">📝</span><span class="sh-label">Devis et factures</span><span class="badge-count" id="menu-devis-badge" style="display:none"></span></button>
     <button class="sh-item" id="sh-rentabilite" type="button" style="display:none"><span class="sh-ic">💹</span><span class="sh-label">Rentabilité</span></button>
+    <button class="sh-item" id="sh-relances" type="button" style="display:none"><span class="sh-ic">📨</span><span class="sh-label">Relances clients</span><span class="badge-count" id="menu-relances-badge" style="display:none"></span></button>
     <button class="sh-item" id="sh-push" type="button"><span class="sh-ic">🔔</span><span class="sh-label">Notifications</span><span class="sw" id="sw-push"><span class="sw-knob"></span></span></button>
   </div>
   <div class="sh-group">
@@ -1646,6 +1701,23 @@
     <button id="renta-close" type="button" aria-label="Fermer">✕</button>
   </div>
   <div id="renta-list"></div>
+</div>
+
+<div id="relancesview">
+  <div id="relances-head">
+    <b id="relances-title">📨 Relances clients</b>
+    <button id="relances-close" type="button" aria-label="Fermer">✕</button>
+  </div>
+  <div id="relances-tabs">
+    <button class="devis-tab active" data-tab="arelancer" type="button">À relancer</button>
+    <button class="devis-tab" data-tab="suspendues" type="button">Suspendues</button>
+    <button class="devis-tab" data-tab="toutes" type="button">Toutes</button>
+  </div>
+  <div id="relances-search-wrap">
+    <input id="relances-search" type="search" inputmode="search" placeholder="🔍 Rechercher un client…" autocomplete="off" autocapitalize="off" autocorrect="off">
+  </div>
+  <p id="relances-summary"></p>
+  <div id="relances-list"></div>
 </div>
 
 
@@ -1859,7 +1931,7 @@
 
 <script>
 (function(){
-  var APPV = 'v3.00';
+  var APPV = 'v3.01';
 
   // Debug : ?debug_modal=1 force l'affichage du modal "nouvelle version" sans attendre un vrai
   // déploiement. Capturé ICI, tout au début, car plus bas (login mémorisé, connexion) le code
@@ -1896,6 +1968,8 @@
   var API_DEVIS_FACTURES = 'https://n8n-self-hosted-t0pz.onrender.com/webhook/mcs-devis-factures';
   var API_DEVIS_VALIDER = 'https://n8n-self-hosted-t0pz.onrender.com/webhook/mcs-devis-valider';
   var API_RENTABILITE = 'https://n8n-self-hosted-t0pz.onrender.com/webhook/mcs-rentabilite';
+  var API_RELANCES = 'https://n8n-self-hosted-t0pz.onrender.com/webhook/mcs-relances';
+  var API_RELANCES_ACTION = 'https://n8n-self-hosted-t0pz.onrender.com/webhook/mcs-relances-action';
   var login = document.getElementById('login');
   var app = document.getElementById('app');
   var chat = document.getElementById('chat');
@@ -2080,6 +2154,8 @@
   function postDevisFactures(payload, onOk, onErr){ postDevisWeb(API_DEVIS_FACTURES, payload, onOk, onErr); }
   function postDevisValider(payload, onOk, onErr){ postDevisWeb(API_DEVIS_VALIDER, payload, onOk, onErr); }
   function postRentabilite(payload, onOk, onErr){ postDevisWeb(API_RENTABILITE, payload, onOk, onErr); }
+  function postRelances(payload, onOk, onErr){ postDevisWeb(API_RELANCES, payload, onOk, onErr); }
+  function postRelancesAction(payload, onOk, onErr){ postDevisWeb(API_RELANCES_ACTION, payload, onOk, onErr); }
 
   function postVitrine(payload, onOk, onErr){
     payload.code = String(read('jarvisCode') || '').trim();
@@ -2340,6 +2416,10 @@
     // "Rentabilité" : même garde que "Devis à valider" — patron d'un tenant secondaire uniquement.
     var rentaBtn = document.getElementById('sh-rentabilite');
     if (rentaBtn) rentaBtn.style.display = (mcs && role === 'patron') ? '' : 'none';
+    // "Relances clients" (chantier 3 audit MCS) : même garde — patron d'un tenant secondaire
+    // uniquement, jamais Bruno, jamais le compte principal.
+    var relancesBtn = document.getElementById('sh-relances');
+    if (relancesBtn) relancesBtn.style.display = (mcs && role === 'patron') ? '' : 'none';
     // Transparence (Phase 5) : visible seulement côté tenant secondaire — c'est CE
     // compte-là que le support peut consulter, l'inverse exact de la liste ci-dessus.
     var privacyNote = document.getElementById('privacy-note');
@@ -3071,6 +3151,144 @@
   }
   document.getElementById('renta-close').addEventListener('click', rentaAttenteClose);
   document.getElementById('sh-rentabilite').addEventListener('click', function(){ sheetOpen(false); rentabiliteOpen(); });
+
+  // ---- Relances clients (chantier 3 audit MCS, patron d'un tenant secondaire uniquement) ----
+  // Detection R1 (30j) / R2 (~50j) faite cote serveur depuis les factures MEG deja importees
+  // (mcs_rentabilite_exports_bruts, meme donnee que "Rentabilite"/"Devis et factures"). Aucun
+  // envoi automatique ici : "marquer relance" est une action MANUELLE (le patron l'a faite lui-
+  // meme par tel/mail), la redaction+envoi reel par Jarvis est un chantier separe (attend une
+  // vraie boite mail MCS). La suspension ("le syndic dit qu'il paiera en septembre") se pose a la
+  // main depuis l'app -- la lecture automatique des reponses mail est hors perimetre pour l'instant.
+  var relancesview = document.getElementById('relancesview');
+  var relancesList = document.getElementById('relances-list');
+  var relancesSearchInput = document.getElementById('relances-search');
+  var relancesSummary = document.getElementById('relances-summary');
+  var relancesData = [];
+  var relancesActiveTab = 'arelancer';
+  function relancesClose(){ relancesview.classList.remove('open'); }
+  function fmtRelanceDateFr(s){
+    // s = "JJ/MM/AAAA" (deja au format francais depuis MEG) ou une date ISO "AAAA-MM-JJ"
+    if (!s) return '';
+    if (s.indexOf('/') !== -1) return s;
+    var p = s.split('-');
+    return p.length === 3 ? (p[2] + '/' + p[1] + '/' + p[0]) : s;
+  }
+  function fmtEuros(n){
+    var v = Number(n) || 0;
+    return v.toLocaleString('fr-FR', { minimumFractionDigits: 2, maximumFractionDigits: 2 }) + ' €';
+  }
+  function relancesBuildCard(l){
+    var card = document.createElement('div'); card.className = 'devis-card rl-card';
+    var top = document.createElement('div'); top.className = 'df-row-top';
+    var nom = document.createElement('span'); nom.className = 'dv-nom'; nom.textContent = l.client || '(client non précisé)';
+    top.appendChild(nom);
+    if (l.suspendu){
+      var bs = document.createElement('span'); bs.className = 'df-badge suspendu'; bs.textContent = '⏸ Suspendue';
+      top.appendChild(bs);
+    } else if (l.relanceDue){
+      var bd = document.createElement('span'); bd.className = 'df-badge ' + l.niveauDu; bd.textContent = l.niveauDu.toUpperCase() + ' à envoyer';
+      top.appendChild(bd);
+    } else if (l.niveauFait !== 'aucune'){
+      var bf = document.createElement('span'); bf.className = 'df-badge ' + l.niveauFait; bf.textContent = l.niveauFait.toUpperCase() + ' déjà faite';
+      top.appendChild(bf);
+    }
+    card.appendChild(top);
+    var meta = document.createElement('span'); meta.className = 'dv-meta';
+    meta.textContent = (l.numero || '') + ' · facture du ' + fmtRelanceDateFr(l.date) + ' · ' + (l.joursRetard != null ? l.joursRetard + ' j de retard' : '');
+    card.appendChild(meta);
+    var montant = document.createElement('span'); montant.className = 'dv-montant'; montant.textContent = fmtEuros(l.resteDu) + ' dû';
+    card.appendChild(montant);
+    if (l.suspendu){
+      var note = document.createElement('span'); note.className = 'rl-suspend-note';
+      note.textContent = 'Suspendue jusqu’au ' + fmtRelanceDateFr(l.suspenduJusquau) + (l.note ? ' — « ' + l.note + ' »' : '');
+      card.appendChild(note);
+    }
+    var actions = document.createElement('div'); actions.className = 'dv-actions';
+    if (l.suspendu){
+      var repBtn = document.createElement('button'); repBtn.type = 'button'; repBtn.className = 'rl-reprendre'; repBtn.textContent = '▶️ Reprendre les relances';
+      repBtn.addEventListener('click', function(){
+        repBtn.disabled = true;
+        postRelancesAction({ numero: l.numero, action: 'reprendre' }, function(){
+          toast('Relances reprises pour ' + (l.client || 'ce client'));
+          relancesOpen(true);
+        }, function(err){ repBtn.disabled = false; toast(err); });
+      });
+      actions.appendChild(repBtn);
+    } else {
+      if (l.relanceDue){
+        var okBtn = document.createElement('button'); okBtn.type = 'button'; okBtn.className = 'rl-marquer';
+        okBtn.textContent = '✅ Marquer ' + l.niveauDu.toUpperCase() + ' envoyée';
+        okBtn.addEventListener('click', function(){
+          okBtn.disabled = true;
+          postRelancesAction({ numero: l.numero, action: 'marquer', niveau: l.niveauDu }, function(){
+            toast('✅ ' + l.niveauDu.toUpperCase() + ' marquée pour ' + (l.client || 'ce client'));
+            relancesOpen(true);
+          }, function(err){ okBtn.disabled = false; toast(err); });
+        });
+        actions.appendChild(okBtn);
+      }
+      var susBtn = document.createElement('button'); susBtn.type = 'button'; susBtn.className = 'rl-suspendre'; susBtn.textContent = '⏸ Suspendre';
+      actions.appendChild(susBtn);
+      var form = document.createElement('div'); form.className = 'rl-form';
+      var dateIn = document.createElement('input'); dateIn.type = 'date';
+      var noteIn = document.createElement('textarea'); noteIn.placeholder = 'Pourquoi (ex : le syndic dit qu’il règle en septembre)…'; noteIn.rows = 2;
+      form.appendChild(dateIn); form.appendChild(noteIn);
+      var formActions = document.createElement('div'); formActions.className = 'rl-form-actions';
+      var confirmBtn = document.createElement('button'); confirmBtn.type = 'button'; confirmBtn.className = 'rl-confirm'; confirmBtn.textContent = 'Confirmer la suspension';
+      var cancelBtn = document.createElement('button'); cancelBtn.type = 'button'; cancelBtn.className = 'rl-cancel'; cancelBtn.textContent = 'Annuler';
+      formActions.appendChild(confirmBtn); formActions.appendChild(cancelBtn);
+      form.appendChild(formActions);
+      susBtn.addEventListener('click', function(){ form.classList.toggle('open'); });
+      cancelBtn.addEventListener('click', function(){ form.classList.remove('open'); dateIn.value=''; noteIn.value=''; });
+      confirmBtn.addEventListener('click', function(){
+        if (!dateIn.value){ toast('Choisis une date de reprise.'); return; }
+        confirmBtn.disabled = true;
+        postRelancesAction({ numero: l.numero, action: 'suspendre', suspenduJusquau: dateIn.value, note: noteIn.value.trim() }, function(){
+          toast('⏸ Relance suspendue jusqu’au ' + fmtRelanceDateFr(dateIn.value));
+          relancesOpen(true);
+        }, function(err){ confirmBtn.disabled = false; toast(err); });
+      });
+      actions.appendChild(form);
+    }
+    card.appendChild(actions);
+    return card;
+  }
+  function relancesApplyFilter(){
+    var q = normDoc(relancesSearchInput.value.trim());
+    var items;
+    if (relancesActiveTab === 'arelancer') items = relancesData.filter(function(l){ return l.relanceDue; });
+    else if (relancesActiveTab === 'suspendues') items = relancesData.filter(function(l){ return l.suspendu; });
+    else items = relancesData.slice();
+    items = items.filter(function(l){ return !q || normDoc(l.client).indexOf(q) !== -1; });
+    relancesList.innerHTML = '';
+    if (relancesActiveTab === 'arelancer'){
+      var total = items.reduce(function(s,l){ return s + (Number(l.resteDu)||0); }, 0);
+      relancesSummary.textContent = items.length ? (items.length + ' facture' + (items.length>1?'s':'') + ' à relancer · ' + fmtEuros(total)) : '';
+    } else { relancesSummary.textContent = ''; }
+    if (!items.length){
+      relancesList.innerHTML = '<p id="relances-empty">' + (relancesActiveTab === 'arelancer' ? 'Rien à relancer pour l’instant.' : relancesActiveTab === 'suspendues' ? 'Aucune relance suspendue.' : 'Aucune facture impayée.') + '</p>';
+      return;
+    }
+    items.forEach(function(l){ relancesList.appendChild(relancesBuildCard(l)); });
+  }
+  function relancesOpen(keepOpen){
+    if (!keepOpen) relancesview.classList.add('open');
+    relancesList.innerHTML = '<p id="relances-loading">Chargement…</p>';
+    postRelances({}, function(j){
+      relancesData = j.lignes || [];
+      relancesApplyFilter();
+    }, function(err){ relancesList.innerHTML = '<p id="relances-empty">' + err + '</p>'; });
+  }
+  document.querySelectorAll('#relances-tabs .devis-tab').forEach(function(btn){
+    btn.addEventListener('click', function(){
+      document.querySelectorAll('#relances-tabs .devis-tab').forEach(function(b){ b.classList.toggle('active', b === btn); });
+      relancesActiveTab = btn.dataset.tab;
+      relancesApplyFilter();
+    });
+  });
+  relancesSearchInput.addEventListener('input', relancesApplyFilter);
+  document.getElementById('relances-close').addEventListener('click', relancesClose);
+  document.getElementById('sh-relances').addEventListener('click', function(){ sheetOpen(false); relancesOpen(); });
 
   function clientsShowSetup(){
     clientsTitleEl.textContent = '🏢 Clients';
