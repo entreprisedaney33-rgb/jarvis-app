@@ -2095,7 +2095,7 @@
 
 <script>
 (function(){
-  var APPV = 'v3.03';
+  var APPV = 'v3.04';
 
   // Debug : ?debug_modal=1 force l'affichage du modal "nouvelle version" sans attendre un vrai
   // déploiement. Capturé ICI, tout au début, car plus bas (login mémorisé, connexion) le code
@@ -2586,8 +2586,11 @@
     // avant même la 1ère réponse serveur.
     var role = (extras && extras.role) || read('jarvisRole') || '';
     var mcsSalarie = mcs && role === 'salarie';
+    // "Mes documents" (2026-08-03, demande Mathéo) : la recherche/le classement documentaire ne
+    // sert pas MCS (client décidé pendant l'audit) — masqué pour TOUT tenant secondaire (patron
+    // ET salarié), reste inchangé pour le compte principal.
     var docsBtn = document.getElementById('sh-docs');
-    if (docsBtn) docsBtn.style.display = mcsSalarie ? 'none' : '';
+    if (docsBtn) docsBtn.style.display = mcs ? 'none' : '';
     // Notifications : PAS masquées pour un salarié MCS (chantier 12 audit) — Bruno doit pouvoir
     // les activer pour recevoir rappels et invitations de rendez-vous (poussés par le cron/la
     // synchro d'invités côté serveur), même s'il n'a pas d'écran Calendrier visuel.
@@ -2616,10 +2619,12 @@
     // secondaire uniquement, jamais Bruno, jamais le compte principal.
     var carnetBtn = document.getElementById('sh-carnet');
     if (carnetBtn) carnetBtn.style.display = (mcs && role === 'patron') ? '' : 'none';
-    // "Portefeuille clients" (chantier 10 audit) : même garde — patron d'un tenant secondaire
-    // uniquement, jamais Bruno, jamais le compte principal.
+    // "Portefeuille clients" (2026-08-03, demande Mathéo) : onglet retiré du menu (l'utilisateur
+    // ne s'en sert pas via cette vue) — le mécanisme de fond RESTE actif (reconnaissance auto
+    // d'un client MEG pendant la dictée d'un devis, cf. mcs_contacts) : c'est purement un
+    // masquage cote client, le backend (chantier 10) n'est pas touché.
     var portefeuilleBtn = document.getElementById('sh-portefeuille');
-    if (portefeuilleBtn) portefeuilleBtn.style.display = (mcs && role === 'patron') ? '' : 'none';
+    if (portefeuilleBtn) portefeuilleBtn.style.display = 'none';
     // Transparence (Phase 5) : visible seulement côté tenant secondaire — c'est CE
     // compte-là que le support peut consulter, l'inverse exact de la liste ci-dessus.
     var privacyNote = document.getElementById('privacy-note');
