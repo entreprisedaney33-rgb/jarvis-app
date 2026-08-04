@@ -503,10 +503,10 @@
   .rl-form .rl-form-actions button{flex:1; padding:9px; font-size:13.5px; border-radius:10px; border:0; cursor:pointer}
   .rl-form .rl-confirm{background:var(--gold-a); color:#1a1200; font-weight:700}
   .rl-form .rl-cancel{background:#2E2E32; color:var(--muted)}
-  /* Panneau plein ecran "Carnet bleu" (fiches techniques des residences MCS -- codes d'entree,
-     courroies, groupe VMC, cles -- compte patron d'un tenant secondaire uniquement). Coffre-fort :
-     chaque champ est editable en place (meme mecanisme que .notes-contenu-edit) et verrouillable
-     individuellement contre une mise a jour automatique depuis un message/mail (icone cadenas). */
+  /* Panneau plein ecran "Carnet bleu" (fiches par residence MCS -- nom + un commentaire libre,
+     compte patron d'un tenant secondaire uniquement). Coffre-fort : le commentaire est editable
+     en place (meme mecanisme que .notes-contenu-edit) et verrouillable contre une modification
+     (icone cadenas). */
   #carnetview{
     position:fixed; inset:0; z-index:50; background:var(--bg);
     display:none; flex-direction:column;
@@ -536,8 +536,21 @@
   #carnet-list{flex:1; overflow-y:auto; -webkit-overflow-scrolling:touch; padding:10px 14px calc(20px + env(safe-area-inset-bottom))}
   #carnet-empty, #carnet-loading{color:var(--muted); text-align:center; padding:40px 20px; font-size:14px}
   .carnet-card{background:var(--surface); border-radius:14px; padding:14px; margin-bottom:12px}
+  .carnet-card-head{display:flex; align-items:flex-start; justify-content:space-between; gap:8px}
   .carnet-nom{font-size:15.5px; font-weight:700; display:block; margin-bottom:2px}
   .carnet-sub{font-size:11.5px; color:var(--muted); display:block; margin-bottom:10px}
+  .carnet-del-wrap{display:flex; align-items:center; gap:4px; flex:0 0 auto; margin-top:1px}
+  .carnet-del{
+    width:26px; height:26px; border-radius:50%; border:0; flex:0 0 auto;
+    background:transparent; color:var(--muted); font-size:14px; cursor:pointer; -webkit-tap-highlight-color:transparent;
+  }
+  .carnet-del-label{font-size:11.5px; color:var(--muted); white-space:nowrap}
+  .carnet-del-yes, .carnet-del-no{
+    width:26px; height:26px; border-radius:50%; border:0; flex:0 0 auto; font-size:13px; cursor:pointer;
+    -webkit-tap-highlight-color:transparent;
+  }
+  .carnet-del-yes{background:rgba(255,69,58,.18); color:#FF453A}
+  .carnet-del-no{background:transparent; color:var(--muted)}
   .carnet-field{display:flex; align-items:flex-start; gap:8px; padding:8px 0; border-top:0.5px solid var(--hairline)}
   .carnet-field:first-of-type{border-top:none}
   .carnet-field-main{flex:1; min-width:0}
@@ -2095,7 +2108,7 @@
 
 <script>
 (function(){
-  var APPV = 'v3.04';
+  var APPV = 'v3.06';
 
   // Debug : ?debug_modal=1 force l'affichage du modal "nouvelle version" sans attendre un vrai
   // déploiement. Capturé ICI, tout au début, car plus bas (login mémorisé, connexion) le code
@@ -3504,23 +3517,21 @@
   document.getElementById('relances-close').addEventListener('click', relancesClose);
   document.getElementById('sh-relances').addEventListener('click', function(){ sheetOpen(false); relancesOpen(); });
 
-  // ---- Carnet bleu (fiches techniques des résidences MCS -- chantier 2 de l'audit, 2026-08-02) ----
-  // Coffre-fort par résidence : code d'entrée/digicode, courroies, groupe VMC, clés. Chaque champ
-  // est éditable en place (même mécanisme que .notes-contenu-edit, auto-agrandi) et verrouillable
-  // individuellement (🔒) contre une mise à jour automatique déclenchée par le cerveau MCS quand un
-  // message/mail relayé annonce un nouveau code -- verrouiller un champ = seule la main compte.
+  // ---- Carnet bleu (fiches par résidence MCS -- simplifié le 2026-08-04, demande Mathéo) ----
+  // Une résidence = un nom + un commentaire libre (court ou long selon la résidence), édité en
+  // place (même mécanisme que .notes-contenu-edit, auto-agrandi) et verrouillable (🔒) contre une
+  // modification -- les 4 champs techniques structurés (digicode/courroies/VMC/clés) et la
+  // détection automatique associée restent côté serveur (colonnes mcs_residences, webhook
+  // mcs-carnet) mais ne sont plus affichés/édités depuis l'app.
   var carnetview = document.getElementById('carnetview');
   var carnetList = document.getElementById('carnet-list');
   var carnetSearchInput = document.getElementById('carnet-search');
   var carnetAll = [];
   var carnetQuery = '';
   var CARNET_FIELDS = [
-    { key:'digicode', label:"Code d'entrée (digicode)" },
-    { key:'courroies', label:'Courroies' },
-    { key:'groupeVmc', label:'Groupe VMC' },
-    { key:'cles', label:'Clés' },
+    { key:'notes', label:'Commentaire' },
   ];
-  var CARNET_CHAMP_API = { digicode:'digicode', courroies:'courroies', groupeVmc:'groupe_vmc', cles:'cles' };
+  var CARNET_CHAMP_API = { notes:'notes' };
 
   function carnetNorm(s){ return String(s || '').toLowerCase().normalize('NFD').replace(/[̀-ͯ]/g, ''); }
 
@@ -3547,7 +3558,6 @@
         if (nouveauTexte != null && nouveauTexte.trim() !== (r[f.key] || '')){
           var nv = nouveauTexte.trim();
           postCarnet({ type:'modifier', id:r.id, champ:apiChamp, valeur:nv }, function(){
-            if (apiChamp === 'digicode' && r.digicode) r.digicodePrecedent = r.digicode;
             r[f.key] = nv;
             r.majSource = 'manuel'; r.majDate = new Date().toISOString();
             carnetRender();
@@ -3562,10 +3572,6 @@
         if (e.key === 'Escape'){ e.preventDefault(); termine = true; carnetRender(); }
       });
     });
-    if (f.key === 'digicode' && r.digicodePrecedent){
-      var anc = document.createElement('span'); anc.className = 'carnet-ancien'; anc.textContent = 'Ancien code : ' + r.digicodePrecedent;
-      main.appendChild(anc);
-    }
     row.appendChild(main);
     var lock = document.createElement('button'); lock.className = 'carnet-lock'; lock.type = 'button';
     lock.textContent = isLocked ? '🔒' : '🔓';
@@ -3583,13 +3589,38 @@
 
   function carnetCard(r){
     var card = document.createElement('div'); card.className = 'carnet-card';
+    var head = document.createElement('div'); head.className = 'carnet-card-head';
+    var info = document.createElement('div');
     var nom = document.createElement('span'); nom.className = 'carnet-nom'; nom.textContent = r.nom;
-    card.appendChild(nom);
+    info.appendChild(nom);
     var sub = document.createElement('span'); sub.className = 'carnet-sub';
     sub.textContent = r.majDate
       ? ('Dernière mise à jour ' + (r.majSource === 'chat' ? 'automatique' : 'manuelle') + ' · ' + new Date(r.majDate).toLocaleDateString('fr-FR'))
-      : 'Aucune information technique encore renseignée';
-    card.appendChild(sub);
+      : 'Aucun commentaire encore renseigné';
+    info.appendChild(sub);
+    head.appendChild(info);
+    var delWrap = document.createElement('div'); delWrap.className = 'carnet-del-wrap';
+    var del = document.createElement('button'); del.className = 'carnet-del'; del.type = 'button'; del.textContent = '🗑';
+    del.setAttribute('aria-label', 'Supprimer cette résidence');
+    del.addEventListener('click', function(){
+      delWrap.innerHTML = '';
+      var label = document.createElement('span'); label.className = 'carnet-del-label'; label.textContent = 'Supprimer ?';
+      var yes = document.createElement('button'); yes.type = 'button'; yes.className = 'carnet-del-yes'; yes.textContent = '🗑'; yes.setAttribute('aria-label', 'Confirmer la suppression');
+      var no = document.createElement('button'); no.type = 'button'; no.className = 'carnet-del-no'; no.textContent = '✕'; no.setAttribute('aria-label', 'Annuler');
+      delWrap.appendChild(label); delWrap.appendChild(yes); delWrap.appendChild(no);
+      no.addEventListener('click', function(){ carnetRender(); });
+      yes.addEventListener('click', function(){
+        yes.disabled = true; no.disabled = true;
+        postCarnet({ type:'supprimer', id:r.id }, function(){
+          carnetAll = carnetAll.filter(function(x){ return x.id !== r.id; });
+          carnetRender();
+          toast('🗑 Résidence supprimée');
+        }, function(err){ toast(err || 'Suppression impossible'); carnetRender(); });
+      });
+    });
+    delWrap.appendChild(del);
+    head.appendChild(delWrap);
+    card.appendChild(head);
     CARNET_FIELDS.forEach(function(f){ card.appendChild(carnetFieldRow(r, f)); });
     return card;
   }
@@ -3633,7 +3664,7 @@
     var btn = document.getElementById('caf-save'); btn.disabled = true;
     postCarnet({ type:'ajouter', nom:nom }, function(j){
       btn.disabled = false;
-      carnetAll.push({ id:j.id, nom:j.nom, personnes:'', notes:'', digicode:'', digicodePrecedent:'', courroies:'', groupeVmc:'', cles:'', verrous:{}, majSource:'', majDate:'' });
+      carnetAll.push({ id:j.id, nom:j.nom, notes:'', verrous:{}, majSource:'', majDate:'' });
       carnetRender();
       carnetAddCloseForm();
     }, function(err){ btn.disabled = false; cafErr.textContent = err; });
