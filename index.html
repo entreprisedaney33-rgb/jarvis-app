@@ -2166,7 +2166,7 @@
 
 <script>
 (function(){
-  var APPV = 'v3.09';
+  var APPV = 'v3.10';
 
   // Debug : ?debug_modal=1 force l'affichage du modal "nouvelle version" sans attendre un vrai
   // déploiement. Capturé ICI, tout au début, car plus bas (login mémorisé, connexion) le code
@@ -2421,6 +2421,34 @@
     }).then(function(r){ return r.json(); }).then(function(j){
       if (!j || j.ok === false){ onErr((j && j.erreur) || 'Erreur.'); } else { onOk(j); }
     }).catch(function(){ onErr('Connexion impossible.'); });
+  }
+
+  // ---- Carte "pages PLUME à valider" DANS LE FIL DE DISCUSSION (demande explicite du 2026-08-04) ----
+  // Se déclenche à chaque vraie ouverture de l'app (une seule fois par chargement de page, même si
+  // enterApp() tourne 2x -- cache puis frais). Ne marque JAMAIS "vu" côté serveur : tant qu'il reste
+  // au moins une page en statut brouillon, la carte réapparaît à la prochaine ouverture -- c'est
+  // voulu ("si je repousse ça me le propose la prochaine fois").
+  var plumeDraftsCheckedThisLoad = false;
+  function showPlumeDraftsCard(n){
+    var card = document.createElement('div'); card.className = 'msg jarvis vcard';
+    var pre = document.createElement('div'); pre.className = 'vc-resume';
+    pre.textContent = '🪶 ' + n + ' page' + (n > 1 ? 's' : '') + ' prête' + (n > 1 ? 's' : '') + ' à valider.';
+    card.appendChild(pre);
+    var row = document.createElement('div'); row.className = 'vc-row';
+    var go = document.createElement('button'); go.type = 'button'; go.className = 'vc-ok'; go.textContent = '👉 Voir dans SEO';
+    row.appendChild(go);
+    card.appendChild(row);
+    go.addEventListener('click', function(){ plumeOpen(); });
+    chat.appendChild(card);
+    chat.scrollTop = chat.scrollHeight;
+  }
+  function checkPlumeDraftsOnOpen(){
+    if (plumeDraftsCheckedThisLoad) return;
+    plumeDraftsCheckedThisLoad = true;
+    postPlume({ type:'pages_brouillon' }, function(j){
+      var n = (j.pages || []).length;
+      if (n > 0) showPlumeDraftsCard(n);
+    }, function(){});
   }
 
   function renderExtras(j){
@@ -2700,6 +2728,7 @@
     // compte-là que le support peut consulter, l'inverse exact de la liste ci-dessus.
     var privacyNote = document.getElementById('privacy-note');
     if (privacyNote) privacyNote.style.display = mcs ? '' : 'none';
+    if (!mcs) checkPlumeDraftsOnOpen();
   }
 
   // ---- Login ----
