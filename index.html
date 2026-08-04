@@ -222,6 +222,24 @@
   }
   #sheet.open{transform:translateY(0)}
   @media (prefers-reduced-motion: reduce){#sheet{transition:none}#sheetbg{transition:none}}
+  /* Sous-menu "Site" (SEO / Sites Vitrine) -- meme gabarit que #sheetbg/#sheet, ids distincts */
+  #siteSheetbg{
+    position:fixed; inset:0; background:rgba(0,0,0,0); display:none; z-index:40;
+    transition:background .32s cubic-bezier(.32,.72,0,1);
+    -webkit-backdrop-filter:blur(0px); backdrop-filter:blur(0px);
+  }
+  #siteSheetbg.open{display:block; background:rgba(0,0,0,.55); -webkit-backdrop-filter:blur(2px); backdrop-filter:blur(2px)}
+  #siteSheet{
+    position:fixed; left:0; right:0; bottom:0; z-index:41;
+    background:linear-gradient(180deg,#232326,#19191C);
+    border-radius:24px 24px 0 0;
+    border:0.5px solid rgba(255,255,255,.08); border-bottom:none;
+    box-shadow:0 -18px 50px rgba(0,0,0,.5), 0 -2px 0 rgba(255,255,255,.03) inset;
+    padding:10px 14px calc(14px + env(safe-area-inset-bottom));
+    transform:translateY(108%); transition:transform .38s cubic-bezier(.32,.72,0,1);
+  }
+  #siteSheet.open{transform:translateY(0)}
+  @media (prefers-reduced-motion: reduce){#siteSheet{transition:none}#siteSheetbg{transition:none}}
   .sh-handle{width:36px; height:5px; border-radius:3px; background:rgba(255,255,255,.18); margin:6px auto 14px}
   .sh-group{background:rgba(255,255,255,.045); border-radius:16px; overflow:hidden; margin-bottom:10px}
   .sh-item{
@@ -1583,6 +1601,22 @@
   #updModal p{font-size:14.5px; color:var(--muted); margin:2px 0 6px; line-height:1.42}
   .upd-row{display:flex; gap:10px; width:100%; margin-top:8px}
   .upd-row button{flex:1}
+  /* Pop-up "bilan a 30 jours" PLUME -- meme gabarit que le modal de mise a jour (#updModal),
+     ids distincts pour ne jamais entrer en collision si les deux existaient un jour ensemble. */
+  #plumeBilanBg{position:fixed; inset:0; background:rgba(0,0,0,.62); display:none; z-index:70}
+  #plumeBilanBg.open{display:block}
+  #plumeBilan{
+    position:fixed; left:22px; right:22px; top:50%; transform:translateY(-50%) scale(.96); z-index:71;
+    background:#1C1C1E; border-radius:18px; padding:26px 22px calc(20px + env(safe-area-inset-bottom));
+    display:none; flex-direction:column; align-items:center; text-align:center; gap:8px;
+    opacity:0; transition:opacity .2s ease, transform .2s ease;
+    box-shadow:0 24px 70px rgba(0,0,0,.55);
+    max-width:360px; margin:0 auto;
+  }
+  #plumeBilan.open{display:flex; opacity:1; transform:translateY(-50%) scale(1)}
+  @media (prefers-reduced-motion: reduce){#plumeBilan{transition:none}}
+  .plume-meta-dates{font-size:12px; color:var(--muted); margin-top:2px; display:block}
+  .plume-lancer-btn{background:var(--gold-a); color:#1a1a1a; font-weight:700}
   /* Horodatage discret sous chaque bulle */
   .mtime{display:block; font-size:10.5px; opacity:.5; margin-top:3px; line-height:1}
   .msg.user .mtime{text-align:right}
@@ -1760,8 +1794,7 @@
     <button class="sh-item" id="sh-calendar" type="button"><span class="sh-ic">📅</span><span class="sh-label">Calendrier</span></button>
     <button class="sh-item" id="sh-docs" type="button"><span class="sh-ic">📄</span><span class="sh-label">Mes documents</span></button>
     <button class="sh-item" id="sh-meute" type="button"><span class="sh-ic">🐺</span><span class="sh-label">Meute</span><span class="badge-count" id="menu-meute-badge" style="display:none"></span></button>
-    <button class="sh-item" id="sh-vitrine" type="button"><span class="sh-ic">🏗️</span><span class="sh-label">Sites Vitrine</span></button>
-    <button class="sh-item" id="sh-plume" type="button"><span class="sh-ic">🪶</span><span class="sh-label">SEO</span></button>
+    <button class="sh-item" id="sh-site" type="button"><span class="sh-ic">🏗️</span><span class="sh-label">Site</span></button>
     <button class="sh-item" id="sh-notes" type="button"><span class="sh-ic">🧠</span><span class="sh-label">Notes</span></button>
     <button class="sh-item" id="sh-clients" type="button"><span class="sh-ic">🏢</span><span class="sh-label">Clients</span></button>
     <button class="sh-item" id="sh-devis-attente" type="button" style="display:none"><span class="sh-ic">📝</span><span class="sh-label">Devis et factures</span><span class="badge-count" id="menu-devis-badge" style="display:none"></span></button>
@@ -1776,6 +1809,20 @@
   </div>
   <p class="sh-ver" id="subline">Jarvis</p>
   <p class="sh-ver" id="privacy-note" style="display:none; padding:0 20px; line-height:1.4">🔒 Le support M22Vision peut consulter vos conversations avec Jarvis pour améliorer l'outil (jamais leur contenu diffusé ailleurs). Conservées 90 jours.</p>
+</div>
+
+<!-- Sous-menu "Site" (2026-08-04, demande Matheo : regrouper SEO + Sites Vitrine sous une
+     seule entree du menu principal, pour desencombrer -- meme mecanique de feuille que #sheet,
+     ouverte a la place quand on tape "Site". Les 2 boutons ci-dessous portent les MEMES ids
+     (sh-vitrine/sh-plume) qu'avant : leurs listeners existants (plumeOpen/vitrineOpen, plus bas
+     dans ce fichier) continuent de fonctionner sans rien dupliquer. -->
+<div id="siteSheetbg"></div>
+<div id="siteSheet">
+  <div class="sh-handle"></div>
+  <div class="sh-group">
+    <button class="sh-item" id="sh-vitrine" type="button"><span class="sh-ic">🏗️</span><span class="sh-label">Sites Vitrine</span></button>
+    <button class="sh-item" id="sh-plume" type="button"><span class="sh-ic">🪶</span><span class="sh-label">SEO</span></button>
+  </div>
 </div>
 
 <div id="docsview">
@@ -2096,6 +2143,17 @@
   </div>
 </div>
 
+<div id="plumeBilanBg"></div>
+<div id="plumeBilan">
+  <div class="upd-emoji">🪶</div>
+  <b id="plumeBilan-title">Bilan à 30 jours</b>
+  <p id="plumeBilan-text">Ça fait 30 jours qu’on travaille sur ce site.</p>
+  <div class="upd-row">
+    <button id="plumeBilan-later" type="button" class="vc-no">Plus tard</button>
+    <button id="plumeBilan-see" type="button" class="vc-ok">Voir le rapport</button>
+  </div>
+</div>
+
 <div id="msgSheetbg"></div>
 <div id="msgSheet">
   <div class="sh-handle"></div>
@@ -2108,7 +2166,7 @@
 
 <script>
 (function(){
-  var APPV = 'v3.07';
+  var APPV = 'v3.08';
 
   // Debug : ?debug_modal=1 force l'affichage du modal "nouvelle version" sans attendre un vrai
   // déploiement. Capturé ICI, tout au début, car plus bas (login mémorisé, connexion) le code
@@ -2586,7 +2644,7 @@
     // le compte principal. La vraie protection reste côté serveur (code d'observation
     // dédié, jamais donné aux comptes clients, table séparée) : masquer ici n'est qu'un
     // confort visuel, pas la garantie — voir la doc privée du dépôt.
-    ['sh-meute', 'sh-vitrine', 'sh-plume', 'hcallbtn', 'sh-clients'].forEach(function(id){
+    ['sh-meute', 'sh-site', 'sh-vitrine', 'sh-plume', 'hcallbtn', 'sh-clients'].forEach(function(id){
       var el = document.getElementById(id);
       if (el) el.style.display = mcs ? 'none' : '';
     });
@@ -2715,6 +2773,12 @@
     if (opening) refreshPushToggle();
   });
   sheetbg.addEventListener('click', function(){ sheetOpen(false); });
+  // ---- Sous-menu "Site" (SEO / Sites Vitrine regroupes) ----
+  var siteSheet = document.getElementById('siteSheet');
+  var siteSheetbg = document.getElementById('siteSheetbg');
+  function siteSheetOpen(o){ siteSheet.classList.toggle('open', o); siteSheetbg.classList.toggle('open', o); }
+  document.getElementById('sh-site').addEventListener('click', function(){ sheetOpen(false); siteSheetOpen(true); });
+  siteSheetbg.addEventListener('click', function(){ siteSheetOpen(false); });
   // ---- Notifications : interrupteur ON/OFF reflétant l'état RÉEL de l'appareil ----
   // pushManager.getSubscription() est l'API standard qui dit, de façon fiable et 100% locale
   // (pas besoin d'interroger le serveur), si CET appareil/navigateur a deja un abonnement actif.
@@ -4503,7 +4567,7 @@
     vitrineRefresh();
   }
   function vitrineClose(){ vitrineview.classList.remove('open'); }
-  document.getElementById('sh-vitrine').addEventListener('click', function(){ sheetOpen(false); vitrineOpen(); });
+  document.getElementById('sh-vitrine').addEventListener('click', function(){ siteSheetOpen(false); vitrineOpen(); });
   document.getElementById('vitrine-close').addEventListener('click', vitrineClose);
   vitrineRefreshBtn.addEventListener('click', function(){
     if (vitrineRefreshBtn.classList.contains('spin')) return;
@@ -4562,7 +4626,15 @@
     var idx = parseInt(m[2], 10) - 1;
     return (PLUME_MOIS_FR[idx] || mois) + ' ' + m[1];
   }
-  var PLUME_STATUT_LABEL = { a_faire:'À faire', en_cours:'En cours', fait:'Fait' };
+  var PLUME_STATUT_LABEL = { a_faire:'À faire', en_cours:'En cours', fait:'Fait', bloque:'Bloqué' };
+  var PLUME_TYPE_LABEL = {
+    technique:'🔧 Technique', page_service:'📄 Page service', page_commune:'📍 Page commune',
+    article:'✍️ Article', gbp:'📍 Fiche Google', avis:'⭐ Avis', citation:'🔗 Citation',
+    lien:'🔗 Lien', bilan:'📊 Bilan',
+  };
+  // Références vers les boutons "aperçu du rapport" de chaque carte, pour que le pop-up de bilan
+  // (30 jours) puisse ouvrir directement le bon rapport sans reconstruire son propre mécanisme.
+  var plumeCardRefs = {};
 
   function plumeCard(s){
     var card = document.createElement('div'); card.className = 'plume-card';
@@ -4597,6 +4669,33 @@
       card.appendChild(cBtn);
     }
 
+    if (s.date_debut){
+      var dates = document.createElement('span'); dates.className = 'plume-meta-dates';
+      dates.textContent = 'Démarré le ' + s.date_debut + (s.mois_courant ? ' · mois en cours : ' + plumeMoisLabel(s.mois_courant) : '');
+      card.appendChild(dates);
+    }
+
+    if (s.mois_courant){
+      var curStep = (s.plan || []).filter(function(p){ return p.mois === s.mois_courant; })[0];
+      if (curStep && curStep.statut === 'a_faire'){
+        var lBtn = document.createElement('button'); lBtn.className = 'plume-commencer-btn plume-lancer-btn'; lBtn.type = 'button';
+        var lBtnLabel = '▶️ Lancer les tâches de ' + plumeMoisLabel(s.mois_courant);
+        lBtn.textContent = lBtnLabel;
+        lBtn.addEventListener('click', function(){
+          if (lBtn.disabled) return;
+          lBtn.disabled = true; lBtn.textContent = 'Confirmation…';
+          postPlume({ type:'lancer_mois', domaine: s.domaine }, function(){
+            toast('✅ Mois lancé — je m’y mets.');
+            plumeRefresh();
+          }, function(err){
+            lBtn.disabled = false; lBtn.textContent = lBtnLabel;
+            toast(err);
+          });
+        });
+        card.appendChild(lBtn);
+      }
+    }
+
     var checklist = document.createElement('div'); checklist.className = 'plume-checklist';
     PLUME_CHECKS.forEach(function(c){
       var chip = document.createElement('span'); chip.className = 'plume-check' + (s.checklist && s.checklist[c.key] ? ' done' : '');
@@ -4615,14 +4714,15 @@
 
     if (s.plan && s.plan.length){
       var pToggle = document.createElement('button'); pToggle.className = 'plume-plan-toggle'; pToggle.type = 'button';
-      pToggle.textContent = '🗓️ Plan sur 6 mois (' + s.plan.length + ' étapes)';
+      pToggle.textContent = '🗓️ Plan (' + s.plan.length + ' étapes)';
       var pList = document.createElement('div'); pList.className = 'plume-plan-list';
       s.plan.forEach(function(p){
         var step = document.createElement('div'); step.className = 'plume-plan-step ' + (p.statut || 'a_faire');
         var dot = document.createElement('span'); dot.className = 'plume-plan-dot';
         var body = document.createElement('div'); body.className = 'plume-plan-body';
         var mo = document.createElement('span'); mo.className = 'plume-plan-mois';
-        mo.textContent = plumeMoisLabel(p.mois) + (p.echeance ? ' · échéance ' + p.echeance : '') + ' · ' + (PLUME_STATUT_LABEL[p.statut] || 'À faire');
+        mo.textContent = plumeMoisLabel(p.mois) + (p.type ? ' · ' + (PLUME_TYPE_LABEL[p.type] || p.type) : '')
+          + (p.echeance ? ' · échéance ' + p.echeance : '') + ' · ' + (PLUME_STATUT_LABEL[p.statut] || 'À faire');
         var ti = document.createElement('span'); ti.className = 'plume-plan-titre'; ti.textContent = p.titre || '';
         var ac = document.createElement('span'); ac.className = 'plume-plan-actions'; ac.textContent = p.actions || '';
         body.appendChild(mo); body.appendChild(ti); body.appendChild(ac);
@@ -4631,6 +4731,12 @@
           var reb = document.createElement('b'); reb.textContent = 'Objectif : ';
           re.appendChild(reb); re.appendChild(document.createTextNode(p.resultat_attendu));
           body.appendChild(re);
+        }
+        if (p.statut === 'bloque' && p.bloque_raison){
+          var bl = document.createElement('span'); bl.className = 'plume-plan-resultat';
+          var blb = document.createElement('b'); blb.textContent = '⚠️ Bloqué : ';
+          bl.appendChild(blb); bl.appendChild(document.createTextNode(p.bloque_raison));
+          body.appendChild(bl);
         }
         step.appendChild(dot); step.appendChild(body);
         pList.appendChild(step);
@@ -4693,6 +4799,7 @@
       });
       rBox.appendChild(rToggle); rBox.appendChild(rFields);
       card.appendChild(rBox);
+      plumeCardRefs[s.domaine] = { card: card, rToggle: rToggle };
     }
 
     if (s.journal && s.journal.length){
@@ -4728,8 +4835,60 @@
     postPlume({ type:'list' }, function(j){
       plumeAll = j.sites || [];
       plumeRender();
+      plumeCheckBilan(plumeAll);
       if (onDone) onDone();
     }, function(err){ plumeList.innerHTML = '<p id="plume-empty">' + err + '</p>'; if (onDone) onDone(); });
+  }
+
+  // ---- Pop-up "bilan à 30 jours" : dès qu'un site démarré (date_debut posée au clic
+  // "Commencer") atteint 30 jours (puis 60, 90…), propose l'aperçu du compte rendu déjà
+  // existant (rapport_apercu/rapport_envoyer) -- jamais d'envoi automatique, juste la
+  // proposition ; le clic humain reste obligatoire pour l'envoi réel, comme partout ailleurs
+  // dans l'app. "Plus tard" ne marque rien -- le pop-up réapparaîtra tant que non traité.
+  var plumeBilanBg = document.getElementById('plumeBilanBg');
+  var plumeBilanModal = document.getElementById('plumeBilan');
+  var plumeBilanText = document.getElementById('plumeBilan-text');
+  var plumeBilanCurrent = null;
+  function plumeBilanOpen(o){ plumeBilanBg.classList.toggle('open', o); plumeBilanModal.classList.toggle('open', o); }
+  document.getElementById('plumeBilan-later').addEventListener('click', function(){ plumeBilanOpen(false); });
+  plumeBilanBg.addEventListener('click', function(){ plumeBilanOpen(false); });
+  document.getElementById('plumeBilan-see').addEventListener('click', function(){
+    var cur = plumeBilanCurrent;
+    plumeBilanOpen(false);
+    if (!cur) return;
+    store(cur.key, '1');
+    sheetOpen(false);
+    plumeOpen();
+    setTimeout(function(){
+      var ref = plumeCardRefs[cur.domaine];
+      if (!ref) return;
+      ref.card.scrollIntoView({ behavior:'smooth', block:'start' });
+      if (!ref.rToggle.parentElement.classList.contains('open')) ref.rToggle.click();
+    }, 250);
+  });
+  function plumeCheckBilan(sites){
+    if (plumeBilanModal.classList.contains('open')) return; // un seul pop-up a la fois
+    var now = new Date();
+    for (var i = 0; i < sites.length; i++){
+      var s = sites[i];
+      if (!s.date_debut) continue;
+      var debut = new Date(s.date_debut + 'T00:00:00');
+      var jours = Math.floor((now - debut) / 86400000);
+      if (jours < 30) continue;
+      var periode = Math.floor(jours / 30);
+      var key = 'plumeBilan_' + s.domaine + '_' + periode;
+      if (read(key)) continue;
+      plumeBilanCurrent = { domaine: s.domaine, key: key };
+      plumeBilanText.textContent = 'Ça fait ' + jours + ' jours qu’on travaille sur ' + (s.nom || s.domaine) + '. Je te prépare le compte rendu à envoyer.';
+      plumeBilanOpen(true);
+      return;
+    }
+  }
+  // Verification silencieuse (sans ouvrir/recharger le panneau) -- accrochee au meme rythme que
+  // pollInbox (180 s, deja garde par document.hidden/app visible/code connu) pour que le pop-up
+  // puisse apparaitre meme si Mathéo n'a pas ouvert l'onglet SEO ce jour-la.
+  function plumeSilentCheck(){
+    postPlume({ type:'list' }, function(j){ plumeCheckBilan(j.sites || []); }, function(){});
   }
 
   function plumeOpen(){
@@ -4738,7 +4897,7 @@
     plumeRefresh();
   }
   function plumeClose(){ plumeview.classList.remove('open'); }
-  document.getElementById('sh-plume').addEventListener('click', function(){ sheetOpen(false); plumeOpen(); });
+  document.getElementById('sh-plume').addEventListener('click', function(){ siteSheetOpen(false); plumeOpen(); });
   document.getElementById('plume-close').addEventListener('click', plumeClose);
   plumeRefreshBtn.addEventListener('click', function(){
     if (plumeRefreshBtn.classList.contains('spin')) return;
@@ -6424,6 +6583,7 @@
         bubble(String(m.contenu || ''), 'jarvis');
       });
     }, function(){});
+    if (typeof plumeSilentCheck === 'function') plumeSilentCheck();
   }
   // 180 s (au lieu de 60 s) : economie d'executions n8n — le push reste le canal temps reel,
   // et onResume() releve immediatement la boite au retour au premier plan.
