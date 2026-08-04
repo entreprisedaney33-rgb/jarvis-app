@@ -2166,7 +2166,7 @@
 
 <script>
 (function(){
-  var APPV = 'v3.08';
+  var APPV = 'v3.09';
 
   // Debug : ?debug_modal=1 force l'affichage du modal "nouvelle version" sans attendre un vrai
   // déploiement. Capturé ICI, tout au début, car plus bas (login mémorisé, connexion) le code
@@ -4822,6 +4822,77 @@
     return card;
   }
 
+  // ---- File de validation des pages generees automatiquement (Exécuteur de contenu) ----
+  // Une page generee par l'IA n'est JAMAIS publiee toute seule : elle attend ici, avec son texte
+  // complet, jusqu'a ce que Mathéo clique Publier (déploiement réel) ou Refuser.
+  var plumeDrafts = [];
+  function plumeDraftCard(p){
+    var card = document.createElement('div'); card.className = 'plume-card plume-draft-card';
+    var badge = document.createElement('span'); badge.className = 'plume-statut-pill'; badge.textContent = '📝 Brouillon — ' + p.domaine;
+    card.appendChild(badge);
+    var titre = document.createElement('div'); titre.className = 'plume-plan-titre'; titre.style.fontSize = '16px'; titre.style.marginTop = '6px'; titre.textContent = p.titre;
+    card.appendChild(titre);
+    var meta = document.createElement('div'); meta.className = 'plume-meta'; meta.textContent = p.meta_description;
+    card.appendChild(meta);
+
+    var aToggle = document.createElement('button'); aToggle.className = 'plume-plan-toggle'; aToggle.type = 'button';
+    aToggle.textContent = '👁️ Voir le texte complet';
+    var aBody = document.createElement('div'); aBody.className = 'plume-plan-list'; aBody.style.padding = '10px';
+    aBody.innerHTML = p.contenu_html;
+    aToggle.addEventListener('click', function(){ aBody.classList.toggle('open'); });
+    card.appendChild(aToggle); card.appendChild(aBody);
+
+    if (p.justification){
+      var just = document.createElement('div'); just.className = 'plume-plan-resultat';
+      var jb = document.createElement('b'); jb.textContent = 'Pourquoi cette page : ';
+      just.appendChild(jb); just.appendChild(document.createTextNode(p.justification));
+      card.appendChild(just);
+    }
+
+    var row = document.createElement('div'); row.style.display = 'flex'; row.style.gap = '10px'; row.style.marginTop = '10px';
+    var refuseBtn = document.createElement('button'); refuseBtn.className = 'vc-no'; refuseBtn.type = 'button'; refuseBtn.textContent = '❌ Refuser';
+    var publishBtn = document.createElement('button'); publishBtn.className = 'vc-ok'; publishBtn.type = 'button'; publishBtn.textContent = '✅ Publier';
+    row.appendChild(refuseBtn); row.appendChild(publishBtn);
+    card.appendChild(row);
+
+    refuseBtn.addEventListener('click', function(){
+      if (refuseBtn.disabled) return;
+      refuseBtn.disabled = true; publishBtn.disabled = true;
+      postPlume({ type:'page_refuser', id: p.id }, function(){
+        toast('Page refusée.');
+        plumeLoadDrafts();
+      }, function(err){ refuseBtn.disabled = false; publishBtn.disabled = false; toast(err); });
+    });
+    publishBtn.addEventListener('click', function(){
+      if (publishBtn.disabled) return;
+      publishBtn.disabled = true; refuseBtn.disabled = true; publishBtn.textContent = 'Publication…';
+      postPlume({ type:'page_publier', id: p.id }, function(j){
+        toast('✅ Page publiée : ' + (j.url || ''));
+        plumeLoadDrafts();
+        plumeRefresh();
+      }, function(err){ publishBtn.disabled = false; refuseBtn.disabled = false; publishBtn.textContent = '✅ Publier'; toast(err); });
+    });
+
+    return card;
+  }
+  function plumeRenderDrafts(){
+    var existing = document.getElementById('plume-drafts-section');
+    if (existing) existing.remove();
+    if (!plumeDrafts.length) return;
+    var section = document.createElement('div'); section.id = 'plume-drafts-section';
+    var head = document.createElement('div'); head.className = 'plume-plan-titre'; head.style.fontSize = '15px'; head.style.margin = '4px 0 10px';
+    head.textContent = '📝 Pages à valider (' + plumeDrafts.length + ')';
+    section.appendChild(head);
+    plumeDrafts.forEach(function(p){ section.appendChild(plumeDraftCard(p)); });
+    plumeList.insertBefore(section, plumeList.firstChild);
+  }
+  function plumeLoadDrafts(){
+    postPlume({ type:'pages_brouillon' }, function(j){
+      plumeDrafts = j.pages || [];
+      plumeRenderDrafts();
+    }, function(){});
+  }
+
   function plumeRender(){
     plumeList.innerHTML = '';
     if (!plumeAll.length){
@@ -4829,6 +4900,7 @@
       return;
     }
     plumeAll.forEach(function(s){ plumeList.appendChild(plumeCard(s)); });
+    plumeRenderDrafts();
   }
 
   function plumeRefresh(onDone){
@@ -4895,6 +4967,7 @@
     plumeview.classList.add('open');
     plumeList.innerHTML = '<p id="plume-loading">Chargement…</p>';
     plumeRefresh();
+    plumeLoadDrafts();
   }
   function plumeClose(){ plumeview.classList.remove('open'); }
   document.getElementById('sh-plume').addEventListener('click', function(){ siteSheetOpen(false); plumeOpen(); });
