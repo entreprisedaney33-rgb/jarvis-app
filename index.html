@@ -539,18 +539,18 @@
   .carnet-card-head{display:flex; align-items:flex-start; justify-content:space-between; gap:8px}
   .carnet-nom{font-size:15.5px; font-weight:700; display:block; margin-bottom:2px}
   .carnet-sub{font-size:11.5px; color:var(--muted); display:block; margin-bottom:10px}
-  .carnet-del-wrap{display:flex; align-items:center; gap:4px; flex:0 0 auto; margin-top:1px}
   .carnet-del{
-    width:26px; height:26px; border-radius:50%; border:0; flex:0 0 auto;
+    width:26px; height:26px; border-radius:50%; border:0; flex:0 0 auto; margin-top:1px;
     background:transparent; color:var(--muted); font-size:14px; cursor:pointer; -webkit-tap-highlight-color:transparent;
   }
-  .carnet-del-label{font-size:11.5px; color:var(--muted); white-space:nowrap}
-  .carnet-del-yes, .carnet-del-no{
-    width:26px; height:26px; border-radius:50%; border:0; flex:0 0 auto; font-size:13px; cursor:pointer;
-    -webkit-tap-highlight-color:transparent;
+  .carnet-confirm-text{font-size:14px; color:var(--ink); line-height:1.4; margin:10px 0}
+  .carnet-confirm-row{display:flex; gap:8px; padding-bottom:2px}
+  .carnet-confirm-cancel, .carnet-confirm-delete{
+    flex:1; font:inherit; font-size:15px; font-weight:600; padding:11px; border-radius:12px;
+    cursor:pointer; -webkit-tap-highlight-color:transparent;
   }
-  .carnet-del-yes{background:rgba(255,69,58,.18); color:#FF453A}
-  .carnet-del-no{background:transparent; color:var(--muted)}
+  .carnet-confirm-cancel{background:#2E2E32; color:var(--muted); border:0}
+  .carnet-confirm-delete{background:rgba(255,69,58,.15); color:#FF453A; border:0.5px solid rgba(255,69,58,.5)}
   .carnet-field{display:flex; align-items:flex-start; gap:8px; padding:8px 0; border-top:0.5px solid var(--hairline)}
   .carnet-field:first-of-type{border-top:none}
   .carnet-field-main{flex:1; min-width:0}
@@ -2108,7 +2108,7 @@
 
 <script>
 (function(){
-  var APPV = 'v3.06';
+  var APPV = 'v3.07';
 
   // Debug : ?debug_modal=1 force l'affichage du modal "nouvelle version" sans attendre un vrai
   // déploiement. Capturé ICI, tout au début, car plus bas (login mémorisé, connexion) le code
@@ -3599,18 +3599,37 @@
       : 'Aucun commentaire encore renseigné';
     info.appendChild(sub);
     head.appendChild(info);
-    var delWrap = document.createElement('div'); delWrap.className = 'carnet-del-wrap';
     var del = document.createElement('button'); del.className = 'carnet-del'; del.type = 'button'; del.textContent = '🗑';
     del.setAttribute('aria-label', 'Supprimer cette résidence');
+    head.appendChild(del);
+    card.appendChild(head);
+
+    var fieldsWrap = document.createElement('div');
+    CARNET_FIELDS.forEach(function(f){ fieldsWrap.appendChild(carnetFieldRow(r, f)); });
+    card.appendChild(fieldsWrap);
+
+    var confirmZone = document.createElement('div');
+    card.appendChild(confirmZone);
+
     del.addEventListener('click', function(){
-      delWrap.innerHTML = '';
-      var label = document.createElement('span'); label.className = 'carnet-del-label'; label.textContent = 'Supprimer ?';
-      var yes = document.createElement('button'); yes.type = 'button'; yes.className = 'carnet-del-yes'; yes.textContent = '🗑'; yes.setAttribute('aria-label', 'Confirmer la suppression');
-      var no = document.createElement('button'); no.type = 'button'; no.className = 'carnet-del-no'; no.textContent = '✕'; no.setAttribute('aria-label', 'Annuler');
-      delWrap.appendChild(label); delWrap.appendChild(yes); delWrap.appendChild(no);
-      no.addEventListener('click', function(){ carnetRender(); });
+      del.style.display = 'none';
+      fieldsWrap.style.display = 'none';
+      confirmZone.innerHTML = '';
+      var text = document.createElement('p'); text.className = 'carnet-confirm-text';
+      text.textContent = 'Supprimer « ' + r.nom + ' » et son commentaire ?';
+      confirmZone.appendChild(text);
+      var row = document.createElement('div'); row.className = 'carnet-confirm-row';
+      var cancel = document.createElement('button'); cancel.type = 'button'; cancel.className = 'carnet-confirm-cancel'; cancel.textContent = 'Annuler';
+      var yes = document.createElement('button'); yes.type = 'button'; yes.className = 'carnet-confirm-delete'; yes.textContent = '🗑 Supprimer';
+      row.appendChild(cancel); row.appendChild(yes);
+      confirmZone.appendChild(row);
+      cancel.addEventListener('click', function(){
+        confirmZone.innerHTML = '';
+        fieldsWrap.style.display = '';
+        del.style.display = '';
+      });
       yes.addEventListener('click', function(){
-        yes.disabled = true; no.disabled = true;
+        cancel.disabled = true; yes.disabled = true; yes.textContent = 'Suppression…';
         postCarnet({ type:'supprimer', id:r.id }, function(){
           carnetAll = carnetAll.filter(function(x){ return x.id !== r.id; });
           carnetRender();
@@ -3618,10 +3637,6 @@
         }, function(err){ toast(err || 'Suppression impossible'); carnetRender(); });
       });
     });
-    delWrap.appendChild(del);
-    head.appendChild(delWrap);
-    card.appendChild(head);
-    CARNET_FIELDS.forEach(function(f){ card.appendChild(carnetFieldRow(r, f)); });
     return card;
   }
 
