@@ -504,6 +504,11 @@
     background:var(--surface); color:var(--ink); font-size:14px; padding:9px 10px; font:inherit;
     -webkit-appearance:none;
   }
+  #contrats-previsionnel-banniere{
+    flex:0 0 auto; margin:10px 14px 0; padding:10px 12px; border-radius:12px;
+    background:rgba(232,185,106,.12); color:var(--gold-a); font-size:12.5px; line-height:1.4;
+  }
+  .contrat-card.previsionnel{opacity:.85}
   #contrats-list{flex:1; overflow-y:auto; -webkit-overflow-scrolling:touch; padding:14px 14px calc(20px + env(safe-area-inset-bottom))}
   #contrats-empty, #contrats-loading{color:var(--muted); text-align:center; padding:40px 20px; font-size:14px}
   #contrats-add-btn{
@@ -2000,6 +2005,7 @@
     <button class="df-chip" data-statut="envoyee" type="button">✅ Facture envoyée</button>
     <button class="df-chip" data-statut="skip" type="button">⏭️ Pas cette année</button>
   </div>
+  <p id="contrats-previsionnel-banniere" style="display:none">🔮 Rien n'est encore généré pour ce mois — aperçu de ce qui sera facturé automatiquement le 1<sup>er</sup> (prix indicatifs, peuvent encore changer d'ici là).</p>
   <div id="contrats-search-wrap">
     <input id="contrats-search" type="search" inputmode="search" placeholder="🔍 Rechercher un client…" autocomplete="off" autocapitalize="off" autocorrect="off">
   </div>
@@ -2324,7 +2330,7 @@
 
 <script>
 (function(){
-  var APPV = 'v3.13';
+  var APPV = 'v3.14';
 
   // Debug : ?debug_modal=1 force l'affichage du modal "nouvelle version" sans attendre un vrai
   // déploiement. Capturé ICI, tout au début, car plus bas (login mémorisé, connexion) le code
@@ -3366,6 +3372,7 @@
   var contratsAddBtn = document.getElementById('contrats-add-btn');
   var contratsActiveTab = 'mois';
   var contratsMoisData = null;
+  var contratsMoisPrevisionnel = null;
   var contratsCatalogueData = null;
   // Sélecteur de mois/année + sous-catégories (demande explicite : pouvoir consulter un autre
   // mois que le mois courant, et voir aussi ce qui a déjà été envoyé ou marqué "pas cette année").
@@ -3565,14 +3572,38 @@
     skip: 'Aucun contrat marqué "pas cette année" pour ce mois.',
   };
 
+  // Aperçu en lecture seule d'un contrat qui tombera dans un mois pas encore généré (les mois
+  // de passage sont déjà connus dans le catalogue -- demande explicite de Mathéo/Mickael).
+  function contratsBuildPrevisionnelCard(p){
+    var card = document.createElement('div'); card.className = 'contrat-card previsionnel';
+    var nom = document.createElement('span'); nom.className = 'dv-nom'; nom.textContent = contratNomAffiche(p);
+    card.appendChild(nom);
+    var badge = document.createElement('span'); badge.className = 'ct-badge' + (p.type_contrat === 'VMC' ? ' vmc' : '');
+    badge.textContent = (p.type_contrat === 'VMC' ? 'VMC · +3 % auto' : 'Dératisation / désinsectisation') + ' · 🔮 prévisionnel';
+    card.appendChild(badge);
+    var meta = document.createElement('span'); meta.className = 'dv-meta';
+    meta.textContent = (p.prestation || '') + ' · estimé depuis N-1 : ' + Number(p.prixHtN1).toFixed(2) + ' € HT';
+    card.appendChild(meta);
+    var montant = document.createElement('span'); montant.className = 'dv-montant';
+    montant.textContent = '≈ ' + Number(p.prixTtc).toFixed(2) + ' € TTC';
+    card.appendChild(montant);
+    return card;
+  }
+
   function contratsApplyFilter(){
     var q = normDoc(contratsSearchInput.value.trim());
     contratsList.innerHTML = '';
     contratsAddBtn.style.display = contratsActiveTab === 'catalogue' ? 'flex' : 'none';
     document.getElementById('contrats-cat-subtabs').style.display = contratsActiveTab === 'catalogue' ? '' : 'none';
     document.getElementById('contrats-mois-selector').style.display = contratsActiveTab === 'mois' ? 'flex' : 'none';
-    document.getElementById('contrats-mois-substatuts').style.display = contratsActiveTab === 'mois' ? '' : 'none';
-    if (contratsActiveTab === 'mois'){
+    var enModePrevisionnel = contratsActiveTab === 'mois' && !(contratsMoisData && contratsMoisData.length);
+    document.getElementById('contrats-mois-substatuts').style.display = (contratsActiveTab === 'mois' && !enModePrevisionnel) ? '' : 'none';
+    document.getElementById('contrats-previsionnel-banniere').style.display = enModePrevisionnel ? '' : 'none';
+    if (contratsActiveTab === 'mois' && enModePrevisionnel){
+      var itemsP = (contratsMoisPrevisionnel || []).filter(function(p){ return !q || normDoc(contratNomAffiche(p)).indexOf(q) !== -1; });
+      if (!itemsP.length){ contratsList.innerHTML = '<p id="contrats-empty">Aucun contrat prévu pour ce mois.</p>'; return; }
+      itemsP.forEach(function(p){ contratsList.appendChild(contratsBuildPrevisionnelCard(p)); });
+    } else if (contratsActiveTab === 'mois'){
       var items = (contratsMoisData || []).filter(function(f){
         return f.statut === contratsMoisStatutFiltre && (!q || normDoc(contratNomAffiche(f)).indexOf(q) !== -1);
       });
@@ -3592,7 +3623,11 @@
     if (contratsActiveTab === 'mois'){
       contratsMoisSelectorsInit();
       postContrats({ type: 'mois-liste', annee: contratsMoisAnnee, mois: contratsMoisMois },
-        function(j){ contratsMoisData = j.factures || []; contratsApplyFilter(); },
+        function(j){
+          contratsMoisData = j.factures || [];
+          contratsMoisPrevisionnel = j.previsionnel || [];
+          contratsApplyFilter();
+        },
         function(err){ contratsList.innerHTML = '<p id="contrats-empty">' + err + '</p>'; });
     } else {
       postContrats({ type: 'catalogue-liste' }, function(j){ contratsCatalogueData = j.contrats || []; contratsApplyFilter(); },
