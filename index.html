@@ -1993,7 +1993,7 @@
     <button id="contrats-close" type="button" aria-label="Fermer">✕</button>
   </div>
   <div id="contrats-tabs">
-    <button class="devis-tab active" data-tab="mois" type="button">Ce mois-ci</button>
+    <button class="devis-tab active" data-tab="mois" type="button">Facturation</button>
     <button class="devis-tab" data-tab="catalogue" type="button">Catalogue</button>
   </div>
   <div id="contrats-mois-selector" style="display:none">
@@ -2330,7 +2330,7 @@
 
 <script>
 (function(){
-  var APPV = 'v3.14';
+  var APPV = 'v3.15';
 
   // Debug : ?debug_modal=1 force l'affichage du modal "nouvelle version" sans attendre un vrai
   // déploiement. Capturé ICI, tout au début, car plus bas (login mémorisé, connexion) le code
@@ -2722,11 +2722,27 @@
     chat.scrollTop = chat.scrollHeight;
   }
 
+  // Notification "Contrats" (chantier 5, MCS uniquement) : ajoute un bouton "Voir mes contrats"
+  // sous la bulle qui amène direct au panneau. Détection PAR LE CONTENU (pas un champ "type") --
+  // une fois qu'un message poussé (mcs_web_messages) est rejoué dans l'historique normal
+  // (memoire_conversation), il redevient du texte simple sans aucun marqueur de type : ce
+  // repère textuel est ce qui permet au bouton de survivre à un rechargement complet du fil.
+  function contratsAppendNotifBtnIfNeeded(b, contenu){
+    if (typeof contratsOpen !== 'function') return;
+    if (!/onglet Contrats/i.test(contenu)) return;
+    var ctBtn = document.createElement('button');
+    ctBtn.type = 'button'; ctBtn.textContent = '📋 Voir mes contrats';
+    ctBtn.style.cssText = 'display:block;margin-top:8px;background:var(--gold-a);color:#1a1200;border:0;border-radius:10px;padding:8px 12px;font-size:13px;font-weight:600;cursor:pointer;-webkit-tap-highlight-color:transparent';
+    ctBtn.addEventListener('click', function(){ contratsOpen(); });
+    b.appendChild(ctBtn);
+  }
+
   function renderHistory(msgs, extras){
     chat.innerHTML = '';
     (msgs || []).forEach(function(m){
       if (!m || !m.contenu) return;
-      bubble(String(m.contenu), m.role === 'user' ? 'user' : 'jarvis', { id: m.id, createdAt: m.createdAt });
+      var b = bubble(String(m.contenu), m.role === 'user' ? 'user' : 'jarvis', { id: m.id, createdAt: m.createdAt });
+      if (m.role !== 'user') contratsAppendNotifBtnIfNeeded(b, String(m.contenu));
     });
     if (!chat.children.length){
       bubble('Bonjour, je suis Jarvis. Je connais vos contacts, vos chantiers, vos devis et votre agenda — posez-moi une question.', 'jarvis');
@@ -7202,15 +7218,7 @@
     post({ type:'inbox' }, function(j){
       (j.messages || []).forEach(function(m){
         var b = bubble(String(m.contenu || ''), 'jarvis');
-        // Notification "Contrats" (chantier 5, MCS uniquement) : bouton qui ramène direct
-        // au panneau dédié plutôt que de laisser Mickael chercher dans le menu.
-        if (m.type === 'contrats' && typeof contratsOpen === 'function'){
-          var ctBtn = document.createElement('button');
-          ctBtn.type = 'button'; ctBtn.textContent = '📋 Voir mes contrats';
-          ctBtn.style.cssText = 'display:block;margin-top:8px;background:var(--gold-a);color:#1a1200;border:0;border-radius:10px;padding:8px 12px;font-size:13px;font-weight:600;cursor:pointer;-webkit-tap-highlight-color:transparent';
-          ctBtn.addEventListener('click', function(){ contratsOpen(); });
-          b.appendChild(ctBtn);
-        }
+        contratsAppendNotifBtnIfNeeded(b, String(m.contenu || ''));
       });
     }, function(){});
     if (typeof plumeSilentCheck === 'function') plumeSilentCheck();
