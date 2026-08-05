@@ -530,6 +530,20 @@
   .ct-detail textarea{min-height:70px; resize:vertical}
   .ct-actions{display:flex; gap:8px; margin-top:4px}
   .ct-actions .vc-ok, .ct-actions .vc-no{padding:9px; font-size:14px}
+  /* Catalogue en "vue tableur" (demande explicite de Mathéo : Mickael doit retrouver ses
+     onglets/colonnes habituels de l'Excel, pas des jolies cartes qui le dépaysent) */
+  #contrats-table-wrap{overflow-x:auto; -webkit-overflow-scrolling:touch; margin:0 -14px; padding:0 14px}
+  table.contrat-table{width:100%; border-collapse:collapse; font-size:12.5px; white-space:nowrap}
+  table.contrat-table thead th{
+    position:sticky; top:0; background:var(--bg); color:var(--muted); text-align:left;
+    font-size:10.5px; font-weight:700; text-transform:uppercase; letter-spacing:.02em;
+    padding:8px 12px; border-bottom:0.5px solid var(--hairline); z-index:1;
+  }
+  table.contrat-table td{padding:9px 12px; border-bottom:0.5px solid var(--hairline); color:var(--ink)}
+  table.contrat-table tbody tr{-webkit-tap-highlight-color:transparent; cursor:pointer}
+  table.contrat-table tbody tr:active{background:rgba(255,255,255,.06)}
+  table.contrat-table td.ct-td-nom{font-weight:700; white-space:normal; min-width:140px}
+  table.contrat-table td.ct-td-montant{color:var(--gold-a); font-weight:700; text-align:right}
   #contrat-catalogue-form-bg{position:fixed; inset:0; z-index:55; background:rgba(0,0,0,.55); display:none}
   #contrat-catalogue-form-bg.open{display:block}
   .contrat-form{
@@ -1974,6 +1988,10 @@
   <div id="contrats-search-wrap">
     <input id="contrats-search" type="search" inputmode="search" placeholder="🔍 Rechercher un client…" autocomplete="off" autocapitalize="off" autocorrect="off">
   </div>
+  <div class="df-filter-group" id="contrats-cat-subtabs" style="display:none">
+    <button class="df-chip active" data-subtab="BRUNO" type="button">🐜 Dératisation / désinsectisation</button>
+    <button class="df-chip" data-subtab="VMC" type="button">🌬️ VMC</button>
+  </div>
   <div id="contrats-list"></div>
   <button id="contrats-add-btn" type="button" aria-label="Ajouter un contrat">+</button>
 </div>
@@ -2291,7 +2309,7 @@
 
 <script>
 (function(){
-  var APPV = 'v3.11';
+  var APPV = 'v3.12';
 
   // Debug : ?debug_modal=1 force l'affichage du modal "nouvelle version" sans attendre un vrai
   // déploiement. Capturé ICI, tout au début, car plus bas (login mémorisé, connexion) le code
@@ -3334,6 +3352,27 @@
   var contratsActiveTab = 'mois';
   var contratsMoisData = null;
   var contratsCatalogueData = null;
+  // Catalogue en "vue tableur" avec 2 onglets par activité (demande explicite : Mickael doit
+  // retrouver ses onglets Excel habituels -- Dératisation/désinsectisation vs VMC -- au lieu
+  // d'une seule liste mélangée).
+  var contratsCatSubTab = 'BRUNO';
+  var CONTRATS_COLONNES = [
+    { key:'nom', label:'Client / Résidence', cls:'ct-td-nom' },
+    { key:'adresse', label:'Adresse' },
+    { key:'ville', label:'Ville' },
+    { key:'prestation', label:'Prestation' },
+    { key:'passages_an', label:'Passages/an' },
+    { key:'passage_1', label:'Passage 1' },
+    { key:'passage_2', label:'Passage 2' },
+    { key:'passage_3', label:'Passage 3' },
+    { key:'passage_4', label:'Passage 4' },
+    { key:'prix_ht', label:'Prix HT', cls:'ct-td-montant' },
+    { key:'tva_pct', label:'TVA' },
+    { key:'prix_ttc', label:'Prix TTC', cls:'ct-td-montant' },
+    { key:'renouvellement', label:'Renouvellement' },
+    { key:'date_signature', label:'Date signature' },
+    { key:'email', label:'Email facturation' },
+  ];
 
   function contratsClose(){ contratsview.classList.remove('open'); }
   function contratNomAffiche(c){ return c.client || c.residence || '(client non identifié)'; }
@@ -3406,37 +3445,54 @@
     return card;
   }
 
-  function contratsBuildCatalogueCard(c){
-    var card = document.createElement('div'); card.className = 'contrat-card';
-    var nom = document.createElement('span'); nom.className = 'dv-nom'; nom.textContent = contratNomAffiche(c);
-    card.appendChild(nom);
-    var badge = document.createElement('span'); badge.className = 'ct-badge' + (c.type_contrat === 'VMC' ? ' vmc' : '');
-    badge.textContent = c.type_contrat === 'VMC' ? 'VMC' : 'Dératisation / désinsectisation';
-    card.appendChild(badge);
-    var meta = document.createElement('span'); meta.className = 'dv-meta';
-    meta.textContent = (c.prestation || '') + ' · passage : ' + (c.passage_1 || '?') + (c.email ? ' · ' + c.email : '');
-    card.appendChild(meta);
-    var montant = document.createElement('span'); montant.className = 'dv-montant';
-    montant.textContent = Number(c.prix_ht).toFixed(2) + ' € HT';
-    card.appendChild(montant);
-    var editBtn = document.createElement('button'); editBtn.type = 'button'; editBtn.className = 'ct-toggle'; editBtn.textContent = '✏️ Modifier';
-    editBtn.addEventListener('click', function(){ contratFormOpen(c); });
-    card.appendChild(editBtn);
-    return card;
+  function contratsRowValue(c, key){
+    if (key === 'nom') return contratNomAffiche(c);
+    if (key === 'tva_pct') return (Number(c.tva) * 100).toFixed(0) + ' %';
+    if (key === 'prix_ht' || key === 'prix_ttc') return (c[key] != null ? Number(c[key]).toFixed(2) + ' €' : '');
+    return c[key] || '';
+  }
+
+  function contratsBuildCatalogueTable(items){
+    var wrap = document.createElement('div'); wrap.id = 'contrats-table-wrap';
+    var table = document.createElement('table'); table.className = 'contrat-table';
+    var thead = document.createElement('thead');
+    var trHead = document.createElement('tr');
+    CONTRATS_COLONNES.forEach(function(col){
+      var th = document.createElement('th'); th.textContent = col.label; trHead.appendChild(th);
+    });
+    thead.appendChild(trHead); table.appendChild(thead);
+    var tbody = document.createElement('tbody');
+    items.forEach(function(c){
+      var tr = document.createElement('tr');
+      CONTRATS_COLONNES.forEach(function(col){
+        var td = document.createElement('td');
+        if (col.cls) td.className = col.cls;
+        td.textContent = contratsRowValue(c, col.key);
+        tr.appendChild(td);
+      });
+      tr.addEventListener('click', function(){ contratFormOpen(c); });
+      tbody.appendChild(tr);
+    });
+    table.appendChild(tbody);
+    wrap.appendChild(table);
+    return wrap;
   }
 
   function contratsApplyFilter(){
     var q = normDoc(contratsSearchInput.value.trim());
     contratsList.innerHTML = '';
     contratsAddBtn.style.display = contratsActiveTab === 'catalogue' ? 'flex' : 'none';
+    document.getElementById('contrats-cat-subtabs').style.display = contratsActiveTab === 'catalogue' ? '' : 'none';
     if (contratsActiveTab === 'mois'){
       var items = (contratsMoisData || []).filter(function(f){ return !q || normDoc(contratNomAffiche(f)).indexOf(q) !== -1; });
       if (!items.length){ contratsList.innerHTML = '<p id="contrats-empty">Aucun contrat à traiter ce mois-ci.</p>'; return; }
       items.forEach(function(f){ contratsList.appendChild(contratsBuildMoisCard(f)); });
     } else {
-      var itemsC = (contratsCatalogueData || []).filter(function(c){ return !q || normDoc(contratNomAffiche(c)).indexOf(q) !== -1; });
-      if (!itemsC.length){ contratsList.innerHTML = '<p id="contrats-empty">Aucun contrat.</p>'; return; }
-      itemsC.forEach(function(c){ contratsList.appendChild(contratsBuildCatalogueCard(c)); });
+      var itemsC = (contratsCatalogueData || []).filter(function(c){
+        return c.type_contrat === contratsCatSubTab && (!q || normDoc(contratNomAffiche(c)).indexOf(q) !== -1);
+      });
+      if (!itemsC.length){ contratsList.innerHTML = '<p id="contrats-empty">Aucun contrat dans cet onglet.</p>'; return; }
+      contratsList.appendChild(contratsBuildCatalogueTable(itemsC));
     }
   }
 
@@ -3460,6 +3516,13 @@
       contratsLoadTab();
     });
   });
+  document.querySelectorAll('#contrats-cat-subtabs .df-chip').forEach(function(chip){
+    chip.addEventListener('click', function(){
+      contratsCatSubTab = chip.dataset.subtab;
+      document.querySelectorAll('#contrats-cat-subtabs .df-chip').forEach(function(b){ b.classList.toggle('active', b === chip); });
+      contratsApplyFilter();
+    });
+  });
   contratsSearchInput.addEventListener('input', contratsApplyFilter);
   document.getElementById('contrats-close').addEventListener('click', contratsClose);
   document.getElementById('sh-contrats').addEventListener('click', function(){ sheetOpen(false); contratsOpen(); });
@@ -3470,7 +3533,7 @@
   function contratFormOpen(c){
     contratFormEditingId = c ? c.id : null;
     document.getElementById('cf-titre').textContent = c ? 'Modifier le contrat' : 'Nouveau contrat';
-    document.getElementById('cf-type').value = c ? c.type_contrat : 'BRUNO';
+    document.getElementById('cf-type').value = c ? c.type_contrat : contratsCatSubTab;
     document.getElementById('cf-client').value = c ? c.client : '';
     document.getElementById('cf-residence').value = c ? c.residence : '';
     document.getElementById('cf-adresse').value = c ? c.adresse : '';
