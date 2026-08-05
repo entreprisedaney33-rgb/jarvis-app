@@ -498,6 +498,12 @@
     -webkit-appearance:none;
   }
   #contrats-search::placeholder{color:var(--muted)}
+  #contrats-mois-selector{flex:0 0 auto; gap:8px; padding:10px 14px 0}
+  #contrats-mois-selector select{
+    flex:1; box-sizing:border-box; border:0.5px solid rgba(255,255,255,.18); border-radius:12px;
+    background:var(--surface); color:var(--ink); font-size:14px; padding:9px 10px; font:inherit;
+    -webkit-appearance:none;
+  }
   #contrats-list{flex:1; overflow-y:auto; -webkit-overflow-scrolling:touch; padding:14px 14px calc(20px + env(safe-area-inset-bottom))}
   #contrats-empty, #contrats-loading{color:var(--muted); text-align:center; padding:40px 20px; font-size:14px}
   #contrats-add-btn{
@@ -1985,6 +1991,15 @@
     <button class="devis-tab active" data-tab="mois" type="button">Ce mois-ci</button>
     <button class="devis-tab" data-tab="catalogue" type="button">Catalogue</button>
   </div>
+  <div id="contrats-mois-selector" style="display:none">
+    <select id="contrats-mois-select" aria-label="Mois"></select>
+    <select id="contrats-annee-select" aria-label="Année"></select>
+  </div>
+  <div class="df-filter-group" id="contrats-mois-substatuts" style="display:none">
+    <button class="df-chip active" data-statut="a_traiter" type="button">⏳ À traiter</button>
+    <button class="df-chip" data-statut="envoyee" type="button">✅ Facture envoyée</button>
+    <button class="df-chip" data-statut="skip" type="button">⏭️ Pas cette année</button>
+  </div>
   <div id="contrats-search-wrap">
     <input id="contrats-search" type="search" inputmode="search" placeholder="🔍 Rechercher un client…" autocomplete="off" autocapitalize="off" autocorrect="off">
   </div>
@@ -2309,7 +2324,7 @@
 
 <script>
 (function(){
-  var APPV = 'v3.12';
+  var APPV = 'v3.13';
 
   // Debug : ?debug_modal=1 force l'affichage du modal "nouvelle version" sans attendre un vrai
   // déploiement. Capturé ICI, tout au début, car plus bas (login mémorisé, connexion) le code
@@ -3352,6 +3367,39 @@
   var contratsActiveTab = 'mois';
   var contratsMoisData = null;
   var contratsCatalogueData = null;
+  // Sélecteur de mois/année + sous-catégories (demande explicite : pouvoir consulter un autre
+  // mois que le mois courant, et voir aussi ce qui a déjà été envoyé ou marqué "pas cette année").
+  var CONTRATS_MOIS_NOMS = ['Janvier','Février','Mars','Avril','Mai','Juin','Juillet','Août','Septembre','Octobre','Novembre','Décembre'];
+  var contratsMoisNow = new Date();
+  var contratsMoisAnnee = contratsMoisNow.getFullYear();
+  var contratsMoisMois = contratsMoisNow.getMonth() + 1;
+  var contratsMoisStatutFiltre = 'a_traiter';
+  var contratsMoisSelectorsReady = false;
+  function contratsMoisSelectorsInit(){
+    if (contratsMoisSelectorsReady) return;
+    contratsMoisSelectorsReady = true;
+    var moisSel = document.getElementById('contrats-mois-select');
+    CONTRATS_MOIS_NOMS.forEach(function(nom, idx){
+      var opt = document.createElement('option'); opt.value = String(idx + 1); opt.textContent = nom;
+      if (idx + 1 === contratsMoisMois) opt.selected = true;
+      moisSel.appendChild(opt);
+    });
+    var anneeSel = document.getElementById('contrats-annee-select');
+    for (var y = contratsMoisAnnee - 1; y <= contratsMoisAnnee + 1; y++){
+      var optY = document.createElement('option'); optY.value = String(y); optY.textContent = String(y);
+      if (y === contratsMoisAnnee) optY.selected = true;
+      anneeSel.appendChild(optY);
+    }
+    moisSel.addEventListener('change', function(){ contratsMoisMois = Number(moisSel.value); contratsLoadTab(); });
+    anneeSel.addEventListener('change', function(){ contratsMoisAnnee = Number(anneeSel.value); contratsLoadTab(); });
+  }
+  document.querySelectorAll('#contrats-mois-substatuts .df-chip').forEach(function(chip){
+    chip.addEventListener('click', function(){
+      contratsMoisStatutFiltre = chip.dataset.statut;
+      document.querySelectorAll('#contrats-mois-substatuts .df-chip').forEach(function(b){ b.classList.toggle('active', b === chip); });
+      contratsApplyFilter();
+    });
+  });
   // Catalogue en "vue tableur" avec 2 onglets par activité (demande explicite : Mickael doit
   // retrouver ses onglets Excel habituels -- Dératisation/désinsectisation vs VMC -- au lieu
   // d'une seule liste mélangée).
@@ -3397,6 +3445,39 @@
     montant.textContent = Number(f.prix_ttc).toFixed(2) + ' € TTC';
     card.appendChild(montant);
 
+    // ---- Statut "envoyee" : lecture seule, rien à modifier ni à traiter ----
+    if (f.statut === 'envoyee'){
+      var metaEnvoi = document.createElement('span'); metaEnvoi.className = 'dv-meta';
+      metaEnvoi.textContent = '✅ Envoyée le ' + fmtDevisDateSimple(f.date_envoi) + (f.destinataire_email ? (' à ' + f.destinataire_email) : '');
+      card.appendChild(metaEnvoi);
+      if (f.fichier_url){
+        var pdfEnv = document.createElement('a'); pdfEnv.className = 'dv-pdf'; pdfEnv.textContent = '📄 Voir la facture'; pdfEnv.target = '_blank';
+        pdfEnv.href = 'https://n8n-self-hosted-t0pz.onrender.com' + f.fichier_url + '&code=' + encodeURIComponent(String(read('jarvisCode') || '').trim());
+        card.appendChild(pdfEnv);
+      }
+      return card;
+    }
+
+    // ---- Statut "skip" : motif + option de revenir en arrière ----
+    if (f.statut === 'skip'){
+      var metaSkip = document.createElement('span'); metaSkip.className = 'dv-meta';
+      metaSkip.textContent = '⏭️ Motif : ' + (f.motif_skip || '(non précisé)');
+      card.appendChild(metaSkip);
+      var undoBtn = document.createElement('button'); undoBtn.className = 'ct-toggle'; undoBtn.type = 'button';
+      undoBtn.textContent = '↩️ Remettre à traiter';
+      undoBtn.addEventListener('click', function(){
+        undoBtn.disabled = true;
+        postContrats({ type: 'mois-action', id: f.id, choix: 'reactiver' }, function(){
+          toast('↩️ Remis dans "à traiter"');
+          f.statut = 'a_traiter'; f.motif_skip = '';
+          contratsApplyFilter();
+        }, function(err){ undoBtn.disabled = false; toast(err); });
+      });
+      card.appendChild(undoBtn);
+      return card;
+    }
+
+    // ---- Statut "a_traiter" (par défaut) : formulaire éditable + Envoyer/Pas cette année ----
     var toggleBtn = document.createElement('button'); toggleBtn.type = 'button'; toggleBtn.className = 'ct-toggle';
     toggleBtn.textContent = '✏️ Modifier et traiter';
     card.appendChild(toggleBtn);
@@ -3424,7 +3505,7 @@
         prix_ht: parseFloat(prixInput.value) || 0,
       }, function(j){
         toast(j.testMode ? '✅ Facture envoyée (mode test → Altaestima)' : '✅ Facture envoyée');
-        contratsMoisData = (contratsMoisData || []).filter(function(x){ return x.id !== f.id; });
+        f.statut = 'envoyee'; f.destinataire_email = destInput.value.trim(); f.date_envoi = new Date().toISOString();
         contratsApplyFilter();
       }, function(err){ okBtn.disabled = false; skipBtn.disabled = false; toast(err); });
     });
@@ -3434,7 +3515,7 @@
       okBtn.disabled = true; skipBtn.disabled = true;
       postContrats({ type: 'mois-action', id: f.id, choix: 'skip', motif: motif }, function(){
         toast('⏭️ Contrat marqué "pas cette année"');
-        contratsMoisData = (contratsMoisData || []).filter(function(x){ return x.id !== f.id; });
+        f.statut = 'skip'; f.motif_skip = motif;
         contratsApplyFilter();
       }, function(err){ okBtn.disabled = false; skipBtn.disabled = false; toast(err); });
     });
@@ -3478,14 +3559,24 @@
     return wrap;
   }
 
+  var CONTRATS_STATUT_VIDE = {
+    a_traiter: 'Aucun contrat à traiter pour ce mois.',
+    envoyee: 'Aucune facture envoyée pour ce mois.',
+    skip: 'Aucun contrat marqué "pas cette année" pour ce mois.',
+  };
+
   function contratsApplyFilter(){
     var q = normDoc(contratsSearchInput.value.trim());
     contratsList.innerHTML = '';
     contratsAddBtn.style.display = contratsActiveTab === 'catalogue' ? 'flex' : 'none';
     document.getElementById('contrats-cat-subtabs').style.display = contratsActiveTab === 'catalogue' ? '' : 'none';
+    document.getElementById('contrats-mois-selector').style.display = contratsActiveTab === 'mois' ? 'flex' : 'none';
+    document.getElementById('contrats-mois-substatuts').style.display = contratsActiveTab === 'mois' ? '' : 'none';
     if (contratsActiveTab === 'mois'){
-      var items = (contratsMoisData || []).filter(function(f){ return !q || normDoc(contratNomAffiche(f)).indexOf(q) !== -1; });
-      if (!items.length){ contratsList.innerHTML = '<p id="contrats-empty">Aucun contrat à traiter ce mois-ci.</p>'; return; }
+      var items = (contratsMoisData || []).filter(function(f){
+        return f.statut === contratsMoisStatutFiltre && (!q || normDoc(contratNomAffiche(f)).indexOf(q) !== -1);
+      });
+      if (!items.length){ contratsList.innerHTML = '<p id="contrats-empty">' + CONTRATS_STATUT_VIDE[contratsMoisStatutFiltre] + '</p>'; return; }
       items.forEach(function(f){ contratsList.appendChild(contratsBuildMoisCard(f)); });
     } else {
       var itemsC = (contratsCatalogueData || []).filter(function(c){
@@ -3499,7 +3590,9 @@
   function contratsLoadTab(){
     contratsList.innerHTML = '<p id="contrats-loading">Chargement…</p>';
     if (contratsActiveTab === 'mois'){
-      postContrats({ type: 'mois-liste' }, function(j){ contratsMoisData = j.factures || []; contratsApplyFilter(); },
+      contratsMoisSelectorsInit();
+      postContrats({ type: 'mois-liste', annee: contratsMoisAnnee, mois: contratsMoisMois },
+        function(j){ contratsMoisData = j.factures || []; contratsApplyFilter(); },
         function(err){ contratsList.innerHTML = '<p id="contrats-empty">' + err + '</p>'; });
     } else {
       postContrats({ type: 'catalogue-liste' }, function(j){ contratsCatalogueData = j.contrats || []; contratsApplyFilter(); },
