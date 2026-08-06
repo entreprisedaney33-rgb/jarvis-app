@@ -522,6 +522,23 @@
     display:flex; flex-direction:column; gap:6px; width:100%; box-sizing:border-box;
     padding:14px; border-radius:14px; background:var(--surface); margin-bottom:12px;
   }
+  .ct-head{display:flex; gap:12px; align-items:flex-start}
+  .ct-main{flex:1; min-width:0; display:flex; flex-direction:column; gap:6px}
+  /* Miniature carrée de la facture (aperçu visuel, pas le vrai PDF rendu -- juste assez pour
+     reconnaître "c'est un document" + voir le montant d'un coup d'oeil) -- clique = ouvre le
+     vrai PDF. Remplace le lien texte "Voir la facture" qui était caché dans le panneau
+     "Modifier et traiter" (demande explicite : le rendre visible directement sur la carte). */
+  .ct-thumb{
+    flex:0 0 auto; width:58px; height:58px; border-radius:10px; background:#fff; position:relative;
+    overflow:hidden; text-decoration:none; -webkit-tap-highlight-color:transparent;
+    box-shadow:0 2px 6px rgba(0,0,0,.3);
+  }
+  .ct-thumb-band{position:absolute; left:5px; right:5px; top:5px; height:9px; background:#232323; border-radius:2px}
+  .ct-thumb-line{position:absolute; left:5px; height:3px; background:#dcdcdc; border-radius:2px}
+  .ct-thumb-line1{top:20px; width:70%}
+  .ct-thumb-line2{top:27px; width:50%}
+  .ct-thumb-line3{top:34px; width:60%}
+  .ct-thumb-amt{position:absolute; right:5px; bottom:5px; font-size:9px; font-weight:800; color:#1a1a1a}
   .contrat-card .ct-badge{
     font-size:11px; font-weight:700; border-radius:99px; padding:2px 9px;
     background:rgba(255,255,255,.1); color:var(--muted); width:fit-content;
@@ -2330,7 +2347,7 @@
 
 <script>
 (function(){
-  var APPV = 'v3.15';
+  var APPV = 'v3.16';
 
   // Debug : ?debug_modal=1 force l'affichage du modal "nouvelle version" sans attendre un vrai
   // déploiement. Capturé ICI, tout au début, car plus bas (login mémorisé, connexion) le code
@@ -3454,30 +3471,47 @@
     return el;
   }
 
+  // Miniature carrée (aperçu visuel + montant) qui ouvre la vraie facture en 1 tap -- toujours
+  // visible sur la carte (plus besoin d'ouvrir "Modifier et traiter" pour la voir).
+  function contratsBuildThumb(f){
+    if (!f.fichier_url) return null;
+    var a = document.createElement('a'); a.className = 'ct-thumb'; a.target = '_blank'; a.title = 'Voir la facture';
+    a.href = 'https://n8n-self-hosted-t0pz.onrender.com' + f.fichier_url + '&code=' + encodeURIComponent(String(read('jarvisCode') || '').trim());
+    var band = document.createElement('div'); band.className = 'ct-thumb-band'; a.appendChild(band);
+    var l1 = document.createElement('div'); l1.className = 'ct-thumb-line ct-thumb-line1'; a.appendChild(l1);
+    var l2 = document.createElement('div'); l2.className = 'ct-thumb-line ct-thumb-line2'; a.appendChild(l2);
+    var l3 = document.createElement('div'); l3.className = 'ct-thumb-line ct-thumb-line3'; a.appendChild(l3);
+    var amt = document.createElement('div'); amt.className = 'ct-thumb-amt';
+    amt.textContent = (f.prix_ttc != null ? Math.round(Number(f.prix_ttc)) : '') + ' €';
+    a.appendChild(amt);
+    return a;
+  }
+
   function contratsBuildMoisCard(f){
     var card = document.createElement('div'); card.className = 'contrat-card';
+    var head = document.createElement('div'); head.className = 'ct-head';
+    var main = document.createElement('div'); main.className = 'ct-main';
     var nom = document.createElement('span'); nom.className = 'dv-nom'; nom.textContent = contratNomAffiche(f);
-    card.appendChild(nom);
+    main.appendChild(nom);
     var badge = document.createElement('span'); badge.className = 'ct-badge' + (f.type_contrat === 'VMC' ? ' vmc' : '');
     badge.textContent = f.type_contrat === 'VMC' ? 'VMC · +3 % auto' : 'Dératisation / désinsectisation';
-    card.appendChild(badge);
+    main.appendChild(badge);
     var meta = document.createElement('span'); meta.className = 'dv-meta';
     meta.textContent = (f.prestation || '') + ' · ' + f.annee + (f.prix_ht_n1 != null ? (' · N-1 : ' + Number(f.prix_ht_n1).toFixed(2) + ' € HT') : '');
-    card.appendChild(meta);
+    main.appendChild(meta);
     var montant = document.createElement('span'); montant.className = 'dv-montant';
     montant.textContent = Number(f.prix_ttc).toFixed(2) + ' € TTC';
-    card.appendChild(montant);
+    main.appendChild(montant);
+    head.appendChild(main);
+    var thumb = contratsBuildThumb(f);
+    if (thumb) head.appendChild(thumb);
+    card.appendChild(head);
 
     // ---- Statut "envoyee" : lecture seule, rien à modifier ni à traiter ----
     if (f.statut === 'envoyee'){
       var metaEnvoi = document.createElement('span'); metaEnvoi.className = 'dv-meta';
       metaEnvoi.textContent = '✅ Envoyée le ' + fmtDevisDateSimple(f.date_envoi) + (f.destinataire_email ? (' à ' + f.destinataire_email) : '');
       card.appendChild(metaEnvoi);
-      if (f.fichier_url){
-        var pdfEnv = document.createElement('a'); pdfEnv.className = 'dv-pdf'; pdfEnv.textContent = '📄 Voir la facture'; pdfEnv.target = '_blank';
-        pdfEnv.href = 'https://n8n-self-hosted-t0pz.onrender.com' + f.fichier_url + '&code=' + encodeURIComponent(String(read('jarvisCode') || '').trim());
-        card.appendChild(pdfEnv);
-      }
       return card;
     }
 
@@ -3506,11 +3540,6 @@
     card.appendChild(toggleBtn);
 
     var detail = document.createElement('div'); detail.className = 'ct-detail';
-    if (f.fichier_url){
-      var pdf = document.createElement('a'); pdf.className = 'dv-pdf'; pdf.textContent = '📄 Voir la facture'; pdf.target = '_blank';
-      pdf.href = 'https://n8n-self-hosted-t0pz.onrender.com' + f.fichier_url + '&code=' + encodeURIComponent(String(read('jarvisCode') || '').trim());
-      detail.appendChild(pdf);
-    }
     var destInput = contratField(detail, 'Destinataire (email)', 'input', f.destinataire_email); destInput.type = 'text';
     var objetInput = contratField(detail, 'Objet', 'input', f.objet_mail); objetInput.type = 'text';
     var corpsInput = contratField(detail, 'Corps du mail', 'textarea', f.corps_mail);
