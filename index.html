@@ -528,8 +528,9 @@
      reconnaître "c'est un document" + voir le montant d'un coup d'oeil) -- clique = ouvre le
      vrai PDF. Remplace le lien texte "Voir la facture" qui était caché dans le panneau
      "Modifier et traiter" (demande explicite : le rendre visible directement sur la carte). */
+  .ct-thumb-wrap{flex:0 0 auto; display:flex; flex-direction:column; align-items:center; gap:4px}
   .ct-thumb{
-    flex:0 0 auto; width:58px; height:58px; border-radius:10px; background:#fff; position:relative;
+    width:58px; height:58px; border-radius:10px; background:#fff; position:relative;
     overflow:hidden; text-decoration:none; -webkit-tap-highlight-color:transparent;
     box-shadow:0 2px 6px rgba(0,0,0,.3);
   }
@@ -539,6 +540,7 @@
   .ct-thumb-line2{top:27px; width:50%}
   .ct-thumb-line3{top:34px; width:60%}
   .ct-thumb-amt{position:absolute; right:5px; bottom:5px; font-size:9px; font-weight:800; color:#1a1a1a}
+  .ct-thumb-caption{font-size:10px; color:var(--muted); white-space:nowrap}
   .contrat-card .ct-badge{
     font-size:11px; font-weight:700; border-radius:99px; padding:2px 9px;
     background:rgba(255,255,255,.1); color:var(--muted); width:fit-content;
@@ -2347,7 +2349,7 @@
 
 <script>
 (function(){
-  var APPV = 'v3.16';
+  var APPV = 'v3.17';
 
   // Debug : ?debug_modal=1 force l'affichage du modal "nouvelle version" sans attendre un vrai
   // déploiement. Capturé ICI, tout au début, car plus bas (login mémorisé, connexion) le code
@@ -3472,9 +3474,11 @@
   }
 
   // Miniature carrée (aperçu visuel + montant) qui ouvre la vraie facture en 1 tap -- toujours
-  // visible sur la carte (plus besoin d'ouvrir "Modifier et traiter" pour la voir).
+  // visible sur la carte (plus besoin d'ouvrir "Modifier et traiter" pour la voir), légendée
+  // "Pièce jointe" en dessous (demande explicite : plus clair que la vignette seule).
   function contratsBuildThumb(f){
     if (!f.fichier_url) return null;
+    var wrap = document.createElement('div'); wrap.className = 'ct-thumb-wrap';
     var a = document.createElement('a'); a.className = 'ct-thumb'; a.target = '_blank'; a.title = 'Voir la facture';
     a.href = 'https://n8n-self-hosted-t0pz.onrender.com' + f.fichier_url + '&code=' + encodeURIComponent(String(read('jarvisCode') || '').trim());
     var band = document.createElement('div'); band.className = 'ct-thumb-band'; a.appendChild(band);
@@ -3484,7 +3488,10 @@
     var amt = document.createElement('div'); amt.className = 'ct-thumb-amt';
     amt.textContent = (f.prix_ttc != null ? Math.round(Number(f.prix_ttc)) : '') + ' €';
     a.appendChild(amt);
-    return a;
+    wrap.appendChild(a);
+    var caption = document.createElement('span'); caption.className = 'ct-thumb-caption'; caption.textContent = 'Pièce jointe';
+    wrap.appendChild(caption);
+    return wrap;
   }
 
   function contratsBuildMoisCard(f){
