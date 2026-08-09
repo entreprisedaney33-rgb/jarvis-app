@@ -399,9 +399,6 @@
   .client-info{font-size:12.5px; color:var(--muted); display:block; margin-top:2px; white-space:nowrap; overflow:hidden; text-overflow:ellipsis}
   .client-date{font-size:11.5px; color:var(--muted); flex:0 0 auto}
   #clients-empty, #clients-loading{color:var(--muted); text-align:center; padding:40px 20px; font-size:14px}
-  #clients-setup{padding:20px 16px; color:var(--muted); font-size:13.5px; line-height:1.5}
-  #clients-setup input{width:100%; box-sizing:border-box; border:none; border-radius:12px; background:var(--surface); color:var(--ink); font-size:15px; padding:10px 12px; margin:10px 0}
-  #clients-setup button{width:100%; border:none; border-radius:12px; background:var(--gold-a); color:#151517; font-size:15px; font-weight:700; padding:11px; cursor:pointer}
   /* Panneau plein ecran "Devis a valider" (compte patron d'un tenant secondaire uniquement) */
   #devisview{
     position:fixed; inset:0; z-index:50; background:var(--bg);
@@ -2485,7 +2482,7 @@
 
 <script>
 (function(){
-  var APPV = 'v3.19';
+  var APPV = 'v3.20';
 
   // Debug : ?debug_modal=1 force l'affichage du modal "nouvelle version" sans attendre un vrai
   // déploiement. Capturé ICI, tout au début, car plus bas (login mémorisé, connexion) le code
@@ -3484,11 +3481,11 @@
   });
 
   // ---- Clients (observation, lecture seule — jamais d'action depuis cette vue) ----
-  // Appelle un webhook n8n séparé et dédié (mcs-admin-lecture), authentifié par un
-  // code d'observation DISTINCT du code de connexion habituel, jamais celui d'un
-  // utilisateur ni d'un compte de test. Ce code n'est JAMAIS écrit en dur ici (ce
-  // fichier finit sur un dépôt public) : saisi une fois par Mathéo, gardé en
-  // localStorage sous une clé séparée ('mcsAdminCode'), comme jarvisCode.
+  // Appelle un webhook n8n séparé et dédié (mcs-admin-lecture), authentifié par le
+  // code de connexion habituel déjà en mémoire (jarvisCode) — plus de code séparé à
+  // saisir : accéder à ce panneau (bouton masqué pour un compte tenant, cf. isMcsCode())
+  // suffit déjà à prouver qu'on est bien Mathéo ou Dorian. Le serveur revérifie que ce
+  // code existe bien dans la table du compte principal (jamais un code MCS).
   var ADMIN_API = 'https://n8n-self-hosted-t0pz.onrender.com/webhook/mcs-admin-lecture';
   var clientsview = document.getElementById('clientsview');
   var clientsList = document.getElementById('clients-list');
@@ -3507,8 +3504,8 @@
   function normClients(s){ return String(s || '').toLowerCase().normalize('NFD').replace(/[̀-ͯ]/g, ''); }
 
   function adminPost(body, ok, ko){
-    var code = read('mcsAdminCode');
-    if (!code){ ko('Code d’observation non configuré.'); return; }
+    var code = String(read('jarvisCode') || '').trim();
+    if (!code){ ko('Non connecté.'); return; }
     var payload = Object.assign({ code: code }, body);
     fetch(ADMIN_API, { method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify(payload) })
       .then(function(r){ return r.json().catch(function(){ return {}; }).then(function(j){ return { status:r.status, body:j }; }); })
@@ -4683,24 +4680,6 @@
   });
   portefeuilleSearchInput.addEventListener('input', function(){ portefeuilleQuery = portefeuilleSearchInput.value; portefeuilleApplyFilter(); });
 
-  function clientsShowSetup(){
-    clientsTitleEl.textContent = '🏢 Clients';
-    clientsBack.style.display = 'none';
-    clientsTabsEl.style.display = 'none';
-    clientsFiltersEl.style.display = 'none';
-    clientsList.innerHTML =
-      '<div id="clients-setup">Panneau en lecture seule : frictions et conversations de vos clients Jarvis. ' +
-      'Entrez votre code d’observation (différent de votre code de connexion habituel, fourni séparément) :' +
-      '<input id="clients-admin-input" type="text" placeholder="Code d’observation" autocomplete="off" autocapitalize="off" autocorrect="off">' +
-      '<button id="clients-admin-save" type="button">Valider</button></div>';
-    document.getElementById('clients-admin-save').addEventListener('click', function(){
-      var v = document.getElementById('clients-admin-input').value.trim().toLowerCase();
-      if (!v) return;
-      store('mcsAdminCode', v);
-      clientsShowRoot();
-    });
-  }
-
   // La liste (nom + description) vient TOUJOURS du serveur (canal mcs-admin-lecture, dédié à
   // ce client) — jamais un nom d'entreprise en dur ici : ce fichier finit sur un dépôt public.
   var clientsCourant = null; // { id, nom, description } du client actuellement ouvert
@@ -4900,7 +4879,7 @@
 
   function clientsOpen(){
     clientsview.classList.add('open');
-    if (!read('mcsAdminCode')) clientsShowSetup(); else clientsShowRoot();
+    clientsShowRoot();
   }
 
   clientsBack.addEventListener('click', function(){
