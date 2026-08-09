@@ -771,12 +771,12 @@
   .carnet-field:first-of-type{border-top:none}
   .carnet-field-main{flex:1; min-width:0}
   .carnet-field-label{font-size:11px; color:var(--muted); text-transform:uppercase; letter-spacing:.03em; display:block; margin-bottom:3px}
-  .carnet-field-value{font-size:14.5px; line-height:1.4; display:block; word-break:break-word; min-height:1.4em}
-  .carnet-field-value.empty{color:var(--muted); font-style:italic}
+  .carnet-field-value{font-size:14.5px; line-height:1.5; display:block; word-break:break-word; white-space:pre-wrap; min-height:3.2em; padding-top:2px}
+  .carnet-field-value.empty{color:var(--muted); font-style:italic; white-space:normal}
   .carnet-field-edit{
     width:100%; box-sizing:border-box; border:0.5px solid rgba(255,255,255,.25); border-radius:8px;
-    background:#2E2E32; color:var(--ink); font-size:14.5px; line-height:1.4; font-family:inherit;
-    padding:6px 8px; resize:none; overflow:hidden; min-height:34px;
+    background:#2E2E32; color:var(--ink); font-size:14.5px; line-height:1.5; font-family:inherit;
+    padding:8px 9px; resize:none; overflow:hidden; min-height:80px;
   }
   .carnet-ancien{font-size:11px; color:var(--muted); display:block; margin-top:3px}
   .carnet-lock{
@@ -2482,7 +2482,7 @@
 
 <script>
 (function(){
-  var APPV = 'v3.21';
+  var APPV = 'v3.22';
 
   // Debug : ?debug_modal=1 force l'affichage du modal "nouvelle version" sans attendre un vrai
   // déploiement. Capturé ICI, tout au début, car plus bas (login mémorisé, connexion) le code
@@ -2897,7 +2897,11 @@
       if (m.role !== 'user') contratsAppendNotifBtnIfNeeded(b, String(m.contenu));
     });
     if (!chat.children.length){
-      bubble('Bonjour, je suis Jarvis. Je connais vos contacts, vos chantiers, vos devis et votre agenda — posez-moi une question.', 'jarvis');
+      // Vocabulaire MCS (2026-08-09) : on ne dit jamais "chantier" chez MCS -- "résidence" ou "site".
+      var welcomeTxt = isMcsCode()
+        ? 'Bonjour, je suis Jarvis. Je connais vos contacts, vos résidences, vos devis et votre agenda — posez-moi une question.'
+        : 'Bonjour, je suis Jarvis. Je connais vos contacts, vos chantiers, vos devis et votre agenda — posez-moi une question.';
+      bubble(welcomeTxt, 'jarvis');
     }
     // Re-affiche le brouillon en attente (email/rdv/archive) et les derniers fichiers trouves
     // s'il y en a — sinon ils disparaissaient a chaque rafraichissement/reouverture de l'app
@@ -4471,9 +4475,14 @@
     main.appendChild(label);
     var val = document.createElement('span');
     val.className = 'carnet-field-value' + (!r[f.key] ? ' empty' : '');
-    val.textContent = r[f.key] || 'Non renseigné — touche pour ajouter';
+    val.textContent = r[f.key] || 'Non renseigné — touche pour ajouter (digicode, courroies, groupe VMC, clés… une ligne par info)';
     main.appendChild(val);
     val.addEventListener('click', function(){
+      // Champ multi-ligne (digicode/courroies/VMC/clés tenus dans un seul commentaire libre) :
+      // Entrée insère un retour à la ligne comme dans un vrai bloc-notes -- SEUL le fait de
+      // toucher ailleurs (blur) ou Echap termine l'édition. Ne pas copier le pattern
+      // "Entree = valider" de .notes-contenu-edit ici : une note est une ligne, un commentaire
+      // de carnet bleu est plusieurs lignes distinctes par nature.
       var edit = document.createElement('textarea'); edit.className = 'carnet-field-edit'; edit.value = r[f.key] || '';
       main.replaceChild(edit, val);
       function autoGrow(){ edit.style.height = 'auto'; edit.style.height = edit.scrollHeight + 'px'; }
@@ -4495,7 +4504,6 @@
       }
       edit.addEventListener('blur', function(){ revenir(edit.value); });
       edit.addEventListener('keydown', function(e){
-        if (e.key === 'Enter' && !e.shiftKey){ e.preventDefault(); edit.blur(); }
         if (e.key === 'Escape'){ e.preventDefault(); termine = true; carnetRender(); }
       });
     });
@@ -7012,6 +7020,9 @@
   function calOpenForm(mode, ev, presetBase){
     calEditingId = mode === 'edit' ? ev.id : '';
     document.getElementById('cal-form-title').textContent = mode === 'edit' ? 'Modifier le rendez-vous' : 'Nouveau rendez-vous';
+    // Vocabulaire MCS (2026-08-09) : "chantier Carignan" est un exemple du labo interne, sans
+    // rapport avec MCS (qui ne dit jamais "chantier") -- placeholder neutre côté MCS.
+    document.getElementById('cf-titre').placeholder = isMcsCode() ? 'Ex : Passage résidence Les Tilleuls' : 'Ex : RDV chantier Carignan';
     document.getElementById('cf-titre').value = mode === 'edit' ? ev.title : '';
     var base;
     if (mode === 'edit') base = new Date(ev.start);
