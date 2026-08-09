@@ -2171,7 +2171,7 @@
 
 <div id="contrat-catalogue-form-bg">
   <div class="contrat-form" id="contrat-catalogue-form">
-    <h3 id="cf-titre">Nouveau contrat</h3>
+    <h3 id="ctf-titre">Nouveau contrat</h3>
     <label>Type</label>
     <select id="cf-type"><option value="BRUNO">Dératisation / désinsectisation</option><option value="VMC">VMC</option></select>
     <label>Client (syndic/société)</label><input id="cf-client" type="text">
@@ -2190,10 +2190,10 @@
     <label>Email de facturation</label><input id="cf-email" type="email">
     <label>Renouvellement</label><input id="cf-renouv" type="text" placeholder="tacite / 3 ans / ...">
     <div class="cf-actions">
-      <button class="vc-ok" id="cf-save" type="button">✅ Enregistrer</button>
-      <button class="vc-no" id="cf-cancel" type="button">Annuler</button>
+      <button class="vc-ok" id="ctf-save" type="button">✅ Enregistrer</button>
+      <button class="vc-no" id="ctf-cancel" type="button">Annuler</button>
     </div>
-    <button class="vc-no" id="cf-delete" type="button" style="width:100%;margin-top:8px;display:none">🗑 Retirer ce contrat</button>
+    <button class="vc-no" id="ctf-delete" type="button" style="width:100%;margin-top:8px;display:none">🗑 Retirer ce contrat</button>
   </div>
 </div>
 
@@ -2482,7 +2482,7 @@
 
 <script>
 (function(){
-  var APPV = 'v3.20';
+  var APPV = 'v3.21';
 
   // Debug : ?debug_modal=1 force l'affichage du modal "nouvelle version" sans attendre un vrai
   // déploiement. Capturé ICI, tout au début, car plus bas (login mémorisé, connexion) le code
@@ -3975,7 +3975,7 @@
   var contratFormEditingId = null;
   function contratFormOpen(c){
     contratFormEditingId = c ? c.id : null;
-    document.getElementById('cf-titre').textContent = c ? 'Modifier le contrat' : 'Nouveau contrat';
+    document.getElementById('ctf-titre').textContent = c ? 'Modifier le contrat' : 'Nouveau contrat';
     document.getElementById('cf-type').value = c ? c.type_contrat : contratsCatSubTab;
     document.getElementById('cf-client').value = c ? c.client : '';
     document.getElementById('cf-residence').value = c ? c.residence : '';
@@ -3988,13 +3988,13 @@
     document.getElementById('cf-tva').value = c ? String(c.tva) : '0.2';
     document.getElementById('cf-email').value = c ? c.email : '';
     document.getElementById('cf-renouv').value = c ? c.renouvellement : '';
-    document.getElementById('cf-delete').style.display = c ? '' : 'none';
+    document.getElementById('ctf-delete').style.display = c ? '' : 'none';
     contratFormBg.classList.add('open');
   }
   function contratFormClose(){ contratFormBg.classList.remove('open'); }
-  document.getElementById('cf-cancel').addEventListener('click', contratFormClose);
+  document.getElementById('ctf-cancel').addEventListener('click', contratFormClose);
   contratFormBg.addEventListener('click', function(e){ if (e.target === this) contratFormClose(); });
-  document.getElementById('cf-save').addEventListener('click', function(){
+  document.getElementById('ctf-save').addEventListener('click', function(){
     var contrat = {
       type_contrat: document.getElementById('cf-type').value,
       client: document.getElementById('cf-client').value.trim(),
@@ -4019,7 +4019,7 @@
       contratsLoadTab();
     }, function(err){ toast(err); });
   });
-  document.getElementById('cf-delete').addEventListener('click', function(){
+  document.getElementById('ctf-delete').addEventListener('click', function(){
     if (!contratFormEditingId) return;
     if (!confirm('Retirer ce contrat du catalogue ? (réversible, il reste consultable côté serveur)')) return;
     postContrats({ type: 'catalogue-supprimer', id: contratFormEditingId }, function(){
