@@ -591,6 +591,83 @@
   .contrat-form .cf-row > *{flex:1}
   .contrat-form .cf-actions{display:flex; gap:8px; margin-top:16px}
   .contrat-form .cf-actions .vc-ok, .contrat-form .cf-actions .vc-no{padding:11px; font-size:15px}
+  /* Panneau plein ecran "Couts" (gestion des abonnements fixes, auto-service, 2026-08-09) */
+  #coutsview{
+    position:fixed; inset:0; z-index:50; background:var(--bg);
+    display:none; flex-direction:column;
+    transform:translateY(100%); transition:transform .28s cubic-bezier(.2,.9,.25,1);
+  }
+  #coutsview.open{display:flex; transform:translateY(0)}
+  @media (prefers-reduced-motion: reduce){#coutsview{transition:none}}
+  #couts-head{
+    flex:0 0 auto; display:flex; align-items:center; gap:10px;
+    padding:calc(10px + env(safe-area-inset-top)) 14px 12px;
+    border-bottom:0.5px solid var(--hairline);
+  }
+  #couts-head b{font-size:16px; flex:1; white-space:nowrap; overflow:hidden; text-overflow:ellipsis}
+  #couts-add, #couts-close{
+    width:32px; height:32px; border-radius:50%; border:0; flex:0 0 auto;
+    background:var(--surface); color:var(--ink); font-size:16px;
+    display:flex; align-items:center; justify-content:center; cursor:pointer;
+    -webkit-tap-highlight-color:transparent;
+  }
+  #couts-list{flex:1; overflow-y:auto; -webkit-overflow-scrolling:touch; padding:6px 14px calc(20px + env(safe-area-inset-bottom))}
+  #couts-empty, #couts-loading{color:var(--muted); text-align:center; padding:40px 20px; font-size:14px}
+  .couts-row{
+    display:flex; align-items:center; gap:10px; width:100%;
+    padding:12px 4px; border-top:0.5px solid rgba(84,84,88,.4);
+  }
+  .couts-row:first-child{border-top:none}
+  .couts-mid{flex:1; min-width:0; display:flex; flex-direction:column}
+  .couts-nom{font-size:15px; font-weight:600; white-space:nowrap; overflow:hidden; text-overflow:ellipsis}
+  .couts-meta{font-size:12px; color:var(--muted); margin-top:2px; white-space:nowrap; overflow:hidden; text-overflow:ellipsis}
+  .couts-montant{font-size:14.5px; font-weight:700; color:var(--gold-a); flex:0 0 auto}
+  .couts-del{
+    flex:0 0 auto; border:0; background:none; font-size:17px; padding:6px;
+    cursor:pointer; -webkit-tap-highlight-color:transparent; opacity:.75;
+  }
+  #coutsFormBg{position:fixed; inset:0; z-index:55; background:rgba(0,0,0,.55); display:none}
+  #coutsFormBg.open{display:block}
+  .couts-form{
+    position:fixed; left:50%; bottom:0; transform:translateX(-50%); width:min(480px,100%);
+    max-height:88vh; overflow-y:auto; background:var(--bg); border-radius:20px 20px 0 0;
+    padding:18px 18px calc(18px + env(safe-area-inset-bottom)); box-sizing:border-box;
+  }
+  .couts-form h3{margin:0 0 12px; font-size:17px}
+  .couts-form label{display:block; font-size:12px; color:var(--muted); margin:10px 0 4px}
+  .couts-form input, .couts-form select, .couts-form textarea{
+    width:100%; box-sizing:border-box; border:0.5px solid rgba(255,255,255,.18); border-radius:10px;
+    background:#2E2E32; color:var(--ink); font-size:14px; padding:9px 10px; font:inherit;
+  }
+  .couts-form .cx-row{display:flex; gap:8px}
+  .couts-form .cx-row > *{flex:1}
+  .couts-form .cx-actions{display:flex; gap:8px; margin-top:16px}
+  .couts-form .cx-actions .vc-ok, .couts-form .cx-actions .vc-no{padding:11px; font-size:15px}
+  /* Dashboard couts (Phase 4, 2026-08-09) */
+  #couts-dash{padding:10px 14px 4px}
+  .couts-stats{display:grid; grid-template-columns:1fr 1fr; gap:8px; margin-bottom:14px}
+  .couts-stat{
+    background:var(--surface); border-radius:14px; padding:12px 14px;
+    display:flex; flex-direction:column; gap:2px;
+  }
+  .couts-stat .cs-label{font-size:11.5px; color:var(--muted); text-transform:uppercase; letter-spacing:.02em}
+  .couts-stat .cs-value{font-size:20px; font-weight:700; color:var(--gold-a)}
+  .couts-stat .cs-sub{font-size:11.5px; color:var(--muted)}
+  #couts-curve{
+    display:flex; align-items:flex-end; gap:2px; height:52px; margin:4px 0 14px;
+    background:var(--surface); border-radius:12px; padding:8px 10px; box-sizing:border-box;
+  }
+  #couts-curve .cc-bar{flex:1; background:var(--gold-a); border-radius:2px 2px 0 0; min-height:2px; opacity:.85}
+  #couts-curve .cc-bar.cc-today{opacity:1}
+  #couts-svc-head{font-size:12.5px; font-weight:700; color:var(--gold-a); text-transform:uppercase; letter-spacing:.03em; padding:4px 4px 6px}
+  .couts-svc-row{display:flex; align-items:center; gap:10px; padding:9px 4px; border-top:0.5px solid rgba(84,84,88,.4)}
+  .couts-svc-row:first-child{border-top:none}
+  .couts-svc-nom{flex:1; min-width:0; font-size:13.5px; white-space:nowrap; overflow:hidden; text-overflow:ellipsis}
+  .couts-svc-pct{font-size:11.5px; color:var(--muted); flex:0 0 auto; width:40px; text-align:right}
+  .couts-svc-montant{font-size:13.5px; font-weight:700; color:var(--gold-a); flex:0 0 auto; width:60px; text-align:right}
+  #couts-etat{font-size:12px; color:var(--muted); padding:2px 4px 14px}
+  #couts-etat.warn{color:#FF9F0A}
+  #couts-abo-head{font-size:12.5px; font-weight:700; color:var(--gold-a); text-transform:uppercase; letter-spacing:.03em; padding:10px 4px 6px; border-top:0.5px solid rgba(84,84,88,.4)}
   /* Panneau plein ecran "Relances clients" (chantier 3 audit MCS, patron uniquement) */
   #relancesview{
     position:fixed; inset:0; z-index:50; background:var(--bg);
@@ -1917,6 +1994,7 @@
     <button class="sh-item" id="sh-emails" type="button" style="display:none"><span class="sh-ic">✉️</span><span class="sh-label">Emails</span><span class="badge-count" id="menu-email-badge" style="display:none"></span></button>
     <button class="sh-item" id="sh-calendar" type="button"><span class="sh-ic">📅</span><span class="sh-label">Calendrier</span></button>
     <button class="sh-item" id="sh-docs" type="button"><span class="sh-ic">📄</span><span class="sh-label">Mes documents</span></button>
+    <button class="sh-item" id="sh-couts" type="button"><span class="sh-ic">💰</span><span class="sh-label">Coûts</span></button>
     <button class="sh-item" id="sh-meute" type="button"><span class="sh-ic">🐺</span><span class="sh-label">Meute</span><span class="badge-count" id="menu-meute-badge" style="display:none"></span></button>
     <button class="sh-item" id="sh-site" type="button"><span class="sh-ic">🏗️</span><span class="sh-label">Site</span></button>
     <button class="sh-item" id="sh-notes" type="button"><span class="sh-ic">🧠</span><span class="sh-label">Notes</span></button>
@@ -1960,6 +2038,64 @@
     <input id="docs-search" type="search" inputmode="search" placeholder="🔍 Rechercher un document…" autocomplete="off" autocapitalize="off" autocorrect="off">
   </div>
   <div id="docs-list"></div>
+</div>
+
+<div id="coutsview">
+  <div id="couts-head">
+    <b id="couts-title">💰 Coûts</b>
+    <button id="couts-add" type="button" aria-label="Ajouter un abonnement">+</button>
+    <button id="couts-close" type="button" aria-label="Fermer">✕</button>
+  </div>
+  <div id="couts-list">
+    <div id="couts-dash">
+      <div id="couts-dash-loading">Calcul en cours…</div>
+      <div id="couts-dash-body" style="display:none">
+        <div class="couts-stats">
+          <div class="couts-stat"><span class="cs-label">Aujourd'hui</span><span class="cs-value" id="cs-jour">—</span></div>
+          <div class="couts-stat"><span class="cs-label">Mois en cours</span><span class="cs-value" id="cs-mois">—</span></div>
+          <div class="couts-stat"><span class="cs-label">Projection fin de mois</span><span class="cs-value" id="cs-proj">—</span></div>
+          <div class="couts-stat"><span class="cs-label">Mois dernier</span><span class="cs-value" id="cs-precedent">—</span></div>
+        </div>
+        <div id="couts-curve"></div>
+        <div id="couts-svc-head">Par service (30 derniers jours)</div>
+        <div id="couts-svc-list"></div>
+        <div id="couts-etat"></div>
+      </div>
+    </div>
+    <div id="couts-abo-head">Abonnements (gérés ici)</div>
+    <div id="couts-abo-rows"></div>
+  </div>
+</div>
+
+<div id="coutsFormBg">
+  <div class="couts-form" id="coutsForm">
+    <h3>Nouvel abonnement</h3>
+    <label>Nom <input id="cx-nom" type="text" placeholder="Ex : Vapi, Shopify…" autocomplete="off"></label>
+    <label>Catégorie
+      <select id="cx-categorie">
+        <option value="llm">IA / LLM</option>
+        <option value="transcription">Transcription</option>
+        <option value="telephonie">Téléphonie</option>
+        <option value="voix">Voix</option>
+        <option value="recherche_web">Recherche web</option>
+        <option value="hebergement">Hébergement</option>
+        <option value="domaine">Domaine</option>
+        <option value="saas">SaaS</option>
+        <option value="base_de_donnees">Base de données</option>
+        <option value="autre" selected>Autre</option>
+      </select>
+    </label>
+    <div class="cx-row">
+      <div><label>Périodicité</label><select id="cx-periodicite"><option value="mensuel">Mensuel</option><option value="annuel">Annuel</option></select></div>
+      <div><label>Montant</label><input id="cx-montant" type="number" inputmode="decimal" step="0.01" min="0" placeholder="0.00"></div>
+      <div><label>Devise</label><select id="cx-devise"><option value="EUR">€ EUR</option><option value="USD">$ USD</option></select></div>
+    </div>
+    <label>Notes (optionnel) <textarea id="cx-notes" rows="2" placeholder="Ex : renouvellement le 15 du mois…"></textarea></label>
+    <div class="cx-actions">
+      <button class="vc-no" id="cx-cancel" type="button">Annuler</button>
+      <button class="vc-ok" id="cx-save" type="button">Valider</button>
+    </div>
+  </div>
 </div>
 
 <div id="clientsview">
@@ -2349,7 +2485,7 @@
 
 <script>
 (function(){
-  var APPV = 'v3.17';
+  var APPV = 'v3.19';
 
   // Debug : ?debug_modal=1 force l'affichage du modal "nouvelle version" sans attendre un vrai
   // déploiement. Capturé ICI, tout au début, car plus bas (login mémorisé, connexion) le code
@@ -2873,7 +3009,9 @@
     // le compte principal. La vraie protection reste côté serveur (code d'observation
     // dédié, jamais donné aux comptes clients, table séparée) : masquer ici n'est qu'un
     // confort visuel, pas la garantie — voir la doc privée du dépôt.
-    ['sh-meute', 'sh-site', 'sh-vitrine', 'sh-plume', 'hcallbtn', 'sh-clients'].forEach(function(id){
+    // sh-couts (gestion des coûts labo-ia) masqué côté tenant secondaire : données internes
+    // à Mathéo/Dorian, sans aucun rapport avec un client — même logique que sh-clients.
+    ['sh-meute', 'sh-site', 'sh-vitrine', 'sh-plume', 'hcallbtn', 'sh-clients', 'sh-couts'].forEach(function(id){
       var el = document.getElementById(id);
       if (el) el.style.display = mcs ? 'none' : '';
     });
@@ -3216,6 +3354,134 @@
   docsBack.addEventListener('click', function(){ docsSearch.value = ''; renderFolders(); });
   document.getElementById('sh-docs').addEventListener('click', function(){ sheetOpen(false); docsOpen(); });
   document.getElementById('docs-close').addEventListener('click', docsClose);
+
+  // ---- 💰 Coûts (gestion des abonnements fixes, auto-service, 2026-08-09) ----
+  var coutsview = document.getElementById('coutsview');
+  var coutsAboRows = document.getElementById('couts-abo-rows');
+  var CX_CAT_LABELS = {
+    llm:'🧠 IA / LLM', transcription:'🎙️ Transcription', telephonie:'📞 Téléphonie', voix:'🔊 Voix',
+    recherche_web:'🔎 Recherche web', hebergement:'🖥️ Hébergement', domaine:'🌐 Domaine',
+    saas:'🧩 SaaS', base_de_donnees:'🗄️ Base de données', autre:'📦 Autre'
+  };
+  function coutsFmt(m, d){ var n = Number(m); if (!isFinite(n)) n = 0; return (d === 'USD' ? '$' : '€') + n.toFixed(2).replace('.', ','); }
+  function coutsRow(c){
+    var row = document.createElement('div'); row.className = 'couts-row';
+    var mid = document.createElement('div'); mid.className = 'couts-mid';
+    var nom = document.createElement('span'); nom.className = 'couts-nom'; nom.textContent = c.nom;
+    var meta = document.createElement('span'); meta.className = 'couts-meta';
+    meta.textContent = (CX_CAT_LABELS[c.categorie] || c.categorie || 'Autre') + ' · ' + (c.periodicite || 'mensuel') + (c.notes ? ' · ' + c.notes : '');
+    mid.appendChild(nom); mid.appendChild(meta);
+    var montant = document.createElement('span'); montant.className = 'couts-montant';
+    montant.textContent = coutsFmt(c.montant_reel, c.devise) + (c.periodicite === 'annuel' ? '/an' : '/mois');
+    var del = document.createElement('button'); del.className = 'couts-del'; del.type = 'button';
+    del.setAttribute('aria-label', 'Supprimer'); del.textContent = '🗑';
+    del.addEventListener('click', function(){
+      if (!confirm('Supprimer "' + c.nom + '" ?\n(réversible côté données : l\'historique déjà collecté est conservé, seul le suivi futur s\'arrête)')) return;
+      post({ type:'couts-supprimer', id:c.id }, function(){
+        toast('🗑 Abonnement supprimé');
+        coutsLoad();
+      }, function(err){ toast(err || 'Erreur.'); });
+    });
+    row.appendChild(mid); row.appendChild(montant); row.appendChild(del);
+    return row;
+  }
+  function coutsLoad(){
+    coutsAboRows.innerHTML = '<p id="couts-loading">Chargement…</p>';
+    post({ type:'couts-liste' }, function(j){
+      var items = j.items || [];
+      coutsAboRows.innerHTML = '';
+      if (!items.length){ coutsAboRows.innerHTML = '<p id="couts-empty">Aucun abonnement suivi pour l’instant. Touche + pour en ajouter un.</p>'; return; }
+      items.forEach(function(c){ coutsAboRows.appendChild(coutsRow(c)); });
+    }, function(err){ coutsAboRows.innerHTML = '<p id="couts-empty">' + (err || 'Impossible de charger les coûts.') + '</p>'; });
+  }
+  function coutsEur(n){ var v = Number(n); if (!isFinite(v)) v = 0; return v.toFixed(2).replace('.', ',') + ' €'; }
+  function coutsDashLoad(){
+    var dashLoading = document.getElementById('couts-dash-loading');
+    var dashBody = document.getElementById('couts-dash-body');
+    dashLoading.style.display = ''; dashLoading.textContent = 'Calcul en cours…';
+    dashBody.style.display = 'none';
+    post({ type:'couts-dashboard' }, function(j){
+      dashLoading.style.display = 'none'; dashBody.style.display = '';
+      document.getElementById('cs-jour').textContent = coutsEur(j.totalJour);
+      document.getElementById('cs-mois').textContent = coutsEur(j.totalMois);
+      document.getElementById('cs-proj').textContent = coutsEur(j.projectionMois);
+      document.getElementById('cs-precedent').textContent = coutsEur(j.totalMoisPrecedent);
+      var curve = document.getElementById('couts-curve');
+      curve.innerHTML = '';
+      var jours = j.courbe || [];
+      var max = Math.max.apply(null, jours.map(function(d){ return d.total; }).concat([0.01]));
+      jours.forEach(function(d, i){
+        var bar = document.createElement('div');
+        bar.className = 'cc-bar' + (i === jours.length - 1 ? ' cc-today' : '');
+        bar.style.height = Math.max(2, Math.round((d.total / max) * 48)) + 'px';
+        bar.title = d.date + ' — ' + coutsEur(d.total);
+        curve.appendChild(bar);
+      });
+      var svcList = document.getElementById('couts-svc-list');
+      svcList.innerHTML = '';
+      var svcs = (j.tableauServices || []).filter(function(s){ return s.total30j > 0; });
+      if (!svcs.length){
+        svcList.innerHTML = '<p id="couts-empty" style="padding:16px 4px">Pas encore de données collectées.</p>';
+      } else {
+        svcs.forEach(function(s){
+          var row = document.createElement('div'); row.className = 'couts-svc-row';
+          var nom = document.createElement('span'); nom.className = 'couts-svc-nom';
+          nom.textContent = s.nom + (s.estimation ? ' (est.)' : '');
+          var pct = document.createElement('span'); pct.className = 'couts-svc-pct'; pct.textContent = s.partPct + '%';
+          var mnt = document.createElement('span'); mnt.className = 'couts-svc-montant'; mnt.textContent = coutsEur(s.total30j);
+          row.appendChild(nom); row.appendChild(pct); row.appendChild(mnt);
+          svcList.appendChild(row);
+        });
+      }
+      var etat = document.getElementById('couts-etat');
+      if (j.nbErreursRecentes > 0){
+        etat.className = 'warn';
+        etat.textContent = '⚠️ ' + j.nbErreursRecentes + ' erreur(s) de collecte ces 3 derniers jours (voir avec Claude Code si ça persiste).';
+      } else {
+        etat.className = '';
+        etat.textContent = '✅ Collecteurs à jour, aucune erreur récente.';
+      }
+    }, function(err){
+      dashLoading.style.display = ''; dashLoading.textContent = err || 'Impossible de calculer le tableau de bord.';
+    });
+  }
+  function coutsClose(){ coutsview.classList.remove('open'); }
+  function coutsOpen(){ coutsview.classList.add('open'); coutsDashLoad(); coutsLoad(); }
+  document.getElementById('sh-couts').addEventListener('click', function(){ sheetOpen(false); coutsOpen(); });
+  document.getElementById('couts-close').addEventListener('click', coutsClose);
+
+  var coutsFormBg = document.getElementById('coutsFormBg');
+  function coutsFormOpen(){
+    document.getElementById('cx-nom').value = '';
+    document.getElementById('cx-categorie').value = 'autre';
+    document.getElementById('cx-periodicite').value = 'mensuel';
+    document.getElementById('cx-montant').value = '';
+    document.getElementById('cx-devise').value = 'EUR';
+    document.getElementById('cx-notes').value = '';
+    coutsFormBg.classList.add('open');
+  }
+  function coutsFormClose(){ coutsFormBg.classList.remove('open'); }
+  document.getElementById('couts-add').addEventListener('click', coutsFormOpen);
+  document.getElementById('cx-cancel').addEventListener('click', coutsFormClose);
+  coutsFormBg.addEventListener('click', function(e){ if (e.target === this) coutsFormClose(); });
+  document.getElementById('cx-save').addEventListener('click', function(){
+    var payload = {
+      type: 'couts-ajouter',
+      nom: document.getElementById('cx-nom').value.trim(),
+      categorie: document.getElementById('cx-categorie').value,
+      periodicite: document.getElementById('cx-periodicite').value,
+      montant: document.getElementById('cx-montant').value,
+      devise: document.getElementById('cx-devise').value,
+      notes: document.getElementById('cx-notes').value.trim()
+    };
+    if (!payload.nom){ toast('Le nom est obligatoire.'); return; }
+    if (!payload.montant || Number(payload.montant) <= 0){ toast('Montant invalide.'); return; }
+    post(payload, function(){
+      toast('✅ Abonnement ajouté');
+      coutsFormClose();
+      coutsLoad();
+    }, function(err){ toast(err || 'Erreur.'); });
+  });
 
   // ---- Clients (observation, lecture seule — jamais d'action depuis cette vue) ----
   // Appelle un webhook n8n séparé et dédié (mcs-admin-lecture), authentifié par un
