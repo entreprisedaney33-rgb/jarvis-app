@@ -197,6 +197,32 @@
   #pvtime{font-size:12.5px; color:#fff; font-variant-numeric:tabular-nums}
   #pvx{width:34px; height:34px; border-radius:50%; border:none; cursor:pointer; background:var(--surface); color:var(--muted); font-size:15px; flex:0 0 auto}
   #pvsend{width:40px; height:40px; border-radius:50%; border:none; cursor:pointer; background:var(--blue); color:#fff; display:flex; align-items:center; justify-content:center; flex:0 0 auto}
+  /* Ecran dedie Bruno (2026-08-10) : un salarie MCS ne fait qu'une chose, dicter un devis --
+     le micro devient l'action principale, geante et centree ; le clavier reste disponible
+     (repli si la dictee est mal comprise, cf. MISSION-DORIAN-DEVIS-FACTURE-COMPLET.md § A)
+     mais visuellement en retrait. Purement additif : n'affecte aucun autre role/tenant. */
+  body.bruno-mode #composer{
+    flex-direction:column; align-items:center; gap:10px;
+    padding-top:14px;
+  }
+  body.bruno-mode #micbtn{
+    display:flex; width:84px; height:84px; order:1;
+    background:var(--blue); color:#fff; margin-bottom:0;
+    box-shadow:0 4px 18px rgba(10,132,255,.35);
+  }
+  body.bruno-mode #micbtn svg{width:34px; height:41px}
+  body.bruno-mode #micbtn.rec{background:var(--no)}
+  #brunohint{display:none}
+  .composer-row2{display:contents} /* neutre pour tous les autres roles/tenants */
+  body.bruno-mode #brunohint{
+    display:block; order:2; font-size:13.5px; color:var(--muted); text-align:center;
+  }
+  body.bruno-mode .composer-row2{
+    order:3; display:flex; align-items:flex-end; gap:9px; width:100%;
+  }
+  body.bruno-mode #textin{font-size:15px; padding:8px 14px}
+  body.bruno-mode #sendbtn{width:34px; height:34px}
+  body.bruno-mode #recui,body.bruno-mode #prevui{order:2; width:100%}
   /* Bulle vocal re-ecoutable */
   .msg.voice{min-width:215px}
   .vrow{display:flex; align-items:center; gap:10px}
@@ -1977,10 +2003,13 @@
       <div class="pill"><button id="pvplay" type="button" aria-label="Écouter">▶</button><canvas id="pvcv"></canvas><span id="pvtime">0:00</span></div>
       <button id="pvsend" type="button" aria-label="Envoyer le vocal"><svg width="18" height="18" viewBox="0 0 20 20" fill="currentColor"><path d="M10 17V5.5M10 3l-6 6.2M10 3l6 6.2" stroke="currentColor" stroke-width="2.6" fill="none" stroke-linecap="round" stroke-linejoin="round"/></svg></button>
     </div>
-    <textarea id="textin" rows="1" placeholder="Écrire à Jarvis…"></textarea>
-    <button id="sendbtn" class="idle" type="button" aria-label="Envoyer">
-      <svg width="18" height="18" viewBox="0 0 20 20" fill="currentColor"><path d="M10 17V5.5M10 3l-6 6.2M10 3l6 6.2" stroke="currentColor" stroke-width="2.6" fill="none" stroke-linecap="round" stroke-linejoin="round"/></svg>
-    </button>
+    <div id="brunohint">Ou écris ici si le micro se trompe sur un nom</div>
+    <div class="composer-row2">
+      <textarea id="textin" rows="1" placeholder="Écrire à Jarvis…"></textarea>
+      <button id="sendbtn" class="idle" type="button" aria-label="Envoyer">
+        <svg width="18" height="18" viewBox="0 0 20 20" fill="currentColor"><path d="M10 17V5.5M10 3l-6 6.2M10 3l6 6.2" stroke="currentColor" stroke-width="2.6" fill="none" stroke-linecap="round" stroke-linejoin="round"/></svg>
+      </button>
+    </div>
   </div>
 </div>
 
@@ -2482,7 +2511,7 @@
 
 <script>
 (function(){
-  var APPV = 'v3.22';
+  var APPV = 'v3.23';
 
   // Debug : ?debug_modal=1 force l'affichage du modal "nouvelle version" sans attendre un vrai
   // déploiement. Capturé ICI, tout au début, car plus bas (login mémorisé, connexion) le code
@@ -2511,6 +2540,10 @@
   // (webhooks mcs-*, tables mcs_*, entièrement séparé) ; tout le reste parle au
   // workflow labo historique (webhooks jarvis-*). Voir clients/mcs/config-mcs.json.
   function isMcsCode(){ return String(read('jarvisCode') || '').trim().toLowerCase().indexOf('mcs-') === 0; }
+  // Ecran dedie Bruno (2026-08-10, demande Mathéo) : un salarie MCS n'a qu'un seul usage reel --
+  // dicter un devis, que Mickael valide ensuite. Role transmis par le serveur a la connexion,
+  // jamais deduit du code cote client (meme garde que le reste du masquage par role).
+  function isBrunoMode(){ return isMcsCode() && read('jarvisRole') === 'salarie'; }
   function API_URL(){ return 'https://n8n-self-hosted-t0pz.onrender.com/webhook/' + (isMcsCode() ? 'mcs-msg' : 'jarvis-msg'); }
   var API_MEUTE = 'https://n8n-self-hosted-t0pz.onrender.com/webhook/meute-app';
   var API_VITRINE = 'https://n8n-self-hosted-t0pz.onrender.com/webhook/vitrine-liste';
@@ -2898,7 +2931,10 @@
     });
     if (!chat.children.length){
       // Vocabulaire MCS (2026-08-09) : on ne dit jamais "chantier" chez MCS -- "résidence" ou "site".
-      var welcomeTxt = isMcsCode()
+      // Ecran dedie Bruno (2026-08-10) : message different, centre sur son seul usage reel.
+      var welcomeTxt = isBrunoMode()
+        ? 'Appuie sur le micro et dicte ton devis : le client, la résidence, ce qu\'il faut facturer. J\'envoie ça à Mickaël pour validation.'
+        : isMcsCode()
         ? 'Bonjour, je suis Jarvis. Je connais vos contacts, vos résidences, vos devis et votre agenda — posez-moi une question.'
         : 'Bonjour, je suis Jarvis. Je connais vos contacts, vos chantiers, vos devis et votre agenda — posez-moi une question.';
       bubble(welcomeTxt, 'jarvis');
@@ -3025,6 +3061,9 @@
     // avant même la 1ère réponse serveur.
     var role = (extras && extras.role) || read('jarvisRole') || '';
     var mcsSalarie = mcs && role === 'salarie';
+    // Ecran dedie Bruno (2026-08-10) : gros micro centre, composer simplifie, message
+    // d'accueil different (voir renderHistory) -- purement visuel, cf. CSS .bruno-mode.
+    document.body.classList.toggle('bruno-mode', mcsSalarie);
     // "Mes documents" (2026-08-03, demande Mathéo) : la recherche/le classement documentaire ne
     // sert pas MCS (client décidé pendant l'audit) — masqué pour TOUT tenant secondaire (patron
     // ET salarié), reste inchangé pour le compte principal.
@@ -3109,7 +3148,10 @@
   function sendText(){
     var t = textin.value.trim();
     if (!t) return;
-    if (DEVIS_TRIGGERS.indexOf(normDevis(t)) !== -1){
+    // Jamais pour Bruno (2026-08-10) : cette fiche exige nom/email/adresse au clavier,
+    // à l'exact opposé de sa règle "zéro saisie clavier" (specs.md §3/§8) -- son seul
+    // chemin de devis reste la dictée vocale normale, traitée par le cerveau (devis_mcs).
+    if (!isBrunoMode() && DEVIS_TRIGGERS.indexOf(normDevis(t)) !== -1){
       textin.value = ''; autosize();
       devisOpen();
       return;
