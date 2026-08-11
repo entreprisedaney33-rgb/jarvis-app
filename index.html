@@ -1058,6 +1058,20 @@
   .rel-resume{font-size:13.5px; color:var(--ink); display:block; margin-top:6px; line-height:1.4}
   .rel-meta{font-size:12px; color:var(--muted); display:block; margin-top:6px}
   .rel-promesse{font-size:12.5px; color:var(--gold-a); display:block; margin-top:6px}
+  /* Observations (2026-08-11, "Jarvis proactif" phase 2) : schémas repérés par relecture croisée
+     de tout l'historique d'un contact -- affichées directement sur SA fiche, jamais un onglet à
+     part ni une notification push (demande explicite Mathéo : "quand il est en train de faire un
+     truc chez ce client"). */
+  .rel-obs{margin-top:10px; padding-top:10px; border-top:1px solid var(--hairline)}
+  .rel-obs-row{background:rgba(232,185,106,.08); border-radius:10px; padding:9px 11px; margin-bottom:8px}
+  .rel-obs-top{display:flex; align-items:center; gap:6px; margin-bottom:4px}
+  .rel-obs-imp{font-size:10px; font-weight:700; padding:2px 8px; border-radius:99px; text-transform:uppercase; letter-spacing:.02em}
+  .rel-obs-imp.forte{background:rgba(255,69,58,.15); color:var(--no)}
+  .rel-obs-imp.moyenne{background:rgba(232,185,106,.15); color:var(--gold-a)}
+  .rel-obs-constat{font-size:13px; color:var(--ink); line-height:1.4}
+  .rel-obs-actions{display:flex; gap:8px; margin-top:8px}
+  .rel-obs-btn{font-size:12px; font-weight:600; padding:6px 11px; border-radius:99px; border:none; background:#2E2E32; color:var(--ink)}
+  .rel-obs-btn.voir{background:rgba(10,132,255,.15); color:var(--blue)}
   /* Panneau plein ecran "Documents de reference" (RIB, Kbis, assurance decennale... -- 2026-08-11,
      Jarvis proactif). Meme gabarit que les autres panneaux plein ecran, prefixe docref-. */
   #docrefview{
@@ -2286,6 +2300,13 @@
         <button class="bc-type-btn" id="bc-type-pro" type="button">🏢 Professionnel</button>
       </div>
       <label id="bc-nom-wrap"><span id="bc-nom-label-txt">Nom et prénom</span> <input id="bc-nom" type="text" placeholder="Ex : Jean Martin" autocomplete="off"></label>
+      <label id="bc-residence-wrap" style="display:none">Résidence / site (facultatif)
+        <input id="bc-residence" type="text" placeholder="Ex : Résidence Les Tilleuls" autocomplete="off">
+      </label>
+      <label id="bc-ville-wrap" style="display:none">Ville d'intervention (facultatif)
+        <input id="bc-ville" type="text" placeholder="Commence à taper la ville…" autocomplete="off">
+        <ul id="bc-ville-sug"></ul>
+      </label>
       <label id="bc-contact-wrap" style="display:none">Contact sur place / gestionnaire (facultatif) <input id="bc-contact" type="text" placeholder="Ex : Mme Dupont, syndic" autocomplete="off"></label>
       <label>Téléphone (facultatif) <input id="bc-tel" type="tel" placeholder="06 12 34 56 78" autocomplete="off"></label>
       <label>Email <input id="bc-email" type="email" placeholder="jean.martin@email.fr" autocomplete="off"></label>
@@ -2342,7 +2363,7 @@
     <button class="sh-tile" id="sh-relances" type="button" style="display:none"><span class="sh-tile-ic">📨</span><span class="sh-tile-label">Relances clients</span><span class="badge-count" id="menu-relances-badge" style="display:none"></span></button>
     <button class="sh-tile" id="sh-carnet" type="button" style="display:none"><span class="sh-tile-ic">📘</span><span class="sh-tile-label">Carnet bleu</span></button>
     <button class="sh-tile" id="sh-portefeuille" type="button" style="display:none"><span class="sh-tile-ic">📇</span><span class="sh-tile-label">Portefeuille clients</span></button>
-    <button class="sh-tile" id="sh-relations" type="button" style="display:none"><span class="sh-tile-ic">👥</span><span class="sh-tile-label">Mes contacts</span></button>
+    <button class="sh-tile" id="sh-relations" type="button" style="display:none"><span class="sh-tile-ic">👥</span><span class="sh-tile-label">Mes contacts</span><span class="badge-count" id="menu-relations-badge" style="display:none"></span></button>
     <button class="sh-tile" id="sh-docref" type="button" style="display:none"><span class="sh-tile-ic">📎</span><span class="sh-tile-label">Documents de référence</span></button>
   </div>
   <div class="sh-footer-row">
@@ -2918,7 +2939,7 @@
 
 <script>
 (function(){
-  var APPV = 'v3.42';
+  var APPV = 'v3.43';
 
   // Debug : ?debug_modal=1 force l'affichage du modal "nouvelle version" sans attendre un vrai
   // déploiement. Capturé ICI, tout au début, car plus bas (login mémorisé, connexion) le code
@@ -3300,7 +3321,7 @@
         card.appendChild(att);
       }
       var edit = null;
-      if (j.validation.kind === 'email' || j.validation.kind === 'emaildoc'){
+      if (j.validation.kind === 'email' || j.validation.kind === 'emaildoc' || j.validation.kind === 'obsaction'){
         edit = document.createElement('button');
         edit.type = 'button'; edit.className = 'vc-edit'; edit.textContent = '✏️ Modifier';
         card.appendChild(edit);
@@ -3316,6 +3337,10 @@
         if (docsendEdit) docsendEdit.disabled = true;
         var payload = { type:'action', kind: j.validation.kind, choix: choix };
         if (docsendEdit) payload.corpsEdite = docsendEdit.value;
+        // Observations (2026-08-11) : plusieurs brouillons "obsaction" peuvent coexister --
+        // pendingId cible exactement CELUI qu'on a cliqué (cf. patch-cerveau-pendingid.js), sinon
+        // le serveur retomberait sur "le premier trouvé", potentiellement le mauvais mail.
+        if (j.validation.pendingId) payload.pendingId = j.validation.pendingId;
         post(payload, function(r){
           row.remove();
           if (edit) edit.remove();
@@ -3594,6 +3619,7 @@
     // Rentabilité/Carnet bleu -- données relationnelles (promesses, résumés) jamais pour Bruno.
     var relationsBtn = document.getElementById('sh-relations');
     if (relationsBtn) relationsBtn.style.display = (mcs && role === 'patron') ? '' : 'none';
+    if (mcs && role === 'patron') relationsCheckBadge(); else if (relationsMenuBadge) relationsMenuBadge.style.display = 'none';
     var docrefBtn = document.getElementById('sh-docref');
     if (docrefBtn) docrefBtn.style.display = (mcs && role === 'patron') ? '' : 'none';
     // Transparence (Phase 5) : visible seulement côté tenant secondaire — c'est CE
@@ -5666,11 +5692,35 @@
   var relationsList = document.getElementById('relations-list');
   var relationsSearchInput = document.getElementById('relations-search');
   var relationsSummary = document.getElementById('relations-summary');
+  var relationsMenuBadge = document.getElementById('menu-relations-badge');
   var relationsData = null;
   var relationsTab = 'tous';
   var relationsQuery = '';
 
   function relNorm(s){ return String(s || '').toLowerCase().normalize('NFD').replace(/[̀-ͯ]/g, ''); }
+
+  // Observations (2026-08-11, "Jarvis proactif" phase 2) : ✓ Traiter marque l'observation
+  // traitee (retire de partout, y compris de la relance hebdo qui ne resignale jamais un contact
+  // deja couvert < 21 jours) ; ✉️ Voir le brouillon ferme "Mes contacts" et rouvre EXACTEMENT la
+  // meme carte de validation ✅/❌ que partout ailleurs dans l'app (renderExtras, deja testee) --
+  // aucune UI d'envoi parallele construite, 100% le mecanisme existant.
+  function relationsMarquerTraitee(o, row){
+    postRelations({ type:'marquer_traitee', id: o.id }, function(){
+      row.remove();
+      relationsData.forEach(function(r){
+        r.observations = (r.observations || []).filter(function(x){ return x.id !== o.id; });
+      });
+      relationsUpdateBadge();
+    }, function(err){ toast(err || 'Impossible de marquer comme traitée'); });
+  }
+  function relationsVoirBrouillon(o){
+    relationsClose();
+    renderExtras({ validation: {
+      kind: 'obsaction', pendingId: o.pendingId,
+      resume: 'À : ' + (o.actionDestinataire || '') + '\nObjet : ' + (o.actionObjet || '') + '\n\n' + (o.actionCorps || ''),
+    } });
+    chat.scrollTop = chat.scrollHeight;
+  }
 
   function relationsCard(r){
     var card = document.createElement('div'); card.className = 'rel-card';
@@ -5691,6 +5741,31 @@
       var echStr = r.promesseEcheanceMs ? new Date(r.promesseEcheanceMs).toLocaleDateString('fr-FR') : '';
       promesse.textContent = '🤝 Promesse en cours' + (echStr ? ' (' + echStr + ')' : '') + ' — « ' + r.promesseEnCours + ' »';
       card.appendChild(promesse);
+    }
+    if ((r.observations || []).length){
+      var obsWrap = document.createElement('div'); obsWrap.className = 'rel-obs';
+      r.observations.forEach(function(o){
+        var orow = document.createElement('div'); orow.className = 'rel-obs-row';
+        var otop = document.createElement('div'); otop.className = 'rel-obs-top';
+        var oimp = document.createElement('span'); oimp.className = 'rel-obs-imp ' + (o.importance || '');
+        oimp.textContent = o.importance === 'forte' ? '🔴 Important' : '🟡 À suivre';
+        otop.appendChild(oimp);
+        orow.appendChild(otop);
+        var oconstat = document.createElement('span'); oconstat.className = 'rel-obs-constat'; oconstat.textContent = o.constat || '';
+        orow.appendChild(oconstat);
+        var oactions = document.createElement('div'); oactions.className = 'rel-obs-actions';
+        if (o.pendingId){
+          var oVoir = document.createElement('button'); oVoir.type = 'button'; oVoir.className = 'rel-obs-btn voir'; oVoir.textContent = '✉️ Voir le brouillon';
+          oVoir.addEventListener('click', function(){ relationsVoirBrouillon(o); });
+          oactions.appendChild(oVoir);
+        }
+        var oTraite = document.createElement('button'); oTraite.type = 'button'; oTraite.className = 'rel-obs-btn'; oTraite.textContent = '✓ Traité';
+        oTraite.addEventListener('click', function(){ relationsMarquerTraitee(o, orow); });
+        oactions.appendChild(oTraite);
+        orow.appendChild(oactions);
+        obsWrap.appendChild(orow);
+      });
+      card.appendChild(obsWrap);
     }
     return card;
   }
@@ -5720,9 +5795,20 @@
         ? relationsData.length + ' contact' + (relationsData.length > 1 ? 's' : '') + ' connus, construits automatiquement à partir des mails échangés.'
         : '';
       relationsApplyFilter();
+      relationsUpdateBadge(j.observationsCount);
     }, function(err){ relationsList.innerHTML = '<p id="relations-empty">' + err + '</p>'; });
   }
   function relationsClose(){ relationsview.classList.remove('open'); }
+  // Badge "N observations" (2026-08-11) : même famille visuelle/mécanisme que le badge Relances
+  // déjà en place (.badge-count sur la tuile de menu, alimente updateAppBadgeTotal automatiquement)
+  // -- passif, jamais de notification push, conforme à la demande explicite de Mathéo.
+  function relationsUpdateBadge(n){
+    if (typeof n !== 'number') n = (relationsData || []).reduce(function(s, r){ return s + (r.observations || []).length; }, 0);
+    if (!relationsMenuBadge) return;
+    if (n > 0){ relationsMenuBadge.textContent = n; relationsMenuBadge.style.display = ''; } else { relationsMenuBadge.style.display = 'none'; }
+    updateAppBadgeTotal();
+  }
+  function relationsCheckBadge(){ postRelations({}, function(j){ relationsUpdateBadge(j.observationsCount); }, function(){}); }
   document.getElementById('relations-close').addEventListener('click', relationsClose);
   document.getElementById('sh-relations').addEventListener('click', function(){ sheetOpen(false); relationsOpen(); });
   document.querySelectorAll('#relations-tabs .rel-tab').forEach(function(btn){
@@ -8423,9 +8509,14 @@
   var bcTypeParticulier = document.getElementById('bc-type-particulier');
   var bcTypePro = document.getElementById('bc-type-pro');
   var bcNomLabelTxt = document.getElementById('bc-nom-label-txt');
+  var bcResidenceWrap = document.getElementById('bc-residence-wrap');
+  var bcVilleWrap = document.getElementById('bc-ville-wrap');
   var bcContactWrap = document.getElementById('bc-contact-wrap');
   var bcEmailFactWrap = document.getElementById('bc-email-fact-wrap');
   var bcNom = document.getElementById('bc-nom');
+  var bcResidence = document.getElementById('bc-residence');
+  var bcVille = document.getElementById('bc-ville');
+  var bcVilleSug = document.getElementById('bc-ville-sug');
   var bcContact = document.getElementById('bc-contact');
   var bcTel = document.getElementById('bc-tel');
   var bcEmail = document.getElementById('bc-email');
@@ -8436,19 +8527,27 @@
   var bcSave = document.getElementById('bc-save');
   var bcAdrTimer = null;
   var bcAdrFeats = [];
+  var bcVilleTimer = null;
+  var bcVilleFeats = [];
   var bcType = 'particulier';
   var BC_PLACEHOLDER_DEFAULT = 'Écrire à Jarvis…';
 
   // Particulier = champs courts (nom/tel/email/adresse). Professionnel = tout ca + le nom de
-  // societe, le contact/gestionnaire sur place (utile pour une residence geree par un syndic)
-  // et un email de facturation distinct -- tel/type_client/contact_gestionnaire/email_facturation
-  // ont leurs propres colonnes sur mcs_contacts depuis le 2026-08-11.
+  // societe, la residence/ville d'intervention (analyse des 135 vrais devis MEG le 2026-08-11 :
+  // 58% des devis concernent un site au nom DIFFERENT du client facture -- champ facultatif mais
+  // jamais oublie), le contact/gestionnaire sur place (utile pour une residence geree par un
+  // syndic) et un email de facturation distinct -- tel/type_client/contact_gestionnaire/
+  // email_facturation ont leurs propres colonnes sur mcs_contacts depuis le 2026-08-11 ;
+  // residence/ville d'intervention restent volontairement HORS de la fiche client permanente
+  // (un meme client peut avoir plusieurs sites) -- transmises au cerveau comme contexte du devis.
   function bcSetType(t){
     bcType = t;
     bcTypeParticulier.classList.toggle('active', t === 'particulier');
     bcTypePro.classList.toggle('active', t === 'pro');
     bcNomLabelTxt.textContent = t === 'pro' ? 'Nom de la société' : 'Nom et prénom';
     bcNom.placeholder = t === 'pro' ? 'Ex : ACME Nuisibles' : 'Ex : Jean Martin';
+    bcResidenceWrap.style.display = t === 'pro' ? '' : 'none';
+    bcVilleWrap.style.display = t === 'pro' ? '' : 'none';
     bcContactWrap.style.display = t === 'pro' ? '' : 'none';
     bcEmailFactWrap.style.display = t === 'pro' ? '' : 'none';
   }
@@ -8458,9 +8557,10 @@
   function bcShowForm(){
     bcSummary.style.display = 'none';
     bcForm.classList.add('open');
-    bcNom.value = ''; bcContact.value = ''; bcTel.value = ''; bcEmail.value = ''; bcEmailFact.value = ''; bcAdresse.value = '';
+    bcNom.value = ''; bcResidence.value = ''; bcVille.value = ''; bcContact.value = ''; bcTel.value = ''; bcEmail.value = ''; bcEmailFact.value = ''; bcAdresse.value = '';
     bcErr.textContent = '';
     bcSug.innerHTML = ''; bcSug.classList.remove('open');
+    bcVilleSug.innerHTML = ''; bcVilleSug.classList.remove('open');
     bcSetType('particulier');
     setTimeout(function(){ bcNom.focus(); }, 50);
   }
@@ -8502,8 +8602,37 @@
     }, 250);
   });
 
+  // Autocompletion ville d'intervention : meme API BAN, restreinte au type "municipality"
+  // (ville seule, pas une adresse complete -- coherent avec les vrais devis MEG ou 79% du temps
+  // Mickael ne note qu'une ville).
+  bcVille.addEventListener('input', function(){
+    clearTimeout(bcVilleTimer);
+    var q = bcVille.value.trim();
+    if (q.length < 2){ bcVilleSug.innerHTML = ''; bcVilleSug.classList.remove('open'); return; }
+    bcVilleTimer = setTimeout(function(){
+      fetch('https://api-adresse.data.gouv.fr/search/?limit=5&autocomplete=1&type=municipality&q=' + encodeURIComponent(q))
+        .then(function(r){ return r.json(); })
+        .then(function(j){
+          bcVilleFeats = (j && j.features) || [];
+          bcVilleSug.innerHTML = '';
+          bcVilleFeats.forEach(function(f){
+            var li = document.createElement('li');
+            li.textContent = f.properties.label;
+            li.addEventListener('click', function(){
+              bcVille.value = f.properties.city || f.properties.label;
+              bcVilleSug.innerHTML = ''; bcVilleSug.classList.remove('open');
+            });
+            bcVilleSug.appendChild(li);
+          });
+          bcVilleSug.classList.toggle('open', bcVilleFeats.length > 0);
+        }).catch(function(){});
+    }, 250);
+  });
+
   bcSave.addEventListener('click', function(){
     var nomRaw = bcNom.value.trim();
+    var residence = bcResidence.value.trim();
+    var ville = bcVille.value.trim();
     var contact = bcContact.value.trim();
     var tel = bcTel.value.trim();
     var email = bcEmail.value.trim();
@@ -8519,6 +8648,8 @@
     post({
       type: 'devis-submit', nom: nomRaw, email: email, adresse: adresse, telephone: tel,
       clientType: bcType === 'pro' ? 'professionnel' : 'particulier',
+      residence: bcType === 'pro' ? residence : '',
+      ville: bcType === 'pro' ? ville : '',
       contactGestionnaire: bcType === 'pro' ? contact : '',
       emailFacturation: bcType === 'pro' ? emailFact : ''
     }, function(r){
