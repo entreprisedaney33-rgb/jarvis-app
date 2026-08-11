@@ -2300,18 +2300,21 @@
         <button class="bc-type-btn" id="bc-type-pro" type="button">🏢 Professionnel</button>
       </div>
       <label id="bc-nom-wrap"><span id="bc-nom-label-txt">Nom et prénom</span> <input id="bc-nom" type="text" placeholder="Ex : Jean Martin" autocomplete="off"></label>
-      <label id="bc-residence-wrap" style="display:none">Résidence / site (facultatif)
+      <label id="bc-residence-wrap" style="display:none">Nom de la Résidence (facultatif)
         <input id="bc-residence" type="text" placeholder="Ex : Résidence Les Tilleuls" autocomplete="off">
       </label>
       <label id="bc-ville-wrap" style="display:none">Ville d'intervention (facultatif)
         <input id="bc-ville" type="text" placeholder="Commence à taper la ville…" autocomplete="off">
         <ul id="bc-ville-sug"></ul>
       </label>
-      <label id="bc-contact-wrap" style="display:none">Contact sur place / gestionnaire (facultatif) <input id="bc-contact" type="text" placeholder="Ex : Mme Dupont, syndic" autocomplete="off"></label>
+      <label id="bc-nature-wrap">Nature de la prestation (facultatif)
+        <input id="bc-nature" type="text" placeholder="Ex : Contrat entretien VMC" autocomplete="off">
+      </label>
+      <label id="bc-contact-wrap" style="display:none">Représenté par (facultatif) <input id="bc-contact" type="text" placeholder="Ex : Mme Dupont, syndic" autocomplete="off"></label>
       <label>Téléphone (facultatif) <input id="bc-tel" type="tel" placeholder="06 12 34 56 78" autocomplete="off"></label>
       <label>Email <input id="bc-email" type="email" placeholder="jean.martin@email.fr" autocomplete="off"></label>
       <label id="bc-email-fact-wrap" style="display:none">Email de facturation (facultatif) <input id="bc-email-fact" type="email" placeholder="compta@societe.fr" autocomplete="off"></label>
-      <label>Adresse
+      <label>Adresse de facturation
         <input id="bc-adresse" type="text" placeholder="Commence à taper l'adresse…" autocomplete="off">
         <ul id="bc-sug"></ul>
       </label>
@@ -2939,7 +2942,7 @@
 
 <script>
 (function(){
-  var APPV = 'v3.43';
+  var APPV = 'v3.44';
 
   // Debug : ?debug_modal=1 force l'affichage du modal "nouvelle version" sans attendre un vrai
   // déploiement. Capturé ICI, tout au début, car plus bas (login mémorisé, connexion) le code
@@ -8516,6 +8519,7 @@
   var bcNom = document.getElementById('bc-nom');
   var bcResidence = document.getElementById('bc-residence');
   var bcVille = document.getElementById('bc-ville');
+  var bcNature = document.getElementById('bc-nature');
   var bcVilleSug = document.getElementById('bc-ville-sug');
   var bcContact = document.getElementById('bc-contact');
   var bcTel = document.getElementById('bc-tel');
@@ -8557,7 +8561,7 @@
   function bcShowForm(){
     bcSummary.style.display = 'none';
     bcForm.classList.add('open');
-    bcNom.value = ''; bcResidence.value = ''; bcVille.value = ''; bcContact.value = ''; bcTel.value = ''; bcEmail.value = ''; bcEmailFact.value = ''; bcAdresse.value = '';
+    bcNom.value = ''; bcResidence.value = ''; bcVille.value = ''; bcNature.value = ''; bcContact.value = ''; bcTel.value = ''; bcEmail.value = ''; bcEmailFact.value = ''; bcAdresse.value = '';
     bcErr.textContent = '';
     bcSug.innerHTML = ''; bcSug.classList.remove('open');
     bcVilleSug.innerHTML = ''; bcVilleSug.classList.remove('open');
@@ -8633,6 +8637,7 @@
     var nomRaw = bcNom.value.trim();
     var residence = bcResidence.value.trim();
     var ville = bcVille.value.trim();
+    var nature = bcNature.value.trim();
     var contact = bcContact.value.trim();
     var tel = bcTel.value.trim();
     var email = bcEmail.value.trim();
@@ -8650,6 +8655,7 @@
       clientType: bcType === 'pro' ? 'professionnel' : 'particulier',
       residence: bcType === 'pro' ? residence : '',
       ville: bcType === 'pro' ? ville : '',
+      nature: nature,
       contactGestionnaire: bcType === 'pro' ? contact : '',
       emailFacturation: bcType === 'pro' ? emailFact : ''
     }, function(r){
