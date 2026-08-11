@@ -2339,6 +2339,7 @@
     <button class="sh-tile" id="sh-carnet" type="button" style="display:none"><span class="sh-tile-ic">📘</span><span class="sh-tile-label">Carnet bleu</span></button>
     <button class="sh-tile" id="sh-portefeuille" type="button" style="display:none"><span class="sh-tile-ic">📇</span><span class="sh-tile-label">Portefeuille clients</span></button>
     <button class="sh-tile" id="sh-relations" type="button" style="display:none"><span class="sh-tile-ic">👥</span><span class="sh-tile-label">Mes contacts</span></button>
+    <button class="sh-tile" id="sh-docref" type="button" style="display:none"><span class="sh-tile-ic">📎</span><span class="sh-tile-label">Documents de référence</span></button>
   </div>
   <div class="sh-footer-row">
     <button class="sh-mini-item" id="sh-push" type="button">🔔 Notifications<span class="sh-mini-check" id="sw-push">✓</span></button>
@@ -2644,6 +2645,31 @@
   <p id="relations-summary"></p>
   <div id="relations-list"></div>
 </div>
+
+<div id="docrefview">
+  <div id="docref-head">
+    <b>📎 Documents de référence</b>
+    <button id="docref-add" type="button" aria-label="Ajouter un document">+</button>
+    <button id="docref-close" type="button" aria-label="Fermer">✕</button>
+  </div>
+  <p id="docref-note">RIB, Kbis, assurance décennale… Jarvis peut les joindre automatiquement à un mail quand un client en fait la demande.</p>
+  <div id="docref-list"></div>
+</div>
+
+<div id="docref-form-bg">
+  <div class="contrat-form" id="docref-form">
+    <h3>Nouveau document de référence</h3>
+    <label>Nom (ex : RIB MCS, Kbis, Assurance décennale)</label><input id="docreff-nom" type="text" placeholder="RIB MCS">
+    <label>Mots-clés (pour que Jarvis le reconnaisse dans un mail)</label><input id="docreff-mots-cles" type="text" placeholder="rib, iban, coordonnées bancaires">
+    <input id="docreff-file" type="file" style="display:none">
+    <button class="vc-no" id="docreff-choose" type="button" style="width:100%;margin-top:12px">📎 Choisir le fichier</button>
+    <p id="docreff-file-chip" style="display:none"></p>
+    <div class="cf-actions">
+      <button class="vc-ok" id="docreff-save" type="button">✅ Enregistrer</button>
+      <button class="vc-no" id="docreff-cancel" type="button">Annuler</button>
+    </div>
+  </div>
+</div>
 <div id="carnet-add-bg"></div>
 <div id="carnet-add-form">
   <b>Nouvelle résidence</b>
@@ -2876,7 +2902,7 @@
 
 <script>
 (function(){
-  var APPV = 'v3.37';
+  var APPV = 'v3.38';
 
   // Debug : ?debug_modal=1 force l'affichage du modal "nouvelle version" sans attendre un vrai
   // déploiement. Capturé ICI, tout au début, car plus bas (login mémorisé, connexion) le code
@@ -2943,6 +2969,7 @@
   var API_CARNET = 'https://n8n-self-hosted-t0pz.onrender.com/webhook/mcs-carnet';
   var API_PORTEFEUILLE = 'https://n8n-self-hosted-t0pz.onrender.com/webhook/mcs-portefeuille';
   var API_RELATIONS = 'https://n8n-self-hosted-t0pz.onrender.com/webhook/mcs-relations-liste';
+  var API_DOCREF = 'https://n8n-self-hosted-t0pz.onrender.com/webhook/mcs-documents-reference';
   var API_CONTRATS = 'https://n8n-self-hosted-t0pz.onrender.com/webhook/mcs-contrats';
   var API_IK = 'https://n8n-self-hosted-t0pz.onrender.com/webhook/mcs-ik';
   var API_IK_EXPORT = 'https://n8n-self-hosted-t0pz.onrender.com/webhook/mcs-ik-export';
@@ -3162,6 +3189,7 @@
   function postCarnet(payload, onOk, onErr){ postDevisWeb(API_CARNET, payload, onOk, onErr); }
   function postPortefeuille(payload, onOk, onErr){ postDevisWeb(API_PORTEFEUILLE, payload, onOk, onErr); }
   function postRelations(payload, onOk, onErr){ postDevisWeb(API_RELATIONS, payload, onOk, onErr); }
+  function postDocref(payload, onOk, onErr){ postDevisWeb(API_DOCREF, payload, onOk, onErr); }
   function postContrats(payload, onOk, onErr){ postDevisWeb(API_CONTRATS, payload, onOk, onErr); }
   function postIk(payload, onOk, onErr){ postDevisWeb(API_IK, payload, onOk, onErr); }
 
@@ -3550,6 +3578,8 @@
     // Rentabilité/Carnet bleu -- données relationnelles (promesses, résumés) jamais pour Bruno.
     var relationsBtn = document.getElementById('sh-relations');
     if (relationsBtn) relationsBtn.style.display = (mcs && role === 'patron') ? '' : 'none';
+    var docrefBtn = document.getElementById('sh-docref');
+    if (docrefBtn) docrefBtn.style.display = (mcs && role === 'patron') ? '' : 'none';
     // Transparence (Phase 5) : visible seulement côté tenant secondaire — c'est CE
     // compte-là que le support peut consulter, l'inverse exact de la liste ci-dessus.
     var privacyNote = document.getElementById('privacy-note');
@@ -5668,6 +5698,90 @@
     });
   });
   relationsSearchInput.addEventListener('input', function(){ relationsQuery = relationsSearchInput.value; relationsApplyFilter(); });
+
+  // ---- Documents de référence (Jarvis proactif, 2026-08-11) ----
+  // Petite bibliothèque geree a la main (RIB, Kbis, assurance decennale...) que Jarvis utilise
+  // pour joindre automatiquement le bon document quand un mail entrant en fait la demande
+  // (préparation seulement -- jamais d'envoi automatique, cf. panneau de validation existant).
+  var docrefview = document.getElementById('docrefview');
+  var docrefList = document.getElementById('docref-list');
+  var docrefFormBg = document.getElementById('docref-form-bg');
+  var docreffNom = document.getElementById('docreff-nom');
+  var docreffMotsCles = document.getElementById('docreff-mots-cles');
+  var docreffFile = document.getElementById('docreff-file');
+  var docreffChip = document.getElementById('docreff-file-chip');
+  var docreffSave = document.getElementById('docreff-save');
+  var DOCREF_MAX_BYTES = 8 * 1024 * 1024;
+  var docrefPendingFile = null;
+
+  function docrefCard(d){
+    var card = document.createElement('div'); card.className = 'docref-card';
+    var info = document.createElement('div'); info.className = 'docref-info';
+    var nom = document.createElement('span'); nom.className = 'docref-nom'; nom.textContent = d.nom;
+    info.appendChild(nom);
+    var meta = document.createElement('span'); meta.className = 'docref-meta';
+    meta.textContent = (d.motsCles ? d.motsCles + ' · ' : '') + d.filename;
+    info.appendChild(meta);
+    card.appendChild(info);
+    var del = document.createElement('button'); del.type = 'button'; del.className = 'docref-del'; del.textContent = '✕';
+    del.addEventListener('click', function(){
+      del.disabled = true;
+      postDocref({ type:'supprimer', id: d.id }, function(){ toast('Document supprimé'); docrefLoad(); }, function(err){ del.disabled = false; toast(err); });
+    });
+    card.appendChild(del);
+    return card;
+  }
+
+  function docrefLoad(){
+    docrefList.innerHTML = '<p id="docref-empty">Chargement…</p>';
+    postDocref({ type:'liste' }, function(j){
+      var docs = j.documents || [];
+      docrefList.innerHTML = '';
+      if (!docs.length){ docrefList.innerHTML = '<p id="docref-empty">Aucun document pour l’instant — touche + pour en ajouter un.</p>'; return; }
+      docs.forEach(function(d){ docrefList.appendChild(docrefCard(d)); });
+    }, function(err){ docrefList.innerHTML = '<p id="docref-empty">' + err + '</p>'; });
+  }
+  function docrefOpen(){ docrefview.classList.add('open'); docrefLoad(); }
+  function docrefClose(){ docrefview.classList.remove('open'); }
+  document.getElementById('docref-close').addEventListener('click', docrefClose);
+  document.getElementById('sh-docref').addEventListener('click', function(){ sheetOpen(false); docrefOpen(); });
+
+  function docrefFormReset(){
+    docreffNom.value = ''; docreffMotsCles.value = ''; docreffFile.value = '';
+    docrefPendingFile = null; docreffChip.style.display = 'none'; docreffChip.textContent = '';
+  }
+  document.getElementById('docref-add').addEventListener('click', function(){ docrefFormReset(); docrefFormBg.classList.add('open'); });
+  document.getElementById('docreff-cancel').addEventListener('click', function(){ docrefFormBg.classList.remove('open'); });
+  document.getElementById('docreff-choose').addEventListener('click', function(){ docreffFile.value = ''; docreffFile.click(); });
+  docreffFile.addEventListener('change', function(){
+    var f = docreffFile.files && docreffFile.files[0];
+    if (!f) return;
+    if (f.size > DOCREF_MAX_BYTES){ toast('Fichier trop volumineux (8 Mo max)'); return; }
+    var fr = new FileReader();
+    fr.onload = function(){
+      var b64 = String(fr.result).split(',')[1] || '';
+      docrefPendingFile = { filename: f.name, mime: f.type || 'application/octet-stream', data: b64 };
+      docreffChip.textContent = '📎 ' + f.name;
+      docreffChip.style.display = '';
+    };
+    fr.onerror = function(){ toast('Lecture du fichier impossible'); };
+    fr.readAsDataURL(f);
+  });
+  docreffSave.addEventListener('click', function(){
+    var nom = docreffNom.value.trim();
+    if (!nom){ toast('Donne un nom au document (ex : RIB MCS)'); return; }
+    if (!docrefPendingFile){ toast('Choisis le fichier'); return; }
+    docreffSave.disabled = true;
+    postDocref({
+      type:'ajouter', nom: nom, motsCles: docreffMotsCles.value.trim(),
+      filename: docrefPendingFile.filename, mime: docrefPendingFile.mime, data: docrefPendingFile.data,
+    }, function(){
+      docreffSave.disabled = false;
+      docrefFormBg.classList.remove('open');
+      toast('✅ Document ajouté');
+      docrefLoad();
+    }, function(err){ docreffSave.disabled = false; toast(err); });
+  });
 
   // La liste (nom + description) vient TOUJOURS du serveur (canal mcs-admin-lecture, dédié à
   // ce client) — jamais un nom d'entreprise en dur ici : ce fichier finit sur un dépôt public.
