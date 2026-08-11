@@ -316,19 +316,18 @@
   .sh-tile .badge-count{
     position:absolute; top:9px; right:12px; margin:0; min-width:17px; height:17px; padding:0 5px; font-size:10.5px;
   }
-  .sh-tile .sw{
-    position:absolute; top:10px; right:12px; width:10px; height:10px; margin:0;
-    border-radius:50%; background:rgba(120,120,128,.4); transition:background .2s ease, box-shadow .2s ease;
+  /* Notifications + Se deconnecter : reglages, pas des outils -- rangees en petite ligne
+     discrete sous la grille plutot qu'en tuile (demande Matheo, 2026-08-11). */
+  .sh-footer-row{display:flex; align-items:center; justify-content:center; gap:26px; padding:13px 8px 2px}
+  .sh-mini-item{
+    display:flex; align-items:center; gap:6px; background:none; border:none;
+    font:inherit; font-size:13.5px; font-weight:600; color:var(--ink); cursor:pointer; padding:4px 2px;
   }
-  .sh-tile .sw.on{background:var(--ok); box-shadow:0 0 0 3px rgba(48,209,88,.16)}
-  .sh-tile .sw.busy{opacity:.5}
-  .sh-tile .sw .sw-knob{display:none}
-  .sh-logout-row{
-    display:flex; align-items:center; justify-content:center; gap:7px; width:100%;
-    background:none; border:none; padding:13px 8px 2px; font:inherit; font-size:13.5px; font-weight:600;
-    color:var(--no); cursor:pointer;
-  }
-  .sh-logout-row:active{opacity:.6}
+  .sh-mini-item:active{opacity:.6}
+  .sh-mini-item.danger{color:var(--no)}
+  .sh-mini-check{font-size:12px; font-weight:900; color:rgba(255,255,255,.2); transition:color .2s ease}
+  .sh-mini-check.on{color:var(--ok)}
+  .sh-mini-check.busy{opacity:.5}
   @media (prefers-reduced-motion: reduce){.sh-tile{transition:none}}
   .sw{
     margin-left:auto; flex:0 0 auto; width:48px; height:28px; border-radius:16px;
@@ -1064,6 +1063,38 @@
   .rel-resume{font-size:13.5px; color:var(--ink); display:block; margin-top:6px; line-height:1.4}
   .rel-meta{font-size:12px; color:var(--muted); display:block; margin-top:6px}
   .rel-promesse{font-size:12.5px; color:var(--gold-a); display:block; margin-top:6px}
+  /* Panneau plein ecran "Documents de reference" (RIB, Kbis, assurance decennale... -- 2026-08-11,
+     Jarvis proactif). Meme gabarit que les autres panneaux plein ecran, prefixe docref-. */
+  #docrefview{
+    position:fixed; inset:0; z-index:50; background:var(--bg);
+    display:none; flex-direction:column;
+    transform:translateY(100%); transition:transform .28s cubic-bezier(.2,.9,.25,1);
+  }
+  #docrefview.open{display:flex; transform:translateY(0)}
+  @media (prefers-reduced-motion: reduce){#docrefview{transition:none}}
+  #docref-head{
+    flex:0 0 auto; display:flex; align-items:center; gap:10px;
+    padding:calc(10px + env(safe-area-inset-top)) 14px 12px;
+    border-bottom:0.5px solid var(--hairline);
+  }
+  #docref-head b{font-size:16px; flex:1}
+  #docref-add, #docref-close{
+    width:32px; height:32px; border-radius:50%; border:0; flex:0 0 auto;
+    background:var(--surface); color:var(--ink); font-size:16px;
+    display:flex; align-items:center; justify-content:center; cursor:pointer;
+    -webkit-tap-highlight-color:transparent;
+  }
+  #docref-note{font-size:12.5px; color:var(--muted); text-align:center; margin:10px 14px 0; line-height:1.4}
+  #docref-list{flex:1; overflow-y:auto; -webkit-overflow-scrolling:touch; padding:10px 14px calc(20px + env(safe-area-inset-bottom))}
+  #docref-empty, #docref-loading{color:var(--muted); text-align:center; padding:40px 20px; font-size:14px}
+  .docref-card{background:var(--surface); border-radius:14px; padding:12px 14px; margin-bottom:10px; display:flex; align-items:center; gap:10px}
+  .docref-info{flex:1; min-width:0}
+  .docref-nom{font-size:15px; font-weight:700; display:block}
+  .docref-meta{font-size:12px; color:var(--muted); display:block; margin-top:3px; overflow:hidden; text-overflow:ellipsis; white-space:nowrap}
+  .docref-del{width:32px; height:32px; border-radius:50%; border:0; flex:0 0 auto; background:#3a2020; color:#ff8a8a; font-size:14px; cursor:pointer; -webkit-tap-highlight-color:transparent}
+  #docref-form-bg{position:fixed; inset:0; z-index:55; background:rgba(0,0,0,.55); display:none}
+  #docref-form-bg.open{display:block}
+  #docreff-file-chip{font-size:13px; color:var(--muted); margin-top:8px}
   /* Panneau plein ecran "Rentabilite" (compte patron d'un tenant secondaire uniquement) */
   #rentaview{
     position:fixed; inset:0; z-index:50; background:var(--bg);
@@ -2222,9 +2253,11 @@
     <button class="sh-tile" id="sh-carnet" type="button" style="display:none"><span class="sh-tile-ic">📘</span><span class="sh-tile-label">Carnet bleu</span></button>
     <button class="sh-tile" id="sh-portefeuille" type="button" style="display:none"><span class="sh-tile-ic">📇</span><span class="sh-tile-label">Portefeuille clients</span></button>
     <button class="sh-tile" id="sh-relations" type="button" style="display:none"><span class="sh-tile-ic">👥</span><span class="sh-tile-label">Mes contacts</span></button>
-    <button class="sh-tile" id="sh-push" type="button"><span class="sh-tile-ic">🔔</span><span class="sh-tile-label">Notifications</span><span class="sw" id="sw-push"><span class="sw-knob"></span></span></button>
   </div>
-  <button class="sh-logout-row" id="sh-logout" type="button">🚪 Se déconnecter</button>
+  <div class="sh-footer-row">
+    <button class="sh-mini-item" id="sh-push" type="button">🔔 Notifications<span class="sh-mini-check" id="sw-push">✓</span></button>
+    <button class="sh-mini-item danger" id="sh-logout" type="button">🚪 Se déconnecter</button>
+  </div>
   <p class="sh-ver" id="subline">Jarvis</p>
   <p class="sh-ver" id="privacy-note" style="display:none; padding:0 20px; line-height:1.4">🔒 Le support M22Vision peut consulter vos conversations avec Jarvis pour améliorer l'outil (jamais leur contenu diffusé ailleurs). Conservées 90 jours.</p>
 </div>
