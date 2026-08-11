@@ -804,6 +804,7 @@
   .rl-card .rl-suspendre{background:#2E2E32; color:var(--ink)}
   .rl-card .rl-reprendre{background:var(--ok); color:#04210c; font-weight:700}
   .rl-suspend-note{font-size:12px; color:var(--muted); margin-top:2px}
+  .rl-promesse-note{font-size:12px; color:var(--gold-a); margin-top:2px}
   .rl-form{display:none; flex-direction:column; gap:8px; margin-top:8px; padding-top:8px; border-top:0.5px solid var(--hairline)}
   .rl-form.open{display:flex}
   .rl-form input[type=date], .rl-form textarea{
@@ -2622,7 +2623,7 @@
 
 <script>
 (function(){
-  var APPV = 'v3.28';
+  var APPV = 'v3.29';
 
   // Debug : ?debug_modal=1 force l'affichage du modal "nouvelle version" sans attendre un vrai
   // déploiement. Capturé ICI, tout au début, car plus bas (login mémorisé, connexion) le code
@@ -4949,6 +4950,12 @@
     card.appendChild(meta);
     var montant = document.createElement('span'); montant.className = 'dv-montant'; montant.textContent = fmtEuros(l.resteDu) + ' dû';
     card.appendChild(montant);
+    if (l.promesseEnCours){
+      var promesse = document.createElement('span'); promesse.className = 'rl-promesse-note';
+      var echStr = l.promesseEcheanceMs ? new Date(l.promesseEcheanceMs).toLocaleDateString('fr-FR') : '';
+      promesse.textContent = '🤝 Promesse en cours' + (echStr ? ' (' + echStr + ')' : '') + ' — « ' + l.promesseEnCours + ' »';
+      card.appendChild(promesse);
+    }
     if (l.suspendu){
       var note = document.createElement('span'); note.className = 'rl-suspend-note';
       note.textContent = 'Suspendue jusqu’au ' + fmtRelanceDateFr(l.suspenduJusquau) + (l.note ? ' — « ' + l.note + ' »' : '');
