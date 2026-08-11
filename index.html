@@ -2390,7 +2390,7 @@
       <div id="couts-dash-loading">Calcul en cours…</div>
       <div id="couts-dash-body" style="display:none">
         <div class="couts-stats">
-          <div class="couts-stat"><span class="cs-label">Aujourd'hui</span><span class="cs-value" id="cs-jour">—</span></div>
+          <div class="couts-stat"><span class="cs-label">Hier</span><span class="cs-value" id="cs-jour">—</span><span class="cs-sub">dernier jour complet</span></div>
           <div class="couts-stat"><span class="cs-label">Mois en cours</span><span class="cs-value" id="cs-mois">—</span><span class="cs-sub">depuis le 1er du mois</span></div>
           <div class="couts-stat"><span class="cs-label">Projection fin de mois</span><span class="cs-value" id="cs-proj">—</span><span class="cs-sub">estimation</span></div>
           <div class="couts-stat"><span class="cs-label">Mois dernier</span><span class="cs-value" id="cs-precedent">—</span><span class="cs-sub">mois complet</span></div>
@@ -2918,7 +2918,7 @@
 
 <script>
 (function(){
-  var APPV = 'v3.41';
+  var APPV = 'v3.42';
 
   // Debug : ?debug_modal=1 force l'affichage du modal "nouvelle version" sans attendre un vrai
   // déploiement. Capturé ICI, tout au début, car plus bas (login mémorisé, connexion) le code
@@ -3967,7 +3967,7 @@
       var dashLoading = document.getElementById('couts-dash-loading');
       var dashBody = document.getElementById('couts-dash-body');
       dashLoading.style.display = 'none'; dashBody.style.display = '';
-      document.getElementById('cs-jour').textContent = coutsEur(j.totalJour);
+      document.getElementById('cs-jour').textContent = coutsEur(j.totalHier);
       document.getElementById('cs-mois').textContent = coutsEur(j.totalMois);
       document.getElementById('cs-proj').textContent = coutsEur(j.projectionMois);
       document.getElementById('cs-precedent').textContent = coutsEur(j.totalMoisPrecedent);
