@@ -2988,7 +2988,7 @@
 
 <script>
 (function(){
-  var APPV = 'v3.47';
+  var APPV = 'v3.48';
 
   // Debug : ?debug_modal=1 force l'affichage du modal "nouvelle version" sans attendre un vrai
   // déploiement. Capturé ICI, tout au début, car plus bas (login mémorisé, connexion) le code
@@ -8518,6 +8518,23 @@
     return /^\s*(repr[eé]sent[eé]e?\s+par|p\s*\/\s*o\b|c\s*\/\s*o\b)/i.test(s || '');
   }
 
+  // Rendu de la liste <li> cliquable -- factorise pour etre reutilise a la fois par la saisie
+  // (debounce ci-dessous) et par la suggestion proactive depuis l'historique devis du client
+  // (renderSuggestions appelee directement, sans passer par un input).
+  function renderSuggestions(sugEl, items, onSelect){
+    sugEl.innerHTML = '';
+    items.forEach(function(item){
+      var li = document.createElement('li');
+      li.textContent = item.nom;
+      li.addEventListener('click', function(){
+        sugEl.innerHTML = ''; sugEl.classList.remove('open');
+        onSelect(item);
+      });
+      sugEl.appendChild(li);
+    });
+    sugEl.classList.toggle('open', items.length > 0);
+  }
+
   function wireSearchAutocomplete(inputEl, sugEl, searchType, onSelect){
     var timer = null;
     inputEl.addEventListener('input', function(){
@@ -8526,21 +8543,30 @@
       if (q.length < 3){ sugEl.innerHTML = ''; sugEl.classList.remove('open'); return; }
       timer = setTimeout(function(){
         post({ type: searchType, query: q }, function(r){
-          var items = (r && r.results) || [];
-          sugEl.innerHTML = '';
-          items.forEach(function(item){
-            var li = document.createElement('li');
-            li.textContent = item.nom;
-            li.addEventListener('click', function(){
-              sugEl.innerHTML = ''; sugEl.classList.remove('open');
-              onSelect(item);
-            });
-            sugEl.appendChild(li);
-          });
-          sugEl.classList.toggle('open', items.length > 0);
+          renderSuggestions(sugEl, (r && r.results) || [], onSelect);
         }, function(){});
       }, 250);
     });
+  }
+
+  // Auto-suggestion depuis l'historique devis/factures du client selectionne (mcs_documents,
+  // deja rattache a un client_id fiable par la mission memoire relationnelle du 10/08) -- demande
+  // explicite : auto-remplir residence+ville quand un seul historique existe, proposer un menu
+  // deroulant quand il y en a plusieurs (ex un syndic qui gere plusieurs residences), MAIS NE
+  // JAMAIS toucher a "nature de la prestation" (change a chaque devis, jamais fiable a re-proposer).
+  function suggestResidenceFromHistory(clientId, residenceInput, residenceSugEl, villeInput, onPick){
+    if (!clientId) return;
+    post({ type: 'client-history-search', clientId: clientId }, function(r){
+      var items = (r && r.results) || [];
+      if (!items.length) return;
+      if (items.length === 1){
+        if (!residenceInput.value.trim()) onPick(items[0]);
+        return;
+      }
+      if (!residenceInput.value.trim()){
+        renderSuggestions(residenceSugEl, items, onPick);
+      }
+    }, function(){});
   }
 
   function dfSetType(t){
@@ -8557,6 +8583,10 @@
   dfTypeParticulier.addEventListener('click', function(){ dfSetType('particulier'); });
   dfTypePro.addEventListener('click', function(){ dfSetType('pro'); });
 
+  function dfFillResidence(item){
+    dfResidence.value = item.nom;
+    if (!dfVille.value.trim() && item.adresse) dfVille.value = item.adresse;
+  }
   wireSearchAutocomplete(dfNom, dfNomSug, 'client-search', function(item){
     dfNom.value = item.nom;
     if (!dfEmail.value.trim() && item.email) dfEmail.value = item.email;
@@ -8565,11 +8595,9 @@
     } else if (!dfAdresse.value.trim() && item.adresse) {
       dfAdresse.value = item.adresse;
     }
+    suggestResidenceFromHistory(item.id, dfResidence, dfResidenceSug, dfVille, dfFillResidence);
   });
-  wireSearchAutocomplete(dfResidence, dfResidenceSug, 'residence-search', function(item){
-    dfResidence.value = item.nom;
-    if (!dfVille.value.trim() && item.adresse) dfVille.value = item.adresse;
-  });
+  wireSearchAutocomplete(dfResidence, dfResidenceSug, 'residence-search', dfFillResidence);
   wireSearchAutocomplete(dfContact, dfContactSug, 'client-search', function(item){
     dfContact.value = item.nom;
     if (!dfEmailFact.value.trim() && item.email) dfEmailFact.value = item.email;
@@ -8727,6 +8755,10 @@
 
   // Autocompletion nom/residence/represente-par contre notre base (wireSearchAutocomplete
   // definie plus haut, section fiche devis de Mickael) -- meme fonction reutilisee ici.
+  function bcFillResidence(item){
+    bcResidence.value = item.nom;
+    if (!bcVille.value.trim() && item.adresse) bcVille.value = item.adresse;
+  }
   wireSearchAutocomplete(bcNom, bcNomSug, 'client-search', function(item){
     bcNom.value = item.nom;
     if (!bcEmail.value.trim() && item.email) bcEmail.value = item.email;
@@ -8735,11 +8767,9 @@
     } else if (!bcAdresse.value.trim() && item.adresse) {
       bcAdresse.value = item.adresse;
     }
+    suggestResidenceFromHistory(item.id, bcResidence, bcResidenceSug, bcVille, bcFillResidence);
   });
-  wireSearchAutocomplete(bcResidence, bcResidenceSug, 'residence-search', function(item){
-    bcResidence.value = item.nom;
-    if (!bcVille.value.trim() && item.adresse) bcVille.value = item.adresse;
-  });
+  wireSearchAutocomplete(bcResidence, bcResidenceSug, 'residence-search', bcFillResidence);
   wireSearchAutocomplete(bcContact, bcContactSug, 'client-search', function(item){
     bcContact.value = item.nom;
     if (!bcEmailFact.value.trim() && item.email) bcEmailFact.value = item.email;
