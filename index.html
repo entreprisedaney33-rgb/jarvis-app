@@ -207,32 +207,14 @@
   #pvtime{font-size:12.5px; color:#fff; font-variant-numeric:tabular-nums}
   #pvx{width:34px; height:34px; border-radius:50%; border:none; cursor:pointer; background:var(--surface); color:var(--muted); font-size:15px; flex:0 0 auto}
   #pvsend{width:40px; height:40px; border-radius:50%; border:none; cursor:pointer; background:var(--blue); color:#fff; display:flex; align-items:center; justify-content:center; flex:0 0 auto}
-  /* Ecran dedie Bruno (2026-08-10) : un salarie MCS ne fait qu'une chose, dicter un devis --
-     le micro devient l'action principale, geante et centree ; le clavier reste disponible
-     (repli si la dictee est mal comprise, cf. MISSION-DORIAN-DEVIS-FACTURE-COMPLET.md § A)
-     mais visuellement en retrait. Purement additif : n'affecte aucun autre role/tenant. */
-  body.bruno-mode #composer{
-    flex-direction:column; align-items:center; gap:10px;
-    padding-top:14px;
-  }
-  body.bruno-mode #micbtn{
-    display:flex; width:84px; height:84px; order:1;
-    background:var(--blue); color:#fff; margin-bottom:0;
-    box-shadow:0 4px 18px rgba(10,132,255,.35);
-  }
-  body.bruno-mode #micbtn svg{width:34px; height:41px}
-  body.bruno-mode #micbtn.rec{background:var(--no)}
+  /* Ecran dedie Bruno -- REVU le 2026-08-11 (retour Matheo) : le gros micro central du
+     2026-08-10 est retire. Raison : un bug de comprehension vocale le decouragerait des le
+     1er essai ("ca va le souler"). Il tape desormais, ou utilise le micro NATIF du clavier
+     de son telephone (dictee iOS/Android geree par l'OS, hors de notre pipeline Deepgram) --
+     le composer redevient le composer standard, seul le bouton micro custom est masque. */
   #brunohint{display:none}
-  .composer-row2{display:contents} /* neutre pour tous les autres roles/tenants */
-  body.bruno-mode #brunohint{
-    display:block; order:2; font-size:13.5px; color:var(--muted); text-align:center;
-  }
-  body.bruno-mode .composer-row2{
-    order:3; display:flex; align-items:flex-end; gap:9px; width:100%;
-  }
-  body.bruno-mode #textin{font-size:15px; padding:8px 14px}
-  body.bruno-mode #sendbtn{width:34px; height:34px}
-  body.bruno-mode #recui,body.bruno-mode #prevui{order:2; width:100%}
+  .composer-row2{display:contents} /* neutre pour tous les roles/tenants */
+  body.bruno-mode #micbtn{display:none !important}
   /* Bulle vocal re-ecoutable */
   .msg.voice{min-width:215px}
   .vrow{display:flex; align-items:center; gap:10px}
@@ -2283,8 +2265,10 @@
         <button class="bc-type-btn" id="bc-type-pro" type="button">🏢 Professionnel</button>
       </div>
       <label id="bc-nom-wrap"><span id="bc-nom-label-txt">Nom et prénom</span> <input id="bc-nom" type="text" placeholder="Ex : Jean Martin" autocomplete="off"></label>
-      <label id="bc-tel-wrap" style="display:none">Téléphone <input id="bc-tel" type="tel" placeholder="06 12 34 56 78" autocomplete="off"></label>
+      <label id="bc-contact-wrap" style="display:none">Contact sur place / gestionnaire (facultatif) <input id="bc-contact" type="text" placeholder="Ex : Mme Dupont, syndic" autocomplete="off"></label>
+      <label>Téléphone (facultatif) <input id="bc-tel" type="tel" placeholder="06 12 34 56 78" autocomplete="off"></label>
       <label>Email <input id="bc-email" type="email" placeholder="jean.martin@email.fr" autocomplete="off"></label>
+      <label id="bc-email-fact-wrap" style="display:none">Email de facturation (facultatif) <input id="bc-email-fact" type="email" placeholder="compta@societe.fr" autocomplete="off"></label>
       <label>Adresse
         <input id="bc-adresse" type="text" placeholder="Commence à taper l'adresse…" autocomplete="off">
         <ul id="bc-sug"></ul>
@@ -2901,7 +2885,7 @@
 
 <script>
 (function(){
-  var APPV = 'v3.39';
+  var APPV = 'v3.40';
 
   // Debug : ?debug_modal=1 force l'affichage du modal "nouvelle version" sans attendre un vrai
   // déploiement. Capturé ICI, tout au début, car plus bas (login mémorisé, connexion) le code
@@ -3376,9 +3360,9 @@
     });
     if (!chat.children.length){
       // Vocabulaire MCS (2026-08-09) : on ne dit jamais "chantier" chez MCS -- "résidence" ou "site".
-      // Ecran dedie Bruno (2026-08-10) : message different, centre sur son seul usage reel.
+      // Ecran dedie Bruno (2026-08-10, texte revu le 2026-08-11 : plus de micro, cf. CSS).
       var welcomeTxt = isBrunoMode()
-        ? 'Appuie sur le micro et dicte ton devis : le client, la résidence, ce qu\'il faut facturer. J\'envoie ça à Mickaël pour validation.'
+        ? 'Commence par ➕ Nouveau client en haut, puis écris ce qu\'il faut faire chez lui pour que je génère le devis. J\'envoie ça à Mickaël pour validation.'
         : isMcsCode()
         ? 'Bonjour, je suis Jarvis. Je connais vos contacts, vos résidences, vos devis et votre agenda — posez-moi une question.'
         : 'Bonjour, je suis Jarvis. Je connais vos contacts, vos chantiers, vos devis et votre agenda — posez-moi une question.';
@@ -8387,10 +8371,13 @@
   var bcTypeParticulier = document.getElementById('bc-type-particulier');
   var bcTypePro = document.getElementById('bc-type-pro');
   var bcNomLabelTxt = document.getElementById('bc-nom-label-txt');
-  var bcTelWrap = document.getElementById('bc-tel-wrap');
+  var bcContactWrap = document.getElementById('bc-contact-wrap');
+  var bcEmailFactWrap = document.getElementById('bc-email-fact-wrap');
   var bcNom = document.getElementById('bc-nom');
+  var bcContact = document.getElementById('bc-contact');
   var bcTel = document.getElementById('bc-tel');
   var bcEmail = document.getElementById('bc-email');
+  var bcEmailFact = document.getElementById('bc-email-fact');
   var bcAdresse = document.getElementById('bc-adresse');
   var bcSug = document.getElementById('bc-sug');
   var bcErr = document.getElementById('bc-err');
@@ -8400,13 +8387,18 @@
   var bcType = 'particulier';
   var BC_PLACEHOLDER_DEFAULT = 'Écrire à Jarvis…';
 
+  // Particulier = champs courts (nom/tel/email/adresse). Professionnel = tout ca + le nom de
+  // societe, le contact/gestionnaire sur place (utile pour une residence geree par un syndic)
+  // et un email de facturation distinct -- tel/type_client/contact_gestionnaire/email_facturation
+  // ont leurs propres colonnes sur mcs_contacts depuis le 2026-08-11.
   function bcSetType(t){
     bcType = t;
     bcTypeParticulier.classList.toggle('active', t === 'particulier');
     bcTypePro.classList.toggle('active', t === 'pro');
-    bcNomLabelTxt.textContent = t === 'pro' ? 'Société / nom du contact' : 'Nom et prénom';
+    bcNomLabelTxt.textContent = t === 'pro' ? 'Nom de la société' : 'Nom et prénom';
     bcNom.placeholder = t === 'pro' ? 'Ex : ACME Nuisibles' : 'Ex : Jean Martin';
-    bcTelWrap.style.display = t === 'pro' ? '' : 'none';
+    bcContactWrap.style.display = t === 'pro' ? '' : 'none';
+    bcEmailFactWrap.style.display = t === 'pro' ? '' : 'none';
   }
   bcTypeParticulier.addEventListener('click', function(){ bcSetType('particulier'); });
   bcTypePro.addEventListener('click', function(){ bcSetType('pro'); });
@@ -8414,7 +8406,7 @@
   function bcShowForm(){
     bcSummary.style.display = 'none';
     bcForm.classList.add('open');
-    bcNom.value = ''; bcTel.value = ''; bcEmail.value = ''; bcAdresse.value = '';
+    bcNom.value = ''; bcContact.value = ''; bcTel.value = ''; bcEmail.value = ''; bcEmailFact.value = ''; bcAdresse.value = '';
     bcErr.textContent = '';
     bcSug.innerHTML = ''; bcSug.classList.remove('open');
     bcSetType('particulier');
@@ -8460,18 +8452,24 @@
 
   bcSave.addEventListener('click', function(){
     var nomRaw = bcNom.value.trim();
+    var contact = bcContact.value.trim();
     var tel = bcTel.value.trim();
     var email = bcEmail.value.trim();
+    var emailFact = bcEmailFact.value.trim();
     var adresse = bcAdresse.value.trim();
     bcErr.textContent = '';
-    if (!nomRaw){ bcErr.textContent = bcType === 'pro' ? 'Le nom de la société ou du contact est obligatoire.' : 'Le nom est obligatoire.'; return; }
+    if (!nomRaw){ bcErr.textContent = bcType === 'pro' ? 'Le nom de la société est obligatoire.' : 'Le nom est obligatoire.'; return; }
     if (!email || email.indexOf('@') === -1){ bcErr.textContent = 'Indique un email valide.'; return; }
+    if (emailFact && emailFact.indexOf('@') === -1){ bcErr.textContent = "L'email de facturation n'est pas valide."; return; }
     if (!adresse){ bcErr.textContent = "L'adresse est obligatoire."; return; }
     bcSave.disabled = true;
     bcSave.textContent = 'Enregistrement…';
-    // Le cerveau MCS a desormais ses propres colonnes tel/type_client (2026-08-11) :
-    // le telephone n'a plus besoin d'etre replie dans le nom.
-    post({ type: 'devis-submit', nom: nomRaw, email: email, adresse: adresse, telephone: tel, clientType: bcType === 'pro' ? 'professionnel' : 'particulier' }, function(r){
+    post({
+      type: 'devis-submit', nom: nomRaw, email: email, adresse: adresse, telephone: tel,
+      clientType: bcType === 'pro' ? 'professionnel' : 'particulier',
+      contactGestionnaire: bcType === 'pro' ? contact : '',
+      emailFacturation: bcType === 'pro' ? emailFact : ''
+    }, function(r){
       bcSave.disabled = false;
       bcSave.textContent = 'Enregistrer';
       bcSummaryTxt.innerHTML = nomRaw + '<span class="bc-summary-sub"></span>';
