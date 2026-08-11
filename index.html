@@ -101,6 +101,7 @@
   }
   #hcallbtn:active{opacity:.75}
   .mono-j{
+    position:relative;
     box-shadow:0 1px 8px rgba(232,185,106,.4);
     width:26px; height:26px; border-radius:50%;
     background:linear-gradient(145deg,var(--gold-a),var(--gold-b));
@@ -108,6 +109,15 @@
     display:flex; align-items:center; justify-content:center;
     font-family:Georgia,serif; flex:0 0 auto;
   }
+  /* Badge sur l'en-tete (2026-08-11, demande Matheo) : visible en permanence, sans avoir a
+     ouvrir le menu pour savoir "il y a quelque chose a traiter". Reprend exactement le meme
+     total que le badge d'icone iOS (updateAppBadgeTotal ci-dessous) -- jamais un 2e calcul. */
+  .hbadge{
+    position:absolute; top:-3px; right:-4px; min-width:16px; height:16px; padding:0 4px;
+    border-radius:99px; background:var(--no); color:#fff; font-size:10px; font-weight:800;
+    display:none; align-items:center; justify-content:center; box-shadow:0 0 0 2px #000;
+  }
+  .hbadge.on{display:flex}
   .hname{font-size:14px; font-weight:700; letter-spacing:.2em; text-transform:uppercase; padding-left:.2em}
   .dot{width:7px; height:7px; border-radius:50%; background:var(--ok)}
   #chat{
@@ -2203,7 +2213,7 @@
 
 <div id="app">
   <header>
-    <div class="mono-j">J</div>
+    <div class="mono-j">J<span class="hbadge" id="header-badge"></span></div>
     <b class="hname">Jarvis</b>
     <i class="dot"></i>
     <svg id="hchev" width="13" height="13" viewBox="0 0 24 24" fill="none" aria-hidden="true"><path d="M5 8.5 12 15.5 19 8.5" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round"/></svg>
@@ -2790,7 +2800,7 @@
 
 <script>
 (function(){
-  var APPV = 'v3.34';
+  var APPV = 'v3.35';
 
   // Debug : ?debug_modal=1 force l'affichage du modal "nouvelle version" sans attendre un vrai
   // déploiement. Capturé ICI, tout au début, car plus bas (login mémorisé, connexion) le code
@@ -2830,14 +2840,18 @@
   // (desktop, anciens iOS, app pas installee). Additionne TOUS les badges de menu actuellement
   // visibles (.badge-count, quel que soit le tenant/role) plutot que de coder en dur chaque
   // source -- reste juste automatiquement si un futur badge suit le meme motif HTML/CSS.
+  // Alimente AUSSI le badge sur le logo de l'en-tete (2026-08-11, demande Matheo : voir qu'il y a
+  // quelque chose a traiter sans avoir a ouvrir le menu) -- meme total, jamais un 2e calcul.
   function updateAppBadgeTotal(){
-    if (!('setAppBadge' in navigator)) return;
     var total = 0;
     document.querySelectorAll('.badge-count').forEach(function(el){
       if (el.style.display === 'none') return;
       var n = parseInt(el.textContent, 10);
       if (!isNaN(n)) total += n;
     });
+    var hb = document.getElementById('header-badge');
+    if (hb){ hb.textContent = total > 9 ? '9+' : String(total); hb.classList.toggle('on', total > 0); }
+    if (!('setAppBadge' in navigator)) return;
     try { if (total > 0) navigator.setAppBadge(total); else navigator.clearAppBadge(); } catch(e){}
   }
   function API_URL(){ return 'https://n8n-self-hosted-t0pz.onrender.com/webhook/' + (isMcsCode() ? 'mcs-msg' : 'jarvis-msg'); }
@@ -3776,28 +3790,41 @@
       if (!confirm('Supprimer "' + c.nom + '" ?\n(réversible côté données : l\'historique déjà collecté est conservé, seul le suivi futur s\'arrête)')) return;
       post({ type:'couts-supprimer', id:c.id }, function(){
         toast('🗑 Abonnement supprimé');
+        try { localStorage.removeItem('jarvisCoutsListe'); } catch(e){}
         coutsLoad();
       }, function(err){ toast(err || 'Erreur.'); });
     });
     row.appendChild(mid); row.appendChild(montant); row.appendChild(del);
     return row;
   }
+  function coutsListeRender(items){
+    coutsAboRows.innerHTML = '';
+    if (!items.length){ coutsAboRows.innerHTML = '<p id="couts-empty">Aucun abonnement suivi pour l’instant. Touche + pour en ajouter un.</p>'; return; }
+    items.forEach(function(c){ coutsAboRows.appendChild(coutsRow(c)); });
+  }
+  // Ouverture instantanée sur le dernier résultat connu (même principe que jarvisHist pour
+  // le chat, 2026-08-11) : affiche le cache tout de suite, rafraîchit en tâche de fond,
+  // ne re-rend que si différent. Sert de filet aussi si le serveur répond lentement/tombe
+  // en erreur (un vrai cas vécu : la vérif "erreurs récentes" du dashboard a pris ~40s une
+  // fois — voir coutsDashLoad ci-dessous, même remède).
   function coutsLoad(){
-    coutsAboRows.innerHTML = '<p id="couts-loading">Chargement…</p>';
+    var cached = null;
+    try { cached = JSON.parse(localStorage.getItem('jarvisCoutsListe') || 'null'); } catch(e){}
+    if (cached){ coutsListeRender(cached); }
+    else { coutsAboRows.innerHTML = '<p id="couts-loading">Chargement…</p>'; }
     post({ type:'couts-liste' }, function(j){
       var items = j.items || [];
-      coutsAboRows.innerHTML = '';
-      if (!items.length){ coutsAboRows.innerHTML = '<p id="couts-empty">Aucun abonnement suivi pour l’instant. Touche + pour en ajouter un.</p>'; return; }
-      items.forEach(function(c){ coutsAboRows.appendChild(coutsRow(c)); });
-    }, function(err){ coutsAboRows.innerHTML = '<p id="couts-empty">' + (err || 'Impossible de charger les coûts.') + '</p>'; });
+      var frais = JSON.stringify(items);
+      if (!cached || frais !== JSON.stringify(cached)){ coutsListeRender(items); }
+      try { localStorage.setItem('jarvisCoutsListe', frais); } catch(e){}
+    }, function(err){
+      if (!cached){ coutsAboRows.innerHTML = '<p id="couts-empty">' + (err || 'Impossible de charger les coûts.') + '</p>'; }
+    });
   }
   function coutsEur(n){ var v = Number(n); if (!isFinite(v)) v = 0; return v.toFixed(2).replace('.', ',') + ' €'; }
-  function coutsDashLoad(){
-    var dashLoading = document.getElementById('couts-dash-loading');
-    var dashBody = document.getElementById('couts-dash-body');
-    dashLoading.style.display = ''; dashLoading.textContent = 'Calcul en cours…';
-    dashBody.style.display = 'none';
-    post({ type:'couts-dashboard' }, function(j){
+  function coutsDashRender(j){
+      var dashLoading = document.getElementById('couts-dash-loading');
+      var dashBody = document.getElementById('couts-dash-body');
       dashLoading.style.display = 'none'; dashBody.style.display = '';
       document.getElementById('cs-jour').textContent = coutsEur(j.totalJour);
       document.getElementById('cs-mois').textContent = coutsEur(j.totalMois);
@@ -3838,8 +3865,22 @@
         etat.className = '';
         etat.textContent = '✅ Collecteurs à jour, aucune erreur récente.';
       }
+  }
+  // Même principe que coutsLoad ci-dessus : affichage instantané depuis le dernier calcul
+  // connu, recalcul serveur en tâche de fond, re-rendu seulement si différent.
+  function coutsDashLoad(){
+    var dashLoading = document.getElementById('couts-dash-loading');
+    var dashBody = document.getElementById('couts-dash-body');
+    var cached = null;
+    try { cached = JSON.parse(localStorage.getItem('jarvisCoutsDash') || 'null'); } catch(e){}
+    if (cached){ coutsDashRender(cached); }
+    else { dashLoading.style.display = ''; dashLoading.textContent = 'Calcul en cours…'; dashBody.style.display = 'none'; }
+    post({ type:'couts-dashboard' }, function(j){
+      var frais = JSON.stringify(j);
+      if (!cached || frais !== JSON.stringify(cached)){ coutsDashRender(j); }
+      try { localStorage.setItem('jarvisCoutsDash', frais); } catch(e){}
     }, function(err){
-      dashLoading.style.display = ''; dashLoading.textContent = err || 'Impossible de calculer le tableau de bord.';
+      if (!cached){ dashLoading.style.display = ''; dashLoading.textContent = err || 'Impossible de calculer le tableau de bord.'; }
     });
   }
   function coutsClose(){ coutsview.classList.remove('open'); }
@@ -3876,6 +3917,7 @@
     post(payload, function(){
       toast('✅ Abonnement ajouté');
       coutsFormClose();
+      try { localStorage.removeItem('jarvisCoutsListe'); } catch(e){}
       coutsLoad();
     }, function(err){ toast(err || 'Erreur.'); });
   });
