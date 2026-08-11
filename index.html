@@ -424,6 +424,18 @@
   .client-nom{font-size:15px; font-weight:600; display:block}
   .client-info{font-size:12.5px; color:var(--muted); display:block; margin-top:2px; white-space:nowrap; overflow:hidden; text-overflow:ellipsis}
   .client-ouvertures{font-size:12.5px; color:var(--muted); display:block; margin-top:3px}
+  .ouv-wrap{padding:10px 14px}
+  .ouv-select{
+    width:100%; box-sizing:border-box; border:none; border-radius:12px;
+    background:var(--surface); color:var(--ink); font-size:15px; padding:10px 12px;
+    -webkit-appearance:none; margin-bottom:10px;
+  }
+  .ouv-table{display:flex; flex-direction:column; gap:1px; border-radius:12px; overflow:hidden}
+  .ouv-row{display:flex; align-items:center; justify-content:space-between; background:var(--surface); padding:12px 14px}
+  .ouv-nom{font-size:14.5px; flex:1; min-width:0; overflow:hidden; text-overflow:ellipsis; white-space:nowrap}
+  .ouv-n{font-size:15px; font-weight:600; flex:0 0 auto; margin-left:10px}
+  .ouv-test{opacity:.55}
+  .ouv-test .ouv-nom{font-style:italic}
   .client-date{font-size:11.5px; color:var(--muted); flex:0 0 auto}
   #clients-empty, #clients-loading{color:var(--muted); text-align:center; padding:40px 20px; font-size:14px}
   /* Panneau plein ecran "Devis a valider" (compte patron d'un tenant secondaire uniquement) */
@@ -2224,6 +2236,7 @@
   <div id="clients-tabs" style="display:none">
     <button class="clients-tab active" data-tab="frictions" type="button">⚠️ Frictions</button>
     <button class="clients-tab" data-tab="conversations" type="button">💬 Conversations</button>
+    <button class="clients-tab" data-tab="ouvertures" type="button">📅 Ouvertures</button>
     <button class="clients-tab" data-tab="appareils" type="button">📱 Appareils</button>
   </div>
   <div id="clients-filters" style="display:none">
@@ -2642,7 +2655,7 @@
 
 <script>
 (function(){
-  var APPV = 'v3.30';
+  var APPV = 'v3.31';
 
   // Debug : ?debug_modal=1 force l'affichage du modal "nouvelle version" sans attendre un vrai
   // déploiement. Capturé ICI, tout au début, car plus bas (login mémorisé, connexion) le code
@@ -2772,11 +2785,13 @@
         try {
           var tx = open.result.transaction('kv','readwrite');
           tx.objectStore('kv').put(Date.now(), 'lastVisibleAt');
-          // Badge icone (2026-08-10) : des qu'on regarde activement l'app, le compteur
-          // d'approximation du service worker (bumpAppBadge, sw.js) n'a plus de raison d'etre --
-          // le vrai chiffre (devis/relances en attente...) prend le relais via
-          // updateAppBadgeTotal(), deja appele quand chaque panneau recharge ses donnees.
+          // Badge icone (2026-08-10, complete le 2026-08-11) : des qu'on regarde activement
+          // l'app, le compteur du service worker (voir bumpAppBadge, sw.js) n'a plus de raison
+          // d'etre -- remis a 0 ici, ET le badge visuel efface tout de suite (au lieu d'attendre
+          // le prochain appel de updateAppBadgeTotal() par un panneau) : avant ce fix, "le petit
+          // 1" du push pouvait rester affiche un instant apres l'ouverture de l'app.
           tx.objectStore('kv').put(0, 'badgeCount');
+          updateAppBadgeTotal();
         } catch(e){}
       };
     } catch(e){}
@@ -5363,6 +5378,70 @@
     }, function(){ /* silencieux */ });
   }
 
+  // ---- Onglet "Ouvertures" (petit tableau par personne, jour/mois -- demande Matheo 2026-08-11) ----
+  var ouverturesTabData = null; // reponse brute du serveur { aujourdhui, jourAujourdhui, parPersonne[] }
+  var ouverturesPeriode = 'today'; // 'today' | 'YYYY-MM'
+  var MOIS_FR = ['janvier','février','mars','avril','mai','juin','juillet','août','septembre','octobre','novembre','décembre'];
+  function ouvMoisLabel(cle){ var p = cle.split('-'); return MOIS_FR[parseInt(p[1],10)-1] + ' ' + p[0]; }
+
+  function clientsLoadOuverturesTab(){
+    clientsList.innerHTML = '<p id="clients-loading">Chargement…</p>';
+    adminPost({ action:'ouvertures', inclureAdmin: clientsIncludeAdmin }, function(j){
+      ouverturesTabData = j;
+      clientsRenderOuverturesTab();
+    }, function(err){ clientsList.innerHTML = '<p id="clients-empty">' + err + '</p>'; });
+  }
+
+  function clientsRenderOuverturesTab(){
+    var j = ouverturesTabData;
+    clientsList.innerHTML = '';
+    if (!j || !j.parPersonne){ clientsList.innerHTML = '<p id="clients-empty">Aucune donnée.</p>'; return; }
+    var moisSet = {};
+    j.parPersonne.forEach(function(p){ (p.jours || []).forEach(function(d){ moisSet[d.date.slice(0,7)] = true; }); });
+    var mois = Object.keys(moisSet).sort().reverse();
+
+    var wrap = document.createElement('div'); wrap.className = 'ouv-wrap';
+    var sel = document.createElement('select'); sel.className = 'ouv-select';
+    var optToday = document.createElement('option'); optToday.value = 'today'; optToday.textContent = 'Aujourd’hui';
+    sel.appendChild(optToday);
+    mois.forEach(function(m){
+      var opt = document.createElement('option'); opt.value = m; opt.textContent = ouvMoisLabel(m);
+      sel.appendChild(opt);
+    });
+    if (!moisSet[ouverturesPeriode] && ouverturesPeriode !== 'today') ouverturesPeriode = 'today';
+    sel.value = ouverturesPeriode;
+    wrap.appendChild(sel);
+
+    var table = document.createElement('div'); table.className = 'ouv-table';
+    wrap.appendChild(table);
+    sel.addEventListener('change', function(){ ouverturesPeriode = sel.value; clientsRenderOuverturesTable(table); });
+    clientsList.appendChild(wrap);
+    clientsRenderOuverturesTable(table);
+  }
+
+  function clientsRenderOuverturesTable(table){
+    var j = ouverturesTabData;
+    table.innerHTML = '';
+    var rows = (j.parPersonne || []).map(function(p){
+      var n = 0;
+      if (ouverturesPeriode === 'today'){
+        var d = (p.jours || []).find(function(x){ return x.date === j.jourAujourdhui; });
+        n = d ? d.count : 0;
+      } else {
+        (p.jours || []).forEach(function(x){ if (x.date.indexOf(ouverturesPeriode) === 0) n += x.count; });
+      }
+      return { nom: p.nom, test: p.test, n: n };
+    }).filter(function(r){ return r.n > 0; }).sort(function(a, b){ return b.n - a.n; });
+    if (!rows.length){ table.innerHTML = '<p id="clients-empty">Aucune ouverture sur cette période.</p>'; return; }
+    rows.forEach(function(r){
+      var row = document.createElement('div'); row.className = 'ouv-row' + (r.test ? ' ouv-test' : '');
+      var nom = document.createElement('span'); nom.className = 'ouv-nom'; nom.textContent = r.nom;
+      var n = document.createElement('span'); n.className = 'ouv-n'; n.textContent = r.n;
+      row.appendChild(nom); row.appendChild(n);
+      table.appendChild(row);
+    });
+  }
+
   function clientsOpenDetail(){
     clientsState = 'detail';
     clientsTitleEl.textContent = (clientsCourant && clientsCourant.nom) || '';
@@ -5383,13 +5462,15 @@
     // Le filtre "utilisateur"/date/texte et le bascule "Inclure mes tests" n'ont de sens
     // que pour Frictions/Conversations — la vue Appareils montre toujours tout (c'est
     // justement là qu'on veut voir un appareil administrateur, pour le marquer).
-    var showFilters = tab !== 'appareils';
+    var showFilters = tab !== 'appareils' && tab !== 'ouvertures';
+    var showAdminToggle = tab !== 'appareils';
     clientsFilterUser.style.display = showFilters ? '' : 'none';
     clientsFilterDate.style.display = showFilters ? '' : 'none';
     clientsFilterTexte.style.display = showFilters ? '' : 'none';
-    document.getElementById('clients-admin-toggle-wrap').style.display = showFilters ? '' : 'none';
+    document.getElementById('clients-admin-toggle-wrap').style.display = showAdminToggle ? '' : 'none';
     if (tab === 'frictions') clientsLoadFrictions();
     else if (tab === 'conversations') clientsLoadConversations();
+    else if (tab === 'ouvertures') clientsLoadOuverturesTab();
     else clientsLoadAppareils();
   }
 
@@ -5549,7 +5630,9 @@
   clientsFilterTexte.addEventListener('input', function(){ clientsTab === 'frictions' ? clientsRenderFrictions() : clientsRenderConversations(); });
   document.getElementById('clients-admin-toggle').addEventListener('change', function(e){
     clientsIncludeAdmin = !!e.target.checked;
-    if (clientsTab === 'frictions') clientsLoadFrictions(); else if (clientsTab === 'conversations') clientsLoadConversations();
+    if (clientsTab === 'frictions') clientsLoadFrictions();
+    else if (clientsTab === 'conversations') clientsLoadConversations();
+    else if (clientsTab === 'ouvertures') clientsLoadOuverturesTab();
   });
   document.getElementById('sh-clients').addEventListener('click', function(){ sheetOpen(false); clientsOpen(); });
   document.getElementById('clients-close').addEventListener('click', clientsClose);
