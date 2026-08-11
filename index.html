@@ -2988,7 +2988,7 @@
 
 <script>
 (function(){
-  var APPV = 'v3.46';
+  var APPV = 'v3.47';
 
   // Debug : ?debug_modal=1 force l'affichage du modal "nouvelle version" sans attendre un vrai
   // déploiement. Capturé ICI, tout au début, car plus bas (login mémorisé, connexion) le code
@@ -8510,12 +8510,20 @@
   // sur les 2 fiches (Bruno et Mickael) et sur les 3 champs concernes (nom, residence, represente
   // par -- ce dernier recherche aussi dans les contacts, un gestionnaire/syndic est souvent
   // lui-meme deja une fiche contact MEG, ex "FONCIA AQUITAINE").
+  // Detecte une adresse composite "represente par X, adresse Y" (syndics/gestionnaires,
+  // frequent dans mcs_contacts.adresse) -- doit aller dans "Represente par", jamais dans
+  // "Adresse de facturation" (bug reel signale : "SDC Espace Pyla E" -> remplissait
+  // Adresse de facturation avec tout le bloc "represente par PIM'S ADB agence...").
+  function isRepresentePar(s){
+    return /^\s*(repr[eé]sent[eé]e?\s+par|p\s*\/\s*o\b|c\s*\/\s*o\b)/i.test(s || '');
+  }
+
   function wireSearchAutocomplete(inputEl, sugEl, searchType, onSelect){
     var timer = null;
     inputEl.addEventListener('input', function(){
       clearTimeout(timer);
       var q = inputEl.value.trim();
-      if (q.length < 2){ sugEl.innerHTML = ''; sugEl.classList.remove('open'); return; }
+      if (q.length < 3){ sugEl.innerHTML = ''; sugEl.classList.remove('open'); return; }
       timer = setTimeout(function(){
         post({ type: searchType, query: q }, function(r){
           var items = (r && r.results) || [];
@@ -8552,7 +8560,11 @@
   wireSearchAutocomplete(dfNom, dfNomSug, 'client-search', function(item){
     dfNom.value = item.nom;
     if (!dfEmail.value.trim() && item.email) dfEmail.value = item.email;
-    if (!dfAdresse.value.trim() && item.adresse) dfAdresse.value = item.adresse;
+    if (item.adresse && isRepresentePar(item.adresse)){
+      if (!dfContact.value.trim()) dfContact.value = item.adresse;
+    } else if (!dfAdresse.value.trim() && item.adresse) {
+      dfAdresse.value = item.adresse;
+    }
   });
   wireSearchAutocomplete(dfResidence, dfResidenceSug, 'residence-search', function(item){
     dfResidence.value = item.nom;
@@ -8718,7 +8730,11 @@
   wireSearchAutocomplete(bcNom, bcNomSug, 'client-search', function(item){
     bcNom.value = item.nom;
     if (!bcEmail.value.trim() && item.email) bcEmail.value = item.email;
-    if (!bcAdresse.value.trim() && item.adresse) bcAdresse.value = item.adresse;
+    if (item.adresse && isRepresentePar(item.adresse)){
+      if (!bcContact.value.trim()) bcContact.value = item.adresse;
+    } else if (!bcAdresse.value.trim() && item.adresse) {
+      bcAdresse.value = item.adresse;
+    }
   });
   wireSearchAutocomplete(bcResidence, bcResidenceSug, 'residence-search', function(item){
     bcResidence.value = item.nom;
