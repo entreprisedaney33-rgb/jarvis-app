@@ -614,6 +614,55 @@
   .contrat-form .cf-row > *{flex:1}
   .contrat-form .cf-actions{display:flex; gap:8px; margin-top:16px}
   .contrat-form .cf-actions .vc-ok, .contrat-form .cf-actions .vc-no{padding:11px; font-size:15px}
+  /* Panneau plein ecran "IK" (chantier 6 réaffecté 11/08/2026 : frais kilométriques intelligents,
+     patron d'un tenant secondaire uniquement -- même famille visuelle que Contrats/Coûts). */
+  #ikview{
+    position:fixed; inset:0; z-index:50; background:var(--bg);
+    display:none; flex-direction:column;
+    transform:translateY(100%); transition:transform .28s cubic-bezier(.2,.9,.25,1);
+  }
+  #ikview.open{display:flex; transform:translateY(0)}
+  @media (prefers-reduced-motion: reduce){#ikview{transition:none}}
+  #ik-head{
+    flex:0 0 auto; display:flex; align-items:center; gap:10px;
+    padding:calc(10px + env(safe-area-inset-top)) 14px 12px;
+    border-bottom:0.5px solid var(--hairline);
+  }
+  #ik-head b{font-size:16px; flex:1; white-space:nowrap; overflow:hidden; text-overflow:ellipsis}
+  #ik-export, #ik-add, #ik-close{
+    width:32px; height:32px; border-radius:50%; border:0; flex:0 0 auto;
+    background:var(--surface); color:var(--ink); font-size:15px;
+    display:flex; align-items:center; justify-content:center; cursor:pointer;
+    -webkit-tap-highlight-color:transparent; text-decoration:none;
+  }
+  #ik-search-wrap{flex:0 0 auto; padding:10px 14px 0}
+  #ik-search{
+    width:100%; box-sizing:border-box; border:none; border-radius:12px;
+    background:var(--surface); color:var(--ink); font-size:15px; padding:10px 12px;
+    -webkit-appearance:none;
+  }
+  #ik-search::placeholder{color:var(--muted)}
+  #ik-list{flex:1; overflow-y:auto; -webkit-overflow-scrolling:touch; padding:6px 14px calc(20px + env(safe-area-inset-bottom))}
+  #ik-empty, #ik-loading{color:var(--muted); text-align:center; padding:40px 20px; font-size:14px}
+  #ik-dash{padding:8px 0 4px}
+  #ik-etat{font-size:12px; color:var(--muted); padding:2px 4px 10px}
+  #ik-table-wrap{overflow-x:auto; -webkit-overflow-scrolling:touch; margin:0 -14px; padding:0 14px}
+  table.ik-table{width:100%; border-collapse:collapse; font-size:12.5px; white-space:nowrap}
+  table.ik-table thead th{
+    position:sticky; top:0; background:var(--bg); color:var(--muted); text-align:left;
+    font-size:10.5px; font-weight:700; text-transform:uppercase; letter-spacing:.02em;
+    padding:8px 10px; border-bottom:0.5px solid var(--hairline); z-index:1;
+  }
+  table.ik-table td{padding:9px 10px; border-bottom:0.5px solid var(--hairline); color:var(--ink)}
+  table.ik-table tbody tr{-webkit-tap-highlight-color:transparent; cursor:pointer}
+  table.ik-table tbody tr:active{background:rgba(255,255,255,.06)}
+  table.ik-table td.ik-td-trajet{white-space:normal; min-width:150px}
+  table.ik-table td.ik-td-km{color:var(--gold-a); font-weight:700; text-align:right}
+  table.ik-table tr.ik-row-anomalie td{color:#e0a64f}
+  #ik-form-bg{position:fixed; inset:0; z-index:55; background:rgba(0,0,0,.55); display:none}
+  #ik-form-bg.open{display:block}
+  #ikf-calc{width:100%; margin-top:12px}
+  #ikf-calc-result{font-size:12.5px; color:var(--muted); padding:8px 2px 0}
   /* Panneau plein ecran "Couts" (gestion des abonnements fixes, auto-service, 2026-08-09) */
   #coutsview{
     position:fixed; inset:0; z-index:50; background:var(--bg);
@@ -2028,6 +2077,7 @@
     <button class="sh-item" id="sh-devis-attente" type="button" style="display:none"><span class="sh-ic">📝</span><span class="sh-label">Devis et factures</span><span class="badge-count" id="menu-devis-badge" style="display:none"></span></button>
     <button class="sh-item" id="sh-rentabilite" type="button" style="display:none"><span class="sh-ic">💹</span><span class="sh-label">Rentabilité</span></button>
     <button class="sh-item" id="sh-contrats" type="button" style="display:none"><span class="sh-ic">📋</span><span class="sh-label">Contrats</span></button>
+    <button class="sh-item" id="sh-ik" type="button" style="display:none"><span class="sh-ic">🚗</span><span class="sh-label">Frais kilométriques</span></button>
     <button class="sh-item" id="sh-relances" type="button" style="display:none"><span class="sh-ic">📨</span><span class="sh-label">Relances clients</span><span class="badge-count" id="menu-relances-badge" style="display:none"></span></button>
     <button class="sh-item" id="sh-carnet" type="button" style="display:none"><span class="sh-ic">📘</span><span class="sh-label">Carnet bleu</span></button>
     <button class="sh-item" id="sh-portefeuille" type="button" style="display:none"><span class="sh-ic">📇</span><span class="sh-label">Portefeuille clients</span></button>
@@ -2223,6 +2273,45 @@
       <button class="vc-no" id="ctf-cancel" type="button">Annuler</button>
     </div>
     <button class="vc-no" id="ctf-delete" type="button" style="width:100%;margin-top:8px;display:none">🗑 Retirer ce contrat</button>
+  </div>
+</div>
+
+<!-- IK : frais kilométriques intelligents (chantier 6 réaffecté 11/08/2026, patron d'un tenant
+     secondaire uniquement -- même famille visuelle/mécanique que Contrats. Vue "tableur" pour
+     retrouver les colonnes habituelles de l'Excel de Mickael. -->
+<div id="ikview">
+  <div id="ik-head">
+    <b id="ik-title">🚗 Frais kilométriques (IK)</b>
+    <a id="ik-export" href="#" aria-label="Exporter en Excel">⬇️</a>
+    <button id="ik-add" type="button" aria-label="Ajouter un trajet">+</button>
+    <button id="ik-close" type="button" aria-label="Fermer">✕</button>
+  </div>
+  <div id="ik-search-wrap">
+    <input id="ik-search" type="search" inputmode="search" placeholder="🔍 Rechercher (motif, ville…)" autocomplete="off" autocapitalize="off" autocorrect="off">
+  </div>
+  <div id="ik-list"></div>
+</div>
+
+<div id="ik-form-bg">
+  <div class="contrat-form" id="ik-form">
+    <h3 id="ikf-titre">Nouveau trajet</h3>
+    <label>Date</label><input id="ikf-date" type="date">
+    <label>Motif</label><input id="ikf-motif" type="text" placeholder="chantier, devis, VMC, dératisation…">
+    <div class="cf-row">
+      <div><label>Ville départ</label><input id="ikf-depart" type="text" value="Tresses"></div>
+      <div><label>Ville arrivée</label><input id="ikf-arrivee" type="text"></div>
+    </div>
+    <div class="cf-row">
+      <div><label>Km aller</label><input id="ikf-km" type="number" step="1" min="0"></div>
+      <div><label>Trajets (2 = aller-retour)</label><input id="ikf-nb" type="number" step="1" min="1" value="2"></div>
+    </div>
+    <button class="vc-no" id="ikf-calc" type="button">📍 Calculer la distance automatiquement</button>
+    <p id="ikf-calc-result" style="display:none"></p>
+    <div class="cf-actions">
+      <button class="vc-ok" id="ikf-save" type="button">✅ Enregistrer</button>
+      <button class="vc-no" id="ikf-cancel" type="button">Annuler</button>
+    </div>
+    <button class="vc-no" id="ikf-delete" type="button" style="width:100%;margin-top:8px;display:none">🗑 Supprimer ce trajet</button>
   </div>
 </div>
 
@@ -2511,7 +2600,7 @@
 
 <script>
 (function(){
-  var APPV = 'v3.23';
+  var APPV = 'v3.25';
 
   // Debug : ?debug_modal=1 force l'affichage du modal "nouvelle version" sans attendre un vrai
   // déploiement. Capturé ICI, tout au début, car plus bas (login mémorisé, connexion) le code
@@ -2544,6 +2633,23 @@
   // dicter un devis, que Mickael valide ensuite. Role transmis par le serveur a la connexion,
   // jamais deduit du code cote client (meme garde que le reste du masquage par role).
   function isBrunoMode(){ return isMcsCode() && read('jarvisRole') === 'salarie'; }
+
+  // Badge sur l'icone de l'app (2026-08-10, demande Mathéo -- "comme sur Instagram, le petit 1").
+  // Web Badging API (navigator.setAppBadge), supportee par Safari iOS 16.4+ UNIQUEMENT si l'app
+  // est ajoutee a l'ecran d'accueil (mode standalone) -- feature-detectee, no-op silencieux sinon
+  // (desktop, anciens iOS, app pas installee). Additionne TOUS les badges de menu actuellement
+  // visibles (.badge-count, quel que soit le tenant/role) plutot que de coder en dur chaque
+  // source -- reste juste automatiquement si un futur badge suit le meme motif HTML/CSS.
+  function updateAppBadgeTotal(){
+    if (!('setAppBadge' in navigator)) return;
+    var total = 0;
+    document.querySelectorAll('.badge-count').forEach(function(el){
+      if (el.style.display === 'none') return;
+      var n = parseInt(el.textContent, 10);
+      if (!isNaN(n)) total += n;
+    });
+    try { if (total > 0) navigator.setAppBadge(total); else navigator.clearAppBadge(); } catch(e){}
+  }
   function API_URL(){ return 'https://n8n-self-hosted-t0pz.onrender.com/webhook/' + (isMcsCode() ? 'mcs-msg' : 'jarvis-msg'); }
   var API_MEUTE = 'https://n8n-self-hosted-t0pz.onrender.com/webhook/meute-app';
   var API_VITRINE = 'https://n8n-self-hosted-t0pz.onrender.com/webhook/vitrine-liste';
@@ -2557,6 +2663,8 @@
   var API_CARNET = 'https://n8n-self-hosted-t0pz.onrender.com/webhook/mcs-carnet';
   var API_PORTEFEUILLE = 'https://n8n-self-hosted-t0pz.onrender.com/webhook/mcs-portefeuille';
   var API_CONTRATS = 'https://n8n-self-hosted-t0pz.onrender.com/webhook/mcs-contrats';
+  var API_IK = 'https://n8n-self-hosted-t0pz.onrender.com/webhook/mcs-ik';
+  var API_IK_EXPORT = 'https://n8n-self-hosted-t0pz.onrender.com/webhook/mcs-ik-export';
   var login = document.getElementById('login');
   var app = document.getElementById('app');
   var chat = document.getElementById('chat');
@@ -2622,6 +2730,11 @@
         try {
           var tx = open.result.transaction('kv','readwrite');
           tx.objectStore('kv').put(Date.now(), 'lastVisibleAt');
+          // Badge icone (2026-08-10) : des qu'on regarde activement l'app, le compteur
+          // d'approximation du service worker (bumpAppBadge, sw.js) n'a plus de raison d'etre --
+          // le vrai chiffre (devis/relances en attente...) prend le relais via
+          // updateAppBadgeTotal(), deja appele quand chaque panneau recharge ses donnees.
+          tx.objectStore('kv').put(0, 'badgeCount');
         } catch(e){}
       };
     } catch(e){}
@@ -2714,7 +2827,16 @@
       body: JSON.stringify(payload)
     }).then(function(r){ return r.json(); }).then(function(j){
       if (j && j.error){ onErr(j.error); } else { onOk(j || {}); }
-    }).catch(function(){ onErr('Connexion impossible. Vérifiez le réseau et réessayez.'); });
+    }).catch(function(e){
+      // Fix 2026-08-10 (audit) : fetch() rejette avec un TypeError pour une vraie panne reseau
+      // (hors-ligne, DNS, CORS) -- un corps de reponse vide/invalide (ex : plafond API cote
+      // serveur, observe en direct pendant l'audit) leve un SyntaxError dans r.json(), pas un
+      // TypeError. Avant ce fix les deux cas affichaient le meme message "reseau", trompeur
+      // quand la vraie cause est une panne serveur qui n'a rien a voir avec la connexion.
+      onErr((e instanceof TypeError)
+        ? 'Connexion impossible. Vérifiez le réseau et réessayez.'
+        : 'Jarvis rencontre un problème technique — réessaie dans un instant.');
+    });
   }
 
   function postMeute(payload, onOk, onErr){
@@ -2734,9 +2856,20 @@
       method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify(payload)
     }).then(function(r){ return r.json().catch(function(){ return {}; }).then(function(j){ return { status:r.status, body:j }; }); })
       .then(function(res){
-        if (res.status !== 200){ onErr((res.body && res.body.error) || 'Accès refusé.'); return; }
-        onOk(res.body);
-      }).catch(function(){ onErr('Connexion impossible.'); });
+        if (res.status === 200){ onOk(res.body); return; }
+        if (res.body && res.body.error){ onErr(res.body.error); return; }
+        // Fix 2026-08-10 (audit) : "Accès refusé" ne veut plus dire que pour un vrai refus de
+        // permission (401/403) -- avant ce fix, N'IMPORTE QUEL statut non-200 sans .error
+        // explicite (ex : une panne serveur 500) affichait ce message, laissant croire a tort
+        // que le code d'acces a ete revoque.
+        onErr((res.status === 401 || res.status === 403)
+          ? 'Accès refusé.'
+          : 'Jarvis rencontre un problème technique — réessaie dans un instant.');
+      }).catch(function(e){
+        onErr((e instanceof TypeError)
+          ? 'Connexion impossible. Vérifiez le réseau et réessayez.'
+          : 'Jarvis rencontre un problème technique — réessaie dans un instant.');
+      });
   }
   function postDevisFactures(payload, onOk, onErr){ postDevisWeb(API_DEVIS_FACTURES, payload, onOk, onErr); }
   function postDevisValider(payload, onOk, onErr){ postDevisWeb(API_DEVIS_VALIDER, payload, onOk, onErr); }
@@ -2746,6 +2879,7 @@
   function postCarnet(payload, onOk, onErr){ postDevisWeb(API_CARNET, payload, onOk, onErr); }
   function postPortefeuille(payload, onOk, onErr){ postDevisWeb(API_PORTEFEUILLE, payload, onOk, onErr); }
   function postContrats(payload, onOk, onErr){ postDevisWeb(API_CONTRATS, payload, onOk, onErr); }
+  function postIk(payload, onOk, onErr){ postDevisWeb(API_IK, payload, onOk, onErr); }
 
   function postVitrine(payload, onOk, onErr){
     payload.code = String(read('jarvisCode') || '').trim();
@@ -3086,16 +3220,24 @@
     // compte principal) — la protection réelle est côté serveur (webhook mcs-devis-factures).
     var devisBtn = document.getElementById('sh-devis-attente');
     if (devisBtn) devisBtn.style.display = (mcs && role === 'patron') ? '' : 'none';
+    // Badge (2026-08-10) : meme principe que meuteCheckBadge -- appel leger au demarrage pour
+    // savoir s'il y a des devis/factures en attente sans attendre l'ouverture du panneau.
+    if (mcs && role === 'patron') devisCheckBadge(); else if (devisMenuBadge) devisMenuBadge.style.display = 'none';
     // "Rentabilité" : même garde que "Devis à valider" — patron d'un tenant secondaire uniquement.
     var rentaBtn = document.getElementById('sh-rentabilite');
     if (rentaBtn) rentaBtn.style.display = (mcs && role === 'patron') ? '' : 'none';
     // "Contrats" (chantier 5 audit MCS) : même garde — patron d'un tenant secondaire uniquement.
     var contratsBtn = document.getElementById('sh-contrats');
     if (contratsBtn) contratsBtn.style.display = (mcs && role === 'patron') ? '' : 'none';
+    // "Frais kilométriques (IK)" (chantier 6 réaffecté 11/08/2026) : même garde — patron d'un
+    // tenant secondaire uniquement, jamais Bruno, jamais le compte principal.
+    var ikBtn = document.getElementById('sh-ik');
+    if (ikBtn) ikBtn.style.display = (mcs && role === 'patron') ? '' : 'none';
     // "Relances clients" (chantier 3 audit MCS) : même garde — patron d'un tenant secondaire
     // uniquement, jamais Bruno, jamais le compte principal.
     var relancesBtn = document.getElementById('sh-relances');
     if (relancesBtn) relancesBtn.style.display = (mcs && role === 'patron') ? '' : 'none';
+    if (mcs && role === 'patron') relancesCheckBadge(); else if (relancesMenuBadge) relancesMenuBadge.style.display = 'none';
     // "Carnet bleu" (fiches techniques des résidences) : même garde — patron d'un tenant
     // secondaire uniquement, jamais Bruno, jamais le compte principal.
     var carnetBtn = document.getElementById('sh-carnet');
@@ -3567,6 +3709,7 @@
   // ---- Devis et factures (tenant secondaire uniquement ; "À valider" reste patron-only) ----
   var devisview = document.getElementById('devisview');
   var devisList = document.getElementById('devis-list');
+  var devisMenuBadge = document.getElementById('menu-devis-badge');
   var devisSearchInput = document.getElementById('devis-search');
   var devisData = null; // { aValider, devis, factures }
   var devisActiveTab = 'avalider';
@@ -3610,6 +3753,7 @@
     postDevisValider({ token: token, choix: choix }, function(j){
       if (devisData) devisData.aValider = (devisData.aValider || []).filter(function(dv){ return dv.token !== token; });
       devisApplyFilter();
+      devisUpdateBadge();
       if (j.brouillon){
         // Ne part plus tout seul (2026-08-02) : un brouillon personnalisé attend maintenant
         // dans la conversation, éditable, avec un vrai bouton Envoyer/Annuler -- on y amène
@@ -3676,12 +3820,23 @@
       itemsF.forEach(function(f){ devisList.appendChild(devisRenderRowFacture(f)); });
     }
   }
+  function devisUpdateBadge(){
+    var n = (devisData && devisData.aValider) ? devisData.aValider.length : 0;
+    if (!devisMenuBadge) return;
+    if (n > 0){ devisMenuBadge.textContent = n; devisMenuBadge.style.display = ''; } else { devisMenuBadge.style.display = 'none'; }
+    updateAppBadgeTotal();
+  }
+  // Badge menu (2026-08-10) : meme principe que meuteCheckBadge -- un appel leger au demarrage
+  // (patron MCS uniquement, cf. enterApp) pour savoir s'il y a des devis/factures en attente
+  // sans attendre que le panneau soit ouvert.
+  function devisCheckBadge(){ postDevisFactures({}, function(j){ devisData = j; devisUpdateBadge(); }, function(){}); }
   function devisAttenteOpen(){
     devisview.classList.add('open');
     devisList.innerHTML = '<p id="devis-loading">Chargement…</p>';
     postDevisFactures({}, function(j){
       devisData = j;
       devisApplyFilter();
+      devisUpdateBadge();
     }, function(err){ devisList.innerHTML = '<p id="devis-empty">' + err + '</p>'; });
   }
   document.querySelectorAll('.devis-tab').forEach(function(btn){
@@ -4076,6 +4231,177 @@
   });
   contratsAddBtn.addEventListener('click', function(){ contratFormOpen(null); });
 
+  // ---- IK : frais kilométriques intelligents (chantier 6 réaffecté 11/08/2026) ----
+  // Vue "tableur" (même choix que Contrats : Mickael doit retrouver ses colonnes habituelles).
+  var ikview = document.getElementById('ikview');
+  var ikList = document.getElementById('ik-list');
+  var ikSearchInput = document.getElementById('ik-search');
+  var ikData = [];
+  var ikResume = null;
+
+  var IK_COLONNES = [
+    { key:'date', label:'Date', cls:'' },
+    { key:'motif', label:'Motif', cls:'' },
+    { key:'trajet', label:'Trajet', cls:'ik-td-trajet' },
+    { key:'km_total', label:'Km', cls:'ik-td-km' },
+  ];
+
+  function ikDateAffichee(d){
+    var m = /^(\d{4})-(\d{2})-(\d{2})$/.exec(String(d||''));
+    return m ? (m[3] + '/' + m[2] + '/' + m[1].slice(2)) : (d || '');
+  }
+  function ikRowValue(t, key){
+    if (key === 'date') return ikDateAffichee(t.date);
+    if (key === 'trajet') return (t.ville_depart || '?') + ' → ' + (t.ville_arrivee || '?');
+    if (key === 'km_total') return (t.km_total != null ? t.km_total + ' km' : '');
+    return t[key] || '';
+  }
+
+  function ikBuildDash(){
+    var wrap = document.createElement('div'); wrap.id = 'ik-dash';
+    if (!ikResume){ return wrap; }
+    var stats = document.createElement('div'); stats.className = 'couts-stats';
+    var s1 = document.createElement('div'); s1.className = 'couts-stat';
+    s1.innerHTML = '<span class="cs-label">Km cumulés ' + ikResume.annee + '</span><span class="cs-value">' + ikResume.kmAnnee.toLocaleString('fr-FR') + '</span><span class="cs-sub">' + ikResume.nbTrajetsAnnee + ' trajets</span>';
+    var s2 = document.createElement('div'); s2.className = 'couts-stat';
+    s2.innerHTML = '<span class="cs-label">Frais IK estimés</span><span class="cs-value">' + Number(ikResume.fraisAnnee).toLocaleString('fr-FR', {maximumFractionDigits:2}) + ' €</span><span class="cs-sub">véhicule ' + (ikResume.vehicule === '7+' ? '7 CV et plus' : ikResume.vehicule + ' CV') + '</span>';
+    stats.appendChild(s1); stats.appendChild(s2);
+    wrap.appendChild(stats);
+    var etat = document.createElement('div'); etat.id = 'ik-etat';
+    etat.textContent = 'Ce mois-ci : ' + ikResume.kmMois.toLocaleString('fr-FR') + ' km · barème fiscal officiel appliqué au cumul annuel (pas un taux fixe).';
+    wrap.appendChild(etat);
+    return wrap;
+  }
+
+  function ikBuildTable(items){
+    var wrap = document.createElement('div'); wrap.id = 'ik-table-wrap';
+    var table = document.createElement('table'); table.className = 'ik-table';
+    var thead = document.createElement('thead');
+    var trHead = document.createElement('tr');
+    IK_COLONNES.forEach(function(col){ var th = document.createElement('th'); th.textContent = col.label; trHead.appendChild(th); });
+    thead.appendChild(trHead); table.appendChild(thead);
+    var tbody = document.createElement('tbody');
+    items.forEach(function(t){
+      var tr = document.createElement('tr');
+      if (t.anomalie) tr.className = 'ik-row-anomalie';
+      IK_COLONNES.forEach(function(col){
+        var td = document.createElement('td');
+        if (col.cls) td.className = col.cls;
+        td.textContent = (col.key === 'motif' && t.anomalie ? '⚠️ ' : '') + ikRowValue(t, col.key);
+        tr.appendChild(td);
+      });
+      tr.addEventListener('click', function(){ ikFormOpen(t); });
+      tbody.appendChild(tr);
+    });
+    table.appendChild(tbody);
+    wrap.appendChild(table);
+    return wrap;
+  }
+
+  function ikApplyFilter(){
+    var q = normDoc(ikSearchInput.value.trim());
+    ikList.innerHTML = '';
+    ikList.appendChild(ikBuildDash());
+    var items = (ikData || []).filter(function(t){
+      return !q || normDoc(t.motif + ' ' + t.ville_depart + ' ' + t.ville_arrivee).indexOf(q) !== -1;
+    });
+    if (!items.length){
+      var p = document.createElement('p'); p.id = 'ik-empty';
+      p.textContent = ikData.length ? 'Aucun trajet ne correspond à la recherche.' : 'Aucun trajet enregistré pour l’instant. Touche + pour en ajouter un.';
+      ikList.appendChild(p);
+      return;
+    }
+    ikList.appendChild(ikBuildTable(items));
+  }
+
+  function ikLoad(){
+    ikList.innerHTML = '<p id="ik-loading">Chargement…</p>';
+    postIk({ type: 'liste' }, function(j){
+      ikData = j.trajets || [];
+      ikResume = j.resume || null;
+      ikApplyFilter();
+    }, function(err){ ikList.innerHTML = '<p id="ik-empty">' + err + '</p>'; });
+  }
+
+  function ikOpen(){
+    ikview.classList.add('open');
+    document.getElementById('ik-export').href = API_IK_EXPORT + '?code=' + encodeURIComponent(String(read('jarvisCode') || '').trim());
+    ikLoad();
+  }
+  function ikClose(){ ikview.classList.remove('open'); }
+  document.getElementById('ik-close').addEventListener('click', ikClose);
+  document.getElementById('sh-ik').addEventListener('click', function(){ sheetOpen(false); ikOpen(); });
+  ikSearchInput.addEventListener('input', ikApplyFilter);
+
+  // ---- Formulaire IK (ajouter/modifier/supprimer un trajet) ----
+  var ikFormBg = document.getElementById('ik-form-bg');
+  var ikFormEditingId = null;
+  function ikFormOpen(t){
+    ikFormEditingId = t ? t.id : null;
+    document.getElementById('ikf-titre').textContent = t ? 'Modifier le trajet' : 'Nouveau trajet';
+    document.getElementById('ikf-date').value = t ? t.date : new Date().toISOString().slice(0,10);
+    document.getElementById('ikf-motif').value = t ? t.motif : '';
+    document.getElementById('ikf-depart').value = t ? t.ville_depart : 'Tresses';
+    document.getElementById('ikf-arrivee').value = t ? t.ville_arrivee : '';
+    document.getElementById('ikf-km').value = t && t.km_aller != null ? t.km_aller : '';
+    document.getElementById('ikf-nb').value = t ? (t.nb_trajet || 2) : 2;
+    document.getElementById('ikf-delete').style.display = t ? '' : 'none';
+    document.getElementById('ikf-calc-result').style.display = 'none';
+    ikFormBg.classList.add('open');
+  }
+  function ikFormClose(){ ikFormBg.classList.remove('open'); }
+  document.getElementById('ikf-cancel').addEventListener('click', ikFormClose);
+  ikFormBg.addEventListener('click', function(e){ if (e.target === this) ikFormClose(); });
+
+  document.getElementById('ikf-calc').addEventListener('click', function(){
+    var depart = document.getElementById('ikf-depart').value.trim();
+    var arrivee = document.getElementById('ikf-arrivee').value.trim();
+    var resEl = document.getElementById('ikf-calc-result');
+    if (!depart || !arrivee){ toast('Indique une ville de départ et d’arrivée.'); return; }
+    var btn = this; btn.disabled = true; btn.textContent = '⏳ Calcul en cours…';
+    postIk({ type: 'distance', depart: depart, arrivee: arrivee }, function(j){
+      btn.disabled = false; btn.textContent = '📍 Calculer la distance automatiquement';
+      if (j.ok){
+        document.getElementById('ikf-km').value = j.km_aller;
+        resEl.style.display = '';
+        resEl.textContent = '✅ ' + j.km_aller + ' km (' + j.depart_resolu + ' → ' + j.arrivee_resolu + ')';
+      } else {
+        resEl.style.display = '';
+        resEl.textContent = '⚠️ ' + (j.error || 'Distance introuvable, entre le km à la main.');
+      }
+    }, function(err){ btn.disabled = false; btn.textContent = '📍 Calculer la distance automatiquement'; toast(err); });
+  });
+
+  document.getElementById('ikf-save').addEventListener('click', function(){
+    var trajet = {
+      date: document.getElementById('ikf-date').value,
+      motif: document.getElementById('ikf-motif').value.trim(),
+      ville_depart: document.getElementById('ikf-depart').value.trim(),
+      ville_arrivee: document.getElementById('ikf-arrivee').value.trim(),
+      nb_trajet: parseInt(document.getElementById('ikf-nb').value, 10) || 2,
+      km_aller: document.getElementById('ikf-km').value !== '' ? parseFloat(document.getElementById('ikf-km').value) : null,
+    };
+    if (!trajet.date || !trajet.ville_arrivee){ toast('Indique au moins la date et la ville d’arrivée.'); return; }
+    var payload = ikFormEditingId
+      ? { type: 'modifier', id: ikFormEditingId, trajet: trajet }
+      : { type: 'ajouter', trajet: trajet };
+    postIk(payload, function(){
+      toast('✅ Trajet enregistré');
+      ikFormClose();
+      ikLoad();
+    }, function(err){ toast(err); });
+  });
+  document.getElementById('ikf-delete').addEventListener('click', function(){
+    if (!ikFormEditingId) return;
+    if (!confirm('Supprimer ce trajet ?')) return;
+    postIk({ type: 'supprimer', id: ikFormEditingId }, function(){
+      toast('🗑 Trajet supprimé');
+      ikFormClose();
+      ikLoad();
+    }, function(err){ toast(err); });
+  });
+  document.getElementById('ik-add').addEventListener('click', function(){ ikFormOpen(null); });
+
   // ---- Rentabilité (compte patron d'un tenant secondaire uniquement) ----
   // Vue mensuelle simple en coeur de panneau + 2 widgets optionnels d'information pure (aucun
   // curseur/estimation : "juste pour voir", pas pour lancer une action -- la relance automatique
@@ -4361,6 +4687,7 @@
   // main depuis l'app -- la lecture automatique des reponses mail est hors perimetre pour l'instant.
   var relancesview = document.getElementById('relancesview');
   var relancesList = document.getElementById('relances-list');
+  var relancesMenuBadge = document.getElementById('menu-relances-badge');
   var relancesSearchInput = document.getElementById('relances-search');
   var relancesSummary = document.getElementById('relances-summary');
   var relancesData = [];
@@ -4471,12 +4798,20 @@
     }
     items.forEach(function(l){ relancesList.appendChild(relancesBuildCard(l)); });
   }
+  function relancesUpdateBadge(){
+    var n = relancesData.filter(function(l){ return l.relanceDue; }).length;
+    if (!relancesMenuBadge) return;
+    if (n > 0){ relancesMenuBadge.textContent = n; relancesMenuBadge.style.display = ''; } else { relancesMenuBadge.style.display = 'none'; }
+    updateAppBadgeTotal();
+  }
+  function relancesCheckBadge(){ postRelances({}, function(j){ relancesData = j.lignes || []; relancesUpdateBadge(); }, function(){}); }
   function relancesOpen(keepOpen){
     if (!keepOpen) relancesview.classList.add('open');
     relancesList.innerHTML = '<p id="relances-loading">Chargement…</p>';
     postRelances({}, function(j){
       relancesData = j.lignes || [];
       relancesApplyFilter();
+      relancesUpdateBadge();
     }, function(err){ relancesList.innerHTML = '<p id="relances-empty">' + err + '</p>'; });
   }
   document.querySelectorAll('#relances-tabs .devis-tab').forEach(function(btn){
@@ -5105,6 +5440,7 @@
   function meuteUpdateBadge(){
     var n = meuteAll.filter(MEUTE_TABS.nouveaux).length;
     if (n > 0){ meuteBadge.textContent = n; meuteBadge.style.display = ''; } else { meuteBadge.style.display = 'none'; }
+    updateAppBadgeTotal();
   }
 
   // Recharge depuis le serveur (apres une action qui change des donnees) puis re-rend l'onglet actif
@@ -7245,6 +7581,7 @@
     if (!menuEmailBadge) return;
     if (count > 0){ menuEmailBadge.textContent = count > 99 ? '99+' : String(count); menuEmailBadge.style.display = 'flex'; }
     else { menuEmailBadge.style.display = 'none'; }
+    updateAppBadgeTotal();
   }
 
   // ---- Appel vocal en direct avec Jarvis (V2) ----
