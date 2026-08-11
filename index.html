@@ -2041,10 +2041,9 @@
   /* Fiche client PINNEE en haut de la discussion (Bruno uniquement, 2026-08-11, demande Matheo) --
      different du #devis-form ci-dessus (modal plein ecran, demo interne) : celle-ci reste EN
      LIGNE, ancree sous l'en-tete, toujours visible, jamais un aller-retour vers un menu que
-     Bruno n'a de toute facon pas. Reutilise le MEME code serveur 'devis-submit' (colonnes
-     nom/email/adresse existantes) : le cerveau MCS est verrouille par une autre session au
-     moment ou ceci est construit (VERROU.md), donc pas de nouvelle colonne aujourd'hui --
-     telephone (pro) est replie dans le champ nom envoye, voir bcSave plus bas. */
+     Bruno n'a de toute facon pas. Reutilise le MEME code serveur 'devis-submit', desormais
+     etendu avec de vraies colonnes tel/type_client sur mcs_contacts (ajoutees le 2026-08-11
+     une fois le verrou sur le cerveau MCS libere par l'autre session -- voir VERROU.md). */
   #brunoClient{display:none}
   body.bruno-mode #brunoClient{
     display:block; flex:0 0 auto; background:#151517; border-bottom:0.5px solid var(--hairline);
@@ -2902,7 +2901,7 @@
 
 <script>
 (function(){
-  var APPV = 'v3.38';
+  var APPV = 'v3.39';
 
   // Debug : ?debug_modal=1 force l'affichage du modal "nouvelle version" sans attendre un vrai
   // déploiement. Capturé ICI, tout au début, car plus bas (login mémorisé, connexion) le code
@@ -8378,10 +8377,8 @@
   // ---- Fiche client PINNEE (Bruno, 2026-08-11) ----
   // Guide Bruno pas a pas : Nouveau client -> Particulier/Professionnel -> champs -> Enregistrer
   // -> la fiche reste affichee en haut, la barre d'ecriture invite a decrire le devis. Reutilise
-  // le meme 'devis-submit' que le formulaire ci-dessus (aucune nouvelle colonne cote serveur —
-  // le cerveau MCS est verrouille par une autre session pendant cette construction, voir
-  // VERROU.md) : pour "Professionnel", le telephone est simplement replie dans le nom envoye
-  // (ex "ACME Nuisibles — 06 12 34 56 78"), affiche seul (sans le tel) dans la fiche pinnee.
+  // le meme 'devis-submit' que le formulaire ci-dessus, avec 2 champs en plus (telephone,
+  // clientType) qui vont dans leurs propres colonnes tel/type_client sur mcs_contacts.
   var bcSummary = document.getElementById('bc-summary');
   var bcSummaryTxt = document.getElementById('bc-summary-txt');
   var bcNewBtn = document.getElementById('bc-new-btn');
@@ -8470,10 +8467,11 @@
     if (!nomRaw){ bcErr.textContent = bcType === 'pro' ? 'Le nom de la société ou du contact est obligatoire.' : 'Le nom est obligatoire.'; return; }
     if (!email || email.indexOf('@') === -1){ bcErr.textContent = 'Indique un email valide.'; return; }
     if (!adresse){ bcErr.textContent = "L'adresse est obligatoire."; return; }
-    var nomEnvoye = (bcType === 'pro' && tel) ? (nomRaw + ' — ' + tel) : nomRaw;
     bcSave.disabled = true;
     bcSave.textContent = 'Enregistrement…';
-    post({ type: 'devis-submit', nom: nomEnvoye, email: email, adresse: adresse }, function(r){
+    // Le cerveau MCS a desormais ses propres colonnes tel/type_client (2026-08-11) :
+    // le telephone n'a plus besoin d'etre replie dans le nom.
+    post({ type: 'devis-submit', nom: nomRaw, email: email, adresse: adresse, telephone: tel, clientType: bcType === 'pro' ? 'professionnel' : 'particulier' }, function(r){
       bcSave.disabled = false;
       bcSave.textContent = 'Enregistrer';
       bcSummaryTxt.innerHTML = nomRaw + '<span class="bc-summary-sub"></span>';
