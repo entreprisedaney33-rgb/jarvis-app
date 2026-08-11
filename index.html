@@ -823,20 +823,23 @@
   .couts-stat .cs-label{font-size:11.5px; color:var(--muted); text-transform:uppercase; letter-spacing:.02em}
   .couts-stat .cs-value{font-size:20px; font-weight:700; color:var(--gold-a)}
   .couts-stat .cs-sub{font-size:11.5px; color:var(--muted)}
+  #couts-curve-head{font-size:12.5px; font-weight:700; color:var(--gold-a); text-transform:uppercase; letter-spacing:.03em; padding:4px 4px 6px}
   #couts-curve{
-    display:flex; align-items:flex-end; gap:2px; height:52px; margin:4px 0 14px;
+    display:flex; align-items:flex-end; gap:2px; height:52px; margin:0 0 16px;
     background:var(--surface); border-radius:12px; padding:8px 10px; box-sizing:border-box;
   }
   #couts-curve .cc-bar{flex:1; background:var(--gold-a); border-radius:2px 2px 0 0; min-height:2px; opacity:.85}
   #couts-curve .cc-bar.cc-today{opacity:1}
-  #couts-svc-head{font-size:12.5px; font-weight:700; color:var(--gold-a); text-transform:uppercase; letter-spacing:.03em; padding:4px 4px 6px}
-  .couts-svc-row{display:flex; align-items:center; gap:10px; padding:9px 4px; border-top:0.5px solid rgba(84,84,88,.4)}
+  #couts-svc-head{display:flex; align-items:baseline; justify-content:space-between; gap:8px; font-size:12.5px; font-weight:700; color:var(--gold-a); text-transform:uppercase; letter-spacing:.03em; padding:4px 4px 6px}
+  #couts-svc-total{font-size:11px; font-weight:600; color:var(--muted); text-transform:none; letter-spacing:0}
+  .couts-svc-row{display:flex; flex-direction:column; gap:5px; padding:10px 4px; border-top:0.5px solid rgba(84,84,88,.4)}
   .couts-svc-row:first-child{border-top:none}
+  .couts-svc-top{display:flex; align-items:center; gap:8px}
   .couts-svc-nom{flex:1; min-width:0; font-size:13.5px; white-space:nowrap; overflow:hidden; text-overflow:ellipsis}
-  .couts-svc-pct{font-size:11.5px; color:var(--muted); flex:0 0 auto; width:40px; text-align:right}
-  .couts-svc-montant{font-size:13.5px; font-weight:700; color:var(--gold-a); flex:0 0 auto; width:60px; text-align:right}
-  #couts-etat{font-size:12px; color:var(--muted); padding:2px 4px 14px}
-  #couts-etat.warn{color:#FF9F0A}
+  .couts-svc-montant{font-size:13.5px; font-weight:700; color:var(--gold-a); flex:0 0 auto}
+  .couts-svc-barwrap{height:5px; border-radius:3px; background:rgba(255,255,255,.08); overflow:hidden}
+  .couts-svc-bar{height:100%; border-radius:3px; background:var(--gold-a); opacity:.85}
+  .couts-svc-pct{font-size:11px; color:var(--muted)}
   #couts-abo-head{font-size:12.5px; font-weight:700; color:var(--gold-a); text-transform:uppercase; letter-spacing:.03em; padding:10px 4px 6px; border-top:0.5px solid rgba(84,84,88,.4)}
   /* Panneau plein ecran "Relances clients" (chantier 3 audit MCS, patron uniquement) */
   #relancesview{
@@ -2383,14 +2386,14 @@
       <div id="couts-dash-body" style="display:none">
         <div class="couts-stats">
           <div class="couts-stat"><span class="cs-label">Aujourd'hui</span><span class="cs-value" id="cs-jour">—</span></div>
-          <div class="couts-stat"><span class="cs-label">Mois en cours</span><span class="cs-value" id="cs-mois">—</span></div>
-          <div class="couts-stat"><span class="cs-label">Projection fin de mois</span><span class="cs-value" id="cs-proj">—</span></div>
-          <div class="couts-stat"><span class="cs-label">Mois dernier</span><span class="cs-value" id="cs-precedent">—</span></div>
+          <div class="couts-stat"><span class="cs-label">Mois en cours</span><span class="cs-value" id="cs-mois">—</span><span class="cs-sub">depuis le 1er du mois</span></div>
+          <div class="couts-stat"><span class="cs-label">Projection fin de mois</span><span class="cs-value" id="cs-proj">—</span><span class="cs-sub">estimation</span></div>
+          <div class="couts-stat"><span class="cs-label">Mois dernier</span><span class="cs-value" id="cs-precedent">—</span><span class="cs-sub">mois complet</span></div>
         </div>
+        <div id="couts-curve-head">📈 Évolution — 30 derniers jours</div>
         <div id="couts-curve"></div>
-        <div id="couts-svc-head">Par service (30 derniers jours)</div>
+        <div id="couts-svc-head"><span>🧾 Par service</span><span id="couts-svc-total"></span></div>
         <div id="couts-svc-list"></div>
-        <div id="couts-etat"></div>
       </div>
     </div>
     <div id="couts-abo-head">Abonnements (gérés ici)</div>
@@ -2873,7 +2876,7 @@
 
 <script>
 (function(){
-  var APPV = 'v3.36';
+  var APPV = 'v3.37';
 
   // Debug : ?debug_modal=1 force l'affichage du modal "nouvelle version" sans attendre un vrai
   // déploiement. Capturé ICI, tout au début, car plus bas (login mémorisé, connexion) le code
@@ -3847,6 +3850,7 @@
     recherche_web:'🔎 Recherche web', hebergement:'🖥️ Hébergement', domaine:'🌐 Domaine',
     saas:'🧩 SaaS', base_de_donnees:'🗄️ Base de données', autre:'📦 Autre'
   };
+  var CX_CAT_ICON = {}; Object.keys(CX_CAT_LABELS).forEach(function(k){ CX_CAT_ICON[k] = CX_CAT_LABELS[k].split(' ')[0]; });
   function coutsFmt(m, d){ var n = Number(m); if (!isFinite(n)) n = 0; return (d === 'USD' ? '$' : '€') + n.toFixed(2).replace('.', ','); }
   function coutsRow(c){
     var row = document.createElement('div'); row.className = 'couts-row';
@@ -3914,6 +3918,7 @@
         bar.title = d.date + ' — ' + coutsEur(d.total);
         curve.appendChild(bar);
       });
+      document.getElementById('couts-svc-total').textContent = 'Total : ' + coutsEur(j.totalGlobal30j || 0);
       var svcList = document.getElementById('couts-svc-list');
       svcList.innerHTML = '';
       var svcs = (j.tableauServices || []).filter(function(s){ return s.total30j > 0; });
@@ -3922,21 +3927,18 @@
       } else {
         svcs.forEach(function(s){
           var row = document.createElement('div'); row.className = 'couts-svc-row';
+          var top = document.createElement('div'); top.className = 'couts-svc-top';
           var nom = document.createElement('span'); nom.className = 'couts-svc-nom';
-          nom.textContent = s.nom + (s.estimation ? ' (est.)' : '');
-          var pct = document.createElement('span'); pct.className = 'couts-svc-pct'; pct.textContent = s.partPct + '%';
+          nom.textContent = (CX_CAT_ICON[s.categorie] || '📦') + ' ' + s.nom + (s.estimation ? ' (estimé)' : '');
           var mnt = document.createElement('span'); mnt.className = 'couts-svc-montant'; mnt.textContent = coutsEur(s.total30j);
-          row.appendChild(nom); row.appendChild(pct); row.appendChild(mnt);
+          top.appendChild(nom); top.appendChild(mnt);
+          var barWrap = document.createElement('div'); barWrap.className = 'couts-svc-barwrap';
+          var bar = document.createElement('div'); bar.className = 'couts-svc-bar'; bar.style.width = Math.max(2, s.partPct) + '%';
+          barWrap.appendChild(bar);
+          var pct = document.createElement('span'); pct.className = 'couts-svc-pct'; pct.textContent = s.partPct + '% des dépenses des 30 derniers jours';
+          row.appendChild(top); row.appendChild(barWrap); row.appendChild(pct);
           svcList.appendChild(row);
         });
-      }
-      var etat = document.getElementById('couts-etat');
-      if (j.nbErreursRecentes > 0){
-        etat.className = 'warn';
-        etat.textContent = '⚠️ ' + j.nbErreursRecentes + ' erreur(s) de collecte ces 3 derniers jours (voir avec Claude Code si ça persiste).';
-      } else {
-        etat.className = '';
-        etat.textContent = '✅ Collecteurs à jour, aucune erreur récente.';
       }
   }
   // Même principe que coutsLoad ci-dessus : affichage instantané depuis le dernier calcul
