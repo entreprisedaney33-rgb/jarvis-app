@@ -663,6 +663,26 @@
   #ik-form-bg.open{display:block}
   #ikf-calc{width:100%; margin-top:12px}
   #ikf-calc-result{font-size:12.5px; color:var(--muted); padding:8px 2px 0}
+  #ik-month-tabs{flex-wrap:nowrap}
+  .ik-sug{
+    list-style:none; margin:2px 0 0; padding:0; border:0.5px solid rgba(255,255,255,.18); border-radius:10px;
+    overflow:hidden; position:absolute; left:0; right:0; top:100%; background:#333336; z-index:5;
+    max-height:180px; overflow-y:auto; display:none;
+  }
+  .ik-sug.open{display:block}
+  .ik-sug li{padding:9px 11px; font-size:13px; color:var(--ink); border-bottom:0.5px solid rgba(255,255,255,.12); cursor:pointer}
+  .ik-sug li:last-child{border-bottom:none}
+  .ik-sug li:active{background:rgba(255,255,255,.1)}
+  .ik-sug li small{display:block; color:var(--muted); font-size:11px; margin-top:1px}
+  #ik-recap-table th, #ik-recap-table td{padding:8px 10px}
+  table.ik-recap-table{width:100%; border-collapse:collapse; font-size:12.5px}
+  table.ik-recap-table thead th{
+    text-align:left; color:var(--muted); font-size:10.5px; font-weight:700; text-transform:uppercase;
+    letter-spacing:.02em; padding:6px 8px; border-bottom:0.5px solid var(--hairline);
+  }
+  table.ik-recap-table td{padding:8px 8px; border-bottom:0.5px solid var(--hairline); color:var(--ink)}
+  table.ik-recap-table td.ik-td-num{text-align:right}
+  table.ik-recap-table tr.ik-recap-total td{font-weight:700; color:var(--gold-a)}
   /* Panneau plein ecran "Couts" (gestion des abonnements fixes, auto-service, 2026-08-09) */
   #coutsview{
     position:fixed; inset:0; z-index:50; background:var(--bg);
@@ -2286,6 +2306,7 @@
     <button id="ik-add" type="button" aria-label="Ajouter un trajet">+</button>
     <button id="ik-close" type="button" aria-label="Fermer">✕</button>
   </div>
+  <div class="df-filter-group" id="ik-month-tabs"></div>
   <div id="ik-search-wrap">
     <input id="ik-search" type="search" inputmode="search" placeholder="🔍 Rechercher (motif, ville…)" autocomplete="off" autocapitalize="off" autocorrect="off">
   </div>
@@ -2298,8 +2319,8 @@
     <label>Date</label><input id="ikf-date" type="date">
     <label>Motif</label><input id="ikf-motif" type="text" placeholder="chantier, devis, VMC, dératisation…">
     <div class="cf-row">
-      <div><label>Ville départ</label><input id="ikf-depart" type="text" value="Tresses"></div>
-      <div><label>Ville arrivée</label><input id="ikf-arrivee" type="text"></div>
+      <div><label>Ville départ<div style="position:relative"><input id="ikf-depart" type="text" value="Tresses" autocomplete="off"><ul class="ik-sug" id="ikf-depart-sug"></ul></div></label></div>
+      <div><label>Ville arrivée<div style="position:relative"><input id="ikf-arrivee" type="text" autocomplete="off"><ul class="ik-sug" id="ikf-arrivee-sug"></ul></div></label></div>
     </div>
     <div class="cf-row">
       <div><label>Km aller</label><input id="ikf-km" type="number" step="1" min="0"></div>
@@ -2600,7 +2621,7 @@
 
 <script>
 (function(){
-  var APPV = 'v3.25';
+  var APPV = 'v3.26';
 
   // Debug : ?debug_modal=1 force l'affichage du modal "nouvelle version" sans attendre un vrai
   // déploiement. Capturé ICI, tout au début, car plus bas (login mémorisé, connexion) le code
@@ -4232,12 +4253,28 @@
   contratsAddBtn.addEventListener('click', function(){ contratFormOpen(null); });
 
   // ---- IK : frais kilométriques intelligents (chantier 6 réaffecté 11/08/2026) ----
-  // Vue "tableur" (même choix que Contrats : Mickael doit retrouver ses colonnes habituelles).
+  // Vue "tableur" (même choix que Contrats : Mickael doit retrouver ses colonnes habituelles),
+  // découpée en sous-onglets mois par mois + un onglet Récap (demande Mathéo 11/08/2026, même
+  // découpage que les feuilles du fichier Excel d'origine de Mickael : 1 mois = 1 onglet).
   var ikview = document.getElementById('ikview');
   var ikList = document.getElementById('ik-list');
   var ikSearchInput = document.getElementById('ik-search');
+  var ikSearchWrap = document.getElementById('ik-search-wrap');
+  var ikMonthTabsEl = document.getElementById('ik-month-tabs');
   var ikData = [];
   var ikResume = null;
+  var ikActiveTab = String(new Date().getMonth()); // '0'..'11' ou 'recap'
+
+  var IK_MOIS_COURT = ['Janv','Fév','Mars','Avr','Mai','Juin','Juil','Août','Sept','Oct','Nov','Déc'];
+  var IK_MOIS_LONG = ['Janvier','Février','Mars','Avril','Mai','Juin','Juillet','Août','Septembre','Octobre','Novembre','Décembre'];
+  var IK_CV = '7+';
+  var IK_BAREME = { '3':[0.41,0.245,824,0.285], '4':[0.493,0.27,1082,0.332], '5':[0.543,0.305,1188,0.364], '6':[0.568,0.32,1244,0.382], '7+':[0.601,0.34,1301,0.405] };
+  function ikBareme(d){
+    var b = IK_BAREME[IK_CV];
+    if (d <= 5000) return d * b[0];
+    if (d <= 20000) return d * b[1] + b[2];
+    return d * b[3];
+  }
 
   var IK_COLONNES = [
     { key:'date', label:'Date', cls:'' },
@@ -4257,6 +4294,25 @@
     return t[key] || '';
   }
 
+  // Répartition mensuelle calculée côté client (mêmes données déjà chargées, même barème que le
+  // backend/l'export Excel) : km du mois, cumul, frais marginal = barème(cumul apres) - barème(cumul avant).
+  function ikComputeMonthly(){
+    var annee = (ikResume && ikResume.annee) || new Date().getFullYear();
+    var kmParMois = new Array(12).fill(0);
+    (ikData || []).forEach(function(t){
+      var m = /^(\d{4})-(\d{2})-\d{2}$/.exec(String(t.date || ''));
+      if (!m || Number(m[1]) !== annee) return;
+      kmParMois[Number(m[2]) - 1] += (t.km_total || 0);
+    });
+    var cum = 0, out = [];
+    for (var i = 0; i < 12; i++){
+      var avant = cum;
+      cum += kmParMois[i];
+      out.push({ mois: i, km: kmParMois[i], kmCumule: cum, frais: ikBareme(cum) - ikBareme(avant) });
+    }
+    return { annee: annee, parMois: out, kmTotal: cum, fraisTotal: ikBareme(cum) };
+  }
+
   function ikBuildDash(){
     var wrap = document.createElement('div'); wrap.id = 'ik-dash';
     if (!ikResume){ return wrap; }
@@ -4268,8 +4324,30 @@
     stats.appendChild(s1); stats.appendChild(s2);
     wrap.appendChild(stats);
     var etat = document.createElement('div'); etat.id = 'ik-etat';
-    etat.textContent = 'Ce mois-ci : ' + ikResume.kmMois.toLocaleString('fr-FR') + ' km · barème fiscal officiel appliqué au cumul annuel (pas un taux fixe).';
+    etat.textContent = 'Barème fiscal officiel appliqué au cumul annuel (pas un taux fixe) — détail mois par mois ci-dessous.';
     wrap.appendChild(etat);
+    return wrap;
+  }
+
+  function ikBuildRecapTable(){
+    var m = ikComputeMonthly();
+    var wrap = document.createElement('div'); wrap.id = 'ik-recap-table';
+    var table = document.createElement('table'); table.className = 'ik-recap-table';
+    table.innerHTML = '<thead><tr><th>Mois</th><th class="ik-td-num">Km</th><th class="ik-td-num">Km cumulés</th><th class="ik-td-num">Frais estimés</th></tr></thead>';
+    var tbody = document.createElement('tbody');
+    m.parMois.forEach(function(row){
+      var tr = document.createElement('tr');
+      tr.innerHTML = '<td>' + IK_MOIS_LONG[row.mois] + '</td>' +
+        '<td class="ik-td-num">' + row.km.toLocaleString('fr-FR') + '</td>' +
+        '<td class="ik-td-num">' + row.kmCumule.toLocaleString('fr-FR') + '</td>' +
+        '<td class="ik-td-num">' + row.frais.toLocaleString('fr-FR', {maximumFractionDigits:2}) + ' €</td>';
+      tbody.appendChild(tr);
+    });
+    var trTotal = document.createElement('tr'); trTotal.className = 'ik-recap-total';
+    trTotal.innerHTML = '<td>Total ' + m.annee + '</td><td class="ik-td-num">' + m.kmTotal.toLocaleString('fr-FR') + '</td><td></td><td class="ik-td-num">' + m.fraisTotal.toLocaleString('fr-FR', {maximumFractionDigits:2}) + ' €</td>';
+    tbody.appendChild(trTotal);
+    table.appendChild(tbody);
+    wrap.appendChild(table);
     return wrap;
   }
 
@@ -4298,16 +4376,50 @@
     return wrap;
   }
 
+  function ikRenderMonthTabs(){
+    ikMonthTabsEl.innerHTML = '';
+    for (var i = 0; i < 12; i++){
+      (function(idx){
+        var b = document.createElement('button');
+        b.type = 'button'; b.className = 'df-chip' + (ikActiveTab === String(idx) ? ' active' : '');
+        b.textContent = IK_MOIS_COURT[idx];
+        b.addEventListener('click', function(){ ikActiveTab = String(idx); ikRenderMonthTabs(); ikApplyFilter(); });
+        ikMonthTabsEl.appendChild(b);
+      })(i);
+    }
+    var recapBtn = document.createElement('button');
+    recapBtn.type = 'button'; recapBtn.className = 'df-chip' + (ikActiveTab === 'recap' ? ' active' : '');
+    recapBtn.textContent = '📊 Récap';
+    recapBtn.addEventListener('click', function(){ ikActiveTab = 'recap'; ikRenderMonthTabs(); ikApplyFilter(); });
+    ikMonthTabsEl.appendChild(recapBtn);
+  }
+
   function ikApplyFilter(){
-    var q = normDoc(ikSearchInput.value.trim());
     ikList.innerHTML = '';
-    ikList.appendChild(ikBuildDash());
-    var items = (ikData || []).filter(function(t){
+    if (ikActiveTab === 'recap'){
+      ikSearchWrap.style.display = 'none';
+      ikList.appendChild(ikBuildDash());
+      ikList.appendChild(ikBuildRecapTable());
+      return;
+    }
+    ikSearchWrap.style.display = '';
+    var moisIdx = parseInt(ikActiveTab, 10);
+    var annee = (ikResume && ikResume.annee) || new Date().getFullYear();
+    var q = normDoc(ikSearchInput.value.trim());
+    var itemsMois = (ikData || []).filter(function(t){
+      var m = /^(\d{4})-(\d{2})-\d{2}$/.exec(String(t.date || ''));
+      return m && Number(m[1]) === annee && (Number(m[2]) - 1) === moisIdx;
+    });
+    var monthly = ikComputeMonthly().parMois[moisIdx];
+    var head = document.createElement('div'); head.id = 'ik-etat';
+    head.textContent = IK_MOIS_LONG[moisIdx] + ' ' + annee + ' : ' + monthly.km.toLocaleString('fr-FR') + ' km · frais estimés ' + monthly.frais.toLocaleString('fr-FR', {maximumFractionDigits:2}) + ' €';
+    ikList.appendChild(head);
+    var items = itemsMois.filter(function(t){
       return !q || normDoc(t.motif + ' ' + t.ville_depart + ' ' + t.ville_arrivee).indexOf(q) !== -1;
     });
     if (!items.length){
       var p = document.createElement('p'); p.id = 'ik-empty';
-      p.textContent = ikData.length ? 'Aucun trajet ne correspond à la recherche.' : 'Aucun trajet enregistré pour l’instant. Touche + pour en ajouter un.';
+      p.textContent = itemsMois.length ? 'Aucun trajet ne correspond à la recherche.' : 'Aucun trajet enregistré pour ' + IK_MOIS_LONG[moisIdx].toLowerCase() + '. Touche + pour en ajouter un.';
       ikList.appendChild(p);
       return;
     }
@@ -4319,6 +4431,7 @@
     postIk({ type: 'liste' }, function(j){
       ikData = j.trajets || [];
       ikResume = j.resume || null;
+      ikRenderMonthTabs();
       ikApplyFilter();
     }, function(err){ ikList.innerHTML = '<p id="ik-empty">' + err + '</p>'; });
   }
@@ -4332,6 +4445,59 @@
   document.getElementById('ik-close').addEventListener('click', ikClose);
   document.getElementById('sh-ik').addEventListener('click', function(){ sheetOpen(false); ikOpen(); });
   ikSearchInput.addEventListener('input', ikApplyFilter);
+
+  // ---- Autocomplétion ville (départ/arrivée) : API Base Adresse Nationale, villes uniquement,
+  // biaisée géographiquement vers Bordeaux (siège de MCS) + re-classement côté client pour
+  // remonter en premier les villes dont le nom commence VRAIMENT par ce qui est tapé. ----
+  var IK_BX_LAT = 44.8378, IK_BX_LON = -0.5792;
+  function ikDistKm(lat1, lon1, lat2, lon2){
+    var R = 6371, dLat = (lat2 - lat1) * Math.PI / 180, dLon = (lon2 - lon1) * Math.PI / 180;
+    var a = Math.sin(dLat/2)*Math.sin(dLat/2) + Math.cos(lat1*Math.PI/180)*Math.cos(lat2*Math.PI/180)*Math.sin(dLon/2)*Math.sin(dLon/2);
+    return R * 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1-a));
+  }
+  function ikVilleSug(inputId, sugId){
+    var input = document.getElementById(inputId);
+    var sug = document.getElementById(sugId);
+    var timer = null;
+    input.addEventListener('input', function(){
+      clearTimeout(timer);
+      var q = input.value.trim();
+      if (q.length < 2){ sug.innerHTML = ''; sug.classList.remove('open'); return; }
+      timer = setTimeout(function(){
+        var url = 'https://api-adresse.data.gouv.fr/search/?type=municipality&autocomplete=1&limit=10'
+          + '&lat=' + IK_BX_LAT + '&lon=' + IK_BX_LON + '&q=' + encodeURIComponent(q);
+        fetch(url).then(function(r){ return r.json(); }).then(function(j){
+          var feats = (j && j.features) || [];
+          var qNorm = normDoc(q);
+          feats.forEach(function(f){
+            f._dist = ikDistKm(IK_BX_LAT, IK_BX_LON, f.geometry.coordinates[1], f.geometry.coordinates[0]);
+            f._prefix = normDoc(f.properties.city || f.properties.label).indexOf(qNorm) === 0;
+          });
+          feats.sort(function(a, b){
+            if (a._prefix !== b._prefix) return a._prefix ? -1 : 1;
+            return a._dist - b._dist;
+          });
+          feats = feats.slice(0, 8);
+          sug.innerHTML = '';
+          feats.forEach(function(f){
+            var li = document.createElement('li');
+            var ville = f.properties.city || f.properties.label;
+            li.innerHTML = ville + '<small>' + (f.properties.context || '') + ' · ' + Math.round(f._dist) + ' km de Bordeaux</small>';
+            li.addEventListener('click', function(){
+              input.value = ville;
+              sug.innerHTML = ''; sug.classList.remove('open');
+            });
+            sug.appendChild(li);
+          });
+          sug.classList.toggle('open', feats.length > 0);
+        }).catch(function(){});
+      }, 250);
+    });
+    input.addEventListener('blur', function(){ setTimeout(function(){ sug.classList.remove('open'); }, 150); });
+    input.addEventListener('focus', function(){ if (sug.innerHTML) sug.classList.add('open'); });
+  }
+  ikVilleSug('ikf-depart', 'ikf-depart-sug');
+  ikVilleSug('ikf-arrivee', 'ikf-arrivee-sug');
 
   // ---- Formulaire IK (ajouter/modifier/supprimer un trajet) ----
   var ikFormBg = document.getElementById('ik-form-bg');
@@ -4347,6 +4513,8 @@
     document.getElementById('ikf-nb').value = t ? (t.nb_trajet || 2) : 2;
     document.getElementById('ikf-delete').style.display = t ? '' : 'none';
     document.getElementById('ikf-calc-result').style.display = 'none';
+    document.getElementById('ikf-depart-sug').innerHTML = ''; document.getElementById('ikf-depart-sug').classList.remove('open');
+    document.getElementById('ikf-arrivee-sug').innerHTML = ''; document.getElementById('ikf-arrivee-sug').classList.remove('open');
     ikFormBg.classList.add('open');
   }
   function ikFormClose(){ ikFormBg.classList.remove('open'); }
