@@ -87,11 +87,14 @@ self.addEventListener('push', function(event){
     // Badge icone : incremente le compteur persiste et l'applique -- seulement ici, dans
     // le meme cas ou la notification elle-meme s'affiche (app deja ouverte = rien a faire,
     // le badge sera remis a jour par la page via updateAppBadgeTotal/pingVisible).
-    if ('setAppBadge' in self.registration) {
+    // ⚠️ PAS de "registration.setAppBadge" (n'existe pas) -- l'API est exposee via
+    // WorkerNavigator dans un Service Worker, donc self.navigator, jamais self.registration
+    // (confirme par le blog WebKit dedie a cette fonctionnalite, source faisant autorite).
+    if (self.navigator && 'setAppBadge' in self.navigator) {
       try {
         const n = (await getBadgeCount()) + 1;
         await setBadgeCount(n);
-        await self.registration.setAppBadge(n);
+        await self.navigator.setAppBadge(n);
       } catch (e) {}
     }
 
