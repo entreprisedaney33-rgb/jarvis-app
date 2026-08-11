@@ -2988,7 +2988,7 @@
 
 <script>
 (function(){
-  var APPV = 'v3.45';
+  var APPV = 'v3.46';
 
   // Debug : ?debug_modal=1 force l'affichage du modal "nouvelle version" sans attendre un vrai
   // déploiement. Capturé ICI, tout au début, car plus bas (login mémorisé, connexion) le code
@@ -3214,6 +3214,15 @@
   }
   function typingOff(){ var t = document.getElementById('typing'); if(t) t.remove(); }
 
+  // Messages FIXES d'echec technique (reseau/serveur) -- distincts de j.error (un vrai message
+  // serveur, ex authentification refusee). Compares par egalite stricte plus bas (enterApp) pour
+  // ne JAMAIS renvoyer a l'ecran de connexion sur une panne transitoire (ex : le workflow n8n qui
+  // redemarre pendant un deploiement -- bug reel trouve le 11/08/2026, "ca me deconnecte a chaque
+  // deploiement" alors que le code en localStorage n'a jamais bouge).
+  var ERR_RESEAU = 'Connexion impossible. Vérifiez le réseau et réessayez.';
+  var ERR_TECHNIQUE = 'Jarvis rencontre un problème technique — réessaie dans un instant.';
+  function isErrTransitoire(msg){ return msg === ERR_RESEAU || msg === ERR_TECHNIQUE; }
+
   function post(payload, onOk, onErr){
     payload.code = String(read('jarvisCode') || '').trim();
     payload.deviceId = getDeviceId();
@@ -3229,9 +3238,7 @@
       // serveur, observe en direct pendant l'audit) leve un SyntaxError dans r.json(), pas un
       // TypeError. Avant ce fix les deux cas affichaient le meme message "reseau", trompeur
       // quand la vraie cause est une panne serveur qui n'a rien a voir avec la connexion.
-      onErr((e instanceof TypeError)
-        ? 'Connexion impossible. Vérifiez le réseau et réessayez.'
-        : 'Jarvis rencontre un problème technique — réessaie dans un instant.');
+      onErr((e instanceof TypeError) ? ERR_RESEAU : ERR_TECHNIQUE);
     });
   }
 
@@ -9270,26 +9277,52 @@
     } else {
       splash.classList.add('on');
     }
-    post({ type:'history' }, function(j){
-      if (j.nom) store('jarvisNom', j.nom);
-      if (j.role) store('jarvisRole', j.role);
-      var frais = JSON.stringify({ nom: j.nom, messages: j.messages });
-      if (!cached || frais !== JSON.stringify(cached)){
-        enterApp(j.nom || read('jarvisNom'), j.messages, j);
-      } else {
-        renderExtras(j);
-      }
-      try { localStorage.setItem('jarvisHist', frais); } catch(e){}
-      splashOff();
-    }, function(){
-      // code périmé ou réseau coupé : sans cache, retour à l'écran de connexion
-      if (!(cached && cached.messages && cached.messages.length)){
-        splash.classList.remove('on');
-        document.documentElement.classList.remove('boot');
-        splash.style.display = 'none';
-        login.style.display = 'flex';
-      }
-    });
+    // Bug reel corrige le 11/08/2026 : "ca me deconnecte a chaque deploiement" -- une panne
+    // technique/reseau TRANSITOIRE (ex : le workflow n8n qui redemarre pendant un deploiement
+    // backend, quelques secondes d'indisponibilite) renvoyait AUPARAVANT tout droit a l'ecran de
+    // connexion, alors que le code en localStorage restait parfaitement valide -- confirme en
+    // reproduisant : localStorage.jarvisCode intact apres l'echec, mais #login affiche quand meme.
+    // Desormais : seule une VRAIE erreur serveur (ex authentification refusee, message different
+    // des 2 constantes techniques fixes ERR_RESEAU/ERR_TECHNIQUE) fait revenir a l'ecran de
+    // connexion. Une panne transitoire retente automatiquement (3x, 2s d'ecart) sans jamais
+    // deconnecter -- si toutes les tentatives echouent, reste sur le cache s'il y en a un, sinon
+    // arrete simplement le splash (prochaine action/reload reessaiera).
+    var historyRetries = 0;
+    function attemptHistory(){
+      post({ type:'history' }, function(j){
+        if (j.nom) store('jarvisNom', j.nom);
+        if (j.role) store('jarvisRole', j.role);
+        var frais = JSON.stringify({ nom: j.nom, messages: j.messages });
+        if (!cached || frais !== JSON.stringify(cached)){
+          enterApp(j.nom || read('jarvisNom'), j.messages, j);
+        } else {
+          renderExtras(j);
+        }
+        try { localStorage.setItem('jarvisHist', frais); } catch(e){}
+        splashOff();
+      }, function(err){
+        if (isErrTransitoire(err) && historyRetries < 3){
+          historyRetries++;
+          setTimeout(attemptHistory, 2000);
+          return;
+        }
+        if (isErrTransitoire(err)){
+          // panne persistante mais toujours transitoire (pas une erreur d'authentification) --
+          // ne jamais afficher #login pour ca : reste sur le cache si dispo, sinon coupe juste le splash.
+          if (cached && cached.messages && cached.messages.length){ splashOff(); }
+          else { splash.classList.remove('on'); document.documentElement.classList.remove('boot'); splash.style.display = 'none'; }
+          return;
+        }
+        // vraie erreur serveur (ex code desactive) : retour a l'ecran de connexion, comme avant.
+        if (!(cached && cached.messages && cached.messages.length)){
+          splash.classList.remove('on');
+          document.documentElement.classList.remove('boot');
+          splash.style.display = 'none';
+          login.style.display = 'flex';
+        }
+      });
+    }
+    attemptHistory();
   }
 })();
 </script>
