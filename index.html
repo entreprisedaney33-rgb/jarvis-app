@@ -423,7 +423,6 @@
   .client-mid{flex:1; min-width:0}
   .client-nom{font-size:15px; font-weight:600; display:block}
   .client-info{font-size:12.5px; color:var(--muted); display:block; margin-top:2px; white-space:nowrap; overflow:hidden; text-overflow:ellipsis}
-  .client-ouvertures{font-size:12.5px; color:var(--muted); display:block; margin-top:3px}
   .client-date{font-size:11.5px; color:var(--muted); flex:0 0 auto}
   #clients-empty, #clients-loading{color:var(--muted); text-align:center; padding:40px 20px; font-size:14px}
   /* Panneau plein ecran "Devis a valider" (compte patron d'un tenant secondaire uniquement) */
@@ -630,11 +629,19 @@
     border-bottom:0.5px solid var(--hairline);
   }
   #ik-head b{font-size:16px; flex:1; white-space:nowrap; overflow:hidden; text-overflow:ellipsis}
-  #ik-export, #ik-add, #ik-close{
+  #ik-close{
     width:32px; height:32px; border-radius:50%; border:0; flex:0 0 auto;
     background:var(--surface); color:var(--ink); font-size:15px;
     display:flex; align-items:center; justify-content:center; cursor:pointer;
     -webkit-tap-highlight-color:transparent; text-decoration:none;
+  }
+  /* Bouton export : rendu clairement identifiable (pilule dorée + libellé "Excel"), demande
+     Mathéo 11/08/2026 -- l'icône seule ⬇️ n'était pas assez claire. */
+  #ik-export{
+    flex:0 0 auto; display:flex; align-items:center; gap:5px; padding:7px 13px;
+    border-radius:99px; background:rgba(232,185,106,.15); color:var(--gold-a);
+    font-size:13px; font-weight:700; text-decoration:none; white-space:nowrap;
+    -webkit-tap-highlight-color:transparent;
   }
   #ik-search-wrap{flex:0 0 auto; padding:10px 14px 0}
   #ik-search{
@@ -643,7 +650,18 @@
     -webkit-appearance:none;
   }
   #ik-search::placeholder{color:var(--muted)}
-  #ik-list{flex:1; overflow-y:auto; -webkit-overflow-scrolling:touch; padding:6px 14px calc(20px + env(safe-area-inset-bottom))}
+  #ik-list{flex:1; overflow-y:auto; -webkit-overflow-scrolling:touch; padding:6px 14px calc(88px + env(safe-area-inset-bottom))}
+  /* Bouton ajouter : bouton flottant EXPLICITE (icône + libellé), même famille que les "+" ronds
+     de Contrats/Coûts mais en version étendue -- demande Mathéo 11/08/2026, le petit rond "+"
+     perdu dans l'en-tête n'était pas assez visible. */
+  #ik-add{
+    position:fixed; left:50%; transform:translateX(-50%);
+    bottom:calc(18px + env(safe-area-inset-bottom)); z-index:51;
+    display:flex; align-items:center; gap:7px; padding:13px 22px; border:0; border-radius:99px;
+    background:linear-gradient(145deg,var(--gold-a),var(--gold-b)); color:#1a1200;
+    font-size:15px; font-weight:700; cursor:pointer; white-space:nowrap;
+    box-shadow:0 6px 16px rgba(0,0,0,.35); -webkit-tap-highlight-color:transparent;
+  }
   #ik-empty, #ik-loading{color:var(--muted); text-align:center; padding:40px 20px; font-size:14px}
   #ik-dash{padding:8px 0 4px}
   #ik-etat{font-size:12px; color:var(--muted); padding:2px 4px 10px}
@@ -804,7 +822,6 @@
   .rl-card .rl-suspendre{background:#2E2E32; color:var(--ink)}
   .rl-card .rl-reprendre{background:var(--ok); color:#04210c; font-weight:700}
   .rl-suspend-note{font-size:12px; color:var(--muted); margin-top:2px}
-  .rl-promesse-note{font-size:12px; color:var(--gold-a); margin-top:2px}
   .rl-form{display:none; flex-direction:column; gap:8px; margin-top:8px; padding-top:8px; border-top:0.5px solid var(--hairline)}
   .rl-form.open{display:flex}
   .rl-form input[type=date], .rl-form textarea{
@@ -2304,8 +2321,7 @@
 <div id="ikview">
   <div id="ik-head">
     <b id="ik-title">🚗 Frais kilométriques (IK)</b>
-    <a id="ik-export" href="#" aria-label="Exporter en Excel">⬇️</a>
-    <button id="ik-add" type="button" aria-label="Ajouter un trajet">+</button>
+    <a id="ik-export" href="#" aria-label="Télécharger le tableau Excel">⬇️ Excel</a>
     <button id="ik-close" type="button" aria-label="Fermer">✕</button>
   </div>
   <div class="df-filter-group" id="ik-month-tabs"></div>
@@ -2313,6 +2329,7 @@
     <input id="ik-search" type="search" inputmode="search" placeholder="🔍 Rechercher (motif, ville…)" autocomplete="off" autocapitalize="off" autocorrect="off">
   </div>
   <div id="ik-list"></div>
+  <button id="ik-add" type="button" aria-label="Ajouter un trajet">＋ Ajouter un trajet</button>
 </div>
 
 <div id="ik-form-bg">
@@ -2623,7 +2640,7 @@
 
 <script>
 (function(){
-  var APPV = 'v3.29';
+  var APPV = 'v3.28';
 
   // Debug : ?debug_modal=1 force l'affichage du modal "nouvelle version" sans attendre un vrai
   // déploiement. Capturé ICI, tout au début, car plus bas (login mémorisé, connexion) le code
@@ -3194,20 +3211,6 @@
     // encore d'accès Gmail/Calendrier (détail dans la doc privée du dépôt) : ces
     // entrées sont masquées plutôt que de laisser un bouton qui échouerait silencieusement.
     var mcs = isMcsCode();
-    // Ping "ouverture Jarvis" (2026-08-11, demande Mathéo -- mesurer si le client s'en sert
-    // vraiment). Compte tenant secondaire uniquement, jamais le compte principal. enterApp()
-    // tourne 2x par vraie ouverture (cache puis frais, cf. plus haut) -- le flag en mémoire
-    // (reset a chaque chargement de page) dedoublonne pour compter 1 seule ouverture/session.
-    // Fire-and-forget : jamais bloquant, jamais d'erreur remontee a l'utilisateur.
-    if (mcs && !window._mcsOpenPinged){
-      window._mcsOpenPinged = true;
-      try {
-        fetch('https://n8n-self-hosted-t0pz.onrender.com/webhook/mcs-ouverture', {
-          method:'POST', headers:{'Content-Type':'application/json'},
-          body: JSON.stringify({ code: String(read('jarvisCode') || '').trim(), deviceId: getDeviceId() })
-        }).catch(function(){});
-      } catch(e){}
-    }
     // hcallbtn masqué aussi : l'assistant Vapi vocal (VAPI_ASSISTANT) est celui du compte
     // principal (jarvis-vocal), pas de risque de fuite (l'auth s'y ferait sur web_acces du
     // compte principal, un code de tenant secondaire y échoue proprement) mais l'appel
@@ -4450,6 +4453,11 @@
     recapBtn.textContent = '📊 Récap';
     recapBtn.addEventListener('click', function(){ ikActiveTab = 'recap'; ikRenderMonthTabs(); ikApplyFilter(); });
     ikMonthTabsEl.appendChild(recapBtn);
+    // Le mois en cours doit être visible sans avoir à faire défiler la barre (demande Mathéo
+    // 11/08/2026) -- l'onglet actif était bien sélectionné par défaut, mais hors champ de vue
+    // (la bande de 13 onglets s'ouvrait toujours scrollée tout à gauche, sur Janvier).
+    var activeBtn = ikMonthTabsEl.querySelector('.df-chip.active');
+    if (activeBtn) activeBtn.scrollIntoView({ inline: 'center', block: 'nearest' });
   }
 
   function ikApplyFilter(){
@@ -4950,12 +4958,6 @@
     card.appendChild(meta);
     var montant = document.createElement('span'); montant.className = 'dv-montant'; montant.textContent = fmtEuros(l.resteDu) + ' dû';
     card.appendChild(montant);
-    if (l.promesseEnCours){
-      var promesse = document.createElement('span'); promesse.className = 'rl-promesse-note';
-      var echStr = l.promesseEcheanceMs ? new Date(l.promesseEcheanceMs).toLocaleDateString('fr-FR') : '';
-      promesse.textContent = '🤝 Promesse en cours' + (echStr ? ' (' + echStr + ')' : '') + ' — « ' + l.promesseEnCours + ' »';
-      card.appendChild(promesse);
-    }
     if (l.suspendu){
       var note = document.createElement('span'); note.className = 'rl-suspend-note';
       note.textContent = 'Suspendue jusqu’au ' + fmtRelanceDateFr(l.suspenduJusquau) + (l.note ? ' — « ' + l.note + ' »' : '');
@@ -5320,23 +5322,8 @@
         row.appendChild(mid); row.appendChild(chev);
         row.addEventListener('click', function(){ clientsCourant = c; clientsOpenDetail(); });
         clientsList.appendChild(row);
-        clientsLoadOuvertures(mid);
       });
     }, function(err){ clientsList.innerHTML = '<p id="clients-empty">' + err + '</p>'; });
-  }
-
-  // Compteur "ouvertures Jarvis / jour" (2026-08-11, demande Mathéo) -- affiché directement
-  // à côté du client dans la liste racine, pour savoir d'un coup d'œil s'il s'en sert vraiment
-  // (tout ce travail n'a de valeur que si le client ouvre l'app régulièrement). Echec silencieux
-  // (pas de badge affiché) si le serveur ne répond pas -- purement informatif, jamais bloquant.
-  function clientsLoadOuvertures(mid){
-    adminPost({ action:'ouvertures', inclureAdmin: clientsIncludeAdmin }, function(j){
-      var n = (j && typeof j.aujourdhui === 'number') ? j.aujourdhui : 0;
-      var badge = document.createElement('span');
-      badge.className = 'client-ouvertures';
-      badge.textContent = '📅 ' + n + ' ouverture' + (n > 1 ? 's' : '') + ' aujourd’hui';
-      mid.appendChild(badge);
-    }, function(){ /* silencieux */ });
   }
 
   function clientsOpenDetail(){
