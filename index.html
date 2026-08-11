@@ -2035,6 +2035,53 @@
   #df-sug li:active{background:rgba(255,255,255,.1)}
   #df-row{display:flex; gap:8px}
   #cf-delete{flex:0 0 auto; padding:12px 14px; border-radius:12px}
+  /* Fiche client PINNEE en haut de la discussion (Bruno uniquement, 2026-08-11, demande Matheo) --
+     different du #devis-form ci-dessus (modal plein ecran, demo interne) : celle-ci reste EN
+     LIGNE, ancree sous l'en-tete, toujours visible, jamais un aller-retour vers un menu que
+     Bruno n'a de toute facon pas. Reutilise le MEME code serveur 'devis-submit' (colonnes
+     nom/email/adresse existantes) : le cerveau MCS est verrouille par une autre session au
+     moment ou ceci est construit (VERROU.md), donc pas de nouvelle colonne aujourd'hui --
+     telephone (pro) est replie dans le champ nom envoye, voir bcSave plus bas. */
+  #brunoClient{display:none}
+  body.bruno-mode #brunoClient{
+    display:block; flex:0 0 auto; background:#151517; border-bottom:0.5px solid var(--hairline);
+    padding:10px 14px;
+  }
+  #bc-summary{display:flex; align-items:center; gap:9px}
+  #bc-summary-ic{font-size:18px; flex:0 0 auto}
+  #bc-summary-txt{flex:1; min-width:0; font-size:14px; font-weight:600; overflow:hidden; text-overflow:ellipsis; white-space:nowrap}
+  .bc-summary-sub{display:block; font-size:11.5px; color:var(--muted); font-weight:400; margin-top:1px; white-space:nowrap; overflow:hidden; text-overflow:ellipsis}
+  #bc-new-btn, #bc-clear-btn{
+    flex:0 0 auto; font:inherit; font-size:13px; font-weight:700;
+    border-radius:10px; padding:9px 12px; cursor:pointer;
+  }
+  #bc-new-btn{color:#1a1200; background:linear-gradient(145deg,var(--gold-a),var(--gold-b)); border:none}
+  #bc-clear-btn{background:rgba(255,69,58,.13); color:#FF453A; border:0.5px solid rgba(255,69,58,.4)}
+  #bc-form{display:none; flex-direction:column; gap:9px; padding-top:2px}
+  #bc-form.open{display:flex}
+  #bc-type-toggle{display:flex; gap:6px}
+  .bc-type-btn{
+    flex:1; font:inherit; font-size:13.5px; font-weight:600; color:var(--muted);
+    background:rgba(255,255,255,.05); border:0.5px solid rgba(255,255,255,.1); border-radius:10px;
+    padding:10px 6px; cursor:pointer;
+  }
+  .bc-type-btn.active{background:rgba(232,185,106,.15); color:var(--gold-a); border-color:rgba(232,185,106,.4)}
+  #bc-form label{display:flex; flex-direction:column; gap:5px; font-size:12.5px; color:var(--muted); position:relative}
+  #bc-form input{
+    font:inherit; font-size:15px; color:var(--ink); background:#2E2E32;
+    border:0.5px solid rgba(255,255,255,.18); border-radius:10px; padding:9px 11px; box-sizing:border-box;
+  }
+  #bc-err{color:#FF453A; font-size:12.5px; min-height:1em}
+  #bc-sug{
+    list-style:none; margin:2px 0 0; padding:0; border:0.5px solid rgba(255,255,255,.18); border-radius:10px;
+    overflow:hidden; position:absolute; left:0; right:0; top:100%; background:#333336; z-index:5;
+    max-height:180px; overflow-y:auto; display:none;
+  }
+  #bc-sug.open{display:block}
+  #bc-sug li{padding:10px 11px; font-size:13.5px; color:var(--ink); border-bottom:0.5px solid rgba(255,255,255,.12); cursor:pointer}
+  #bc-sug li:last-child{border-bottom:none}
+  #bc-sug li:active{background:rgba(255,255,255,.1)}
+  #bc-row{display:flex; gap:8px; margin-top:2px}
   /* Modal "nouvelle version installee -> reactiver les notifs ?" — au-dessus de tout le reste
      (menu, panneaux plein ecran, callbar), pour etre impossible a manquer et bloquer l'interaction
      avec le reste de l'app tant qu'il n'est pas ferme. */
@@ -2221,6 +2268,32 @@
       <svg width="21" height="21" viewBox="0 0 24 24" fill="currentColor"><path d="M6.6 10.8c1.4 2.8 3.8 5.1 6.6 6.6l2.2-2.2c.3-.3.7-.4 1.1-.2 1.2.4 2.5.6 3.8.6.6 0 1 .5 1 1V20.5c0 .6-.4 1-1 1C11.5 21.5 2.5 12.5 2.5 1.7c0-.6.4-1 1-1H7c.6 0 1 .4 1 1 0 1.3.2 2.6.6 3.8.1.4 0 .8-.2 1.1L6.6 10.8Z"/></svg>
     </button>
   </header>
+  <div id="brunoClient">
+    <div id="bc-summary">
+      <span id="bc-summary-ic">👤</span>
+      <span id="bc-summary-txt">Aucun client sélectionné</span>
+      <button id="bc-new-btn" type="button">➕ Nouveau client</button>
+      <button id="bc-clear-btn" type="button" style="display:none">✕ Changer</button>
+    </div>
+    <div id="bc-form">
+      <div id="bc-type-toggle">
+        <button class="bc-type-btn active" id="bc-type-particulier" type="button">🏠 Particulier</button>
+        <button class="bc-type-btn" id="bc-type-pro" type="button">🏢 Professionnel</button>
+      </div>
+      <label id="bc-nom-wrap"><span id="bc-nom-label-txt">Nom et prénom</span> <input id="bc-nom" type="text" placeholder="Ex : Jean Martin" autocomplete="off"></label>
+      <label id="bc-tel-wrap" style="display:none">Téléphone <input id="bc-tel" type="tel" placeholder="06 12 34 56 78" autocomplete="off"></label>
+      <label>Email <input id="bc-email" type="email" placeholder="jean.martin@email.fr" autocomplete="off"></label>
+      <label>Adresse
+        <input id="bc-adresse" type="text" placeholder="Commence à taper l'adresse…" autocomplete="off">
+        <ul id="bc-sug"></ul>
+      </label>
+      <div id="bc-err"></div>
+      <div id="bc-row">
+        <button id="bc-cancel" type="button" class="vc-no">Annuler</button>
+        <button id="bc-save" type="button" class="vc-ok">Enregistrer</button>
+      </div>
+    </div>
+  </div>
   <div id="pullspin"><span class="pullspin-ic"></span></div>
   <div id="chat"></div>
   <div id="composer">
@@ -2800,7 +2873,7 @@
 
 <script>
 (function(){
-  var APPV = 'v3.35';
+  var APPV = 'v3.36';
 
   // Debug : ?debug_modal=1 force l'affichage du modal "nouvelle version" sans attendre un vrai
   // déploiement. Capturé ICI, tout au début, car plus bas (login mémorisé, connexion) le code
@@ -8183,6 +8256,125 @@
       dfSave.disabled = false;
       dfSave.textContent = 'Enregistrer';
       dfErr.textContent = err || "Impossible d'enregistrer le client.";
+    });
+  });
+
+  // ---- Fiche client PINNEE (Bruno, 2026-08-11) ----
+  // Guide Bruno pas a pas : Nouveau client -> Particulier/Professionnel -> champs -> Enregistrer
+  // -> la fiche reste affichee en haut, la barre d'ecriture invite a decrire le devis. Reutilise
+  // le meme 'devis-submit' que le formulaire ci-dessus (aucune nouvelle colonne cote serveur —
+  // le cerveau MCS est verrouille par une autre session pendant cette construction, voir
+  // VERROU.md) : pour "Professionnel", le telephone est simplement replie dans le nom envoye
+  // (ex "ACME Nuisibles — 06 12 34 56 78"), affiche seul (sans le tel) dans la fiche pinnee.
+  var bcSummary = document.getElementById('bc-summary');
+  var bcSummaryTxt = document.getElementById('bc-summary-txt');
+  var bcNewBtn = document.getElementById('bc-new-btn');
+  var bcClearBtn = document.getElementById('bc-clear-btn');
+  var bcForm = document.getElementById('bc-form');
+  var bcTypeParticulier = document.getElementById('bc-type-particulier');
+  var bcTypePro = document.getElementById('bc-type-pro');
+  var bcNomLabelTxt = document.getElementById('bc-nom-label-txt');
+  var bcTelWrap = document.getElementById('bc-tel-wrap');
+  var bcNom = document.getElementById('bc-nom');
+  var bcTel = document.getElementById('bc-tel');
+  var bcEmail = document.getElementById('bc-email');
+  var bcAdresse = document.getElementById('bc-adresse');
+  var bcSug = document.getElementById('bc-sug');
+  var bcErr = document.getElementById('bc-err');
+  var bcSave = document.getElementById('bc-save');
+  var bcAdrTimer = null;
+  var bcAdrFeats = [];
+  var bcType = 'particulier';
+  var BC_PLACEHOLDER_DEFAULT = 'Écrire à Jarvis…';
+
+  function bcSetType(t){
+    bcType = t;
+    bcTypeParticulier.classList.toggle('active', t === 'particulier');
+    bcTypePro.classList.toggle('active', t === 'pro');
+    bcNomLabelTxt.textContent = t === 'pro' ? 'Société / nom du contact' : 'Nom et prénom';
+    bcNom.placeholder = t === 'pro' ? 'Ex : ACME Nuisibles' : 'Ex : Jean Martin';
+    bcTelWrap.style.display = t === 'pro' ? '' : 'none';
+  }
+  bcTypeParticulier.addEventListener('click', function(){ bcSetType('particulier'); });
+  bcTypePro.addEventListener('click', function(){ bcSetType('pro'); });
+
+  function bcShowForm(){
+    bcSummary.style.display = 'none';
+    bcForm.classList.add('open');
+    bcNom.value = ''; bcTel.value = ''; bcEmail.value = ''; bcAdresse.value = '';
+    bcErr.textContent = '';
+    bcSug.innerHTML = ''; bcSug.classList.remove('open');
+    bcSetType('particulier');
+    setTimeout(function(){ bcNom.focus(); }, 50);
+  }
+  function bcShowSummary(){
+    bcForm.classList.remove('open');
+    bcSummary.style.display = 'flex';
+  }
+  bcNewBtn.addEventListener('click', bcShowForm);
+  document.getElementById('bc-cancel').addEventListener('click', bcShowSummary);
+  bcClearBtn.addEventListener('click', function(){
+    bcSummaryTxt.textContent = 'Aucun client sélectionné';
+    bcClearBtn.style.display = 'none';
+    bcNewBtn.style.display = '';
+    textin.placeholder = BC_PLACEHOLDER_DEFAULT;
+  });
+
+  // Autocompletion adresse : meme API (Base Adresse Nationale) que la fiche devis ci-dessus
+  bcAdresse.addEventListener('input', function(){
+    clearTimeout(bcAdrTimer);
+    var q = bcAdresse.value.trim();
+    if (q.length < 3){ bcSug.innerHTML = ''; bcSug.classList.remove('open'); return; }
+    bcAdrTimer = setTimeout(function(){
+      fetch('https://api-adresse.data.gouv.fr/search/?limit=5&autocomplete=1&q=' + encodeURIComponent(q))
+        .then(function(r){ return r.json(); })
+        .then(function(j){
+          bcAdrFeats = (j && j.features) || [];
+          bcSug.innerHTML = '';
+          bcAdrFeats.forEach(function(f){
+            var li = document.createElement('li');
+            li.textContent = f.properties.label;
+            li.addEventListener('click', function(){
+              bcAdresse.value = f.properties.label;
+              bcSug.innerHTML = ''; bcSug.classList.remove('open');
+            });
+            bcSug.appendChild(li);
+          });
+          bcSug.classList.toggle('open', bcAdrFeats.length > 0);
+        }).catch(function(){});
+    }, 250);
+  });
+
+  bcSave.addEventListener('click', function(){
+    var nomRaw = bcNom.value.trim();
+    var tel = bcTel.value.trim();
+    var email = bcEmail.value.trim();
+    var adresse = bcAdresse.value.trim();
+    bcErr.textContent = '';
+    if (!nomRaw){ bcErr.textContent = bcType === 'pro' ? 'Le nom de la société ou du contact est obligatoire.' : 'Le nom est obligatoire.'; return; }
+    if (!email || email.indexOf('@') === -1){ bcErr.textContent = 'Indique un email valide.'; return; }
+    if (!adresse){ bcErr.textContent = "L'adresse est obligatoire."; return; }
+    var nomEnvoye = (bcType === 'pro' && tel) ? (nomRaw + ' — ' + tel) : nomRaw;
+    bcSave.disabled = true;
+    bcSave.textContent = 'Enregistrement…';
+    post({ type: 'devis-submit', nom: nomEnvoye, email: email, adresse: adresse }, function(r){
+      bcSave.disabled = false;
+      bcSave.textContent = 'Enregistrer';
+      bcSummaryTxt.innerHTML = nomRaw + '<span class="bc-summary-sub"></span>';
+      bcSummaryTxt.querySelector('.bc-summary-sub').textContent = adresse;
+      bcClearBtn.style.display = '';
+      bcNewBtn.style.display = 'none';
+      // Texte generique (pas le nom du client) : un nom de societe long serait tronque dans
+      // le champ d'une seule ligne -- la fiche pinnee au-dessus montre deja qui c'est.
+      textin.placeholder = 'Écris ce qu\'il faut faire chez le client…';
+      bcShowSummary();
+      bubble('Fiche client : ' + nomRaw, 'user');
+      bubble(r.reply || 'Client enregistré.', 'jarvis');
+      renderExtras(r);
+    }, function(err){
+      bcSave.disabled = false;
+      bcSave.textContent = 'Enregistrer';
+      bcErr.textContent = err || "Impossible d'enregistrer le client.";
     });
   });
 
