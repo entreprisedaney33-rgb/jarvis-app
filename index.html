@@ -2086,6 +2086,27 @@
   #updModal p{font-size:14.5px; color:var(--muted); margin:2px 0 6px; line-height:1.42}
   .upd-row{display:flex; gap:10px; width:100%; margin-top:8px}
   .upd-row button{flex:1}
+  /* Modal de confirmation generique avant suppression (2026-08-11, demande utilisateur :
+     "j'ai peur qu'un tap sur la poubelle supprime direct") -- meme gabarit que #updModal.
+     Un native confirm() bloquait deja la suppression, mais moins coherent visuellement
+     avec le reste de l'app ; celui-ci est explicite (rouge = destructif). */
+  #delModalBg{position:fixed; inset:0; background:rgba(0,0,0,.62); display:none; z-index:70}
+  #delModalBg.open{display:block}
+  #delModal{
+    position:fixed; left:22px; right:22px; top:50%; transform:translateY(-50%) scale(.96); z-index:71;
+    background:#1C1C1E; border-radius:18px; padding:26px 22px calc(20px + env(safe-area-inset-bottom));
+    display:none; flex-direction:column; align-items:center; text-align:center; gap:8px;
+    opacity:0; transition:opacity .2s ease, transform .2s ease;
+    box-shadow:0 24px 70px rgba(0,0,0,.55); max-width:360px; margin:0 auto;
+  }
+  #delModal.open{display:flex; opacity:1; transform:translateY(-50%) scale(1)}
+  @media (prefers-reduced-motion: reduce){#delModal{transition:none}}
+  #delModal b{font-size:17.5px; font-weight:700; line-height:1.3}
+  #delModal p{font-size:14px; color:var(--muted); margin:4px 0 10px; line-height:1.42}
+  .del-row{display:flex; gap:10px; width:100%}
+  .del-row button{flex:1; font:inherit; font-size:15.5px; font-weight:600; padding:12px; border-radius:12px; border:none; cursor:pointer}
+  #delModalCancel{background:rgba(255,255,255,.1); color:var(--ink)}
+  #delModalConfirm{background:#FF453A; color:#fff}
   /* Pop-up "bilan a 30 jours" PLUME -- meme gabarit que le modal de mise a jour (#updModal),
      ids distincts pour ne jamais entrer en collision si les deux existaient un jour ensemble. */
   #plumeBilanBg{position:fixed; inset:0; background:rgba(0,0,0,.62); display:none; z-index:70}
@@ -2373,6 +2394,7 @@
           <div class="couts-stat"><span class="cs-label">Mois en cours</span><span class="cs-value" id="cs-mois">—</span><span class="cs-sub">depuis le 1er du mois</span></div>
           <div class="couts-stat"><span class="cs-label">Projection fin de mois</span><span class="cs-value" id="cs-proj">—</span><span class="cs-sub">estimation</span></div>
           <div class="couts-stat"><span class="cs-label">Mois dernier</span><span class="cs-value" id="cs-precedent">—</span><span class="cs-sub">mois complet</span></div>
+          <div class="couts-stat" style="grid-column:1 / -1"><span class="cs-label">Total abonnements suivis</span><span class="cs-value" id="cs-abo-total">—</span><span class="cs-sub">par mois, tous les abonnements ci-dessous cumulés</span></div>
         </div>
         <div id="couts-curve-head">📈 Évolution — 30 derniers jours</div>
         <div id="couts-curve"></div>
@@ -2382,6 +2404,17 @@
     </div>
     <div id="couts-abo-head">Abonnements (gérés ici)</div>
     <div id="couts-abo-rows"></div>
+  </div>
+</div>
+
+<div id="delModalBg"></div>
+<div id="delModal">
+  <span class="upd-emoji">🗑</span>
+  <b id="delModalTitle">Supprimer ?</b>
+  <p id="delModalMsg"></p>
+  <div class="del-row">
+    <button id="delModalCancel" type="button">Annuler</button>
+    <button id="delModalConfirm" type="button">Supprimer</button>
   </div>
 </div>
 
@@ -2885,7 +2918,7 @@
 
 <script>
 (function(){
-  var APPV = 'v3.40';
+  var APPV = 'v3.41';
 
   // Debug : ?debug_modal=1 force l'affichage du modal "nouvelle version" sans attendre un vrai
   // déploiement. Capturé ICI, tout au début, car plus bas (login mémorisé, connexion) le code
@@ -3855,6 +3888,23 @@
   document.getElementById('sh-docs').addEventListener('click', function(){ sheetOpen(false); docsOpen(); });
   document.getElementById('docs-close').addEventListener('click', docsClose);
 
+  // ---- Confirmation generique avant suppression (2026-08-11) ----
+  var delModalBg = document.getElementById('delModalBg');
+  var delModal = document.getElementById('delModal');
+  var delModalPendingYes = null;
+  function askConfirm(title, msg, onYes){
+    document.getElementById('delModalTitle').textContent = title;
+    document.getElementById('delModalMsg').textContent = msg;
+    delModalPendingYes = onYes;
+    delModalBg.classList.add('open'); delModal.classList.add('open');
+  }
+  function closeConfirm(){ delModalBg.classList.remove('open'); delModal.classList.remove('open'); delModalPendingYes = null; }
+  document.getElementById('delModalCancel').addEventListener('click', closeConfirm);
+  delModalBg.addEventListener('click', closeConfirm);
+  document.getElementById('delModalConfirm').addEventListener('click', function(){
+    var fn = delModalPendingYes; closeConfirm(); if (fn) fn();
+  });
+
   // ---- 💰 Coûts (gestion des abonnements fixes, auto-service, 2026-08-09) ----
   var coutsview = document.getElementById('coutsview');
   var coutsAboRows = document.getElementById('couts-abo-rows');
@@ -3877,12 +3927,13 @@
     var del = document.createElement('button'); del.className = 'couts-del'; del.type = 'button';
     del.setAttribute('aria-label', 'Supprimer'); del.textContent = '🗑';
     del.addEventListener('click', function(){
-      if (!confirm('Supprimer "' + c.nom + '" ?\n(réversible côté données : l\'historique déjà collecté est conservé, seul le suivi futur s\'arrête)')) return;
-      post({ type:'couts-supprimer', id:c.id }, function(){
-        toast('🗑 Abonnement supprimé');
-        try { localStorage.removeItem('jarvisCoutsListe'); } catch(e){}
-        coutsLoad();
-      }, function(err){ toast(err || 'Erreur.'); });
+      askConfirm('Supprimer cet abonnement ?', '« ' + c.nom + ' » — réversible côté données : l’historique déjà collecté est conservé, seul le suivi futur s’arrête.', function(){
+        post({ type:'couts-supprimer', id:c.id }, function(){
+          toast('🗑 Abonnement supprimé');
+          try { localStorage.removeItem('jarvisCoutsListe'); } catch(e){}
+          coutsLoad();
+        }, function(err){ toast(err || 'Erreur.'); });
+      });
     });
     row.appendChild(mid); row.appendChild(montant); row.appendChild(del);
     return row;
@@ -3920,6 +3971,7 @@
       document.getElementById('cs-mois').textContent = coutsEur(j.totalMois);
       document.getElementById('cs-proj').textContent = coutsEur(j.projectionMois);
       document.getElementById('cs-precedent').textContent = coutsEur(j.totalMoisPrecedent);
+      document.getElementById('cs-abo-total').textContent = coutsEur(j.totalAbonnementsMensuel || 0);
       var curve = document.getElementById('couts-curve');
       curve.innerHTML = '';
       var jours = j.courbe || [];
