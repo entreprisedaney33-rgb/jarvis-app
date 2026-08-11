@@ -423,6 +423,7 @@
   .client-mid{flex:1; min-width:0}
   .client-nom{font-size:15px; font-weight:600; display:block}
   .client-info{font-size:12.5px; color:var(--muted); display:block; margin-top:2px; white-space:nowrap; overflow:hidden; text-overflow:ellipsis}
+  .client-ouvertures{font-size:12.5px; color:var(--muted); display:block; margin-top:3px}
   .client-date{font-size:11.5px; color:var(--muted); flex:0 0 auto}
   #clients-empty, #clients-loading{color:var(--muted); text-align:center; padding:40px 20px; font-size:14px}
   /* Panneau plein ecran "Devis a valider" (compte patron d'un tenant secondaire uniquement) */
@@ -2621,7 +2622,7 @@
 
 <script>
 (function(){
-  var APPV = 'v3.27';
+  var APPV = 'v3.28';
 
   // Debug : ?debug_modal=1 force l'affichage du modal "nouvelle version" sans attendre un vrai
   // déploiement. Capturé ICI, tout au début, car plus bas (login mémorisé, connexion) le code
@@ -3192,6 +3193,20 @@
     // encore d'accès Gmail/Calendrier (détail dans la doc privée du dépôt) : ces
     // entrées sont masquées plutôt que de laisser un bouton qui échouerait silencieusement.
     var mcs = isMcsCode();
+    // Ping "ouverture Jarvis" (2026-08-11, demande Mathéo -- mesurer si le client s'en sert
+    // vraiment). Compte tenant secondaire uniquement, jamais le compte principal. enterApp()
+    // tourne 2x par vraie ouverture (cache puis frais, cf. plus haut) -- le flag en mémoire
+    // (reset a chaque chargement de page) dedoublonne pour compter 1 seule ouverture/session.
+    // Fire-and-forget : jamais bloquant, jamais d'erreur remontee a l'utilisateur.
+    if (mcs && !window._mcsOpenPinged){
+      window._mcsOpenPinged = true;
+      try {
+        fetch('https://n8n-self-hosted-t0pz.onrender.com/webhook/mcs-ouverture', {
+          method:'POST', headers:{'Content-Type':'application/json'},
+          body: JSON.stringify({ code: String(read('jarvisCode') || '').trim(), deviceId: getDeviceId() })
+        }).catch(function(){});
+      } catch(e){}
+    }
     // hcallbtn masqué aussi : l'assistant Vapi vocal (VAPI_ASSISTANT) est celui du compte
     // principal (jarvis-vocal), pas de risque de fuite (l'auth s'y ferait sur web_acces du
     // compte principal, un code de tenant secondaire y échoue proprement) mais l'appel
@@ -5298,8 +5313,23 @@
         row.appendChild(mid); row.appendChild(chev);
         row.addEventListener('click', function(){ clientsCourant = c; clientsOpenDetail(); });
         clientsList.appendChild(row);
+        clientsLoadOuvertures(mid);
       });
     }, function(err){ clientsList.innerHTML = '<p id="clients-empty">' + err + '</p>'; });
+  }
+
+  // Compteur "ouvertures Jarvis / jour" (2026-08-11, demande Mathéo) -- affiché directement
+  // à côté du client dans la liste racine, pour savoir d'un coup d'œil s'il s'en sert vraiment
+  // (tout ce travail n'a de valeur que si le client ouvre l'app régulièrement). Echec silencieux
+  // (pas de badge affiché) si le serveur ne répond pas -- purement informatif, jamais bloquant.
+  function clientsLoadOuvertures(mid){
+    adminPost({ action:'ouvertures', inclureAdmin: clientsIncludeAdmin }, function(j){
+      var n = (j && typeof j.aujourdhui === 'number') ? j.aujourdhui : 0;
+      var badge = document.createElement('span');
+      badge.className = 'client-ouvertures';
+      badge.textContent = '📅 ' + n + ' ouverture' + (n > 1 ? 's' : '') + ' aujourd’hui';
+      mid.appendChild(badge);
+    }, function(){ /* silencieux */ });
   }
 
   function clientsOpenDetail(){
