@@ -2080,6 +2080,21 @@
   #bc-sug li:last-child{border-bottom:none}
   #bc-sug li:active{background:rgba(255,255,255,.1)}
   #bc-row{display:flex; gap:8px; margin-top:2px}
+  /* Autocompletion nom/residence/represente-par (11/08/2026) -- meme style que #bc-sug/#df-sug,
+     factorise ici plutot que duplique 7 fois (fiche Bruno + fiche Mickael, 2 champs chacune
+     partagent deja bc-sug/df-sug pour Adresse). */
+  #bc-nom-sug, #bc-residence-sug, #bc-contact-sug, #bc-ville-sug, #df-nom-sug, #df-residence-sug, #df-ville-sug, #df-contact-sug{
+    list-style:none; margin:2px 0 0; padding:0; border:0.5px solid rgba(255,255,255,.18); border-radius:10px;
+    overflow:hidden; position:absolute; left:0; right:0; top:100%; background:#333336; z-index:5;
+    max-height:180px; overflow-y:auto; display:none;
+  }
+  #bc-nom-sug.open, #bc-residence-sug.open, #bc-contact-sug.open, #bc-ville-sug.open, #df-nom-sug.open, #df-residence-sug.open, #df-ville-sug.open, #df-contact-sug.open{display:block}
+  #bc-nom-sug li, #bc-residence-sug li, #bc-contact-sug li, #bc-ville-sug li, #df-nom-sug li, #df-residence-sug li, #df-ville-sug li, #df-contact-sug li{
+    padding:10px 11px; font-size:13.5px; color:var(--ink); border-bottom:0.5px solid rgba(255,255,255,.12); cursor:pointer;
+  }
+  #bc-nom-sug li:last-child, #bc-residence-sug li:last-child, #bc-contact-sug li:last-child, #bc-ville-sug li:last-child, #df-nom-sug li:last-child, #df-residence-sug li:last-child, #df-ville-sug li:last-child, #df-contact-sug li:last-child{border-bottom:none}
+  #bc-nom-sug li:active, #bc-residence-sug li:active, #bc-contact-sug li:active, #bc-ville-sug li:active, #df-nom-sug li:active, #df-residence-sug li:active, #df-ville-sug li:active, #df-contact-sug li:active{background:rgba(255,255,255,.1)}
+  #df-type-toggle{display:flex; gap:6px}
   /* Modal "nouvelle version installee -> reactiver les notifs ?" — au-dessus de tout le reste
      (menu, panneaux plein ecran, callbar), pour etre impossible a manquer et bloquer l'interaction
      avec le reste de l'app tant qu'il n'est pas ferme. */
@@ -2299,9 +2314,13 @@
         <button class="bc-type-btn active" id="bc-type-particulier" type="button">🏠 Particulier</button>
         <button class="bc-type-btn" id="bc-type-pro" type="button">🏢 Professionnel</button>
       </div>
-      <label id="bc-nom-wrap"><span id="bc-nom-label-txt">Nom et prénom</span> <input id="bc-nom" type="text" placeholder="Ex : Jean Martin" autocomplete="off"></label>
+      <label id="bc-nom-wrap"><span id="bc-nom-label-txt">Nom et prénom</span>
+        <input id="bc-nom" type="text" placeholder="Ex : Jean Martin" autocomplete="off">
+        <ul id="bc-nom-sug"></ul>
+      </label>
       <label id="bc-residence-wrap" style="display:none">Nom de la Résidence (facultatif)
         <input id="bc-residence" type="text" placeholder="Ex : Résidence Les Tilleuls" autocomplete="off">
+        <ul id="bc-residence-sug"></ul>
       </label>
       <label id="bc-ville-wrap" style="display:none">Ville d'intervention (facultatif)
         <input id="bc-ville" type="text" placeholder="Commence à taper la ville…" autocomplete="off">
@@ -2310,7 +2329,10 @@
       <label id="bc-nature-wrap">Nature de la prestation (facultatif)
         <input id="bc-nature" type="text" placeholder="Ex : Contrat entretien VMC" autocomplete="off">
       </label>
-      <label id="bc-contact-wrap" style="display:none">Représenté par (facultatif) <input id="bc-contact" type="text" placeholder="Ex : Mme Dupont, syndic" autocomplete="off"></label>
+      <label id="bc-contact-wrap" style="display:none">Représenté par (facultatif)
+        <input id="bc-contact" type="text" placeholder="Ex : Mme Dupont, syndic" autocomplete="off">
+        <ul id="bc-contact-sug"></ul>
+      </label>
       <label>Téléphone (facultatif) <input id="bc-tel" type="tel" placeholder="06 12 34 56 78" autocomplete="off"></label>
       <label>Email <input id="bc-email" type="email" placeholder="jean.martin@email.fr" autocomplete="off"></label>
       <label id="bc-email-fact-wrap" style="display:none">Email de facturation (facultatif) <input id="bc-email-fact" type="email" placeholder="compta@societe.fr" autocomplete="off"></label>
@@ -2894,10 +2916,34 @@
 <div id="devis-form-bg"></div>
 <div id="devis-form">
   <b>Fiche client — devis</b>
-  <p class="dfhint">Démo pour MCS : le client est enregistré. Décris ensuite ses besoins (à l'oral ou par écrit) pour générer son devis.</p>
-  <label>Nom et prénom <input id="df-nom" type="text" placeholder="Ex : Jean Martin" autocomplete="off"></label>
+  <p class="dfhint">Le client est enregistré. Décris ensuite ses besoins (à l'oral ou par écrit) pour générer son devis.</p>
+  <div id="df-type-toggle">
+    <button class="bc-type-btn active" id="df-type-particulier" type="button">🏠 Particulier</button>
+    <button class="bc-type-btn" id="df-type-pro" type="button">🏢 Professionnel</button>
+  </div>
+  <label id="df-nom-wrap"><span id="df-nom-label-txt">Nom et prénom</span>
+    <input id="df-nom" type="text" placeholder="Ex : Jean Martin" autocomplete="off">
+    <ul id="df-nom-sug"></ul>
+  </label>
+  <label id="df-residence-wrap" style="display:none">Nom de la Résidence (facultatif)
+    <input id="df-residence" type="text" placeholder="Ex : Résidence Les Tilleuls" autocomplete="off">
+    <ul id="df-residence-sug"></ul>
+  </label>
+  <label id="df-ville-wrap" style="display:none">Ville d'intervention (facultatif)
+    <input id="df-ville" type="text" placeholder="Commence à taper la ville…" autocomplete="off">
+    <ul id="df-ville-sug"></ul>
+  </label>
+  <label id="df-nature-wrap">Nature de la prestation (facultatif)
+    <input id="df-nature" type="text" placeholder="Ex : Contrat entretien VMC" autocomplete="off">
+  </label>
+  <label id="df-contact-wrap" style="display:none">Représenté par (facultatif)
+    <input id="df-contact" type="text" placeholder="Ex : Mme Dupont, syndic" autocomplete="off">
+    <ul id="df-contact-sug"></ul>
+  </label>
+  <label>Téléphone (facultatif) <input id="df-tel" type="tel" placeholder="06 12 34 56 78" autocomplete="off"></label>
   <label>Email <input id="df-email" type="email" placeholder="jean.martin@email.fr" autocomplete="off"></label>
-  <label>Adresse
+  <label id="df-email-fact-wrap" style="display:none">Email de facturation (facultatif) <input id="df-email-fact" type="email" placeholder="compta@societe.fr" autocomplete="off"></label>
+  <label>Adresse de facturation
     <input id="df-adresse" type="text" placeholder="Commence à taper l'adresse…" autocomplete="off">
     <ul id="df-sug"></ul>
   </label>
@@ -2942,7 +2988,7 @@
 
 <script>
 (function(){
-  var APPV = 'v3.44';
+  var APPV = 'v3.45';
 
   // Debug : ?debug_modal=1 force l'affichage du modal "nouvelle version" sans attendre un vrai
   // déploiement. Capturé ICI, tout au début, car plus bas (login mémorisé, connexion) le code
@@ -8420,24 +8466,108 @@
   document.getElementById('sh-calendar').addEventListener('click', function(){ sheetOpen(false); calendarOpen(); });
   document.getElementById('cal-close').addEventListener('click', calendarClose);
 
-  // ---- Fiche client devis (demo MCS) ----
+  // ---- Fiche client devis (Mickael -- alignee sur les memes champs que la fiche pinnee de
+  // Bruno, 2026-08-11, demande explicite : "aligne le formulaire de Mickael aussi") ----
   var devisFormBg = document.getElementById('devis-form-bg');
   var devisForm = document.getElementById('devis-form');
+  var dfTypeParticulier = document.getElementById('df-type-particulier');
+  var dfTypePro = document.getElementById('df-type-pro');
+  var dfNomLabelTxt = document.getElementById('df-nom-label-txt');
+  var dfResidenceWrap = document.getElementById('df-residence-wrap');
+  var dfVilleWrap = document.getElementById('df-ville-wrap');
+  var dfContactWrap = document.getElementById('df-contact-wrap');
+  var dfEmailFactWrap = document.getElementById('df-email-fact-wrap');
   var dfNom = document.getElementById('df-nom');
+  var dfNomSug = document.getElementById('df-nom-sug');
+  var dfResidence = document.getElementById('df-residence');
+  var dfResidenceSug = document.getElementById('df-residence-sug');
+  var dfVille = document.getElementById('df-ville');
+  var dfVilleSug = document.getElementById('df-ville-sug');
+  var dfNature = document.getElementById('df-nature');
+  var dfContact = document.getElementById('df-contact');
+  var dfContactSug = document.getElementById('df-contact-sug');
+  var dfTel = document.getElementById('df-tel');
   var dfEmail = document.getElementById('df-email');
+  var dfEmailFact = document.getElementById('df-email-fact');
   var dfAdresse = document.getElementById('df-adresse');
   var dfSug = document.getElementById('df-sug');
   var dfSave = document.getElementById('df-save');
   var dfErr = document.getElementById('df-err');
   var dfAdrTimer = null;
   var dfAdrFeats = [];
+  var dfType = 'particulier';
+
+  // Autocompletion generique contre NOTRE base (contacts MEG / carnet bleu des residences),
+  // meme principe que l'autocompletion d'adresse (BAN) mais sur nos propres donnees -- demande
+  // explicite : "on a une base de donnees clients deja, ca pourrait se faire non ?". Reutilisee
+  // sur les 2 fiches (Bruno et Mickael) et sur les 3 champs concernes (nom, residence, represente
+  // par -- ce dernier recherche aussi dans les contacts, un gestionnaire/syndic est souvent
+  // lui-meme deja une fiche contact MEG, ex "FONCIA AQUITAINE").
+  function wireSearchAutocomplete(inputEl, sugEl, searchType, onSelect){
+    var timer = null;
+    inputEl.addEventListener('input', function(){
+      clearTimeout(timer);
+      var q = inputEl.value.trim();
+      if (q.length < 2){ sugEl.innerHTML = ''; sugEl.classList.remove('open'); return; }
+      timer = setTimeout(function(){
+        post({ type: searchType, query: q }, function(r){
+          var items = (r && r.results) || [];
+          sugEl.innerHTML = '';
+          items.forEach(function(item){
+            var li = document.createElement('li');
+            li.textContent = item.nom;
+            li.addEventListener('click', function(){
+              sugEl.innerHTML = ''; sugEl.classList.remove('open');
+              onSelect(item);
+            });
+            sugEl.appendChild(li);
+          });
+          sugEl.classList.toggle('open', items.length > 0);
+        }, function(){});
+      }, 250);
+    });
+  }
+
+  function dfSetType(t){
+    dfType = t;
+    dfTypeParticulier.classList.toggle('active', t === 'particulier');
+    dfTypePro.classList.toggle('active', t === 'pro');
+    dfNomLabelTxt.textContent = t === 'pro' ? 'Nom de la société' : 'Nom et prénom';
+    dfNom.placeholder = t === 'pro' ? 'Ex : ACME Nuisibles' : 'Ex : Jean Martin';
+    dfResidenceWrap.style.display = t === 'pro' ? '' : 'none';
+    dfVilleWrap.style.display = t === 'pro' ? '' : 'none';
+    dfContactWrap.style.display = t === 'pro' ? '' : 'none';
+    dfEmailFactWrap.style.display = t === 'pro' ? '' : 'none';
+  }
+  dfTypeParticulier.addEventListener('click', function(){ dfSetType('particulier'); });
+  dfTypePro.addEventListener('click', function(){ dfSetType('pro'); });
+
+  wireSearchAutocomplete(dfNom, dfNomSug, 'client-search', function(item){
+    dfNom.value = item.nom;
+    if (!dfEmail.value.trim() && item.email) dfEmail.value = item.email;
+    if (!dfAdresse.value.trim() && item.adresse) dfAdresse.value = item.adresse;
+  });
+  wireSearchAutocomplete(dfResidence, dfResidenceSug, 'residence-search', function(item){
+    dfResidence.value = item.nom;
+    if (!dfVille.value.trim() && item.adresse) dfVille.value = item.adresse;
+  });
+  wireSearchAutocomplete(dfContact, dfContactSug, 'client-search', function(item){
+    dfContact.value = item.nom;
+    if (!dfEmailFact.value.trim() && item.email) dfEmailFact.value = item.email;
+  });
 
   function devisOpen(){
     sheetOpen(false);
-    dfNom.value = ''; dfEmail.value = ''; dfAdresse.value = '';
+    dfNom.value = ''; dfResidence.value = ''; dfVille.value = ''; dfNature.value = '';
+    dfContact.value = ''; dfTel.value = ''; dfEmail.value = ''; dfEmailFact.value = ''; dfAdresse.value = '';
     dfSug.classList.remove('open'); dfSug.innerHTML = '';
+    dfNomSug.classList.remove('open'); dfNomSug.innerHTML = '';
+    dfResidenceSug.classList.remove('open'); dfResidenceSug.innerHTML = '';
+    dfVilleSug.classList.remove('open'); dfVilleSug.innerHTML = '';
+    dfContactSug.classList.remove('open'); dfContactSug.innerHTML = '';
     dfErr.textContent = '';
     dfSave.disabled = false;
+    dfSetType('particulier');
     devisFormBg.classList.add('open');
     devisForm.classList.add('open');
     setTimeout(function(){ dfNom.focus(); }, 50);
@@ -8477,15 +8607,30 @@
 
   dfSave.addEventListener('click', function(){
     var nom = dfNom.value.trim();
+    var residence = dfResidence.value.trim();
+    var ville = dfVille.value.trim();
+    var nature = dfNature.value.trim();
+    var contact = dfContact.value.trim();
+    var tel = dfTel.value.trim();
     var email = dfEmail.value.trim();
+    var emailFact = dfEmailFact.value.trim();
     var adresse = dfAdresse.value.trim();
     dfErr.textContent = '';
-    if (!nom){ dfErr.textContent = 'Le nom est obligatoire.'; return; }
+    if (!nom){ dfErr.textContent = dfType === 'pro' ? 'Le nom de la société est obligatoire.' : 'Le nom est obligatoire.'; return; }
     if (!email || email.indexOf('@') === -1){ dfErr.textContent = 'Indique un email valide.'; return; }
+    if (emailFact && emailFact.indexOf('@') === -1){ dfErr.textContent = "L'email de facturation n'est pas valide."; return; }
     if (!adresse){ dfErr.textContent = "L'adresse est obligatoire."; return; }
     dfSave.disabled = true;
     dfSave.textContent = 'Enregistrement…';
-    post({ type: 'devis-submit', nom: nom, email: email, adresse: adresse }, function(r){
+    post({
+      type: 'devis-submit', nom: nom, email: email, adresse: adresse, telephone: tel,
+      clientType: dfType === 'pro' ? 'professionnel' : 'particulier',
+      residence: dfType === 'pro' ? residence : '',
+      ville: dfType === 'pro' ? ville : '',
+      nature: nature,
+      contactGestionnaire: dfType === 'pro' ? contact : '',
+      emailFacturation: dfType === 'pro' ? emailFact : ''
+    }, function(r){
       dfSave.disabled = false;
       dfSave.textContent = 'Enregistrer';
       devisClose();
@@ -8517,11 +8662,14 @@
   var bcContactWrap = document.getElementById('bc-contact-wrap');
   var bcEmailFactWrap = document.getElementById('bc-email-fact-wrap');
   var bcNom = document.getElementById('bc-nom');
+  var bcNomSug = document.getElementById('bc-nom-sug');
   var bcResidence = document.getElementById('bc-residence');
+  var bcResidenceSug = document.getElementById('bc-residence-sug');
   var bcVille = document.getElementById('bc-ville');
   var bcNature = document.getElementById('bc-nature');
   var bcVilleSug = document.getElementById('bc-ville-sug');
   var bcContact = document.getElementById('bc-contact');
+  var bcContactSug = document.getElementById('bc-contact-sug');
   var bcTel = document.getElementById('bc-tel');
   var bcEmail = document.getElementById('bc-email');
   var bcEmailFact = document.getElementById('bc-email-fact');
@@ -8558,13 +8706,32 @@
   bcTypeParticulier.addEventListener('click', function(){ bcSetType('particulier'); });
   bcTypePro.addEventListener('click', function(){ bcSetType('pro'); });
 
+  // Autocompletion nom/residence/represente-par contre notre base (wireSearchAutocomplete
+  // definie plus haut, section fiche devis de Mickael) -- meme fonction reutilisee ici.
+  wireSearchAutocomplete(bcNom, bcNomSug, 'client-search', function(item){
+    bcNom.value = item.nom;
+    if (!bcEmail.value.trim() && item.email) bcEmail.value = item.email;
+    if (!bcAdresse.value.trim() && item.adresse) bcAdresse.value = item.adresse;
+  });
+  wireSearchAutocomplete(bcResidence, bcResidenceSug, 'residence-search', function(item){
+    bcResidence.value = item.nom;
+    if (!bcVille.value.trim() && item.adresse) bcVille.value = item.adresse;
+  });
+  wireSearchAutocomplete(bcContact, bcContactSug, 'client-search', function(item){
+    bcContact.value = item.nom;
+    if (!bcEmailFact.value.trim() && item.email) bcEmailFact.value = item.email;
+  });
+
   function bcShowForm(){
     bcSummary.style.display = 'none';
     bcForm.classList.add('open');
     bcNom.value = ''; bcResidence.value = ''; bcVille.value = ''; bcNature.value = ''; bcContact.value = ''; bcTel.value = ''; bcEmail.value = ''; bcEmailFact.value = ''; bcAdresse.value = '';
     bcErr.textContent = '';
     bcSug.innerHTML = ''; bcSug.classList.remove('open');
+    bcNomSug.innerHTML = ''; bcNomSug.classList.remove('open');
+    bcResidenceSug.innerHTML = ''; bcResidenceSug.classList.remove('open');
     bcVilleSug.innerHTML = ''; bcVilleSug.classList.remove('open');
+    bcContactSug.innerHTML = ''; bcContactSug.classList.remove('open');
     bcSetType('particulier');
     setTimeout(function(){ bcNom.focus(); }, 50);
   }
