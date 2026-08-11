@@ -977,6 +977,56 @@
   .pf-nom{font-size:15px; font-weight:700; display:block}
   .pf-meta{font-size:12.5px; color:var(--muted); display:block; margin-top:3px}
   .pf-montant{font-size:14px; font-weight:700; color:var(--gold-a); display:block; margin-top:4px}
+  /* Panneau plein ecran "Mes contacts" (memoire relationnelle MCS, 2026-08-11) -- meme gabarit
+     que Portefeuille clients (#portefeuilleview), prefixe rel- pour ses specificites. Patron
+     d'un tenant secondaire uniquement, lecture seule (la correction se fait toujours au chat,
+     "retiens que..."). */
+  #relationsview{
+    position:fixed; inset:0; z-index:50; background:var(--bg);
+    display:none; flex-direction:column;
+    transform:translateY(100%); transition:transform .28s cubic-bezier(.2,.9,.25,1);
+  }
+  #relationsview.open{display:flex; transform:translateY(0)}
+  @media (prefers-reduced-motion: reduce){#relationsview{transition:none}}
+  #relations-head{
+    flex:0 0 auto; display:flex; align-items:center; gap:10px;
+    padding:calc(10px + env(safe-area-inset-top)) 14px 12px;
+    border-bottom:0.5px solid var(--hairline);
+  }
+  #relations-head b{font-size:16px; flex:1}
+  #relations-close{
+    width:32px; height:32px; border-radius:50%; border:0; flex:0 0 auto;
+    background:var(--surface); color:var(--ink); font-size:16px;
+    display:flex; align-items:center; justify-content:center; cursor:pointer;
+    -webkit-tap-highlight-color:transparent;
+  }
+  #relations-tabs{
+    flex:0 0 auto; display:flex; gap:8px; padding:10px 14px; overflow-x:auto; -webkit-overflow-scrolling:touch;
+    border-bottom:0.5px solid var(--hairline);
+  }
+  .rel-tab{
+    flex:0 0 auto; padding:8px 14px; border-radius:99px; border:0; font-size:13px; font-weight:700;
+    background:var(--surface); color:var(--muted); cursor:pointer; -webkit-tap-highlight-color:transparent;
+    white-space:nowrap;
+  }
+  .rel-tab.active{background:var(--gold-a); color:#1a1200}
+  #relations-search-wrap{flex:0 0 auto; padding:10px 14px 0}
+  #relations-search{
+    width:100%; box-sizing:border-box; border:none; border-radius:12px;
+    background:var(--surface); color:var(--ink); font-size:15px; padding:10px 12px;
+    -webkit-appearance:none;
+  }
+  #relations-search::placeholder{color:var(--muted)}
+  #relations-summary{font-size:12.5px; color:var(--muted); text-align:center; margin:10px 14px 0}
+  #relations-list{flex:1; overflow-y:auto; -webkit-overflow-scrolling:touch; padding:10px 14px calc(20px + env(safe-area-inset-bottom))}
+  #relations-empty, #relations-loading{color:var(--muted); text-align:center; padding:40px 20px; font-size:14px}
+  .rel-card{background:var(--surface); border-radius:14px; padding:12px 14px; margin-bottom:10px}
+  .rel-top{display:flex; align-items:center; gap:8px; flex-wrap:wrap}
+  .rel-nom{font-size:15px; font-weight:700}
+  .rel-badge{font-size:11px; font-weight:700; padding:3px 9px; border-radius:99px; background:#2E2E32; color:var(--muted); text-transform:capitalize}
+  .rel-resume{font-size:13.5px; color:var(--ink); display:block; margin-top:6px; line-height:1.4}
+  .rel-meta{font-size:12px; color:var(--muted); display:block; margin-top:6px}
+  .rel-promesse{font-size:12.5px; color:var(--gold-a); display:block; margin-top:6px}
   /* Panneau plein ecran "Rentabilite" (compte patron d'un tenant secondaire uniquement) */
   #rentaview{
     position:fixed; inset:0; z-index:50; background:var(--bg);
@@ -2134,6 +2184,7 @@
     <button class="sh-item" id="sh-relances" type="button" style="display:none"><span class="sh-ic">📨</span><span class="sh-label">Relances clients</span><span class="badge-count" id="menu-relances-badge" style="display:none"></span></button>
     <button class="sh-item" id="sh-carnet" type="button" style="display:none"><span class="sh-ic">📘</span><span class="sh-label">Carnet bleu</span></button>
     <button class="sh-item" id="sh-portefeuille" type="button" style="display:none"><span class="sh-ic">📇</span><span class="sh-label">Portefeuille clients</span></button>
+    <button class="sh-item" id="sh-relations" type="button" style="display:none"><span class="sh-ic">👥</span><span class="sh-label">Mes contacts</span></button>
     <button class="sh-item" id="sh-push" type="button"><span class="sh-ic">🔔</span><span class="sh-label">Notifications</span><span class="sw" id="sw-push"><span class="sw-knob"></span></span></button>
   </div>
   <div class="sh-group">
@@ -2423,6 +2474,22 @@
   <p id="portefeuille-note"></p>
   <div id="portefeuille-list"></div>
 </div>
+
+<div id="relationsview">
+  <div id="relations-head">
+    <b>👥 Mes contacts</b>
+    <button id="relations-close" type="button" aria-label="Fermer">✕</button>
+  </div>
+  <div id="relations-tabs">
+    <button class="rel-tab active" data-tab="tous" type="button">Tous</button>
+    <button class="rel-tab" data-tab="promesse" type="button">🤝 Avec promesse</button>
+  </div>
+  <div id="relations-search-wrap">
+    <input id="relations-search" type="search" inputmode="search" placeholder="🔍 Rechercher un nom, une société…" autocomplete="off" autocapitalize="off" autocorrect="off">
+  </div>
+  <p id="relations-summary"></p>
+  <div id="relations-list"></div>
+</div>
 <div id="carnet-add-bg"></div>
 <div id="carnet-add-form">
   <b>Nouvelle résidence</b>
@@ -2655,7 +2722,7 @@
 
 <script>
 (function(){
-  var APPV = 'v3.32';
+  var APPV = 'v3.33';
 
   // Debug : ?debug_modal=1 force l'affichage du modal "nouvelle version" sans attendre un vrai
   // déploiement. Capturé ICI, tout au début, car plus bas (login mémorisé, connexion) le code
@@ -2717,6 +2784,7 @@
   var API_RELANCES_ACTION = 'https://n8n-self-hosted-t0pz.onrender.com/webhook/mcs-relances-action';
   var API_CARNET = 'https://n8n-self-hosted-t0pz.onrender.com/webhook/mcs-carnet';
   var API_PORTEFEUILLE = 'https://n8n-self-hosted-t0pz.onrender.com/webhook/mcs-portefeuille';
+  var API_RELATIONS = 'https://n8n-self-hosted-t0pz.onrender.com/webhook/mcs-relations-liste';
   var API_CONTRATS = 'https://n8n-self-hosted-t0pz.onrender.com/webhook/mcs-contrats';
   var API_IK = 'https://n8n-self-hosted-t0pz.onrender.com/webhook/mcs-ik';
   var API_IK_EXPORT = 'https://n8n-self-hosted-t0pz.onrender.com/webhook/mcs-ik-export';
@@ -2935,6 +3003,7 @@
   function postRelancesAction(payload, onOk, onErr){ postDevisWeb(API_RELANCES_ACTION, payload, onOk, onErr); }
   function postCarnet(payload, onOk, onErr){ postDevisWeb(API_CARNET, payload, onOk, onErr); }
   function postPortefeuille(payload, onOk, onErr){ postDevisWeb(API_PORTEFEUILLE, payload, onOk, onErr); }
+  function postRelations(payload, onOk, onErr){ postDevisWeb(API_RELATIONS, payload, onOk, onErr); }
   function postContrats(payload, onOk, onErr){ postDevisWeb(API_CONTRATS, payload, onOk, onErr); }
   function postIk(payload, onOk, onErr){ postDevisWeb(API_IK, payload, onOk, onErr); }
 
@@ -3319,6 +3388,10 @@
     // masquage cote client, le backend (chantier 10) n'est pas touché.
     var portefeuilleBtn = document.getElementById('sh-portefeuille');
     if (portefeuilleBtn) portefeuilleBtn.style.display = 'none';
+    // "Mes contacts" (2026-08-11, mémoire relationnelle) : mêmes règles d'accès que Relances/
+    // Rentabilité/Carnet bleu -- données relationnelles (promesses, résumés) jamais pour Bruno.
+    var relationsBtn = document.getElementById('sh-relations');
+    if (relationsBtn) relationsBtn.style.display = (mcs && role === 'patron') ? '' : 'none';
     // Transparence (Phase 5) : visible seulement côté tenant secondaire — c'est CE
     // compte-là que le support peut consulter, l'inverse exact de la liste ci-dessus.
     var privacyNote = document.getElementById('privacy-note');
@@ -5334,6 +5407,82 @@
     });
   });
   portefeuilleSearchInput.addEventListener('input', function(){ portefeuilleQuery = portefeuilleSearchInput.value; portefeuilleApplyFilter(); });
+
+  // ---- Mes contacts (mémoire relationnelle MCS, 2026-08-11) ----
+  // Consultation seule des fiches construites chaque nuit par "MCS · Consolidation relations"
+  // (résumé + rôle + résidences liées + promesse en cours, à partir des mails échangés) —
+  // aucune écriture depuis ce panneau, la correction se fait au chat ("retiens que…").
+  var relationsview = document.getElementById('relationsview');
+  var relationsList = document.getElementById('relations-list');
+  var relationsSearchInput = document.getElementById('relations-search');
+  var relationsSummary = document.getElementById('relations-summary');
+  var relationsData = null;
+  var relationsTab = 'tous';
+  var relationsQuery = '';
+
+  function relNorm(s){ return String(s || '').toLowerCase().normalize('NFD').replace(/[̀-ͯ]/g, ''); }
+
+  function relationsCard(r){
+    var card = document.createElement('div'); card.className = 'rel-card';
+    var top = document.createElement('div'); top.className = 'rel-top';
+    var titre = r.nom || r.societe || '(contact inconnu)';
+    var nom = document.createElement('span'); nom.className = 'rel-nom'; nom.textContent = titre;
+    top.appendChild(nom);
+    if (r.role){ var badge = document.createElement('span'); badge.className = 'rel-badge'; badge.textContent = r.role; top.appendChild(badge); }
+    card.appendChild(top);
+    if (r.resume){ var resume = document.createElement('span'); resume.className = 'rel-resume'; resume.textContent = r.resume; card.appendChild(resume); }
+    var metaBits = [];
+    if (r.societe && r.societe !== titre) metaBits.push(r.societe);
+    if (r.residences) metaBits.push('📍 ' + r.residences);
+    if (r.dernierEchangeMs) metaBits.push('dernier échange le ' + new Date(r.dernierEchangeMs).toLocaleDateString('fr-FR'));
+    if (metaBits.length){ var meta = document.createElement('span'); meta.className = 'rel-meta'; meta.textContent = metaBits.join(' · '); card.appendChild(meta); }
+    if (r.promesseEnCours){
+      var promesse = document.createElement('span'); promesse.className = 'rel-promesse';
+      var echStr = r.promesseEcheanceMs ? new Date(r.promesseEcheanceMs).toLocaleDateString('fr-FR') : '';
+      promesse.textContent = '🤝 Promesse en cours' + (echStr ? ' (' + echStr + ')' : '') + ' — « ' + r.promesseEnCours + ' »';
+      card.appendChild(promesse);
+    }
+    return card;
+  }
+
+  function relationsApplyFilter(){
+    relationsList.innerHTML = '';
+    if (!relationsData){ relationsList.innerHTML = '<p id="relations-empty">Chargement…</p>'; return; }
+    var q = relNorm(relationsQuery);
+    var filtered = relationsData.slice();
+    if (relationsTab === 'promesse') filtered = filtered.filter(function(r){ return !!r.promesseEnCours; });
+    if (q) filtered = filtered.filter(function(r){
+      return relNorm(r.nom).indexOf(q) !== -1 || relNorm(r.societe).indexOf(q) !== -1 || relNorm(r.resume).indexOf(q) !== -1;
+    });
+    if (!filtered.length){
+      relationsList.innerHTML = '<p id="relations-empty">' + (q ? 'Aucun contact ne correspond.' : 'Aucun contact dans cette catégorie.') + '</p>';
+      return;
+    }
+    filtered.forEach(function(r){ relationsList.appendChild(relationsCard(r)); });
+  }
+
+  function relationsOpen(){
+    relationsview.classList.add('open');
+    relationsList.innerHTML = '<p id="relations-loading">Chargement…</p>';
+    postRelations({}, function(j){
+      relationsData = j.relations || [];
+      relationsSummary.textContent = relationsData.length
+        ? relationsData.length + ' contact' + (relationsData.length > 1 ? 's' : '') + ' connus, construits automatiquement à partir des mails échangés.'
+        : '';
+      relationsApplyFilter();
+    }, function(err){ relationsList.innerHTML = '<p id="relations-empty">' + err + '</p>'; });
+  }
+  function relationsClose(){ relationsview.classList.remove('open'); }
+  document.getElementById('relations-close').addEventListener('click', relationsClose);
+  document.getElementById('sh-relations').addEventListener('click', function(){ sheetOpen(false); relationsOpen(); });
+  document.querySelectorAll('#relations-tabs .rel-tab').forEach(function(btn){
+    btn.addEventListener('click', function(){
+      document.querySelectorAll('#relations-tabs .rel-tab').forEach(function(b){ b.classList.toggle('active', b === btn); });
+      relationsTab = btn.dataset.tab;
+      relationsApplyFilter();
+    });
+  });
+  relationsSearchInput.addEventListener('input', function(){ relationsQuery = relationsSearchInput.value; relationsApplyFilter(); });
 
   // La liste (nom + description) vient TOUJOURS du serveur (canal mcs-admin-lecture, dédié à
   // ce client) — jamais un nom d'entreprise en dur ici : ce fichier finit sur un dépôt public.
