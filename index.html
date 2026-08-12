@@ -2999,7 +2999,7 @@
 
 <script>
 (function(){
-  var APPV = 'v3.53';
+  var APPV = 'v3.54';
 
   // Debug : ?debug_modal=1 force l'affichage du modal "nouvelle version" sans attendre un vrai
   // déploiement. Capturé ICI, tout au début, car plus bas (login mémorisé, connexion) le code
@@ -6184,6 +6184,10 @@
   }
 
   function fmtUsd(n){ return '$' + (Number(n) || 0).toFixed(2); }
+  // Incident latence lexique (12/08/2026) : un tour a 70s (dont 58s sur un seul noeud n8n) est
+  // reste invisible jusqu'a une investigation manuelle par l'API des executions -- fmtMs rend
+  // duree_ms lisible d'un coup d'oeil (secondes des que ca depasse 1s, comme un humain le dirait).
+  function fmtMs(n){ n = Number(n); if (!n && n !== 0) return '—'; return n >= 1000 ? (n/1000).toFixed(1) + ' s' : Math.round(n) + ' ms'; }
 
   function clientsRenderCoutsTab(j){
     clientsList.innerHTML = '';
@@ -6195,6 +6199,8 @@
       ['Depuis le ' + (j.couvertureDepuis || '?'), fmtUsd(j.coutTotalUsd)],
       ['Moyenne / tour', fmtUsd(j.coutMoyenParTourUsd)],
       ['Tours mesurés', String(j.toursInstrumentes || 0)],
+      ['Temps de réponse moyen', fmtMs(j.dureeMoyenneMs)],
+      ['Temps de réponse le + lent', fmtMs(j.dureeMaxMs)],
     ];
     tuiles.forEach(function(t){
       var s = document.createElement('div'); s.className = 'couts-stat';
@@ -6203,6 +6209,24 @@
       s.appendChild(l); s.appendChild(v); stats.appendChild(s);
     });
     wrap.appendChild(stats);
+
+    // Le tour le plus lent de la periode : si on connait deja le noeud n8n fautif (calcule
+    // cote serveur, un seul appel cible vers l'API des executions -- jamais un scan complet),
+    // on l'affiche directement plutot que de forcer a rouvrir les executions n8n a la main.
+    if (typeof j.dureeMaxMs === 'number' && j.dureeMaxMs > 8000){
+      var alerte = document.createElement('div'); alerte.className = 'couts-note';
+      alerte.style.borderLeft = '3px solid #E8B25C'; alerte.style.paddingLeft = '10px';
+      var txt = '🐢 Tour le plus lent : ' + fmtMs(j.dureeMaxMs);
+      if (j.pireTourClient) txt += ' (' + j.pireTourClient + ')';
+      if (j.pireTourDate) { try { txt += ', ' + new Date(j.pireTourDate).toLocaleString('fr-FR'); } catch(e){} }
+      if (j.pireTourNoeudLent) {
+        txt += '. Nœud fautif identifié : « ' + j.pireTourNoeudLent + ' » (' + fmtMs(j.pireTourNoeudLentMs) + ').';
+      } else {
+        txt += '. Détail par nœud indisponible pour ce tour (mesure branchée le 12/08/2026 — les tours antérieurs n’ont pas d’identifiant d’exécution).';
+      }
+      alerte.textContent = txt;
+      wrap.appendChild(alerte);
+    }
 
     var note = document.createElement('p'); note.className = 'couts-note';
     var noteTxt = 'Prix en USD (tarifs Anthropic officiels), calculés depuis les vraies valeurs de tokens mesurées sur chaque tour — jamais estimés. Aucune donnée avant le ' + (j.couvertureDepuis || '?') + ' (instrumentation branchée ce jour-là).';
