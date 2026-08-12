@@ -465,6 +465,13 @@
   .ouv-test{opacity:.55}
   .ouv-test .ouv-nom{font-style:italic}
   .client-date{font-size:11.5px; color:var(--muted); flex:0 0 auto}
+  .couts-wrap{padding:10px 14px}
+  .couts-stats{display:grid; grid-template-columns:1fr 1fr; gap:8px; margin-bottom:14px}
+  .couts-stat{background:var(--surface); border-radius:12px; padding:12px 14px}
+  .couts-stat-label{font-size:11.5px; color:var(--muted); display:block}
+  .couts-stat-val{font-size:19px; font-weight:700; display:block; margin-top:2px}
+  .couts-note{font-size:12px; color:var(--muted); margin:0 0 14px; line-height:1.4}
+  .couts-section-title{font-size:13px; font-weight:600; color:var(--muted); margin:16px 0 6px; text-transform:uppercase; letter-spacing:.3px}
   #clients-empty, #clients-loading{color:var(--muted); text-align:center; padding:40px 20px; font-size:14px}
   /* Panneau plein ecran "Devis a valider" (compte patron d'un tenant secondaire uniquement) */
   #devisview{
@@ -2505,6 +2512,7 @@
     <button class="clients-tab active" data-tab="frictions" type="button">⚠️ Frictions</button>
     <button class="clients-tab" data-tab="conversations" type="button">💬 Conversations</button>
     <button class="clients-tab" data-tab="ouvertures" type="button">📅 Ouvertures</button>
+    <button class="clients-tab" data-tab="couts" type="button">💰 Coûts</button>
     <button class="clients-tab" data-tab="appareils" type="button">📱 Appareils</button>
   </div>
   <div id="clients-filters" style="display:none">
@@ -2988,7 +2996,7 @@
 
 <script>
 (function(){
-  var APPV = 'v3.50';
+  var APPV = 'v3.51';
 
   // Debug : ?debug_modal=1 force l'affichage du modal "nouvelle version" sans attendre un vrai
   // déploiement. Capturé ICI, tout au début, car plus bas (login mémorisé, connexion) le code
@@ -6084,6 +6092,68 @@
     });
   }
 
+  // ---- Onglet "Coûts" (mission le Cortex, Phase 0.3, 2026-08-12) -- zoom MCS des tokens
+  // reellement mesures par tour (jamais estime), par jour/declencheur/modele. Distinct du
+  // module global "💰 Coûts" du menu principal (labo+MCS+vente-roue combines) -- ici on isole
+  // MCS et on descend au niveau declencheur/modele, ce que le module global ne fait pas.
+  function clientsLoadCoutsTab(){
+    clientsList.innerHTML = '<p id="clients-loading">Chargement…</p>';
+    adminPost({ action:'couts', inclureAdmin: clientsIncludeAdmin }, function(j){
+      clientsRenderCoutsTab(j);
+    }, function(err){ clientsList.innerHTML = '<p id="clients-empty">' + err + '</p>'; });
+  }
+
+  function fmtUsd(n){ return '$' + (Number(n) || 0).toFixed(2); }
+
+  function clientsRenderCoutsTab(j){
+    clientsList.innerHTML = '';
+    var wrap = document.createElement('div'); wrap.className = 'couts-wrap';
+
+    var stats = document.createElement('div'); stats.className = 'couts-stats';
+    var tuiles = [
+      ['Aujourd’hui', fmtUsd(j.aujourdhuiUsd)],
+      ['Depuis le ' + (j.couvertureDepuis || '?'), fmtUsd(j.coutTotalUsd)],
+      ['Moyenne / tour', fmtUsd(j.coutMoyenParTourUsd)],
+      ['Tours mesurés', String(j.toursInstrumentes || 0)],
+    ];
+    tuiles.forEach(function(t){
+      var s = document.createElement('div'); s.className = 'couts-stat';
+      var l = document.createElement('span'); l.className = 'couts-stat-label'; l.textContent = t[0];
+      var v = document.createElement('span'); v.className = 'couts-stat-val'; v.textContent = t[1];
+      s.appendChild(l); s.appendChild(v); stats.appendChild(s);
+    });
+    wrap.appendChild(stats);
+
+    var note = document.createElement('p'); note.className = 'couts-note';
+    var noteTxt = 'Prix en USD (tarifs Anthropic officiels), calculés depuis les vraies valeurs de tokens mesurées sur chaque tour — jamais estimés. Aucune donnée avant le ' + (j.couvertureDepuis || '?') + ' (instrumentation branchée ce jour-là).';
+    if (j.toursNonInstrumentes) noteTxt += ' ' + j.toursNonInstrumentes + ' tour(s) non couvert(s) (avant l’instrumentation, ou hors du cerveau conversationnel).';
+    note.textContent = noteTxt;
+    wrap.appendChild(note);
+
+    function section(titre, rows, keyLabel){
+      if (!rows || !rows.length) return;
+      var t = document.createElement('div'); t.className = 'couts-section-title'; t.textContent = titre;
+      wrap.appendChild(t);
+      var table = document.createElement('div'); table.className = 'ouv-table';
+      rows.forEach(function(r){
+        var row = document.createElement('div'); row.className = 'ouv-row';
+        var nom = document.createElement('span'); nom.className = 'ouv-nom'; nom.textContent = r[keyLabel];
+        var n = document.createElement('span'); n.className = 'ouv-n'; n.textContent = fmtUsd(r.usd);
+        row.appendChild(nom); row.appendChild(n);
+        table.appendChild(row);
+      });
+      wrap.appendChild(table);
+    }
+    section('Par déclencheur', j.parDeclencheur, 'declencheur');
+    section('Par modèle', j.parModele, 'modele');
+
+    if (!j.toursInstrumentes){
+      var vide = document.createElement('p'); vide.id = 'clients-empty'; vide.textContent = 'Aucune donnée mesurée pour l’instant.';
+      wrap.appendChild(vide);
+    }
+    clientsList.appendChild(wrap);
+  }
+
   function clientsOpenDetail(){
     clientsState = 'detail';
     clientsTitleEl.textContent = (clientsCourant && clientsCourant.nom) || '';
@@ -6104,7 +6174,7 @@
     // Le filtre "utilisateur"/date/texte et le bascule "Inclure mes tests" n'ont de sens
     // que pour Frictions/Conversations — la vue Appareils montre toujours tout (c'est
     // justement là qu'on veut voir un appareil administrateur, pour le marquer).
-    var showFilters = tab !== 'appareils' && tab !== 'ouvertures';
+    var showFilters = tab !== 'appareils' && tab !== 'ouvertures' && tab !== 'couts';
     var showAdminToggle = tab !== 'appareils';
     clientsFilterUser.style.display = showFilters ? '' : 'none';
     clientsFilterDate.style.display = showFilters ? '' : 'none';
@@ -6113,6 +6183,7 @@
     if (tab === 'frictions') clientsLoadFrictions();
     else if (tab === 'conversations') clientsLoadConversations();
     else if (tab === 'ouvertures') clientsLoadOuverturesTab();
+    else if (tab === 'couts') clientsLoadCoutsTab();
     else clientsLoadAppareils();
   }
 
@@ -6275,6 +6346,7 @@
     if (clientsTab === 'frictions') clientsLoadFrictions();
     else if (clientsTab === 'conversations') clientsLoadConversations();
     else if (clientsTab === 'ouvertures') clientsLoadOuverturesTab();
+    else if (clientsTab === 'couts') clientsLoadCoutsTab();
   });
   document.getElementById('sh-clients').addEventListener('click', function(){ sheetOpen(false); clientsOpen(); });
   document.getElementById('clients-close').addEventListener('click', clientsClose);
