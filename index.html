@@ -2996,7 +2996,7 @@
 
 <script>
 (function(){
-  var APPV = 'v3.51';
+  var APPV = 'v3.52';
 
   // Debug : ?debug_modal=1 force l'affichage du modal "nouvelle version" sans attendre un vrai
   // déploiement. Capturé ICI, tout au début, car plus bas (login mémorisé, connexion) le code
@@ -3390,15 +3390,45 @@
         edit.type = 'button'; edit.className = 'vc-edit'; edit.textContent = '✏️ Modifier';
         card.appendChild(edit);
       }
+      // Mission ergonomie flux devis (12/08/2026) : le brouillon devis_mcs n'utilise plus les
+      // libellés génériques Valider/Annuler (qui suggéraient à tort une confirmation d'envoi ou
+      // une fermeture du brouillon, cf. incident réel du 12/08 où "Valider" fermait le brouillon
+      // de Bruno). "etape" distingue le brouillon initial de la carte de confirmation affichée
+      // juste après l'aperçu -- kind reste 'devis_mcs' dans les deux cas (c'est ce qui compte
+      // pour le serveur), etape n'est qu'un drapeau d'affichage.
+      var isDevisMcs = j.validation.kind === 'devis_mcs';
+      var isConfirmationEtape = isDevisMcs && j.validation.etape === 'confirmation';
+      var isDraftEtape = isDevisMcs && !isConfirmationEtape;
       var row = document.createElement('div'); row.className = 'vc-row';
       var ok = document.createElement('button'); ok.type = 'button'; ok.className = 'vc-ok';
-      ok.textContent = j.validation.kind === 'docsend' ? '✅ Envoyer' : '✅ Valider';
-      var no = document.createElement('button'); no.type = 'button'; no.className = 'vc-no'; no.textContent = '❌ Annuler';
+      var no = document.createElement('button'); no.type = 'button'; no.className = 'vc-no';
+      var choixOk, choixNo;
+      if (isConfirmationEtape){
+        ok.textContent = '✅ Oui, vas-y'; choixOk = 'oui';
+        no.textContent = "✏️ Non, j'ai des modifs à faire"; choixNo = 'modifier';
+      } else if (isDraftEtape){
+        ok.textContent = '📄 Voir le PDF brouillon'; choixOk = 'apercu';
+        no.textContent = '✏️ Continuer à modifier'; choixNo = 'modifier';
+      } else {
+        ok.textContent = j.validation.kind === 'docsend' ? '✅ Envoyer' : '✅ Valider'; choixOk = 'oui';
+        no.textContent = '❌ Annuler'; choixNo = 'non';
+      }
       row.appendChild(ok); row.appendChild(no); card.appendChild(row);
+      // "Annuler le devis" -- uniquement sur le brouillon (jamais sur la carte de confirmation,
+      // jamais sur les autres kinds), avec confirmation en 2 clics avant toute suppression
+      // réelle (réutilise le vrai mécanisme d'annulation existant, choix:'non', inchangé côté
+      // serveur -- rien de neuf à construire là).
+      var annulerDevis = null, annulerArme = false, annulerTimer = null;
+      if (isDraftEtape){
+        annulerDevis = document.createElement('button');
+        annulerDevis.type = 'button'; annulerDevis.className = 'vc-edit'; annulerDevis.textContent = '🗑 Annuler le devis';
+        card.appendChild(annulerDevis);
+      }
       function act(choix){
         ok.disabled = no.disabled = true;
         if (edit) edit.disabled = true;
         if (docsendEdit) docsendEdit.disabled = true;
+        if (annulerDevis) annulerDevis.disabled = true;
         var payload = { type:'action', kind: j.validation.kind, choix: choix };
         if (docsendEdit) payload.corpsEdite = docsendEdit.value;
         // Observations (2026-08-11) : plusieurs brouillons "obsaction" peuvent coexister --
@@ -3409,17 +3439,35 @@
           row.remove();
           if (edit) edit.remove();
           if (docsendEdit) docsendEdit.remove();
+          if (annulerDevis) annulerDevis.remove();
           bubble(r.reply || 'Fait.', 'jarvis');
-          // Affiche le fichier genere par l'action si il y en a un (ex devis_mcs valide) --
-          // reutilise le rendu deja existant de renderExtras (chip 📄 cliquable).
-          if (r.fichiers && r.fichiers.length) renderExtras({ fichiers: r.fichiers });
-        }, function(err){ ok.disabled = no.disabled = false; if (edit) edit.disabled = false; if (docsendEdit) docsendEdit.disabled = false; bubble(err, 'err'); });
+          // Réponse complète (fichiers ET validation) -- pas juste les fichiers : "Voir le PDF
+          // brouillon" renvoie maintenant AUSSI la carte de confirmation qui suit l'aperçu, elle
+          // ne s'afficherait jamais si on ne repassait que r.fichiers comme avant.
+          renderExtras(r);
+        }, function(err){
+          ok.disabled = no.disabled = false; if (edit) edit.disabled = false; if (docsendEdit) docsendEdit.disabled = false; if (annulerDevis) annulerDevis.disabled = false;
+          bubble(err, 'err');
+        });
       }
-      ok.addEventListener('click', function(){ act('oui'); });
-      no.addEventListener('click', function(){ act('non'); });
+      ok.addEventListener('click', function(){ act(choixOk); });
+      no.addEventListener('click', function(){ act(choixNo); });
       if (edit) edit.addEventListener('click', function(){
         textin.focus();
         textin.scrollIntoView({ block:'nearest' });
+      });
+      if (annulerDevis) annulerDevis.addEventListener('click', function(){
+        if (!annulerArme){
+          annulerArme = true;
+          annulerDevis.textContent = "⚠️ Confirmer l'annulation ?";
+          annulerDevis.className = 'vc-no';
+          annulerTimer = setTimeout(function(){
+            annulerArme = false; annulerDevis.textContent = '🗑 Annuler le devis'; annulerDevis.className = 'vc-edit';
+          }, 4000);
+          return;
+        }
+        clearTimeout(annulerTimer);
+        act('non');
       });
       chat.appendChild(card);
     }
