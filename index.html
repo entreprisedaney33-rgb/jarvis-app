@@ -2988,7 +2988,7 @@
 
 <script>
 (function(){
-  var APPV = 'v3.48';
+  var APPV = 'v3.49';
 
   // Debug : ?debug_modal=1 force l'affichage du modal "nouvelle version" sans attendre un vrai
   // déploiement. Capturé ICI, tout au début, car plus bas (login mémorisé, connexion) le code
@@ -8518,6 +8518,30 @@
     return /^\s*(repr[eé]sent[eé]e?\s+par|p\s*\/\s*o\b|c\s*\/\s*o\b)/i.test(s || '');
   }
 
+  // Coupe le texte composite "represente par X, adresse Y" en {contact, adresse} -- avant ce
+  // fix, tout le bloc partait dans "Represente par" et "Adresse de facturation" restait vide
+  // (retour utilisateur reel : "SDC LES TERRASSES DE MAGENDIE represente par P/O immo de
+  // france" -- Represente par devrait dire juste "P/O immo de france", Adresse de facturation
+  // "122 cours du medoc 33110 le bouscat france"). Calibre sur 82 vraies fiches mcs_contacts
+  // (11/08/2026) : ancre sur le 1er numero de voie + type de voie (rue/avenue/cours...), ou un
+  // repere CS/BP (boite postale Cedex), ou a defaut un type de voie seul sans numero devant.
+  // 90% des cas reels se coupent proprement ; si aucune ancre fiable n'est trouvee (~10%,
+  // adresse trop courte/atypique), adresse reste vide plutot que de deviner -- mieux vaut une
+  // case vide qu'une adresse tronquee ou fausse.
+  function splitRepresentePar(raw){
+    var s = String(raw || '').trim();
+    var m = /^\s*(?:repr[eé]sent[eé]e?\s+par|p\s*\/\s*o\b\.?|c\s*\/\s*o\b\.?)\s*/i.exec(s);
+    var rest = m ? s.slice(m[0].length).trim() : s;
+    var STREET = '(?:rue|avenue|av\\.?|cours|boulevard|bd\\.?|blvd\\.?|place|chemin|all[ée]e|impasse|quai|square|route|villa|passage|esplanade|rond-point)';
+    var ADDR_START = '(?:\\d+(?:\\s*(?:bis|ter))?(?:\\s*[\\/,-]\\s*\\d+)?\\,?\\s*' + STREET + '\\b|\\bCS\\s*\\d+|\\bBP\\s*\\d+|' + STREET + '\\b)';
+    var re = new RegExp('^(.*?)\\s+(' + ADDR_START + '.*)$', 'i');
+    var mm = re.exec(rest);
+    if (mm && mm[1].trim()){
+      return { contact: mm[1].trim().replace(/[-,\s]+$/, '').replace(/\s+/g, ' '), adresse: mm[2].trim().replace(/\s+/g, ' ') };
+    }
+    return { contact: rest.replace(/\s+/g, ' '), adresse: '' };
+  }
+
   // Rendu de la liste <li> cliquable -- factorise pour etre reutilise a la fois par la saisie
   // (debounce ci-dessous) et par la suggestion proactive depuis l'historique devis du client
   // (renderSuggestions appelee directement, sans passer par un input).
@@ -8591,7 +8615,9 @@
     dfNom.value = item.nom;
     if (!dfEmail.value.trim() && item.email) dfEmail.value = item.email;
     if (item.adresse && isRepresentePar(item.adresse)){
-      if (!dfContact.value.trim()) dfContact.value = item.adresse;
+      var dfSplit = splitRepresentePar(item.adresse);
+      if (!dfContact.value.trim()) dfContact.value = dfSplit.contact;
+      if (!dfAdresse.value.trim() && dfSplit.adresse) dfAdresse.value = dfSplit.adresse;
     } else if (!dfAdresse.value.trim() && item.adresse) {
       dfAdresse.value = item.adresse;
     }
@@ -8763,7 +8789,9 @@
     bcNom.value = item.nom;
     if (!bcEmail.value.trim() && item.email) bcEmail.value = item.email;
     if (item.adresse && isRepresentePar(item.adresse)){
-      if (!bcContact.value.trim()) bcContact.value = item.adresse;
+      var bcSplit = splitRepresentePar(item.adresse);
+      if (!bcContact.value.trim()) bcContact.value = bcSplit.contact;
+      if (!bcAdresse.value.trim() && bcSplit.adresse) bcAdresse.value = bcSplit.adresse;
     } else if (!bcAdresse.value.trim() && item.adresse) {
       bcAdresse.value = item.adresse;
     }
