@@ -648,6 +648,8 @@
   table.contrat-table td.ct-td-montant{color:var(--gold-a); font-weight:700; text-align:right}
   #contrat-catalogue-form-bg{position:fixed; inset:0; z-index:55; background:rgba(0,0,0,.55); display:none}
   #contrat-catalogue-form-bg.open{display:block}
+  #bug-form-bg{position:fixed; inset:0; z-index:55; background:rgba(0,0,0,.55); display:none}
+  #bug-form-bg.open{display:block}
   .contrat-form{
     position:fixed; left:50%; bottom:0; transform:translateX(-50%); width:min(480px,100%);
     max-height:88vh; overflow-y:auto; background:var(--bg); border-radius:20px 20px 0 0;
@@ -655,10 +657,11 @@
   }
   .contrat-form h3{margin:0 0 12px; font-size:17px}
   .contrat-form label{display:block; font-size:12px; color:var(--muted); margin:10px 0 4px}
-  .contrat-form input, .contrat-form select{
+  .contrat-form input, .contrat-form select, .contrat-form textarea{
     width:100%; box-sizing:border-box; border:0.5px solid rgba(255,255,255,.18); border-radius:10px;
     background:#2E2E32; color:var(--ink); font-size:14px; padding:9px 10px; font:inherit;
   }
+  .contrat-form textarea{resize:vertical}
   .contrat-form .cf-row{display:flex; gap:8px}
   .contrat-form .cf-row > *{flex:1}
   .contrat-form .cf-actions{display:flex; gap:8px; margin-top:16px}
@@ -2437,6 +2440,7 @@
   <div class="sh-footer-row">
     <button class="sh-mini-item" id="sh-push" type="button">🔔 Notifications<span class="sh-mini-check" id="sw-push">✓</span></button>
     <button class="sh-mini-item" id="sh-tuto-toggle" type="button" style="display:none">🎓 Tutoriels<span class="sh-mini-check" id="sw-tuto">✓</span></button>
+    <button class="sh-mini-item" id="sh-bug" type="button" style="display:none">🐛 Signaler un bug / remarque</button>
     <button class="sh-mini-item danger" id="sh-logout" type="button">🚪 Se déconnecter</button>
   </div>
   <p class="sh-ver" id="subline">Jarvis</p>
@@ -2790,6 +2794,19 @@
   </div>
 </div>
 
+<div id="bug-form-bg">
+  <div class="contrat-form" id="bug-form">
+    <h3>Signaler un bug ou une remarque</h3>
+    <p style="color:var(--muted); font-size:13px">Écris ce qui ne marche pas, ou ta remarque. Tu peux aussi utiliser le micro de ton clavier pour dicter.</p>
+    <textarea id="bugf-message" rows="5" placeholder="Ex : quand j'appuie sur Enregistrer, rien ne se passe…"></textarea>
+    <p id="bugf-err"></p>
+    <div class="cf-actions">
+      <button class="vc-ok" id="bugf-save" type="button">✅ Envoyer</button>
+      <button class="vc-no" id="bugf-cancel" type="button">Annuler</button>
+    </div>
+  </div>
+</div>
+
 <div id="meuteview">
   <div id="meute-head">
     <b>🐺 Meute</b>
@@ -3035,7 +3052,7 @@
 
 <script>
 (function(){
-  var APPV = 'v3.57';
+  var APPV = 'v3.58';
 
   // Debug : ?debug_modal=1 force l'affichage du modal "nouvelle version" sans attendre un vrai
   // déploiement. Capturé ICI, tout au début, car plus bas (login mémorisé, connexion) le code
@@ -4138,6 +4155,11 @@
     document.body.classList.toggle('bruno-mode', mcsSalarie);
     // Tutoriel Bruno (2026-08-13) : bouton ❓ permanent + lancement auto la toute 1ere fois.
     if (mcsSalarie) installBrunoTuto();
+    // "Signaler un bug / remarque" (2026-08-13) : patron ET salarié (contrairement au toggle
+    // tutoriels réservé au patron) -- jamais le compte principal. Gating à part, pas calqué sur
+    // le bloc `mcs && role === 'patron'` du reste de ce fichier.
+    var bugBtn = document.getElementById('sh-bug');
+    if (bugBtn) bugBtn.style.display = mcs ? '' : 'none';
     // "Mes documents" (2026-08-03, demande Mathéo) : la recherche/le classement documentaire ne
     // sert pas MCS (client décidé pendant l'audit) — masqué pour TOUT tenant secondaire (patron
     // ET salarié), reste inchangé pour le compte principal.
@@ -4348,6 +4370,46 @@
   });
   document.getElementById('sh-tuto-toggle').addEventListener('click', function(){
     setTutoOn(!tutoOn());
+  });
+
+  // ---- "Signaler un bug / remarque" (2026-08-13) ----
+  // Workflow n8n isolé dédié (MCS · Signalement), jamais branché sur le cerveau MCS -- même
+  // esprit que le ping "mcs-ouverture" déjà existant. Aucune validation de rôle : Bruno envoie
+  // directement (ce n'est pas une action à conséquence sur un client).
+  document.getElementById('sh-bug').addEventListener('click', function(){
+    sheetOpen(false);
+    document.getElementById('bug-form-bg').classList.add('open');
+    document.getElementById('bug-form').classList.add('open');
+  });
+  function bugFormClose(){
+    document.getElementById('bug-form-bg').classList.remove('open');
+    document.getElementById('bug-form').classList.remove('open');
+    document.getElementById('bugf-message').value = '';
+    document.getElementById('bugf-err').textContent = '';
+  }
+  document.getElementById('bugf-cancel').addEventListener('click', bugFormClose);
+  document.getElementById('bugf-save').addEventListener('click', function(){
+    var msg = document.getElementById('bugf-message').value.trim();
+    var err = document.getElementById('bugf-err');
+    if (!msg){ err.textContent = "Écris un message avant d'envoyer."; return; }
+    err.textContent = '';
+    var btn = document.getElementById('bugf-save');
+    btn.disabled = true; btn.textContent = 'Envoi…';
+    fetch('https://n8n-self-hosted-t0pz.onrender.com/webhook/mcs-signalement', {
+      method: 'POST', headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        code: String(read('jarvisCode') || '').trim(),
+        deviceId: getDeviceId(),
+        message: msg
+      })
+    }).then(function(r){ return r.json(); }).then(function(j){
+      btn.disabled = false; btn.textContent = '✅ Envoyer';
+      if (j && j.success){ bugFormClose(); toast('Merci, c’est envoyé !'); }
+      else { err.textContent = (j && j.message) || 'Erreur, réessaie.'; }
+    }).catch(function(){
+      btn.disabled = false; btn.textContent = '✅ Envoyer';
+      err.textContent = 'Pas de réseau, réessaie.';
+    });
   });
 
   // ---- Modal "nouvelle version installée -> réactiver les notifications ?" ----
