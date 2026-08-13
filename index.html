@@ -2273,6 +2273,40 @@
   .cb-btn.hang{background:var(--no)}
   .cb-btn.muted{background:var(--gold-b)}
   @media (prefers-reduced-motion: reduce){ .cb-dot{animation:none} }
+
+  /* ---- Tutoriel par onglet (2026-08-13, MCS patron uniquement) ---- */
+  .tuto-btn{
+    flex:0 0 auto; background:none; border:none; font-size:18px; line-height:1;
+    padding:6px; margin-right:2px; cursor:pointer; opacity:.85;
+    -webkit-tap-highlight-color:transparent;
+  }
+  .tuto-btn:active{opacity:.5}
+  #tuto-overlay{position:fixed; inset:0; z-index:80; display:none}
+  #tuto-spot{
+    position:fixed; border-radius:12px; pointer-events:none;
+    box-shadow:0 0 0 9999px rgba(0,0,0,.55);
+    outline:2px solid var(--blue); outline-offset:0;
+    animation:tuto-pulse 1.6s ease-in-out infinite;
+    transition:top .25s ease, left .25s ease, width .25s ease, height .25s ease;
+  }
+  @keyframes tuto-pulse{
+    0%,100%{outline-color:var(--blue); outline-offset:0}
+    50%{outline-color:var(--gold-a); outline-offset:4px}
+  }
+  #tuto-bubble{
+    position:fixed; max-width:280px; width:calc(100vw - 24px); box-sizing:border-box;
+    background:var(--surface); color:var(--ink);
+    border:0.5px solid var(--hairline); border-radius:14px; padding:14px 16px;
+    box-shadow:0 8px 24px rgba(0,0,0,.35); animation:tuto-fade .2s ease; z-index:81;
+  }
+  @keyframes tuto-fade{from{opacity:0; transform:translateY(6px)} to{opacity:1; transform:translateY(0)}}
+  #tuto-bubble-title{font-weight:700; font-size:15px; margin-bottom:4px}
+  #tuto-bubble-text{font-size:14px; color:var(--muted); line-height:1.4; margin-bottom:12px}
+  #tuto-bubble-nav{display:flex; align-items:center; justify-content:space-between; gap:8px}
+  #tuto-progress{font-size:12px; color:var(--muted); flex:0 0 auto}
+  #tuto-skip{background:none; border:0; color:var(--muted); font-size:14px; padding:6px 4px; cursor:pointer; -webkit-tap-highlight-color:transparent}
+  #tuto-next{background:var(--blue); color:#fff; border:0; border-radius:8px; padding:8px 16px; font-weight:700; font-size:14px; cursor:pointer; -webkit-tap-highlight-color:transparent}
+  @media (prefers-reduced-motion: reduce){ #tuto-spot{animation:none} #tuto-bubble{animation:none} }
 </style>
 </head>
 <body>
@@ -2401,6 +2435,7 @@
   </div>
   <div class="sh-footer-row">
     <button class="sh-mini-item" id="sh-push" type="button">🔔 Notifications<span class="sh-mini-check" id="sw-push">✓</span></button>
+    <button class="sh-mini-item" id="sh-tuto-toggle" type="button" style="display:none">🎓 Tutoriels<span class="sh-mini-check" id="sw-tuto">✓</span></button>
     <button class="sh-mini-item danger" id="sh-logout" type="button">🚪 Se déconnecter</button>
   </div>
   <p class="sh-ver" id="subline">Jarvis</p>
@@ -2999,7 +3034,7 @@
 
 <script>
 (function(){
-  var APPV = 'v3.54';
+  var APPV = 'v3.55';
 
   // Debug : ?debug_modal=1 force l'affichage du modal "nouvelle version" sans attendre un vrai
   // déploiement. Capturé ICI, tout au début, car plus bas (login mémorisé, connexion) le code
@@ -3032,6 +3067,217 @@
   // dicter un devis, que Mickael valide ensuite. Role transmis par le serveur a la connexion,
   // jamais deduit du code cote client (meme garde que le reste du masquage par role).
   function isBrunoMode(){ return isMcsCode() && read('jarvisRole') === 'salarie'; }
+
+  // ---- Tutoriel par onglet (2026-08-13, demande Mathéo) ----
+  // 100% front-end, aucun appel serveur, aucune table touchée. Bouton ❓ manuel uniquement
+  // (jamais de déclenchement auto à la première visite, décision explicite de Mathéo).
+  // Visible UNIQUEMENT côté MCS patron -- jamais Bruno (isBrunoMode), jamais le compte principal.
+  var TUTO_CONFIGS = {
+    devis: {
+      head: 'devis-head', close: 'devis-close',
+      steps: [
+        { selector: '#devis-tabs', title: 'Les 3 onglets',
+          text: '« À valider » = ce que Jarvis a préparé et qui attend votre accord. « Devis » et « Factures » gardent l’historique une fois validé.' },
+        { selector: '#devis-search-wrap', title: 'Rechercher',
+          text: 'Tapez le nom d’un client pour retrouver un devis ou une facture précise.' },
+        { selector: '#df-filter-devis', title: 'Filtrer',
+          text: 'Affinez la liste par statut.' }
+      ]
+    },
+    contrats: {
+      head: 'contrats-head', close: 'contrats-close',
+      steps: [
+        { selector: '#contrats-tabs', title: 'Les 2 vues',
+          text: '« Facturation » = ce qui doit être généré et envoyé ce mois-ci, résidence par résidence. « Catalogue » = la liste de tous vos contrats actifs (prix, périodicité).' },
+        { selector: '#contrats-search-wrap', title: 'Rechercher',
+          text: 'Tapez le nom d’un client ou d’une résidence pour retrouver son contrat.' },
+        { selector: '#contrats-add-btn', title: 'Nouveau contrat',
+          text: 'Ajoutez un contrat (dératisation/désinsectisation ou VMC) avec son prix et sa fréquence de passages.' }
+      ]
+    },
+    ik: {
+      head: 'ik-head', close: 'ik-close',
+      steps: [
+        { selector: '#ik-month-tabs', title: 'Un onglet par mois',
+          text: 'Comme votre fichier Excel : cliquez sur un mois pour voir les trajets de ce mois-là.' },
+        { selector: '#ik-export', title: 'Export Excel',
+          text: 'Téléchargez le tableau du mois affiché en un clic.' },
+        { selector: '#ik-add', title: 'Ajouter un trajet',
+          text: 'Renseignez les villes de départ/arrivée : la distance se calcule automatiquement.' }
+      ]
+    },
+    renta: {
+      head: 'renta-head', close: 'renta-close',
+      steps: [
+        { selector: '#renta-title', title: 'Rentabilité',
+          text: 'Le chiffre d’affaires, les dépenses et le bénéfice, mois par mois.' },
+        { selector: '#renta-list', title: 'Plus de détails',
+          text: 'Le bouton « Personnaliser mon tableau » permet aussi d’afficher les impayés en retard et les devis restés sans suite.' }
+      ]
+    },
+    relances: {
+      head: 'relances-head', close: 'relances-close',
+      steps: [
+        { selector: '#relances-tabs', title: 'Les 3 onglets',
+          text: '« À relancer » = les clients à recontacter maintenant. « Suspendues » = les relances mises en pause. « Toutes » = l’historique complet.' },
+        { selector: '#relances-search-wrap', title: 'Rechercher',
+          text: 'Tapez le nom d’un client pour retrouver sa fiche de relance.' },
+        { selector: '#relances-summary', title: 'Résumé',
+          text: 'Un aperçu rapide du nombre de relances en cours.' }
+      ]
+    },
+    carnet: {
+      head: 'carnet-head', close: 'carnet-close',
+      steps: [
+        { selector: '#carnet-search-wrap', title: 'Rechercher une résidence',
+          text: 'Tapez un nom pour retrouver rapidement une fiche.' },
+        { selector: '#carnet-add', title: 'Nouvelle résidence',
+          text: 'Ajoutez une fiche pour une résidence (accès, gestionnaire, notes utiles pour le prochain passage).' }
+      ]
+    },
+    relations: {
+      head: 'relations-head', close: 'relations-close',
+      steps: [
+        { selector: '#relations-tabs', title: 'Les 2 vues',
+          text: '« Tous » = tous vos interlocuteurs connus. « Avec promesse » = ceux qui vous ont dit « oui » sur quelque chose que vous attendez encore.' },
+        { selector: '#relations-search-wrap', title: 'Rechercher',
+          text: 'Tapez un nom ou une société pour retrouver un contact.' },
+        { selector: '#relations-summary', title: 'Résumé',
+          text: 'Un aperçu rapide de vos contacts et promesses en cours.' }
+      ]
+    },
+    docref: {
+      head: 'docref-head', close: 'docref-close',
+      steps: [
+        { selector: '#docref-note', title: 'À quoi ça sert',
+          text: 'RIB, Kbis, assurance décennale… Jarvis peut les joindre tout seul à un mail quand un client les demande.' },
+        { selector: '#docref-add', title: 'Ajouter un document',
+          text: 'Donnez-lui un nom et des mots-clés : Jarvis le reconnaîtra dans les mails à venir.' }
+      ]
+    },
+    cal: {
+      head: 'cal-head', close: 'cal-close',
+      steps: [
+        { selector: '#cal-nav', title: 'Naviguer',
+          text: 'Passez au mois précédent ou suivant.' },
+        { selector: '#cal-viewswitch', title: 'Changer de vue',
+          text: 'Mois, semaine, 3 jours ou jour : choisissez le niveau de détail qui vous convient.' },
+        { selector: '#cal-add', title: 'Nouveau rendez-vous',
+          text: 'Ajoutez un rendez-vous avec son lieu — l’itinéraire Waze s’ouvre en un clic.' }
+      ]
+    },
+    notes: {
+      head: 'notes-head', close: 'notes-close',
+      steps: [
+        { selector: '#notes-tabs', title: 'Les vues',
+          text: 'Filtrez par échéance (aujourd’hui, en retard), par personne, ou par type (objectif, idée, tâche faite).' },
+        { selector: '#notes-search-wrap', title: 'Rechercher',
+          text: 'Retrouvez une note en tapant un mot de son contenu.' },
+        { selector: '#notes-bar', title: 'Ajouter une note',
+          text: 'Écrivez une tâche, une idée ou un objectif, et validez.' }
+      ]
+    }
+  };
+  function tutoOn(){ return read('jarvisTutoOn') !== '0'; }
+  function setTutoOn(v){
+    store('jarvisTutoOn', v ? '1' : '0');
+    applyTutoVisibility();
+  }
+  // Injection des boutons ❓ -- appelée depuis enterApp(), idempotente (enterApp tourne 2x par
+  // ouverture, cache puis frais -- cf. commentaire plus haut sur window._mcsOpenPinged).
+  function installTutoButtons(){
+    Object.keys(TUTO_CONFIGS).forEach(function(key){
+      var cfg = TUTO_CONFIGS[key];
+      if (!cfg.steps.length) return;
+      var head = document.getElementById(cfg.head);
+      var closeBtn = document.getElementById(cfg.close);
+      if (!head || !closeBtn || document.getElementById(key + '-tuto')) return;
+      var btn = document.createElement('button');
+      btn.id = key + '-tuto'; btn.className = 'tuto-btn'; btn.type = 'button';
+      btn.setAttribute('aria-label', 'Tutoriel'); btn.textContent = '❓';
+      btn.addEventListener('click', function(){ tutoStart(key); });
+      head.insertBefore(btn, closeBtn);
+    });
+    applyTutoVisibility();
+  }
+  // Point de vérité unique pour la visibilité -- gating MCS patron (jamais Bruno, jamais le
+  // compte principal) croisé avec la préférence utilisateur (toggle réglages).
+  function applyTutoVisibility(){
+    var mcsPatron = isMcsCode() && !isBrunoMode();
+    document.querySelectorAll('.tuto-btn').forEach(function(b){
+      b.style.display = (mcsPatron && tutoOn()) ? '' : 'none';
+    });
+    var row = document.getElementById('sh-tuto-toggle');
+    if (row) row.style.display = mcsPatron ? '' : 'none';
+    var check = document.getElementById('sw-tuto');
+    if (check) check.classList.toggle('on', tutoOn());
+  }
+  var tutoState = { key: null, i: 0 };
+  function tutoStart(key){
+    var cfg = TUTO_CONFIGS[key];
+    if (!cfg || !cfg.steps.length) return;
+    tutoState = { key: key, i: 0 };
+    tutoRenderStep();
+  }
+  function tutoRenderStep(){
+    var cfg = TUTO_CONFIGS[tutoState.key];
+    var step = cfg.steps[tutoState.i];
+    var target = document.querySelector(step.selector);
+    if (!target){ tutoNext(); return; } // élément absent -> étape suivante, jamais bloquant
+    var ov = document.getElementById('tuto-overlay');
+    if (!ov){
+      ov = document.createElement('div');
+      ov.id = 'tuto-overlay';
+      ov.innerHTML =
+        '<div id="tuto-spot"></div>' +
+        '<div id="tuto-bubble">' +
+          '<div id="tuto-bubble-title"></div>' +
+          '<div id="tuto-bubble-text"></div>' +
+          '<div id="tuto-bubble-nav">' +
+            '<button id="tuto-skip" type="button">Passer</button>' +
+            '<span id="tuto-progress"></span>' +
+            '<button id="tuto-next" type="button">Suivant</button>' +
+          '</div>' +
+        '</div>';
+      document.body.appendChild(ov);
+      document.getElementById('tuto-skip').addEventListener('click', tutoClose);
+      document.getElementById('tuto-next').addEventListener('click', tutoNext);
+      ov.addEventListener('click', function(e){ if (e.target === ov) tutoClose(); });
+    }
+    ov.style.display = 'block';
+    var rect = target.getBoundingClientRect(), pad = 8;
+    var spot = document.getElementById('tuto-spot');
+    spot.style.top = (rect.top - pad) + 'px';
+    spot.style.left = (rect.left - pad) + 'px';
+    spot.style.width = (rect.width + pad * 2) + 'px';
+    spot.style.height = (rect.height + pad * 2) + 'px';
+    document.getElementById('tuto-bubble-title').textContent = step.title;
+    document.getElementById('tuto-bubble-text').textContent = step.text;
+    document.getElementById('tuto-progress').textContent = (tutoState.i + 1) + '/' + cfg.steps.length;
+    document.getElementById('tuto-next').textContent = (tutoState.i === cfg.steps.length - 1) ? 'Terminé' : 'Suivant';
+    var bubble = document.getElementById('tuto-bubble');
+    var below = rect.bottom + 160 < window.innerHeight;
+    bubble.style.top = below
+      ? (rect.bottom + pad + 12) + 'px'
+      : Math.max(12, rect.top - pad - 12 - bubble.offsetHeight) + 'px';
+    bubble.style.left = Math.max(12, Math.min(rect.left, window.innerWidth - bubble.offsetWidth - 12)) + 'px';
+    target.scrollIntoView({ block: 'center', behavior: 'smooth' });
+  }
+  function tutoNext(){
+    var cfg = TUTO_CONFIGS[tutoState.key];
+    if (tutoState.i >= cfg.steps.length - 1){ tutoClose(); return; }
+    tutoState.i++;
+    tutoRenderStep();
+  }
+  function tutoClose(){
+    var ov = document.getElementById('tuto-overlay');
+    if (ov) ov.style.display = 'none';
+  }
+  document.addEventListener('keydown', function(e){ if (e.key === 'Escape') tutoClose(); });
+  window.addEventListener('resize', function(){
+    var ov = document.getElementById('tuto-overlay');
+    if (ov && ov.style.display === 'block') tutoRenderStep();
+  });
 
   // Badge sur l'icone de l'app (2026-08-10, demande Mathéo -- "comme sur Instagram, le petit 1").
   // Web Badging API (navigator.setAppBadge), supportee par Safari iOS 16.4+ UNIQUEMENT si l'app
@@ -3759,6 +4005,7 @@
     var privacyNote = document.getElementById('privacy-note');
     if (privacyNote) privacyNote.style.display = mcs ? '' : 'none';
     if (!mcs) checkPlumeDraftsOnOpen();
+    installTutoButtons();
   }
 
   // ---- Login ----
@@ -3903,6 +4150,9 @@
     }
     if (!pushSupported || Notification.permission === 'denied') sheetOpen(false);
     await activatePush();
+  });
+  document.getElementById('sh-tuto-toggle').addEventListener('click', function(){
+    setTutoOn(!tutoOn());
   });
 
   // ---- Modal "nouvelle version installée -> réactiver les notifications ?" ----
