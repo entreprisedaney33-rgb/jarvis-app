@@ -3034,7 +3034,7 @@
 
 <script>
 (function(){
-  var APPV = 'v3.55';
+  var APPV = 'v3.56';
 
   // Debug : ?debug_modal=1 force l'affichage du modal "nouvelle version" sans attendre un vrai
   // déploiement. Capturé ICI, tout au début, car plus bas (login mémorisé, connexion) le code
@@ -3072,6 +3072,13 @@
   // 100% front-end, aucun appel serveur, aucune table touchée. Bouton ❓ manuel uniquement
   // (jamais de déclenchement auto à la première visite, décision explicite de Mathéo).
   // Visible UNIQUEMENT côté MCS patron -- jamais Bruno (isBrunoMode), jamais le compte principal.
+  // Champs open/close (2026-08-13, suite) : quand une étape porte `open`, le moteur clique
+  // lui-même sur ce bouton pour révéler un sous-écran caché AVANT de spotlighter (aucune
+  // logique dupliquée, on réutilise le vrai bouton de l'app). `close` = le bouton Annuler à
+  // cliquer en quittant ce sous-écran -- TOUJOURS un Annuler/Fermer sans conséquence, JAMAIS un
+  // Enregistrer/Valider/Supprimer (règle de sécurité non négociable : le moteur ne crée jamais
+  // de vraie donnée). Les boutons Enregistrer sont une étape comme les autres -- montrés et
+  // expliqués, jamais cliqués par le code.
   var TUTO_CONFIGS = {
     devis: {
       head: 'devis-head', close: 'devis-close',
@@ -3080,8 +3087,13 @@
           text: '« À valider » = ce que Jarvis a préparé et qui attend votre accord. « Devis » et « Factures » gardent l’historique une fois validé.' },
         { selector: '#devis-search-wrap', title: 'Rechercher',
           text: 'Tapez le nom d’un client pour retrouver un devis ou une facture précise.' },
-        { selector: '#df-filter-devis', title: 'Filtrer',
-          text: 'Affinez la liste par statut.' }
+        // Pas d'étape sur #df-filter-devis : ce filtre n'est visible que sur l'onglet "Devis"
+        // (masqué par défaut, l'onglet de départ est "À valider") -- même piège que
+        // #contrats-add-btn (cf. commentaire plus haut), pas assez fiable pour une bulle dédiée.
+        { selector: '#devis-list .devis-card', title: 'Une fiche',
+          text: 'Le nom du client, le montant TTC, et un lien pour ouvrir le PDF.' },
+        { selector: '#devis-list .dv-actions', title: 'Valider ou refuser',
+          text: 'Dans « À valider » : ✅ prépare un mail personnalisé et modifiable à envoyer au client, ❌ refuse ce que Jarvis a préparé. Rien ne part sans votre clic.' }
       ]
     },
     contrats: {
@@ -3091,8 +3103,31 @@
           text: '« Facturation » = ce qui doit être généré et envoyé ce mois-ci, résidence par résidence. « Catalogue » = la liste de tous vos contrats actifs (prix, périodicité).' },
         { selector: '#contrats-search-wrap', title: 'Rechercher',
           text: 'Tapez le nom d’un client ou d’une résidence pour retrouver son contrat.' },
-        { selector: '#contrats-add-btn', title: 'Nouveau contrat',
-          text: 'Ajoutez un contrat (dératisation/désinsectisation ou VMC) avec son prix et sa fréquence de passages.' }
+        // Pas d'étape de surface sur #contrats-add-btn : ce bouton n'est visible QUE sur
+        // l'onglet Catalogue (rempli après un aller-retour réseau, cf. contratsApplyFilter) --
+        // trop lent/fragile pour une simple bulle de 2 frames. On l'ouvre directement (clic
+        // synthétique sur le bouton même caché, contratFormOpen() ne dépend d'aucun onglet) :
+        // le formulaire qui apparaît est déjà assez explicite pour un début de chapitre.
+        { selector: '#cf-type', open: '#contrats-add-btn', close: '#ctf-cancel', title: 'Nouveau contrat',
+          text: 'Voici le formulaire d’ajout d’un contrat (accessible depuis l’onglet Catalogue). On regarde ensemble comment le remplir : le type d’abord — dératisation/désinsectisation ou VMC.' },
+        { selector: '#cf-client', open: '#contrats-add-btn', close: '#ctf-cancel', title: 'Le client',
+          text: 'Le syndic ou la société qui gère la résidence.' },
+        { selector: '#cf-residence', open: '#contrats-add-btn', close: '#ctf-cancel', title: 'La résidence',
+          text: 'Le nom du site concerné par ce contrat.' },
+        { selector: '#cf-adresse', open: '#contrats-add-btn', close: '#ctf-cancel', title: 'L’adresse',
+          text: 'L’adresse exacte de la résidence, et la ville juste en dessous.' },
+        { selector: '#cf-prestation', open: '#contrats-add-btn', close: '#ctf-cancel', title: 'La prestation',
+          text: 'Ce qui est prévu au contrat (ex : dératisation rats/souris, entretien VMC…).' },
+        { selector: '#cf-passages', open: '#contrats-add-btn', close: '#ctf-cancel', title: 'La fréquence',
+          text: 'Le nombre de passages par an, et le mois du premier passage juste à côté.' },
+        { selector: '#cf-prix', open: '#contrats-add-btn', close: '#ctf-cancel', title: 'Le prix',
+          text: 'Le prix HT, et le taux de TVA juste à côté (20% ou 10% selon la prestation).' },
+        { selector: '#cf-email', open: '#contrats-add-btn', close: '#ctf-cancel', title: 'Email de facturation',
+          text: 'L’adresse qui recevra les factures générées pour ce contrat.' },
+        { selector: '#cf-renouv', open: '#contrats-add-btn', close: '#ctf-cancel', title: 'Renouvellement',
+          text: 'Tacite reconduction, 3 ans… comme convenu avec le client.' },
+        { selector: '#ctf-save', open: '#contrats-add-btn', close: '#ctf-cancel', title: 'Enregistrer',
+          text: 'Une fois tout correct, validez ici pour ajouter le contrat.' }
       ]
     },
     ik: {
@@ -3103,7 +3138,21 @@
         { selector: '#ik-export', title: 'Export Excel',
           text: 'Téléchargez le tableau du mois affiché en un clic.' },
         { selector: '#ik-add', title: 'Ajouter un trajet',
-          text: 'Renseignez les villes de départ/arrivée : la distance se calcule automatiquement.' }
+          text: 'Cliquez ici pour enregistrer un nouveau trajet. On regarde ensemble comment le remplir.' },
+        { selector: '#ikf-date', open: '#ik-add', close: '#ikf-cancel', title: 'La date',
+          text: 'La date du trajet — aujourd’hui par défaut, à changer si besoin.' },
+        { selector: '#ikf-motif', open: '#ik-add', close: '#ikf-cancel', title: 'Le motif',
+          text: 'Pourquoi ce trajet : « résidence Les Tilleuls », « devis », « VMC »…' },
+        { selector: '#ikf-depart', open: '#ik-add', close: '#ikf-cancel', title: 'Ville de départ',
+          text: '« Tresses » est pré-rempli. Pour changer, tapez : une liste de villes proches apparaît pendant que vous écrivez, cliquez sur la bonne.' },
+        { selector: '#ikf-arrivee', open: '#ik-add', close: '#ikf-cancel', title: 'Ville d’arrivée',
+          text: 'Tapez la ville où vous vous rendez et choisissez-la dans la liste qui apparaît.' },
+        { selector: '#ikf-allerretour-label', open: '#ik-add', close: '#ikf-cancel', title: 'Aller-retour',
+          text: 'Cochée par défaut : le trajet compte pour un aller ET un retour. Décochez si c’était un aller simple.' },
+        { selector: '#ikf-km', open: '#ik-add', close: '#ikf-cancel', title: 'La distance',
+          text: 'Se calcule toute seule dès que les 2 villes sont choisies. Le bouton « 🔄 Recalculer la distance » sert si vous avez modifié une ville après coup.' },
+        { selector: '#ikf-save', open: '#ik-add', close: '#ikf-cancel', title: 'Enregistrer',
+          text: 'Une fois tout correct, validez ici pour ajouter le trajet à votre tableau du mois.' }
       ]
     },
     renta: {
@@ -3123,7 +3172,11 @@
         { selector: '#relances-search-wrap', title: 'Rechercher',
           text: 'Tapez le nom d’un client pour retrouver sa fiche de relance.' },
         { selector: '#relances-summary', title: 'Résumé',
-          text: 'Un aperçu rapide du nombre de relances en cours.' }
+          text: 'Un aperçu rapide du nombre de relances en cours.' },
+        { selector: '#relances-list .rl-card', title: 'Une fiche client',
+          text: 'Le nom du client et depuis quand la relance est en attente.' },
+        { selector: '#relances-list .rl-suspendre', title: 'Suspendre',
+          text: 'Met la relance en pause sans la supprimer — utile si le client vous a dit « rappelez-moi plus tard ».' }
       ]
     },
     carnet: {
@@ -3132,7 +3185,11 @@
         { selector: '#carnet-search-wrap', title: 'Rechercher une résidence',
           text: 'Tapez un nom pour retrouver rapidement une fiche.' },
         { selector: '#carnet-add', title: 'Nouvelle résidence',
-          text: 'Ajoutez une fiche pour une résidence (accès, gestionnaire, notes utiles pour le prochain passage).' }
+          text: 'Cliquez ici pour ajouter une fiche résidence.' },
+        { selector: '#caf-nom', open: '#carnet-add', close: '#caf-cancel', title: 'Le nom',
+          text: 'Le nom de la résidence, ex : Résidence Les Cerisiers.' },
+        { selector: '#caf-save', open: '#carnet-add', close: '#caf-cancel', title: 'Ajouter',
+          text: 'Validez pour créer la fiche — vous pourrez ensuite y ajouter l’accès, le gestionnaire, des notes utiles pour le prochain passage.' }
       ]
     },
     relations: {
@@ -3143,7 +3200,9 @@
         { selector: '#relations-search-wrap', title: 'Rechercher',
           text: 'Tapez un nom ou une société pour retrouver un contact.' },
         { selector: '#relations-summary', title: 'Résumé',
-          text: 'Un aperçu rapide de vos contacts et promesses en cours.' }
+          text: 'Un aperçu rapide de vos contacts et promesses en cours.' },
+        { selector: '#relations-list .rel-card', title: 'Une fiche contact',
+          text: 'Ce que Jarvis sait de cette personne : promesses en cours, historique des échanges.' }
       ]
     },
     docref: {
@@ -3152,7 +3211,15 @@
         { selector: '#docref-note', title: 'À quoi ça sert',
           text: 'RIB, Kbis, assurance décennale… Jarvis peut les joindre tout seul à un mail quand un client les demande.' },
         { selector: '#docref-add', title: 'Ajouter un document',
-          text: 'Donnez-lui un nom et des mots-clés : Jarvis le reconnaîtra dans les mails à venir.' }
+          text: 'Cliquez ici pour ajouter un document. On regarde ensemble comment le remplir.' },
+        { selector: '#docreff-nom', open: '#docref-add', close: '#docreff-cancel', title: 'Le nom',
+          text: 'Un nom clair, ex : RIB MCS, Kbis, Assurance décennale.' },
+        { selector: '#docreff-mots-cles', open: '#docref-add', close: '#docreff-cancel', title: 'Les mots-clés',
+          text: 'C’est ce qui permet à Jarvis de reconnaître ce document dans un mail et de le proposer au bon moment.' },
+        { selector: '#docreff-choose', open: '#docref-add', close: '#docreff-cancel', title: 'Le fichier',
+          text: 'Choisissez le fichier depuis votre appareil.' },
+        { selector: '#docreff-save', open: '#docref-add', close: '#docreff-cancel', title: 'Enregistrer',
+          text: 'Une fois le fichier choisi, validez ici pour l’ajouter à vos documents de référence.' }
       ]
     },
     cal: {
@@ -3163,7 +3230,25 @@
         { selector: '#cal-viewswitch', title: 'Changer de vue',
           text: 'Mois, semaine, 3 jours ou jour : choisissez le niveau de détail qui vous convient.' },
         { selector: '#cal-add', title: 'Nouveau rendez-vous',
-          text: 'Ajoutez un rendez-vous avec son lieu — l’itinéraire Waze s’ouvre en un clic.' }
+          text: 'Cliquez ici pour ajouter un rendez-vous. On regarde ensemble comment le remplir.' },
+        { selector: '#cf-titre', open: '#cal-add', close: '#cf-cancel', title: 'Le titre',
+          text: 'Ex : « Passage résidence Les Tilleuls ».' },
+        { selector: '#cf-debut', open: '#cal-add', close: '#cf-cancel', title: 'Début',
+          text: 'La date et l’heure de début, et la fin juste en dessous.' },
+        { selector: '#cf-lieu', open: '#cal-add', close: '#cf-cancel', title: 'Le lieu',
+          text: 'Renseignez l’adresse : un lien Waze se génère automatiquement pour vous y rendre en un clic.' },
+        { selector: '#cf-couleurs', open: '#cal-add', close: '#cf-cancel', title: 'La couleur',
+          text: 'Repérez ce rendez-vous d’un coup d’œil dans le calendrier.' },
+        { selector: '#cf-description', open: '#cal-add', close: '#cf-cancel', title: 'Description',
+          text: 'Des détails utiles sur le passage (optionnel).' },
+        { selector: '#cf-telephone', open: '#cal-add', close: '#cf-cancel', title: 'Téléphone du client',
+          text: 'Pratique pour l’appeler directement avant d’arriver (optionnel).' },
+        { selector: '#cf-invite-bruno', open: '#cal-add', close: '#cf-cancel', title: 'Inviter Bruno',
+          text: 'Coché : Bruno reçoit une notification pour ce rendez-vous.' },
+        { selector: '#cf-rappel', open: '#cal-add', close: '#cf-cancel', title: 'Rappel',
+          text: 'Une notification avant l’heure du rendez-vous, si besoin.' },
+        { selector: '#cf-save', open: '#cal-add', close: '#cf-cancel', title: 'Valider',
+          text: 'Une fois tout correct, validez ici pour créer le rendez-vous.' }
       ]
     },
     notes: {
@@ -3219,11 +3304,37 @@
     tutoState = { key: key, i: 0 };
     tutoRenderStep();
   }
+  // Un élément display:none (ou dans un parent display:none, ex. un -form-bg pas encore
+  // ouvert) n'est jamais "visible" -- offsetParent est null dans ce cas précis (contrairement à
+  // un simple test de largeur/hauteur qui peut être trompeur sur certains éléments en position
+  // absolue). Sert à la fois à décider s'il faut ouvrir un sous-écran (`step.open`) et à ne
+  // jamais spotlighter un élément qui traînerait, caché, ailleurs dans le document.
+  function tutoIsVisible(el){
+    if (!el) return false;
+    var r = el.getBoundingClientRect();
+    return !!(r.width || r.height) && el.offsetParent !== null;
+  }
   function tutoRenderStep(){
     var cfg = TUTO_CONFIGS[tutoState.key];
     var step = cfg.steps[tutoState.i];
     var target = document.querySelector(step.selector);
-    if (!target){ tutoNext(); return; } // élément absent -> étape suivante, jamais bloquant
+    // Sous-écran caché (formulaire "Ajouter...") : le moteur clique lui-même sur le VRAI bouton
+    // de l'app qui l'ouvre (jamais de logique dupliquée) -- uniquement s'il n'est pas déjà
+    // ouvert (cas où le patron l'avait ouvert à la main avant de cliquer ❓, ne pas le rouvrir).
+    // Le clic ne touche jamais Enregistrer/Valider/Supprimer, seulement l'ouverture (voir
+    // TUTO_CONFIGS : `open` ne référence que des boutons "Ajouter"/"Nouveau", jamais un envoi).
+    if (step.open && !tutoIsVisible(target)){
+      var opener = document.querySelector(step.open);
+      if (opener){
+        opener.click();
+        // Le formulaire s'ouvre en synchrone (toggle de classe .open) mais le layout a besoin
+        // d'un cycle de peinture pour se stabiliser avant qu'on mesure sa position -- 2 frames
+        // suffisent (déjà le repli utilisé ailleurs dans ce fichier pour ce genre de mesure).
+        requestAnimationFrame(function(){ requestAnimationFrame(tutoRenderStep); });
+        return;
+      }
+    }
+    if (!target || !tutoIsVisible(target)){ tutoNext(); return; } // absent/caché -> étape suivante, jamais bloquant
     var ov = document.getElementById('tuto-overlay');
     if (!ov){
       ov = document.createElement('div');
@@ -3263,13 +3374,36 @@
     bubble.style.left = Math.max(12, Math.min(rect.left, window.innerWidth - bubble.offsetWidth - 12)) + 'px';
     target.scrollIntoView({ block: 'center', behavior: 'smooth' });
   }
+  // Referme un sous-écran ouvert PAR le tutoriel en quittant son "chapitre" -- uniquement via
+  // le bouton `close` de l'étape qu'on quitte (toujours un Annuler/Fermer sans conséquence,
+  // jamais un Enregistrer), et seulement si l'étape suivante ne fait pas partie du même
+  // sous-écran (même `open`) -- sinon on le refermerait entre 2 champs du MÊME formulaire.
+  function tutoLeaveChapterIfNeeded(fromStep, toStep){
+    if (fromStep && fromStep.close && (!toStep || toStep.open !== fromStep.open)){
+      var closer = document.querySelector(fromStep.close);
+      if (closer) closer.click();
+    }
+  }
   function tutoNext(){
     var cfg = TUTO_CONFIGS[tutoState.key];
-    if (tutoState.i >= cfg.steps.length - 1){ tutoClose(); return; }
+    var fromStep = cfg.steps[tutoState.i];
+    if (tutoState.i >= cfg.steps.length - 1){
+      tutoLeaveChapterIfNeeded(fromStep, null);
+      tutoClose();
+      return;
+    }
+    var toStep = cfg.steps[tutoState.i + 1];
+    tutoLeaveChapterIfNeeded(fromStep, toStep);
     tutoState.i++;
     tutoRenderStep();
   }
+  // "Passer"/Échap/clic-fond peuvent survenir EN PLEIN MILIEU d'un sous-écran ouvert par le
+  // tutoriel lui-même -- il faut le refermer aussi dans ce cas, sinon le patron se retrouve
+  // avec un formulaire ouvert sans comprendre pourquoi.
   function tutoClose(){
+    var cfg = TUTO_CONFIGS[tutoState.key];
+    var step = cfg && cfg.steps[tutoState.i];
+    tutoLeaveChapterIfNeeded(step, null);
     var ov = document.getElementById('tuto-overlay');
     if (ov) ov.style.display = 'none';
   }
