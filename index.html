@@ -445,6 +445,7 @@
   .client-badge{font-size:11px; font-weight:700; border-radius:99px; padding:3px 9px; flex:0 0 auto; text-transform:uppercase; letter-spacing:.02em}
   .client-badge.ok{background:rgba(48,209,88,.15); color:var(--ok)}
   .client-badge.incompris{background:rgba(232,185,106,.15); color:var(--gold-a)}
+  .client-badge.precision{background:rgba(100,180,255,.15); color:#64b4ff}
   .client-badge.bloque{background:rgba(255,69,58,.15); color:var(--no)}
   .client-badge.erreur{background:rgba(255,69,58,.25); color:var(--no)}
   .client-badge.abandonne{background:rgba(152,152,158,.2); color:var(--muted)}
@@ -3034,7 +3035,7 @@
 
 <script>
 (function(){
-  var APPV = 'v3.56';
+  var APPV = 'v3.57';
 
   // Debug : ?debug_modal=1 force l'affichage du modal "nouvelle version" sans attendre un vrai
   // déploiement. Capturé ICI, tout au début, car plus bas (login mémorisé, connexion) le code
@@ -3412,6 +3413,63 @@
     var ov = document.getElementById('tuto-overlay');
     if (ov && ov.style.display === 'block') tutoRenderStep();
   });
+
+  // ---- Tutoriel Bruno (2026-08-13, suite) ----
+  // Réutilise EXACTEMENT le même moteur que ci-dessus (tutoState/tutoRenderStep/tutoNext/
+  // tutoClose, open/close, tutoIsVisible) -- gardé à part de TUTO_CONFIGS (pas de `head`/`close`
+  // de panneau, la fiche client n'est pas un onglet comme les autres) pour ne jamais être itéré
+  // par installTutoButtons(). Un seul écran pour Bruno (fiche client + conversation, pas
+  // d'onglets) → un seul tutoriel, pas un bouton ❓ par écran comme côté patron.
+  //
+  // ⚠️ Écart volontaire par rapport à la demande initiale : la dernière étape devait à l'origine
+  // pointer sur #micbtn ("appuie sur le micro et parle"). Vérifié dans le CSS actuel :
+  // `body.bruno-mode #micbtn{display:none !important}` -- décision DÉLIBÉRÉE de Mathéo du
+  // 2026-08-11 (commit 3ce9bf3, "retire le gros micro... un bug de compréhension le
+  // découragerait dès le 1er essai") : Bruno tape, ou utilise la dictée NATIVE du clavier de son
+  // téléphone (hors de notre pipeline), jamais le micro custom de l'app. Cibler #micbtn aurait
+  // fait sauter cette étape en silence (élément caché, même piège que les 2 bugs de la mission
+  // précédente) -- la dernière étape cible donc #textin, avec un texte qui reflète l'usage réel.
+  var TUTO_BRUNO_CONFIG = {
+    steps: [
+      { selector: '#bc-new-btn', title: 'Nouveau client',
+        text: 'Appuie ici pour commencer la fiche de ton client.' },
+      { selector: '#bc-type-toggle', open: '#bc-new-btn', close: '#bc-cancel', title: 'Particulier ou Pro',
+        text: 'La plupart du temps : « Particulier ». Si c’est un syndic ou une copropriété, choisis « Professionnel ».' },
+      { selector: '#bc-nom', open: '#bc-new-btn', close: '#bc-cancel', title: 'Le nom',
+        text: 'Le nom du client. Écris-le comme tu l’entends, pas besoin d’être parfait.' },
+      { selector: '#bc-tel', open: '#bc-new-btn', close: '#bc-cancel', title: 'Le téléphone',
+        text: 'Son numéro de téléphone, si tu l’as.' },
+      { selector: '#bc-adresse', open: '#bc-new-btn', close: '#bc-cancel', title: 'L’adresse',
+        text: 'Commence à écrire l’adresse, une liste apparaît : appuie sur la bonne.' },
+      { selector: '#bc-save', open: '#bc-new-btn', close: '#bc-cancel', title: 'Enregistrer',
+        text: 'Une fois rempli, appuie ici pour valider la fiche.' },
+      { selector: '#textin', title: 'Et maintenant ?',
+        text: 'Écris ce qu’il faut faire chez ce client. Tu peux aussi utiliser le micro de ton clavier pour le dicter. Jarvis prépare le devis, Mickael le valide.' }
+    ]
+  };
+  function brunoTutoSeen(){ return read('mcsBrunoTutoSeen') === '1'; }
+  function markBrunoTutoSeen(){ store('mcsBrunoTutoSeen', '1'); }
+  function startBrunoTuto(){
+    TUTO_CONFIGS.__bruno__ = TUTO_BRUNO_CONFIG; // réutilise tutoStart/tutoRenderStep tels quels
+    tutoStart('__bruno__');
+  }
+  // ❓ permanent dans la fiche client + déclenchement automatique une seule fois (jamais pour
+  // Mickael ni le compte principal -- appelée uniquement depuis la branche mcsSalarie
+  // d'enterApp()). Idempotente comme installTutoButtons() (enterApp tourne 2x par ouverture).
+  function installBrunoTuto(){
+    var summary = document.getElementById('bc-summary');
+    if (summary && !document.getElementById('bruno-tuto-btn')){
+      var btn = document.createElement('button');
+      btn.id = 'bruno-tuto-btn'; btn.type = 'button'; btn.className = 'tuto-btn';
+      btn.setAttribute('aria-label', 'Aide'); btn.textContent = '❓';
+      btn.addEventListener('click', startBrunoTuto);
+      summary.appendChild(btn);
+    }
+    if (!brunoTutoSeen()){
+      markBrunoTutoSeen();
+      setTimeout(startBrunoTuto, 600); // laisse l'écran se stabiliser avant de lancer
+    }
+  }
 
   // Badge sur l'icone de l'app (2026-08-10, demande Mathéo -- "comme sur Instagram, le petit 1").
   // Web Badging API (navigator.setAppBadge), supportee par Safari iOS 16.4+ UNIQUEMENT si l'app
@@ -4074,9 +4132,12 @@
     // avant même la 1ère réponse serveur.
     var role = (extras && extras.role) || read('jarvisRole') || '';
     var mcsSalarie = mcs && role === 'salarie';
-    // Ecran dedie Bruno (2026-08-10) : gros micro centre, composer simplifie, message
-    // d'accueil different (voir renderHistory) -- purement visuel, cf. CSS .bruno-mode.
+    // Ecran dedie Bruno (2026-08-10, revu 2026-08-11 -- composer standard, dictee native du
+    // clavier au lieu du micro custom) : message d'accueil different (voir renderHistory) --
+    // purement visuel, cf. CSS .bruno-mode.
     document.body.classList.toggle('bruno-mode', mcsSalarie);
+    // Tutoriel Bruno (2026-08-13) : bouton ❓ permanent + lancement auto la toute 1ere fois.
+    if (mcsSalarie) installBrunoTuto();
     // "Mes documents" (2026-08-03, demande Mathéo) : la recherche/le classement documentaire ne
     // sert pas MCS (client décidé pendant l'audit) — masqué pour TOUT tenant secondaire (patron
     // ET salarié), reste inchangé pour le compte principal.
@@ -6676,7 +6737,7 @@
   }
 
   function badgeLabel(r){
-    return ({ ok:'OK', incompris:'Incompris', bloque:'Bloqué', erreur:'Erreur', abandonne:'Abandonné' })[r] || r;
+    return ({ ok:'OK', incompris:'Incompris', bloque:'Bloqué', erreur:'Erreur', abandonne:'Abandonné', precision:'Précision demandée' })[r] || r;
   }
   function fmtClientsDate(iso){
     try { return new Date(iso).toLocaleString('fr-FR', { day:'2-digit', month:'2-digit', hour:'2-digit', minute:'2-digit' }); }
