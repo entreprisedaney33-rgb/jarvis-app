@@ -629,7 +629,10 @@
     width:100%; box-sizing:border-box; border:0.5px solid rgba(255,255,255,.18); border-radius:10px;
     background:#2E2E32; color:var(--ink); font-size:14px; padding:9px 10px; font:inherit;
   }
-  .ct-detail textarea{min-height:70px; resize:vertical}
+  /* 180px et pas 70 : depuis le 17/08/2026 le corps du mail de facture porte aussi la demande
+     d'avis Google + la mise en relation (~12 lignes). Tout le principe est que Mickael RELISE et
+     puisse retirer le bloc avant d'envoyer -- illisible dans un champ de 3 lignes. */
+  .ct-detail textarea{min-height:180px; resize:vertical}
   .ct-actions{display:flex; gap:8px; margin-top:4px}
   .ct-actions .vc-ok, .ct-actions .vc-no{padding:9px; font-size:14px}
   /* Catalogue en "vue tableur" (demande explicite de Mathéo : Mickael doit retrouver ses
@@ -3052,7 +3055,7 @@
 
 <script>
 (function(){
-  var APPV = 'v3.59';
+  var APPV = 'v3.60';
 
   // Debug : ?debug_modal=1 force l'affichage du modal "nouvelle version" sans attendre un vrai
   // déploiement. Capturé ICI, tout au début, car plus bas (login mémorisé, connexion) le code
@@ -5104,7 +5107,20 @@
     actions.appendChild(okBtn); actions.appendChild(skipBtn);
     detail.appendChild(actions);
     card.appendChild(detail);
-    toggleBtn.addEventListener('click', function(){ detail.classList.toggle('open'); });
+    // Auto-agrandissement du corps du mail (même mécanisme que la carte docsend). Depuis le
+    // 17/08/2026 ce corps porte aussi la demande d'avis Google + la mise en relation : Mickael
+    // doit pouvoir le relire d'un coup d'œil et retirer le bloc avant d'envoyer, pas scroller
+    // dans une fenêtre de 3 lignes. Calculé à l'ouverture (scrollHeight vaut 0 tant que le bloc
+    // est display:none) et à chaque frappe.
+    function corpsAutoGrow(){
+      corpsInput.style.height = 'auto';
+      corpsInput.style.height = corpsInput.scrollHeight + 'px';
+    }
+    corpsInput.addEventListener('input', corpsAutoGrow);
+    toggleBtn.addEventListener('click', function(){
+      detail.classList.toggle('open');
+      if (detail.classList.contains('open')) setTimeout(corpsAutoGrow, 0);
+    });
     return card;
   }
 
