@@ -1315,6 +1315,44 @@
     padding:7px 14px; border-radius:8px; border:0; background:var(--gold-a); color:#1a1200;
     font-size:12.5px; font-weight:700; cursor:pointer; -webkit-tap-highlight-color:transparent;
   }
+  /* "Opportunités" -- panneau propre (ids), cartes/onglets/boutons reutilisent .meute-* tel quel. */
+  #opportunitesview{
+    position:fixed; inset:0; z-index:50; background:var(--bg);
+    display:none; flex-direction:column;
+    transform:translateY(100%); transition:transform .28s cubic-bezier(.2,.9,.25,1);
+  }
+  #opportunitesview.open{display:flex; transform:translateY(0)}
+  @media (prefers-reduced-motion: reduce){#opportunitesview{transition:none}}
+  #opp-head{
+    flex:0 0 auto; display:flex; align-items:center; gap:10px;
+    padding:calc(10px + env(safe-area-inset-top)) 14px 12px;
+    border-bottom:0.5px solid var(--hairline);
+  }
+  #opp-head b{font-size:16px; flex:1}
+  #opp-relancer, #opp-close{
+    width:32px; height:32px; border-radius:50%; border:0; flex:0 0 auto;
+    background:var(--surface); color:var(--ink); font-size:15px;
+    display:flex; align-items:center; justify-content:center; cursor:pointer;
+    -webkit-tap-highlight-color:transparent;
+  }
+  #opp-relancer.spin svg{animation:meute-spin 1s linear infinite}
+  #opp-status{padding:8px 14px; font-size:12.5px; color:var(--muted); text-align:center; display:none}
+  #opp-status.show{display:block}
+  #opp-tabs{
+    flex:0 0 auto; display:flex; gap:8px; padding:10px 14px; overflow-x:auto; -webkit-overflow-scrolling:touch;
+    border-bottom:0.5px solid var(--hairline);
+  }
+  #opp-list{flex:1; overflow-y:auto; -webkit-overflow-scrolling:touch; padding:10px 14px calc(20px + env(safe-area-inset-bottom))}
+  #opp-empty, #opp-loading{color:var(--muted); text-align:center; padding:40px 20px; font-size:14px}
+  .opp-source-badge{font-size:11px; font-weight:700; flex:0 0 auto; padding:3px 8px; border-radius:99px; white-space:nowrap}
+  .opp-source-syndic{background:rgba(10,132,255,.16); color:#5AB2FF}
+  .opp-source-copro{background:rgba(232,185,106,.18); color:var(--gold-a)}
+  .opp-msg-box{margin-top:6px}
+  .opp-prepare-btn{
+    width:100%; padding:9px; border-radius:10px; border:0.5px solid rgba(255,255,255,.18); background:#2E2E32;
+    color:var(--ink); font-size:13px; font-weight:700; cursor:pointer; -webkit-tap-highlight-color:transparent; margin-bottom:8px;
+  }
+  .opp-prepare-btn:disabled{opacity:.5}
   /* Panneau plein ecran "Sites Vitrine" — COCKPIT DE VENTE (etape 2 du plan, 2026-07-25) : au-dela
      de la consultation, appel en 1 tap + mail pre-redige envoyable d'1 clic + suivi de statut de
      vente + commande unique "lancer une recherche" (decouverte+generation chainees). Backend
@@ -2435,6 +2473,7 @@
     <button class="sh-tile" id="sh-contrats" type="button" style="display:none"><span class="sh-tile-ic">📋</span><span class="sh-tile-label">Contrats</span></button>
     <button class="sh-tile" id="sh-ik" type="button" style="display:none"><span class="sh-tile-ic">🚗</span><span class="sh-tile-label">Frais kilométriques</span></button>
     <button class="sh-tile" id="sh-relances" type="button" style="display:none"><span class="sh-tile-ic">📨</span><span class="sh-tile-label">Relances clients</span><span class="badge-count" id="menu-relances-badge" style="display:none"></span></button>
+    <button class="sh-tile" id="sh-opportunites" type="button" style="display:none"><span class="sh-tile-ic">🏗️</span><span class="sh-tile-label">Opportunités</span><span class="badge-count" id="menu-opp-badge" style="display:none"></span></button>
     <button class="sh-tile" id="sh-carnet" type="button" style="display:none"><span class="sh-tile-ic">📘</span><span class="sh-tile-label">Carnet bleu</span></button>
     <button class="sh-tile" id="sh-portefeuille" type="button" style="display:none"><span class="sh-tile-ic">📇</span><span class="sh-tile-label">Portefeuille clients</span></button>
     <button class="sh-tile" id="sh-relations" type="button" style="display:none"><span class="sh-tile-ic">👥</span><span class="sh-tile-label">Mes contacts</span><span class="badge-count" id="menu-relations-badge" style="display:none"></span></button>
@@ -2826,6 +2865,25 @@
   <div id="meute-list"></div>
 </div>
 
+<!-- "Opportunités" (radar prospection syndics/copropriétés, 2026-08-17, MCS patron uniquement) --
+     recherche autonome cote serveur (SIRENE), Mickael ne fait que valider/ignorer et editer le
+     message de prise de contact avant envoi. Meme gabarit visuel que Meute (classes .meute-*
+     reutilisees telles quelles), panneau/ids propres. -->
+<div id="opportunitesview">
+  <div id="opp-head">
+    <b>🏗️ Opportunités</b>
+    <button id="opp-relancer" type="button" aria-label="Chercher de nouveaux prospects"><svg width="16" height="16" viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M17 10a7 7 0 1 1-2-4.9M17 3v4h-4"/></svg></button>
+    <button id="opp-close" type="button" aria-label="Fermer">✕</button>
+  </div>
+  <p id="opp-status"></p>
+  <div id="opp-tabs">
+    <button class="meute-tab active" data-tab="a_valider" type="button">🆕 À valider</button>
+    <button class="meute-tab" data-tab="contacte" type="button">📨 Contactés</button>
+    <button class="meute-tab" data-tab="clos" type="button">✅ Clos</button>
+  </div>
+  <div id="opp-list"></div>
+</div>
+
 <div id="vitrineview">
   <div id="vitrine-head">
     <b>🏗️ Sites Vitrine</b>
@@ -3055,7 +3113,7 @@
 
 <script>
 (function(){
-  var APPV = 'v3.60';
+  var APPV = 'v3.61';
 
   // Debug : ?debug_modal=1 force l'affichage du modal "nouvelle version" sans attendre un vrai
   // déploiement. Capturé ICI, tout au début, car plus bas (login mémorisé, connexion) le code
@@ -4203,6 +4261,11 @@
     var relancesBtn = document.getElementById('sh-relances');
     if (relancesBtn) relancesBtn.style.display = (mcs && role === 'patron') ? '' : 'none';
     if (mcs && role === 'patron') relancesCheckBadge(); else if (relancesMenuBadge) relancesMenuBadge.style.display = 'none';
+    // "Opportunités" (radar prospection syndics/copropriétés) : même garde — patron d'un tenant
+    // secondaire uniquement, jamais Bruno, jamais le compte principal.
+    var oppBtn = document.getElementById('sh-opportunites');
+    if (oppBtn) oppBtn.style.display = (mcs && role === 'patron') ? '' : 'none';
+    if (mcs && role === 'patron') oppCheckBadge(); else if (oppBadge) oppBadge.style.display = 'none';
     // "Carnet bleu" (fiches techniques des résidences) : même garde — patron d'un tenant
     // secondaire uniquement, jamais Bruno, jamais le compte principal.
     var carnetBtn = document.getElementById('sh-carnet');
@@ -7181,6 +7244,189 @@
   });
   // Verifie discretement (juste le badge) - appelee depuis enterApp() une fois connecte
   function meuteCheckBadge(){ postMeute({ type:'list' }, function(j){ meuteAll = j.structures || []; meuteUpdateBadge(); }, function(){}); }
+
+  // ---- "Opportunités" (radar prospection syndics/copropriétés, 2026-08-17, MCS patron
+  // uniquement) : recherche autonome cote serveur (SIRENE), Mickael ne fait que valider/ignorer
+  // et editer le message de prise de contact avant envoi -- jamais de saisie/dictee de sa part
+  // pour alimenter la liste. Meme gabarit que Meute (postMeute/meuteCheckBadge juste au-dessus),
+  // backend separe (webhook mcs-opportunites, workflow isole "MCS · Opportunites").
+  var API_OPPORTUNITES = 'https://n8n-self-hosted-t0pz.onrender.com/webhook/mcs-opportunites';
+  function postOpportunites(payload, onOk, onErr){
+    payload.code = String(read('jarvisCode') || '').trim();
+    fetch(API_OPPORTUNITES, {
+      method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify(payload)
+    }).then(function(r){ return r.json(); }).then(function(j){
+      if (!j || j.ok === false){ onErr((j && j.erreur) || 'Erreur.'); } else { onOk(j); }
+    }).catch(function(){ onErr('Connexion impossible.'); });
+  }
+
+  var opportunitesview = document.getElementById('opportunitesview');
+  var oppList = document.getElementById('opp-list');
+  var oppBadge = document.getElementById('menu-opp-badge');
+  var oppStatus = document.getElementById('opp-status');
+  var oppRelancerBtn = document.getElementById('opp-relancer');
+  var oppAll = [];
+  var oppActiveTab = 'a_valider';
+  var OPP_TABS = {
+    a_valider: function(p){ return !p.statut || p.statut === 'a_valider'; },
+    contacte: function(p){ return p.statut === 'contacte'; },
+    clos: function(p){ return p.statut === 'gagne' || p.statut === 'perdu' || p.statut === 'ignore'; },
+  };
+  var OPP_STATUTS = [
+    { v:'contacte', label:'Contacté' },
+    { v:'gagne', label:'Gagné' },
+    { v:'perdu', label:'Perdu' },
+    { v:'ignore', label:'Ignorer' },
+  ];
+
+  function oppCard(p){
+    var card = document.createElement('div'); card.className = 'meute-card';
+    var head = document.createElement('div'); head.className = 'meute-card-head';
+    var nom = document.createElement('span'); nom.className = 'meute-nom'; nom.textContent = p.nom || '';
+    head.appendChild(nom);
+    var badge = document.createElement('span');
+    badge.className = 'opp-source-badge ' + (p.source === 'copropriete' ? 'opp-source-copro' : 'opp-source-syndic');
+    badge.textContent = p.source === 'copropriete' ? '🏠 Copropriété' : '🏢 Syndic/gestionnaire';
+    head.appendChild(badge);
+    card.appendChild(head);
+    var metaBits = [];
+    if (p.ville) metaBits.push(p.ville);
+    if (p.dirigeant) metaBits.push(p.dirigeant);
+    if (p.adresse) metaBits.push(p.adresse);
+    if (metaBits.length){
+      var meta = document.createElement('span'); meta.className = 'meute-meta'; meta.textContent = metaBits.join(' · ');
+      card.appendChild(meta);
+    }
+
+    // Email + téléphone : renseignés par Mickael, jamais fournis par la recherche (SIRENE ne
+    // donne aucun contact direct) -- toujours soumis ENSEMBLE (jamais un seul champ isolé), pour
+    // ne jamais risquer d'effacer l'autre valeur côté serveur.
+    var contactRow = document.createElement('div'); contactRow.className = 'meute-email-row';
+    var emailInput = document.createElement('input'); emailInput.className = 'meute-email-input';
+    emailInput.type = 'email'; emailInput.placeholder = 'Email'; emailInput.value = p.email || ''; emailInput.style.marginBottom = '0';
+    var telInput = document.createElement('input'); telInput.className = 'meute-email-input';
+    telInput.type = 'tel'; telInput.placeholder = 'Téléphone'; telInput.value = p.telephone || ''; telInput.style.marginBottom = '0';
+    var contactSave = document.createElement('button'); contactSave.className = 'meute-email-send'; contactSave.type = 'button'; contactSave.textContent = '💾';
+    contactSave.addEventListener('click', function(){
+      contactSave.disabled = true;
+      postOpportunites({ type:'contact', id:p.id, email:emailInput.value.trim(), telephone:telInput.value.trim() }, function(){
+        p.email = emailInput.value.trim(); p.telephone = telInput.value.trim();
+        contactSave.disabled = false; toast('✅ Coordonnées enregistrées');
+      }, function(err){ contactSave.disabled = false; toast(err); });
+    });
+    contactRow.appendChild(emailInput); contactRow.appendChild(telInput); contactRow.appendChild(contactSave);
+    card.appendChild(contactRow);
+
+    // Note libre (comme Meute, sans le micro -- pas demandé ici, juste du clavier).
+    var notesArea = document.createElement('textarea'); notesArea.rows = 2; notesArea.placeholder = 'Notes…';
+    notesArea.value = p.notes || '';
+    var notesSave = document.createElement('button'); notesSave.className = 'meute-notes-save'; notesSave.type = 'button'; notesSave.textContent = 'Enregistrer la note';
+    notesSave.addEventListener('click', function(){
+      notesSave.disabled = true;
+      postOpportunites({ type:'notes', id:p.id, notes:notesArea.value.trim() }, function(){
+        p.notes = notesArea.value.trim(); notesSave.disabled = false; toast('✅ Note enregistrée');
+      }, function(err){ notesSave.disabled = false; toast(err); });
+    });
+    card.appendChild(notesArea); card.appendChild(notesSave);
+
+    // Message de prise de contact : PRÉPARÉ (Claude) -> relu/édité -> ENVOYÉ seulement sur clic
+    // explicite, et seulement si un email est renseigné. Jamais de devis ici, jamais d'envoi
+    // automatique -- même règle que partout ailleurs dans Jarvis MCS.
+    var msgBox = document.createElement('div'); msgBox.className = 'opp-msg-box';
+    var prepBtn = document.createElement('button'); prepBtn.className = 'opp-prepare-btn'; prepBtn.type = 'button';
+    prepBtn.textContent = p.message_prepare ? '🔄 Regénérer le message' : '✍️ Préparer un message de prise de contact';
+    var msgArea = document.createElement('textarea'); msgArea.rows = 6; msgArea.style.display = p.message_prepare ? '' : 'none';
+    if (p.message_prepare) msgArea.value = p.message_prepare;
+    var sendBtn = document.createElement('button'); sendBtn.className = 'meute-email-send'; sendBtn.type = 'button';
+    sendBtn.textContent = '✉️ Envoyer'; sendBtn.style.display = p.message_prepare ? '' : 'none'; sendBtn.style.width = '100%';
+    sendBtn.disabled = !emailInput.value.trim();
+    emailInput.addEventListener('input', function(){ sendBtn.disabled = !emailInput.value.trim(); });
+    prepBtn.addEventListener('click', function(){
+      prepBtn.disabled = true; prepBtn.textContent = 'Préparation…';
+      postOpportunites({ type:'preparer_message', id:p.id }, function(j){
+        p.message_prepare = j.message || '';
+        msgArea.value = p.message_prepare; msgArea.style.display = '';
+        sendBtn.style.display = ''; sendBtn.disabled = !emailInput.value.trim();
+        prepBtn.disabled = false; prepBtn.textContent = '🔄 Regénérer le message';
+        toast('✍️ Message préparé — relis-le avant d’envoyer');
+      }, function(err){ prepBtn.disabled = false; prepBtn.textContent = '✍️ Préparer un message de prise de contact'; toast(err); });
+    });
+    sendBtn.addEventListener('click', function(){
+      var em = emailInput.value.trim();
+      if (!em){ toast('Renseigne un email d’abord.'); return; }
+      sendBtn.disabled = true; sendBtn.textContent = '…';
+      postOpportunites({ type:'envoyer_message', id:p.id, email:em, objet:'MCS — prise de contact', corps:msgArea.value }, function(){
+        toast('✅ Message envoyé'); p.statut = 'contacte'; oppRefresh();
+      }, function(err){ sendBtn.disabled = false; sendBtn.textContent = '✉️ Envoyer'; toast(err); });
+    });
+    msgBox.appendChild(prepBtn); msgBox.appendChild(msgArea); msgBox.appendChild(sendBtn);
+    card.appendChild(msgBox);
+
+    var actions = document.createElement('div'); actions.className = 'meute-actions';
+    OPP_STATUTS.forEach(function(st){
+      var btn = document.createElement('button'); btn.className = 'meute-act-btn' + (p.statut === st.v ? ' active' : '');
+      btn.type = 'button'; btn.textContent = st.label;
+      btn.addEventListener('click', function(){
+        postOpportunites({ type:'statut', id:p.id, statut:st.v }, function(){ oppRefresh(); }, function(err){ toast(err); });
+      });
+      actions.appendChild(btn);
+    });
+    card.appendChild(actions);
+    return card;
+  }
+
+  function oppRender(){
+    oppList.innerHTML = '';
+    var filtre = OPP_TABS[oppActiveTab] || OPP_TABS.a_valider;
+    var prospects = oppAll.filter(filtre);
+    if (!prospects.length){
+      var msg = oppActiveTab === 'a_valider' ? 'Aucun prospect pour l’instant — touche 🔄 pour lancer une recherche.' : 'Rien ici pour l’instant.';
+      oppList.innerHTML = '<p id="opp-empty">' + msg + '</p>';
+      return;
+    }
+    prospects.forEach(function(p){ oppList.appendChild(oppCard(p)); });
+  }
+
+  function oppUpdateBadge(){
+    var n = oppAll.filter(OPP_TABS.a_valider).length;
+    if (n > 0){ oppBadge.textContent = n; oppBadge.style.display = ''; } else { oppBadge.style.display = 'none'; }
+    updateAppBadgeTotal();
+  }
+
+  function oppRefresh(){
+    postOpportunites({ type:'list' }, function(j){
+      oppAll = j.prospects || [];
+      oppRender(); oppUpdateBadge();
+    }, function(err){ oppList.innerHTML = '<p id="opp-empty">' + err + '</p>'; });
+  }
+
+  function oppOpen(){
+    opportunitesview.classList.add('open');
+    oppList.innerHTML = '<p id="opp-loading">Chargement…</p>';
+    oppRefresh();
+  }
+  function oppClose(){ opportunitesview.classList.remove('open'); }
+  document.getElementById('sh-opportunites').addEventListener('click', function(){ sheetOpen(false); oppOpen(); });
+  document.getElementById('opp-close').addEventListener('click', oppClose);
+  document.querySelectorAll('#opp-tabs .meute-tab').forEach(function(btn){
+    btn.addEventListener('click', function(){
+      document.querySelectorAll('#opp-tabs .meute-tab').forEach(function(b){ b.classList.toggle('active', b === btn); });
+      oppActiveTab = btn.dataset.tab;
+      oppRender();
+    });
+  });
+  oppRelancerBtn.addEventListener('click', function(){
+    if (oppRelancerBtn.classList.contains('spin')) return;
+    oppRelancerBtn.classList.add('spin');
+    oppStatus.textContent = 'Recherche en cours… (peut prendre 1 à 2 minutes)';
+    oppStatus.classList.add('show');
+    postOpportunites({ type:'lancer' }, function(j){
+      oppRelancerBtn.classList.remove('spin'); oppStatus.classList.remove('show');
+      toast(j.nouveaux ? ('✅ ' + j.nouveaux + ' nouveau(x) prospect(s)') : 'Rien de nouveau pour l’instant.');
+      oppRefresh();
+    }, function(err){ oppRelancerBtn.classList.remove('spin'); oppStatus.classList.remove('show'); toast(err); });
+  });
+  function oppCheckBadge(){ postOpportunites({ type:'list' }, function(j){ oppAll = j.prospects || []; oppUpdateBadge(); }, function(){}); }
 
   // ---- Sites Vitrine : COCKPIT DE VENTE (etape 2 du plan, 2026-07-25) ----
   // Appel en 1 tap (tel:) + mail pre-redige envoyable d'1 clic (relu/edite avant envoi, jamais
