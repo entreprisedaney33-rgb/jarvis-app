@@ -132,6 +132,55 @@
     background:var(--surface);
   }
   #pullspin.on{height:44px}
+  /* Bloc C (audit UX 21/08/2026, revu le meme jour sur retour d'un rendu reel, cap ajuste une 2e
+     fois sur mesure du CSS reel). Point du jour. Fix F1 au meme endroit du layout -- body est
+     overflow:hidden, ce bloc est flex:0 0 auto dans #app (flex-direction:column) : sans cap, une
+     carte a 7 lignes ecraserait #chat en dessous exactement comme le formulaire Pro de Bruno l'a
+     fait. 46vh (pas 44) : mesure sur le CSS reel avec les textes courts, 7 lignes completes font
+     363px de contenu -- 44vh (357px sur 812) tronquait la derniere ligne de 6px, 46vh (364px)
+     tient tout pile sans defiler ; 48vh n'apporte rien de plus (le contenu plafonne a 363px) et
+     grignoterait #chat pour rien. Sur les ecrans plus petits (ex 667px, 46vh=307px) le contenu
+     deborde encore -- c'est attendu, le fondu (cf plus bas) fait son travail. position:relative
+     pour ancrer .ma-fade (fondu en bas quand ca deborde quand meme).
+     #mcsAccueil est le pur conteneur de scroll ; #ma-body porte le flex-column + gap (bug trouve
+     en retouchant ce CSS : le gap etait pose sur #mcsAccueil, qui n'a qu'UN SEUL enfant flex direct
+     -- #ma-body -- donc sans effet visible entre les lignes ; corrige ici, pas demande a part
+     mais necessaire pour que le rendu corresponde a ce qui a ete valide visuellement). */
+  #mcsAccueil{
+    display:none; flex:0 0 auto; position:relative;
+    max-height:46vh; overflow-y:auto; -webkit-overflow-scrolling:touch;
+    background:var(--surface); border-bottom:0.5px solid var(--hairline);
+  }
+  #mcsAccueil.on{display:block}
+  #ma-body{
+    display:flex; flex-direction:column; gap:7px;
+    padding:10px 14px;
+  }
+  .ma-ligne{
+    display:flex; align-items:center; gap:10px;
+    padding:10px 12px; border-radius:12px;
+    background:var(--bubble); font-size:14.5px; line-height:1.35; color:var(--ink);
+    cursor:pointer; flex:0 0 auto;
+    -webkit-touch-callout:none; -webkit-user-select:none; user-select:none;
+  }
+  .ma-ligne:active{opacity:.7}
+  .ma-ligne-ic{font-size:17px; flex:0 0 auto}
+  .ma-ligne-txt{flex:1; min-width:0}
+  .ma-vide{
+    color:var(--muted); font-size:13.5px; text-align:center; padding:10px 6px;
+  }
+  /* Fondu bas (21/08/2026) : une ligne tranchee net en bas de la carte se lit comme un bug, pas
+     comme un contenu a faire defiler. position:absolute (pas sticky) dans un ancetre position:
+     relative + overflow:auto reste ancre au bord bas VISIBLE du scrollport quel que soit le
+     defilement (les descendants absolus d'un conteneur scrollable sont positionnes par rapport a
+     sa boite de remplissage, hors flux -- ils ne defilent pas avec le contenu). Visible seulement
+     si le contenu deborde reellement (classe .on posee par JS apres le rendu, cf renderAccueil). */
+  .ma-fade{
+    position:absolute; left:0; right:0; bottom:0; height:16px;
+    background:linear-gradient(to bottom, transparent, var(--surface));
+    pointer-events:none; opacity:0; transition:opacity .15s ease;
+  }
+  .ma-fade.on{opacity:1}
   .pullspin-ic{
     width:24px; height:24px; border-radius:50%;
     border:3px solid rgba(232,185,106,.25); border-top-color:var(--gold-a);
@@ -2448,6 +2497,13 @@
       </div>
     </div>
   </div>
+  <!-- Bloc C (audit UX 21/08/2026) : Point du jour, meme emplacement structurel que #brunoClient
+       (jamais dans #chat -- renderHistory() fait chat.innerHTML='' a chaque rafraichissement,
+       cf. fix A3-b). Invisible par defaut (.on ajoute par JS seulement si du contenu existe). -->
+  <div id="mcsAccueil">
+    <div id="ma-body"></div>
+    <div id="ma-fade" class="ma-fade"></div>
+  </div>
   <div id="pullspin"><span class="pullspin-ic"></span></div>
   <div id="chat"></div>
   <div id="composer">
@@ -3127,7 +3183,7 @@
 
 <script>
 (function(){
-  var APPV = 'v3.62';
+  var APPV = 'v3.63';
 
   // Debug : ?debug_modal=1 force l'affichage du modal "nouvelle version" sans attendre un vrai
   // déploiement. Capturé ICI, tout au début, car plus bas (login mémorisé, connexion) le code
@@ -4337,7 +4393,196 @@
     var privacyNote = document.getElementById('privacy-note');
     if (privacyNote) privacyNote.style.display = mcs ? '' : 'none';
     if (!mcs) checkPlumeDraftsOnOpen();
+    // Bloc C (audit UX 21/08/2026) : Point du jour -- meme garde que toutes les tuiles patron
+    // ci-dessus. refreshAccueil() est lui-meme non bloquant et ne leve jamais d'exception
+    // (cf. sa definition) -- rien ici ne peut casser le reste de enterApp().
+    if (mcs && role === 'patron') refreshAccueil(); else hideAccueil();
     installTutoButtons();
+  }
+
+  // ---- Point du jour (carte mcs-accueil) ----
+  // Bloc C (audit UX 21/08/2026). INC-1 : cette carte ne doit JAMAIS pouvoir casser enterApp()
+  // ni onResume() -- appel non bloquant (postDevisWeb, deja robuste : JSON invalide/code HTTP
+  // non-200 -> onErr, jamais d'exception), rendu entoure de try/catch, toute forme inattendue
+  // (ok!==true, lignes pas un tableau) -> carte simplement invisible, jamais un message d'erreur
+  // affiche a l'utilisateur.
+  var API_ACCUEIL = 'https://n8n-self-hosted-t0pz.onrender.com/webhook/mcs-accueil';
+  function postAccueil(payload, onOk, onErr){ postDevisWeb(API_ACCUEIL, payload, onOk, onErr); }
+
+  var accueilCard = document.getElementById('mcsAccueil');
+  var accueilBody = document.getElementById('ma-body');
+  var accueilFade = document.getElementById('ma-fade');
+
+  function hideAccueil(){
+    if (accueilCard) accueilCard.classList.remove('on');
+    if (accueilFade) accueilFade.classList.remove('on');
+  }
+
+  function accueilDateCourte(iso){
+    var m = /^(\d{4})-(\d{2})-(\d{2})$/.exec(String(iso || ''));
+    return m ? (m[3] + '/' + m[2]) : '';
+  }
+
+  function accueilHeureCourte(hhmm){
+    var m = /^(\d{1,2}):(\d{2})$/.exec(String(hhmm || ''));
+    if (!m) return String(hhmm || '');
+    var h = parseInt(m[1], 10);
+    return (m[2] === '00') ? (h + 'h') : (h + 'h' + m[2]);
+  }
+
+  // Correction (21/08/2026, retour utilisateur sur rendu reel) : re-rend le texte cote client
+  // depuis les champs BRUTS du contrat (n, montantEur, premier, mailsLus...) au lieu de prendre
+  // 'texte' tel quel -- le texte serveur est phrase complete, pas calibre pour tenir sur une
+  // ligne a 375px (3 lignes sur 6 passaient a la ligne, doublant leur hauteur). 'texte' reste le
+  // repli si un type inconnu apparait un jour (jamais une carte vide pour ca).
+  function accueilTexteCourt(l){
+    var n = Number(l.n) || 0;
+    switch (l.type){
+      case 'devis':
+        return n + ' devis à valider';
+      case 'contrats':
+        return n + (n > 1 ? ' contrats à facturer' : ' contrat à facturer');
+      case 'relances': {
+        var montant = Math.round(Number(l.montantEur) || 0).toLocaleString('fr-FR');
+        var t = n + (n > 1 ? ' relances — ' : ' relance — ') + montant + ' €';
+        if (typeof l.snapshotAgeHeures === 'number' && l.snapshotAgeHeures > 30 && l.snapshotDate){
+          t += ' au ' + accueilDateCourte(l.snapshotDate);
+        }
+        return t;
+      }
+      case 'rdv': {
+        var t2 = n + " RDV aujourd'hui";
+        if (l.premier && l.premier.heureLocale) t2 += ', 1er à ' + accueilHeureCourte(l.premier.heureLocale);
+        return t2;
+      }
+      case 'observations':
+        return n + (n > 1 ? ' nouvelles observations' : ' nouvelle observation');
+      case 'prospects':
+        return n + (n > 1 ? ' nouveaux prospects' : ' nouveau prospect');
+      case 'nuit': {
+        var parts = [];
+        var mailsLus = Number(l.mailsLus) || 0;
+        var fiches = Number(l.fichesEnrichies) || 0;
+        var digicodes = Number(l.digicodesDetectes) || 0;
+        if (mailsLus > 0) parts.push(mailsLus + (mailsLus > 1 ? ' mails lus' : ' mail lu'));
+        if (fiches > 0) parts.push(fiches + (fiches > 1 ? ' fiches enrichies' : ' fiche enrichie'));
+        if (digicodes > 0) parts.push(digicodes + (digicodes > 1 ? ' digicodes détectés' : ' digicode détecté'));
+        return parts.join(', ');
+      }
+      default:
+        return String(l.texte || '');
+    }
+  }
+
+  var ACCUEIL_ICONES = {
+    devis: '📝', contrats: '📋', relances: '📨', rdv: '📅',
+    observations: '👥', prospects: '🏗️', nuit: '🌙'
+  };
+
+  // Les 6 panneaux que la carte peut ouvrir. Point 1 (21/08/2026) : la carte ferme elle-meme le
+  // trou carte -> panneau -> retour (ex : valider 3 devis, fermer, la carte affichait encore
+  // "3 devis" -- contredisant ce que le patron vient de faire). Plutot que d'envelopper les ~20
+  // fonctions xxxClose() de l'app (couplage sur le chemin chaud, la classe de bug de cette
+  // semaine), on ajoute un SEUL nouvel ecouteur sur les boutons de fermeture des 6 panneaux
+  // concernes -- le comportement de fermeture d'origine n'est jamais touche, juste complete.
+  var ACCUEIL_CIBLES = {
+    devis: { open: devisAttenteOpen },
+    contrats: { open: contratsOpen },
+    relances: { open: relancesOpen },
+    calendrier: { open: calendarOpen },
+    relations: { open: relationsOpen },
+    opportunites: { open: oppOpen }
+  };
+  [
+    'devis-close', 'contrats-close', 'relances-close',
+    'cal-close', 'relations-close', 'opp-close'
+  ].forEach(function(id){
+    var el = document.getElementById(id);
+    if (el) el.addEventListener('click', refreshAccueil);
+  });
+  // Fermeture PROGRAMMATIQUE du panneau Devis (validation depuis l'interieur du panneau, cf.
+  // devisAgir) -- seul des 6 panneaux a se refermer tout seul plutot que par le bouton ×.
+  var __origDevisAttenteClose = devisAttenteClose;
+  devisAttenteClose = function(){ __origDevisAttenteClose(); refreshAccueil(); };
+
+  function accueilNavigate(cible){
+    var c = ACCUEIL_CIBLES[cible];
+    if (c && typeof c.open === 'function'){ try { c.open(); } catch(e){} }
+  }
+
+  function renderAccueilLigne(l){
+    var row = document.createElement('div');
+    row.className = 'ma-ligne';
+    var ic = document.createElement('span');
+    ic.className = 'ma-ligne-ic';
+    ic.textContent = ACCUEIL_ICONES[l.type] || '•';
+    var txt = document.createElement('span');
+    txt.className = 'ma-ligne-txt';
+    txt.textContent = accueilTexteCourt(l);
+    row.appendChild(ic); row.appendChild(txt);
+    if (l.cible && ACCUEIL_CIBLES[l.cible]){
+      row.addEventListener('click', function(){ accueilNavigate(l.cible); });
+    } else {
+      row.style.cursor = 'default';
+    }
+    return row;
+  }
+
+  function renderAccueil(j){
+    if (!accueilCard || !accueilBody) return;
+    if (!j || j.ok !== true || !Array.isArray(j.lignes)){ hideAccueil(); return; }
+
+    // "nuit" n'entre JAMAIS dans le calcul du cas "tout a zero" -- lire des mails est
+    // l'activite de fond normale de chaque nuit, pas un signal d'action pour le patron
+    // (contrairement a une fiche enrichie ou un digicode detecte). C'est pour ca que la
+    // decision validee mentionne "12 mails" DANS la phrase de repli elle-meme, jamais comme
+    // une ligne active a part entiere quand les 6 lignes metier sont vides.
+    var ORDRE_METIER = ['devis', 'contrats', 'relances', 'rdv', 'observations', 'prospects'];
+    var parType = {};
+    j.lignes.forEach(function(l){ if (l && l.type) parType[l.type] = l; });
+
+    // Point 3 (21/08/2026) : snapshot de plus de 72h -> ligne retiree, jamais presentee comme le
+    // chiffre du jour. La journalisation serveur de cette anomalie (le cron du digest serait mort
+    // depuis 3 jours) reste a faire cote n8n avant le gel du 28/08 -- volontairement pas dans ce
+    // commit (retrait client uniquement aujourd'hui).
+    var lignesMetier = [];
+    ORDRE_METIER.forEach(function(type){
+      var l = parType[type];
+      if (!l) return;
+      if (type === 'relances' && typeof l.snapshotAgeHeures === 'number' && l.snapshotAgeHeures > 72) return;
+      if ((Number(l.n) || 0) > 0) lignesMetier.push(l);
+    });
+
+    var nuit = parType.nuit;
+    var nuitActive = nuit && ((Number(nuit.mailsLus) || 0) > 0 || (Number(nuit.fichesEnrichies) || 0) > 0 || (Number(nuit.digicodesDetectes) || 0) > 0);
+
+    accueilBody.innerHTML = '';
+    if (!lignesMetier.length){
+      var mailsLus = nuit ? (Number(nuit.mailsLus) || 0) : 0;
+      var vide = document.createElement('div');
+      vide.className = 'ma-vide';
+      vide.textContent = 'Rien ne t\'attend ce matin. Jarvis a lu ' + mailsLus + (mailsLus > 1 ? ' mails' : ' mail') + ' cette nuit.';
+      accueilBody.appendChild(vide);
+    } else {
+      var lignesRetenues = lignesMetier.slice();
+      if (nuitActive) lignesRetenues.push(nuit);
+      lignesRetenues.forEach(function(l){ accueilBody.appendChild(renderAccueilLigne(l)); });
+    }
+    // La classe .on doit etre posee AVANT de mesurer scrollHeight/clientHeight -- un element
+    // display:none n'a aucune dimension calculee, la mesure serait toujours 0/0.
+    accueilCard.classList.add('on');
+    if (accueilFade){
+      accueilFade.classList.toggle('on', accueilCard.scrollHeight > accueilCard.clientHeight);
+    }
+  }
+
+  function refreshAccueil(){
+    if (!isMcsCode() || read('jarvisRole') !== 'patron'){ hideAccueil(); return; }
+    try {
+      postAccueil({}, function(j){
+        try { renderAccueil(j); } catch(e){ hideAccueil(); }
+      }, function(){ hideAccueil(); });
+    } catch(e){ hideAccueil(); }
   }
 
   // ---- Login ----
@@ -4389,11 +4634,21 @@
   // re-rendu (pas de persistance disque -- decision separee, deliberement laissee ouverte en
   // F3/RGPD) ; nettoye au prochain envoi reussi du meme message, sinon vit jusqu'au reload.
   var unresolvedSendPairs = []; // [{user: <bulle 'user'>, err: <bulle 'err'>}, ...]
-  function doSendText(t, userBubble){
+  // Bloc B (audit UX 20/08/2026) : ferme cote client l'idempotence C3-b deja en place cote
+  // n8n (verrou de traitement en_cours/termine sur mcs_msg_dedup). Genere UNE SEULE FOIS par
+  // sendText(), jamais recree par un retry -- sinon le serveur voit un msgId different a
+  // chaque tentative et le mecanisme ne dedoublonne plus rien.
+  function generateMsgId(){
+    try {
+      if (window.crypto && typeof window.crypto.randomUUID === 'function') return window.crypto.randomUUID();
+    } catch(e){}
+    return String(Date.now()) + '-' + Math.random().toString(36).slice(2);
+  }
+  function doSendText(t, userBubble, msgId){
     sendInFlight = true;
     sendbtn.disabled = true;
     typingOn();
-    post({ type:'text', message:t }, function(j){
+    post({ type:'text', message:t, msgId:msgId }, function(j){
       sendInFlight = false;
       sendbtn.disabled = false;
       typingOff();
@@ -4423,7 +4678,9 @@
         // (qui deplace un noeud deja attache) reordonne tout au prochain renderHistory().
         unresolvedSendPairs = unresolvedSendPairs.filter(function(p){ return p.err !== eb; });
         eb.remove();
-        doSendText(t, userBubble);
+        // Bloc B : MEME msgId (capture par fermeture) -- jamais un nouveau, sinon le verrou
+        // cote serveur ne reconnait pas ce Reessayer comme la meme tentative.
+        doSendText(t, userBubble, msgId);
       });
       eb.appendChild(retryBtn);
       unresolvedSendPairs.push({ user: userBubble, err: eb });
@@ -4444,7 +4701,7 @@
     if (sendInFlight) return;
     textin.value = ''; autosize();
     var ub = bubble(t, 'user');
-    doSendText(t, ub);
+    doSendText(t, ub, generateMsgId());
   }
   sendbtn.addEventListener('click', sendText);
   textin.addEventListener('keydown', function(e){
@@ -10329,6 +10586,11 @@
       });
     }, function(){});
     if (typeof plumeSilentCheck === 'function') plumeSilentCheck();
+    // Bloc C (audit UX 21/08/2026) : 2e des 3 declencheurs de la carte Point du jour (avec
+    // l'ouverture dans enterApp() et le point 1 au retour d'un panneau). pollInbox() est deja
+    // appele par le timer 180s ET par onResume() (visibilitychange/focus/pageshow) -- un seul
+    // point couvre les deux sans creer de nouveau setInterval ni doubler les appels au retour.
+    if (isMcsCode() && read('jarvisRole') === 'patron') refreshAccueil();
   }
   // 180 s (au lieu de 60 s) : economie d'executions n8n — le push reste le canal temps reel,
   // et onResume() releve immediatement la boite au retour au premier plan.
