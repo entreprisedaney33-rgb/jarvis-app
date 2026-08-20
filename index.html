@@ -689,6 +689,14 @@
     flex:0 0 auto; margin:10px 14px 0; padding:10px 12px; border-radius:12px;
     background:rgba(232,185,106,.12); color:var(--gold-a); font-size:12.5px; line-height:1.4;
   }
+  /* C4 (21/08/2026) : bandeau permanent TEST_MODE, meme famille visuelle et meme place dans le
+     flux (sibling fixe hors de #devis-list/#contrats-list, donc jamais scrolle) que le bandeau
+     previsionnel ci-dessus -- reutilise pour Devis ET Contrats (id different, meme classe). */
+  .testmode-banniere{
+    flex:0 0 auto; margin:10px 14px 0; padding:10px 12px; border-radius:12px;
+    background:rgba(232,185,106,.12); color:var(--gold-a); font-size:12.5px; line-height:1.4;
+    font-weight:600;
+  }
   .contrat-card.previsionnel{opacity:.85}
   #contrats-list{flex:1; overflow-y:auto; -webkit-overflow-scrolling:touch; padding:14px 14px calc(20px + env(safe-area-inset-bottom))}
   #contrats-empty, #contrats-loading{color:var(--muted); text-align:center; padding:40px 20px; font-size:14px}
@@ -1969,6 +1977,8 @@
   #emailsview a.vc-attach{background:rgba(60,60,67,.06); border-color:var(--hairline)}
   #emailsview .vc-attach b{color:#000}
   #emailsview .vc-edit{color:var(--muted); border-color:var(--hairline)}
+  #emailsview .vc-dest{background:rgba(60,60,67,.06); border-color:var(--hairline)}
+  #emailsview .vc-dest b{color:#000}
   /* Toast avec bouton "Annuler" (archivage differe — voir archiveWithUndo) */
   #toastUndo{
     position:fixed; left:50%; bottom:max(90px, calc(90px + env(safe-area-inset-bottom)));
@@ -2372,6 +2382,17 @@
   .vc-attach .vc-attach-txt{flex:1; min-width:0}
   .vc-attach b{display:block; font-size:14.5px; color:var(--ink); font-weight:600; overflow:hidden; text-overflow:ellipsis; white-space:nowrap}
   .vc-attach span{display:block; font-size:12px; color:var(--muted); margin-top:1px}
+  /* C4 (21/08/2026) : adresse reelle du destinataire, en evidence juste avant Valider/Envoyer --
+     meme famille visuelle que .vc-attach (boite bordee dans la carte), teinte ambree comme le
+     bandeau TEST_MODE (pas de palette "danger" dans ce fichier -- l'ambre dit "fais attention",
+     pas "c'est casse"). */
+  .vc-dest{
+    display:flex; align-items:center; gap:8px;
+    background:rgba(232,185,106,.12); border:0.5px solid rgba(232,185,106,.35);
+    border-radius:12px; padding:9px 12px; margin-bottom:10px;
+  }
+  .vc-dest-ic{font-size:16px}
+  .vc-dest b{color:var(--gold-a); font-weight:700; font-size:14.5px; word-break:break-all}
   a.fbtn{display:block; text-decoration:none; align-self:flex-start; cursor:pointer}
   .fbtn b{display:block; font-size:15.5px; color:var(--ink); font-weight:600}
   .fbtn span{display:block; font-size:12.5px; color:var(--muted); margin-top:3px}
@@ -2737,6 +2758,7 @@
     <button class="devis-tab" data-tab="devis" type="button">Devis</button>
     <button class="devis-tab" data-tab="factures" type="button">Factures</button>
   </div>
+  <p id="devis-testmode-banniere" class="testmode-banniere" style="display:none">🧪 Mode test : les devis et factures partent chez Altaestima, jamais chez le client.</p>
   <div id="devis-search-wrap">
     <input id="devis-search" type="search" inputmode="search" placeholder="🔍 Rechercher un client…" autocomplete="off" autocapitalize="off" autocorrect="off">
   </div>
@@ -2760,6 +2782,7 @@
     <button class="devis-tab active" data-tab="mois" type="button">Facturation</button>
     <button class="devis-tab" data-tab="catalogue" type="button">Catalogue</button>
   </div>
+  <p id="contrats-testmode-banniere" class="testmode-banniere" style="display:none">🧪 Mode test : les factures de contrat partent chez Altaestima, jamais chez le client.</p>
   <div id="contrats-mois-selector" style="display:none">
     <select id="contrats-mois-select" aria-label="Mois"></select>
     <select id="contrats-annee-select" aria-label="Année"></select>
@@ -3233,7 +3256,7 @@
 
 <script>
 (function(){
-  var APPV = 'v3.64';
+  var APPV = 'v3.65';
 
   // Debug : ?debug_modal=1 force l'affichage du modal "nouvelle version" sans attendre un vrai
   // déploiement. Capturé ICI, tout au début, car plus bas (login mémorisé, connexion) le code
@@ -4020,6 +4043,23 @@
       var pre = document.createElement('div'); pre.className = 'vc-resume';
       pre.textContent = j.validation.resume || '';
       card.appendChild(pre);
+      // C4 (21/08/2026) : garde-fou reel sur TOUTE carte d'envoi email generique -- le TEST_MODE
+      // (devis_mcs/facture_mcs/envoyer_document_client) redirige automatiquement vers Altaestima ;
+      // les autres kinds d'envoi email (email/emaildoc/obsaction/docsend/refdoc...) n'ont QUE la
+      // lecture humaine du brouillon, qui dit ce qui est ecrit mais jamais a qui ca part. resume
+      // commence systematiquement par "A : <adresse>" pour ces kinds (convention deja en place
+      // cote n8n, verifiee sur les 5 kinds actuels) -- extraction generique par regex plutot
+      // qu'une liste de kinds en dur, pour rester valable sur un futur kind qui suivrait la meme
+      // convention. Rendu juste au-dessus des boutons Valider/Envoyer (voir plus bas), pas noye
+      // en tete du bloc de texte complet.
+      var destMatch = /^À\s*:\s*(.+)$/m.exec(j.validation.resume || '');
+      var destBox = null;
+      if (destMatch && destMatch[1].trim()){
+        destBox = document.createElement('div'); destBox.className = 'vc-dest';
+        var destIc = document.createElement('span'); destIc.className = 'vc-dest-ic'; destIc.textContent = '📧';
+        var destB = document.createElement('b'); destB.textContent = destMatch[1].trim();
+        destBox.appendChild(destIc); destBox.appendChild(destB);
+      }
       // Envoi de devis/facture (chantier 1, 2026-08-02) : le texte du mail est visible ET
       // modifiable EN PLACE avant l'envoi réel -- jamais d'envoi automatique, le patron doit
       // voir exactement ce qui part et pouvoir corriger "à la main" (même mécanisme d'auto-
@@ -4076,6 +4116,7 @@
         ok.textContent = j.validation.kind === 'docsend' ? '✅ Envoyer' : '✅ Valider'; choixOk = 'oui';
         no.textContent = '❌ Annuler'; choixNo = 'non';
       }
+      if (destBox) card.appendChild(destBox);
       row.appendChild(ok); row.appendChild(no); card.appendChild(row);
       // "Annuler le devis" -- uniquement sur le brouillon (jamais sur la carte de confirmation,
       // jamais sur les autres kinds), avec confirmation en 2 clics avant toute suppression
@@ -5350,6 +5391,9 @@
     devisList.innerHTML = '';
     document.getElementById('df-filter-devis').style.display = devisActiveTab === 'devis' ? '' : 'none';
     document.getElementById('df-filter-factures').style.display = devisActiveTab === 'factures' ? '' : 'none';
+    // C4 (21/08/2026) : bandeau permanent, visible sur les 3 onglets (les 3 concernent des envois
+    // reels une fois valides) -- testMode deja dans devisData (= j entier, cf. devisAttenteOpen).
+    document.getElementById('devis-testmode-banniere').style.display = devisData.testMode ? '' : 'none';
     if (devisActiveTab === 'avalider'){
       var itemsA = (devisData.aValider || []).filter(function(dv){ return !q || normDoc(dv.nom).indexOf(q) !== -1; });
       if (!itemsA.length){ devisList.innerHTML = '<p id="devis-empty">Aucun devis en attente.</p>'; return; }
@@ -5417,6 +5461,7 @@
   var contratsMoisData = null;
   var contratsMoisPrevisionnel = null;
   var contratsCatalogueData = null;
+  var contratsTestMode = false;
   // Sélecteur de mois/année + sous-catégories (demande explicite : pouvoir consulter un autre
   // mois que le mois courant, et voir aussi ce qui a déjà été envoyé ou marqué "pas cette année").
   var CONTRATS_MOIS_NOMS = ['Janvier','Février','Mars','Avril','Mai','Juin','Juillet','Août','Septembre','Octobre','Novembre','Décembre'];
@@ -5672,6 +5717,10 @@
     var enModePrevisionnel = contratsActiveTab === 'mois' && !(contratsMoisData && contratsMoisData.length);
     document.getElementById('contrats-mois-substatuts').style.display = (contratsActiveTab === 'mois' && !enModePrevisionnel) ? '' : 'none';
     document.getElementById('contrats-previsionnel-banniere').style.display = enModePrevisionnel ? '' : 'none';
+    // C4 (21/08/2026) : bandeau permanent, visible uniquement sur l'onglet Facturation (le
+    // Catalogue n'envoie rien) -- meme donnee testMode que le panneau Devis, cf. Formater
+    // factures du mois (contrats) et Calculer previsionnel (mois-liste).
+    document.getElementById('contrats-testmode-banniere').style.display = (contratsActiveTab === 'mois' && contratsTestMode) ? '' : 'none';
     if (contratsActiveTab === 'mois' && enModePrevisionnel){
       var itemsP = (contratsMoisPrevisionnel || []).filter(function(p){ return !q || normDoc(contratNomAffiche(p)).indexOf(q) !== -1; });
       if (!itemsP.length){ contratsList.innerHTML = '<p id="contrats-empty">Aucun contrat prévu pour ce mois.</p>'; return; }
@@ -5699,6 +5748,7 @@
         function(j){
           contratsMoisData = j.factures || [];
           contratsMoisPrevisionnel = j.previsionnel || [];
+          contratsTestMode = !!j.testMode;
           contratsApplyFilter();
         },
         function(err){ contratsList.innerHTML = '<p id="contrats-empty">' + err + '</p>'; });
