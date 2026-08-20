@@ -181,6 +181,56 @@
     pointer-events:none; opacity:0; transition:opacity .15s ease;
   }
   .ma-fade.on{opacity:1}
+  /* ===== D2 (audit UX 19/08/2026, code le 21/08/2026) : cibles tactiles < 44px =============
+     Seuil de reference : 44x44px (Apple HIG / WCAG 2.5.5). 2 regles generiques plutot que ~30
+     corrections ponctuelles, appliquees par selecteur groupe -- AUCUNE modification HTML :
+     - Regle A : extension INVISIBLE par pseudo-element (apparence inchangee). Pour les
+       controles ISOLES (icone seule, coin de panneau, fin de ligne) ou le gap avec le voisin
+       est large -- micro/envoi, les boutons (X) de panneau ([id$="-close"], ~19 au total, tous
+       nommes selon cette convention), les corbeilles Notes/Carnet.
+     - Regle B : min-height:44px REEL (pas une zone invisible), pour les controles EN RANGEE
+       HORIZONTALE SERREE (onglets a 8px de gap, chips a 8px de gap) ou une zone invisible
+       symetrique mangerait le gap et creerait une ambiguite de clic entre voisins -- onglets
+       (6 familles), filtres/puces, boutons Oui/Non en contexte carte compact, et
+       #cal-viewswitch button (deja flex:1 dans sa rangee de 4 -- meme cas que les onglets).
+     .sh-mini-item (dont "Se deconnecter") est en Regle B, PAS A (decision explicite) : une
+     zone invisible de 44px sur un element haut de 24px permet de declencher un geste
+     destructif en tapant au-dessus du libelle -- sur un geste destructif, visible = touchable.
+     .renta-perso-item (case a cocher Rentabilite) : c'est un <label> englobant deja le
+     checkbox ET le texte (creation JS confirmee) -- la zone cliquable REELLE etait deja toute
+     la ligne, pas les 20x20px mesures dans le doc (qui ne voyait que le petit carre visuel).
+     min-height seul, SANS justify-content:center (ce label a plusieurs enfants alignes a
+     gauche par design, centrer casserait cet alignement -- traite a part des autres cas B).
+     Etat :active ajoute PARTOUT ou j'ai touche a la taille (y compris .renta-perso-item, oublie
+     dans un 1er temps) ; pas duplique sur #sendbtn/.sh-mini-item, deja equipes avant cette passe
+     (verifie : #sendbtn:active existant l.291, .sh-mini-item:active existant l.421). Sans lui,
+     -webkit-tap-highlight-color:transparent (global, ligne ~31) tue le retour tactile natif :
+     sans :active, un tap dans une zone agrandie ne donne AUCUN retour visuel. user-scalable=no
+     (index.html:5) : laisse tel quel, hors perimetre de cette passe. */
+  #micbtn, #sendbtn, [id$="-close"], .notes-del, .carnet-del{position:relative}
+  #micbtn::after, #sendbtn::after, [id$="-close"]::after, .notes-del::after, .carnet-del::after{
+    content:''; position:absolute; top:50%; left:50%;
+    width:max(44px,100%); height:max(44px,100%); transform:translate(-50%,-50%);
+  }
+  #micbtn:active, [id$="-close"]:active, .notes-del:active, .carnet-del:active{opacity:.55}
+
+  .devis-tab, .meute-tab, .vitrine-tab, .pf-tab, .rel-tab, .clients-tab, .df-chip, .notes-chip,
+  .dv-actions .vc-ok, .dv-actions .vc-no, .ct-actions .vc-ok, .ct-actions .vc-no,
+  .cf-actions .vc-ok, .cf-actions .vc-no, .cx-actions .vc-ok, .cx-actions .vc-no,
+  #cal-viewswitch button{
+    min-height:44px; display:flex; align-items:center; justify-content:center;
+  }
+  .devis-tab:active, .meute-tab:active, .vitrine-tab:active, .pf-tab:active, .rel-tab:active,
+  .clients-tab:active, .df-chip:active, .notes-chip:active,
+  .dv-actions .vc-ok:active, .dv-actions .vc-no:active, .ct-actions .vc-ok:active, .ct-actions .vc-no:active,
+  .cf-actions .vc-ok:active, .cf-actions .vc-no:active, .cx-actions .vc-ok:active, .cx-actions .vc-no:active,
+  #cal-viewswitch button:active{
+    opacity:.55;
+  }
+  .sh-mini-item{min-height:44px}
+  .renta-perso-item{min-height:44px}
+  .renta-perso-item:active{opacity:.55}
+  /* ===== fin D2 ============================================================================= */
   .pullspin-ic{
     width:24px; height:24px; border-radius:50%;
     border:3px solid rgba(232,185,106,.25); border-top-color:var(--gold-a);
@@ -415,7 +465,7 @@
   #docs-search-wrap{flex:0 0 auto; padding:2px 14px 10px}
   #docs-search{
     width:100%; box-sizing:border-box; border:none; border-radius:12px;
-    background:var(--surface); color:var(--ink); font-size:15px; padding:10px 12px;
+    background:var(--surface); color:var(--ink); font-size:16px; padding:10px 12px;
     -webkit-appearance:none;
   }
   #docs-search::placeholder{color:var(--muted)}
@@ -566,7 +616,7 @@
   #devis-search-wrap{flex:0 0 auto; padding:10px 14px 0}
   #devis-search{
     width:100%; box-sizing:border-box; border:none; border-radius:12px;
-    background:var(--surface); color:var(--ink); font-size:15px; padding:10px 12px;
+    background:var(--surface); color:var(--ink); font-size:16px; padding:10px 12px;
     -webkit-appearance:none;
   }
   #devis-search::placeholder{color:var(--muted)}
@@ -625,7 +675,7 @@
   #contrats-search-wrap{flex:0 0 auto; padding:10px 14px 0}
   #contrats-search{
     width:100%; box-sizing:border-box; border:none; border-radius:12px;
-    background:var(--surface); color:var(--ink); font-size:15px; padding:10px 12px;
+    background:var(--surface); color:var(--ink); font-size:16px; padding:10px 12px;
     -webkit-appearance:none;
   }
   #contrats-search::placeholder{color:var(--muted)}
@@ -760,7 +810,7 @@
   #ik-search-wrap{flex:0 0 auto; padding:10px 14px 0}
   #ik-search{
     width:100%; box-sizing:border-box; border:none; border-radius:12px;
-    background:var(--surface); color:var(--ink); font-size:15px; padding:10px 12px;
+    background:var(--surface); color:var(--ink); font-size:16px; padding:10px 12px;
     -webkit-appearance:none;
   }
   #ik-search::placeholder{color:var(--muted)}
@@ -924,7 +974,7 @@
   #relances-search-wrap{flex:0 0 auto; padding:10px 14px 0}
   #relances-search{
     width:100%; box-sizing:border-box; border:none; border-radius:12px;
-    background:var(--surface); color:var(--ink); font-size:15px; padding:10px 12px;
+    background:var(--surface); color:var(--ink); font-size:16px; padding:10px 12px;
     -webkit-appearance:none;
   }
   #relances-search::placeholder{color:var(--muted)}
@@ -978,7 +1028,7 @@
   #carnet-search-wrap{flex:0 0 auto; padding:10px 14px 0}
   #carnet-search{
     width:100%; box-sizing:border-box; border:none; border-radius:12px;
-    background:var(--surface); color:var(--ink); font-size:15px; padding:10px 12px;
+    background:var(--surface); color:var(--ink); font-size:16px; padding:10px 12px;
     -webkit-appearance:none;
   }
   #carnet-search::placeholder{color:var(--muted)}
@@ -1071,7 +1121,7 @@
   #portefeuille-search-wrap{flex:0 0 auto; padding:10px 14px 0}
   #portefeuille-search{
     width:100%; box-sizing:border-box; border:none; border-radius:12px;
-    background:var(--surface); color:var(--ink); font-size:15px; padding:10px 12px;
+    background:var(--surface); color:var(--ink); font-size:16px; padding:10px 12px;
     -webkit-appearance:none;
   }
   #portefeuille-search::placeholder{color:var(--muted)}
@@ -1118,7 +1168,7 @@
   #relations-search-wrap{flex:0 0 auto; padding:10px 14px 0}
   #relations-search{
     width:100%; box-sizing:border-box; border:none; border-radius:12px;
-    background:var(--surface); color:var(--ink); font-size:15px; padding:10px 12px;
+    background:var(--surface); color:var(--ink); font-size:16px; padding:10px 12px;
     -webkit-appearance:none;
   }
   #relations-search::placeholder{color:var(--muted)}
@@ -1706,7 +1756,7 @@
   #notes-search-wrap{flex:0 0 auto; padding:0 14px 10px}
   #notes-search{
     width:100%; box-sizing:border-box; border:none; border-radius:12px;
-    background:var(--surface); color:var(--ink); font-size:14.5px; padding:10px 12px;
+    background:var(--surface); color:var(--ink); font-size:16px; padding:10px 12px;
     -webkit-appearance:none;
   }
   #notes-search::placeholder{color:var(--muted)}
@@ -3183,7 +3233,7 @@
 
 <script>
 (function(){
-  var APPV = 'v3.63';
+  var APPV = 'v3.64';
 
   // Debug : ?debug_modal=1 force l'affichage du modal "nouvelle version" sans attendre un vrai
   // déploiement. Capturé ICI, tout au début, car plus bas (login mémorisé, connexion) le code
@@ -4864,9 +4914,16 @@
     // etre informe qu'une nouvelle version vient d'etre installee (decision explicite du 2026-07-20).
     showUpdateModal();
   }
+  // D2 (21/08/2026, demande explicite) : confirmation avant deconnexion -- geste destructif
+  // (perd l'acces si le code n'est pas note ailleurs) qui n'en avait aucune, agrandir sa zone
+  // tactile (cf regle B ci-dessus) sans garde-fou aurait aggrave le risque de faux clic.
+  // askConfirm() est deja utilise pour la suppression d'abonnement (Couts) -- reutilise ici,
+  // aucun nouveau mecanisme de modal.
   document.getElementById('sh-logout').addEventListener('click', function(){
-    store('jarvisCode',''); store('jarvisNom','');
-    location.href = location.pathname;
+    askConfirm('Se déconnecter ?', 'Il faudra ressaisir ton code d’accès pour revenir.', function(){
+      store('jarvisCode',''); store('jarvisNom','');
+      location.href = location.pathname;
+    }, 'Se déconnecter');
   });
 
   // ---- Mes documents (catalogue indexe la nuit) : dossiers par categorie ----
@@ -4981,9 +5038,13 @@
   var delModalBg = document.getElementById('delModalBg');
   var delModal = document.getElementById('delModal');
   var delModalPendingYes = null;
-  function askConfirm(title, msg, onYes){
+  // btnLabel optionnel (D2, 21/08/2026) : repli sur "Supprimer" si absent -- l'appel existant
+  // (suppression d'abonnement) n'est pas touche. Ajoute pour "Se deconnecter" (pas une
+  // suppression) sans dupliquer tout le mecanisme de modal pour une seule action de plus.
+  function askConfirm(title, msg, onYes, btnLabel){
     document.getElementById('delModalTitle').textContent = title;
     document.getElementById('delModalMsg').textContent = msg;
+    document.getElementById('delModalConfirm').textContent = btnLabel || 'Supprimer';
     delModalPendingYes = onYes;
     delModalBg.classList.add('open'); delModal.classList.add('open');
   }
