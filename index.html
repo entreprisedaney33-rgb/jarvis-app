@@ -26,6 +26,15 @@
     --bg:#000000; --surface:#1C1C1E; --bubble:#26262A;
     --hairline:rgba(84,84,88,.65); --ink:#FFFFFF; --muted:#98989E;
     --blue:#0A84FF; --gold-a:#E8B96A; --gold-b:#B87E2E;
+    /* Prep terrain (25/08/2026, aucun changement visuel) : les valeurs en dur ci-dessous
+       portaient EXACTEMENT la meme valeur que --gold-a/--gold-b, ou etaient de vraies
+       variantes jamais nommees. Regroupees ici pour que toute future personnalisation MCS
+       (gatee par isMcsCode(), meme principe que body.cal-mcs-light) ait un point d'entree
+       unique -- ce chantier-ci ne change AUCUNE couleur, juste la source de verite. */
+    --gold-rgb:232,185,106; --gold-ink:#1a1200; --gold-ink-2:#1A130A;
+    --gold-anomalie:#e0a64f;      /* ligne ik-anomalie : teinte distincte de gold-a */
+    --gold-note-bg:#F5D67A;       /* fond "post-it" apercu note, Sites Vitrine (labo) */
+    --gold-splash-light:#F5D9A0;  /* stop clair du degrade de l'anneau du splash */
     --ok:#30D158; --no:#FF453A;
   }
   *{box-sizing:border-box; -webkit-tap-highlight-color:transparent}
@@ -47,7 +56,7 @@
   .biglogo{
     width:96px; height:96px; border-radius:50%;
     background:linear-gradient(145deg,var(--gold-a),var(--gold-b));
-    color:#1A130A; font-weight:800; font-size:48px;
+    color:var(--gold-ink-2); font-weight:800; font-size:48px;
     display:flex; align-items:center; justify-content:center;
     font-family:Georgia,serif;
   }
@@ -96,16 +105,16 @@
     width:44px; height:44px; border-radius:50%; border:0; padding:0;
     display:flex; align-items:center; justify-content:center;
     background:linear-gradient(145deg,var(--gold-a),var(--gold-b));
-    color:#1A130A; box-shadow:0 1px 8px rgba(232,185,106,.4);
+    color:var(--gold-ink-2); box-shadow:0 1px 8px rgba(var(--gold-rgb),.4);
     cursor:pointer; -webkit-tap-highlight-color:transparent;
   }
   #hcallbtn:active{opacity:.75}
   .mono-j{
     position:relative;
-    box-shadow:0 1px 8px rgba(232,185,106,.4);
+    box-shadow:0 1px 8px rgba(var(--gold-rgb),.4);
     width:26px; height:26px; border-radius:50%;
     background:linear-gradient(145deg,var(--gold-a),var(--gold-b));
-    color:#1A130A; font-weight:800; font-size:13px;
+    color:var(--gold-ink-2); font-weight:800; font-size:13px;
     display:flex; align-items:center; justify-content:center;
     font-family:Georgia,serif; flex:0 0 auto;
   }
@@ -136,7 +145,7 @@
   #devis-ambigu-hint{font-size:12px; color:var(--muted); width:100%}
   .chat-sug-btn{
     font:inherit; font-size:13.5px; font-weight:600; color:var(--gold-a);
-    background:rgba(232,185,106,.12); border:0.5px solid rgba(232,185,106,.35);
+    background:rgba(var(--gold-rgb),.12); border:0.5px solid rgba(var(--gold-rgb),.35);
     border-radius:99px; padding:8px 14px; cursor:pointer; -webkit-tap-highlight-color:transparent;
   }
   .chat-sug-btn:active{opacity:.6}
@@ -247,7 +256,7 @@
   /* ===== fin D2 ============================================================================= */
   .pullspin-ic{
     width:24px; height:24px; border-radius:50%;
-    border:3px solid rgba(232,185,106,.25); border-top-color:var(--gold-a);
+    border:3px solid rgba(var(--gold-rgb),.25); border-top-color:var(--gold-a);
     animation:pullspin .7s linear infinite;
   }
   @keyframes pullspin{to{transform:rotate(360deg)}}
@@ -396,12 +405,12 @@
   .sh-item[disabled]:active{background:none}
   .sh-ic{
     flex:0 0 auto; width:32px; height:32px; border-radius:9.5px;
-    background:rgba(232,185,106,.13); color:var(--gold-a);
+    background:rgba(var(--gold-rgb),.13); color:var(--gold-a);
     display:flex; align-items:center; justify-content:center; font-size:16px;
   }
   .sh-item.danger .sh-ic{background:rgba(255,69,58,.13)}
   .sh-label{flex:1; min-width:0}
-  .sh-item .soon{margin-left:auto; flex:0 0 auto; font-size:11px; color:var(--gold-a); border:1px solid rgba(232,185,106,.4); border-radius:99px; padding:2px 8px}
+  .sh-item .soon{margin-left:auto; flex:0 0 auto; font-size:11px; color:var(--gold-a); border:1px solid rgba(var(--gold-rgb),.4); border-radius:99px; padding:2px 8px}
   .badge-count{
     margin-left:auto; flex:0 0 auto; min-width:20px; height:20px; padding:0 6px; border-radius:99px;
     background:var(--no); color:#fff; font-size:12px; font-weight:700;
@@ -424,7 +433,7 @@
   .sh-tile[disabled]{opacity:.35; pointer-events:none}
   .sh-tile-ic{
     flex:0 0 auto; width:44px; height:44px; border-radius:14px;
-    background:rgba(232,185,106,.13); color:var(--gold-a);
+    background:rgba(var(--gold-rgb),.13); color:var(--gold-a);
     display:flex; align-items:center; justify-content:center; font-size:21px;
   }
   .sh-tile-label{font-size:11.5px; font-weight:600; line-height:1.25; text-wrap:balance}
@@ -499,7 +508,7 @@
   .doc-mid{flex:1; min-width:0}
   .doc-nom{font-size:15px; font-weight:600; display:block; white-space:nowrap; overflow:hidden; text-overflow:ellipsis}
   .doc-info{font-size:12.5px; color:var(--muted); display:block; margin-top:2px; white-space:nowrap; overflow:hidden; text-overflow:ellipsis}
-  .doc-cat{font-size:11px; color:var(--gold-a); border:1px solid rgba(232,185,106,.4); border-radius:99px; padding:2px 8px; flex:0 0 auto}
+  .doc-cat{font-size:11px; color:var(--gold-a); border:1px solid rgba(var(--gold-rgb),.4); border-radius:99px; padding:2px 8px; flex:0 0 auto}
   #docs-empty, #docs-loading{color:var(--muted); text-align:center; padding:40px 20px; font-size:14px}
   /* Dossiers (vue racine "Mes documents") */
   .doc-folder{
@@ -567,7 +576,7 @@
   .client-row:first-child{border-top:none}
   .client-badge{font-size:11px; font-weight:700; border-radius:99px; padding:3px 9px; flex:0 0 auto; text-transform:uppercase; letter-spacing:.02em}
   .client-badge.ok{background:rgba(48,209,88,.15); color:var(--ok)}
-  .client-badge.incompris{background:rgba(232,185,106,.15); color:var(--gold-a)}
+  .client-badge.incompris{background:rgba(var(--gold-rgb),.15); color:var(--gold-a)}
   .client-badge.precision{background:rgba(100,180,255,.15); color:#64b4ff}
   .client-badge.bloque{background:rgba(255,69,58,.15); color:var(--no)}
   .client-badge.erreur{background:rgba(255,69,58,.25); color:var(--no)}
@@ -632,7 +641,7 @@
     background:#2E2E32; color:var(--muted); font-size:13px; font-weight:600; cursor:pointer;
     -webkit-tap-highlight-color:transparent; white-space:nowrap;
   }
-  .devis-tab.active{background:var(--gold-a); color:#1a1200; border-color:var(--gold-a)}
+  .devis-tab.active{background:var(--gold-a); color:var(--gold-ink); border-color:var(--gold-a)}
   #devis-search-wrap{flex:0 0 auto; padding:10px 14px 0}
   #devis-search{
     width:100%; box-sizing:border-box; border:none; border-radius:12px;
@@ -648,7 +657,7 @@
   }
   .df-chip.active{opacity:1; background:#2E2E32; color:var(--ink); border-color:rgba(255,255,255,.3)}
   .df-badge{font-size:11px; font-weight:700; border-radius:99px; padding:2px 9px; flex:0 0 auto}
-  .df-badge.attente{background:rgba(232,185,106,.15); color:var(--gold-a)}
+  .df-badge.attente{background:rgba(var(--gold-rgb),.15); color:var(--gold-a)}
   .df-badge.envoye{background:rgba(10,132,255,.15); color:var(--blue)}
   .df-badge.rejete, .df-badge.impaye{background:rgba(255,69,58,.15); color:var(--no)}
   .df-badge.brouillon{background:rgba(255,255,255,.1); color:var(--muted)}
@@ -707,14 +716,14 @@
   }
   #contrats-previsionnel-banniere{
     flex:0 0 auto; margin:10px 14px 0; padding:10px 12px; border-radius:12px;
-    background:rgba(232,185,106,.12); color:var(--gold-a); font-size:12.5px; line-height:1.4;
+    background:rgba(var(--gold-rgb),.12); color:var(--gold-a); font-size:12.5px; line-height:1.4;
   }
   /* C4 (21/08/2026) : bandeau permanent TEST_MODE, meme famille visuelle et meme place dans le
      flux (sibling fixe hors de #devis-list/#contrats-list, donc jamais scrolle) que le bandeau
      previsionnel ci-dessus -- reutilise pour Devis ET Contrats (id different, meme classe). */
   .testmode-banniere{
     flex:0 0 auto; margin:10px 14px 0; padding:10px 12px; border-radius:12px;
-    background:rgba(232,185,106,.12); color:var(--gold-a); font-size:12.5px; line-height:1.4;
+    background:rgba(var(--gold-rgb),.12); color:var(--gold-a); font-size:12.5px; line-height:1.4;
     font-weight:600;
   }
   .contrat-card.previsionnel{opacity:.85}
@@ -723,7 +732,7 @@
   #contrats-add-btn{
     position:fixed; right:18px; bottom:calc(22px + env(safe-area-inset-bottom)); z-index:51;
     width:52px; height:52px; border-radius:50%; border:0;
-    background:linear-gradient(145deg,var(--gold-a),var(--gold-b)); color:#1a1200;
+    background:linear-gradient(145deg,var(--gold-a),var(--gold-b)); color:var(--gold-ink);
     font-size:26px; display:none; align-items:center; justify-content:center; cursor:pointer;
     box-shadow:0 6px 16px rgba(0,0,0,.35); -webkit-tap-highlight-color:transparent;
   }
@@ -831,7 +840,7 @@
      Mathéo 11/08/2026 -- l'icône seule ⬇️ n'était pas assez claire. */
   #ik-export{
     flex:0 0 auto; display:flex; align-items:center; gap:5px; padding:7px 13px;
-    border-radius:99px; background:rgba(232,185,106,.15); color:var(--gold-a);
+    border-radius:99px; background:rgba(var(--gold-rgb),.15); color:var(--gold-a);
     font-size:13px; font-weight:700; text-decoration:none; white-space:nowrap;
     -webkit-tap-highlight-color:transparent;
   }
@@ -850,7 +859,7 @@
     position:fixed; left:50%; transform:translateX(-50%);
     bottom:calc(18px + env(safe-area-inset-bottom)); z-index:51;
     display:flex; align-items:center; gap:7px; padding:13px 22px; border:0; border-radius:99px;
-    background:linear-gradient(145deg,var(--gold-a),var(--gold-b)); color:#1a1200;
+    background:linear-gradient(145deg,var(--gold-a),var(--gold-b)); color:var(--gold-ink);
     font-size:15px; font-weight:700; cursor:pointer; white-space:nowrap;
     box-shadow:0 6px 16px rgba(0,0,0,.35); -webkit-tap-highlight-color:transparent;
   }
@@ -869,7 +878,7 @@
   table.ik-table tbody tr:active{background:rgba(255,255,255,.06)}
   table.ik-table td.ik-td-trajet{white-space:normal; min-width:150px}
   table.ik-table td.ik-td-km{color:var(--gold-a); font-weight:700; text-align:right}
-  table.ik-table tr.ik-row-anomalie td{color:#e0a64f}
+  table.ik-table tr.ik-row-anomalie td{color:var(--gold-anomalie)}
   #ik-form-bg{position:fixed; inset:0; z-index:55; background:rgba(0,0,0,.55); display:none}
   #ik-form-bg.open{display:block}
   #ikf-calc{width:auto; margin-top:8px; padding:8px 14px; font-size:12.5px}
@@ -1009,12 +1018,12 @@
   #relances-summary{font-size:12.5px; color:var(--muted); text-align:center; margin:10px 14px 0}
   #relances-list{flex:1; overflow-y:auto; -webkit-overflow-scrolling:touch; padding:10px 14px calc(20px + env(safe-area-inset-bottom))}
   #relances-empty, #relances-loading{color:var(--muted); text-align:center; padding:40px 20px; font-size:14px}
-  .df-badge.r1{background:rgba(232,185,106,.15); color:var(--gold-a)}
+  .df-badge.r1{background:rgba(var(--gold-rgb),.15); color:var(--gold-a)}
   .df-badge.r2{background:rgba(255,69,58,.15); color:var(--no)}
   .df-badge.suspendu{background:rgba(255,255,255,.1); color:var(--muted)}
   .rl-card .dv-actions{flex-wrap:wrap}
   .rl-card .dv-actions button{padding:9px 12px; font-size:13px; border-radius:99px; border:0; cursor:pointer; -webkit-tap-highlight-color:transparent}
-  .rl-card .rl-marquer{background:var(--gold-a); color:#1a1200; font-weight:700}
+  .rl-card .rl-marquer{background:var(--gold-a); color:var(--gold-ink); font-weight:700}
   .rl-card .rl-suspendre{background:#2E2E32; color:var(--ink)}
   .rl-card .rl-reprendre{background:var(--ok); color:#04210c; font-weight:700}
   .rl-suspend-note{font-size:12px; color:var(--muted); margin-top:2px}
@@ -1028,7 +1037,7 @@
   .rl-form textarea{resize:vertical; min-height:44px}
   .rl-form .rl-form-actions{display:flex; gap:8px}
   .rl-form .rl-form-actions button{flex:1; padding:9px; font-size:13.5px; border-radius:10px; border:0; cursor:pointer}
-  .rl-form .rl-confirm{background:var(--gold-a); color:#1a1200; font-weight:700}
+  .rl-form .rl-confirm{background:var(--gold-a); color:var(--gold-ink); font-weight:700}
   .rl-form .rl-cancel{background:#2E2E32; color:var(--muted)}
   /* Panneau plein ecran "Carnet bleu" (fiches par residence MCS -- nom + un commentaire libre,
      compte patron d'un tenant secondaire uniquement). Coffre-fort : le commentaire est editable
@@ -1145,7 +1154,7 @@
     background:var(--surface); color:var(--muted); cursor:pointer; -webkit-tap-highlight-color:transparent;
     white-space:nowrap;
   }
-  .pf-tab.active{background:var(--gold-a); color:#1a1200}
+  .pf-tab.active{background:var(--gold-a); color:var(--gold-ink)}
   #portefeuille-search-wrap{flex:0 0 auto; padding:10px 14px 0}
   #portefeuille-search{
     width:100%; box-sizing:border-box; border:none; border-radius:12px;
@@ -1192,7 +1201,7 @@
     background:var(--surface); color:var(--muted); cursor:pointer; -webkit-tap-highlight-color:transparent;
     white-space:nowrap;
   }
-  .rel-tab.active{background:var(--gold-a); color:#1a1200}
+  .rel-tab.active{background:var(--gold-a); color:var(--gold-ink)}
   #relations-search-wrap{flex:0 0 auto; padding:10px 14px 0}
   #relations-search{
     width:100%; box-sizing:border-box; border:none; border-radius:12px;
@@ -1215,11 +1224,11 @@
      part ni une notification push (demande explicite Mathéo : "quand il est en train de faire un
      truc chez ce client"). */
   .rel-obs{margin-top:10px; padding-top:10px; border-top:1px solid var(--hairline)}
-  .rel-obs-row{background:rgba(232,185,106,.08); border-radius:10px; padding:9px 11px; margin-bottom:8px}
+  .rel-obs-row{background:rgba(var(--gold-rgb),.08); border-radius:10px; padding:9px 11px; margin-bottom:8px}
   .rel-obs-top{display:flex; align-items:center; gap:6px; margin-bottom:4px}
   .rel-obs-imp{font-size:10px; font-weight:700; padding:2px 8px; border-radius:99px; text-transform:uppercase; letter-spacing:.02em}
   .rel-obs-imp.forte{background:rgba(255,69,58,.15); color:var(--no)}
-  .rel-obs-imp.moyenne{background:rgba(232,185,106,.15); color:var(--gold-a)}
+  .rel-obs-imp.moyenne{background:rgba(var(--gold-rgb),.15); color:var(--gold-a)}
   .rel-obs-constat{font-size:13px; color:var(--ink); line-height:1.4}
   .rel-obs-actions{display:flex; gap:8px; margin-top:8px}
   .rel-obs-btn{font-size:12px; font-weight:600; padding:6px 11px; border-radius:99px; border:none; background:#2E2E32; color:var(--ink)}
@@ -1392,7 +1401,7 @@
   .meute-score{font-size:11px; color:var(--gold-a); font-weight:700; flex:0 0 auto; padding-top:2px}
   .meute-meta{font-size:12.5px; color:var(--muted); display:block; margin-bottom:8px}
   .meute-argumentaire{
-    background:rgba(232,185,106,.1); border:1px solid rgba(232,185,106,.3); border-radius:10px;
+    background:rgba(var(--gold-rgb),.1); border:1px solid rgba(var(--gold-rgb),.3); border-radius:10px;
     padding:10px; font-size:13px; color:var(--ink); margin-bottom:10px; white-space:pre-wrap;
   }
   .meute-commission{font-size:12.5px; color:var(--gold-a); font-weight:600; margin-bottom:10px; display:block}
@@ -1401,7 +1410,7 @@
     flex:1; min-width:80px; padding:9px; border-radius:10px; border:0; font-size:13px; font-weight:700;
     cursor:pointer; -webkit-tap-highlight-color:transparent; background:var(--bg); color:var(--ink);
   }
-  .meute-act-btn.active{background:var(--gold-a); color:#1a1200}
+  .meute-act-btn.active{background:var(--gold-a); color:var(--gold-ink)}
   .meute-tel{font-size:13px; color:var(--blue,#0A84FF); text-decoration:none; display:inline-block; margin-bottom:8px}
   #meute-empty, #meute-loading{color:var(--muted); text-align:center; padding:40px 20px; font-size:14px}
   .meute-email-row{display:flex; gap:6px; margin-bottom:10px}
@@ -1410,7 +1419,7 @@
     border:0.5px solid rgba(255,255,255,.18); border-radius:9px; padding:8px 10px; margin-bottom:8px;
   }
   .meute-email-send{
-    flex:0 0 auto; padding:8px 12px; border-radius:9px; border:0; background:var(--gold-a); color:#1a1200;
+    flex:0 0 auto; padding:8px 12px; border-radius:9px; border:0; background:var(--gold-a); color:var(--gold-ink);
     font-size:12.5px; font-weight:700; cursor:pointer; -webkit-tap-highlight-color:transparent; white-space:nowrap;
   }
   .meute-email-send:disabled{opacity:.5}
@@ -1432,7 +1441,7 @@
   .meute-preview-row{margin-bottom:8px}
   .meute-preview-link{
     display:inline-block; font-size:12.5px; color:var(--gold-a); font-weight:700; text-decoration:none;
-    border:0.5px solid rgba(232,185,106,.4); border-radius:9px; padding:7px 12px;
+    border:0.5px solid rgba(var(--gold-rgb),.4); border-radius:9px; padding:7px 12px;
   }
   #meute-tabs{
     flex:0 0 auto; display:flex; gap:8px; padding:10px 14px; overflow-x:auto; -webkit-overflow-scrolling:touch;
@@ -1443,13 +1452,13 @@
     background:#2E2E32; color:var(--muted); font-size:13px; font-weight:600; cursor:pointer;
     -webkit-tap-highlight-color:transparent; white-space:nowrap;
   }
-  .meute-tab.active{background:var(--gold-a); color:#1a1200; border-color:var(--gold-a)}
+  .meute-tab.active{background:var(--gold-a); color:var(--gold-ink); border-color:var(--gold-a)}
   .meute-card > textarea{
     width:100%; box-sizing:border-box; font:inherit; font-size:13px; color:var(--ink); background:#2E2E32;
     border:0.5px solid rgba(255,255,255,.18); border-radius:10px; padding:9px 11px; resize:vertical; margin-bottom:8px;
   }
   .meute-notes-save{
-    padding:7px 14px; border-radius:8px; border:0; background:var(--gold-a); color:#1a1200;
+    padding:7px 14px; border-radius:8px; border:0; background:var(--gold-a); color:var(--gold-ink);
     font-size:12.5px; font-weight:700; cursor:pointer; -webkit-tap-highlight-color:transparent;
   }
   /* "Opportunités" -- panneau propre (ids), cartes/onglets/boutons reutilisent .meute-* tel quel. */
@@ -1480,7 +1489,7 @@
      que .testmode-banniere, propos different (etat du pipeline, pas un avertissement). */
   #opp-enrichissement-banniere{
     flex:0 0 auto; margin:0 14px 10px; padding:10px 12px; border-radius:12px;
-    background:rgba(232,185,106,.12); color:var(--gold-a); font-size:12.5px; line-height:1.4;
+    background:rgba(var(--gold-rgb),.12); color:var(--gold-a); font-size:12.5px; line-height:1.4;
   }
   .opp-recherche-row{
     display:flex; flex-direction:column; gap:2px; padding:10px 0; border-top:0.5px solid var(--hairline);
@@ -1500,7 +1509,7 @@
   #opp-empty, #opp-loading{color:var(--muted); text-align:center; padding:40px 20px; font-size:14px}
   .opp-source-badge{font-size:11px; font-weight:700; flex:0 0 auto; padding:3px 8px; border-radius:99px; white-space:nowrap}
   .opp-source-syndic{background:rgba(10,132,255,.16); color:#5AB2FF}
-  .opp-source-copro{background:rgba(232,185,106,.18); color:var(--gold-a)}
+  .opp-source-copro{background:rgba(var(--gold-rgb),.18); color:var(--gold-a)}
   .opp-msg-box{margin-top:6px}
   .opp-prepare-btn{
     width:100%; padding:9px; border-radius:10px; border:0.5px solid rgba(255,255,255,.18); background:#2E2E32;
@@ -1547,7 +1556,7 @@
   #vitrine-lancer-ville{flex:1; min-width:0}
   #vitrine-lancer-limit{flex:0 0 56px; text-align:center}
   #vitrine-lancer-go{
-    padding:9px; border-radius:10px; border:0; background:var(--gold-a); color:#1a1200;
+    padding:9px; border-radius:10px; border:0; background:var(--gold-a); color:var(--gold-ink);
     font-size:13px; font-weight:700; cursor:pointer; -webkit-tap-highlight-color:transparent;
   }
   #vitrine-lancer-go:disabled{opacity:.5}
@@ -1561,7 +1570,7 @@
     background:#2E2E32; color:var(--muted); font-size:13px; font-weight:600; cursor:pointer;
     -webkit-tap-highlight-color:transparent; white-space:nowrap;
   }
-  .vitrine-tab.active{background:var(--gold-a); color:#1a1200; border-color:var(--gold-a)}
+  .vitrine-tab.active{background:var(--gold-a); color:var(--gold-ink); border-color:var(--gold-a)}
   #vitrine-list{flex:1; overflow-y:auto; -webkit-overflow-scrolling:touch; padding:10px 14px calc(20px + env(safe-area-inset-bottom))}
   .vitrine-card{background:var(--surface); border-radius:14px; padding:14px; margin-bottom:12px}
   .vitrine-nom{font-size:15px; font-weight:600; display:block; margin-bottom:2px}
@@ -1569,7 +1578,7 @@
   .vitrine-actions{display:flex; gap:8px; flex-wrap:wrap; align-items:center; margin-bottom:10px}
   .vitrine-tel{font-size:13px; color:var(--blue,#0A84FF); text-decoration:none; padding:8px 4px}
   .vitrine-demo-link{
-    font-size:13px; font-weight:700; color:#1a1200; background:var(--gold-a); text-decoration:none;
+    font-size:13px; font-weight:700; color:var(--gold-ink); background:var(--gold-a); text-decoration:none;
     border-radius:9px; padding:8px 13px;
   }
   .vitrine-expir{font-size:12px; color:var(--muted); display:block; margin-bottom:10px}
@@ -1591,7 +1600,7 @@
     border:0.5px solid rgba(255,255,255,.18); border-radius:10px; padding:9px 11px; resize:vertical;
   }
   .vitrine-mail-send{
-    padding:9px; border-radius:10px; border:0; background:var(--gold-a); color:#1a1200;
+    padding:9px; border-radius:10px; border:0; background:var(--gold-a); color:var(--gold-ink);
     font-size:13px; font-weight:700; cursor:pointer; -webkit-tap-highlight-color:transparent;
   }
   .vitrine-mail-send:disabled{opacity:.5}
@@ -1599,7 +1608,7 @@
   .vitrine-notes-box{margin-bottom:10px}
   .vitrine-notes-preview{
     display:block; width:100%; text-align:left; font:inherit; font-size:12.5px; line-height:1.4; color:#3a2f0a;
-    background:#F5D67A; border:0; border-radius:10px; padding:9px 11px; cursor:pointer;
+    background:var(--gold-note-bg); border:0; border-radius:10px; padding:9px 11px; cursor:pointer;
     -webkit-tap-highlight-color:transparent; white-space:pre-wrap; word-break:break-word;
   }
   .vitrine-notes-empty{
@@ -1614,7 +1623,7 @@
     border:0.5px solid rgba(255,255,255,.18); border-radius:10px; padding:9px 11px; resize:vertical;
   }
   .vitrine-notes-save{
-    padding:9px; border-radius:10px; border:0; background:var(--gold-a); color:#1a1200;
+    padding:9px; border-radius:10px; border:0; background:var(--gold-a); color:var(--gold-ink);
     font-size:13px; font-weight:700; cursor:pointer; -webkit-tap-highlight-color:transparent;
   }
   .vitrine-notes-save:disabled{opacity:.5}
@@ -1644,7 +1653,7 @@
     border:0.5px solid rgba(255,255,255,.18); border-radius:9px; padding:8px 10px;
   }
   .vitrine-devis-go{
-    padding:9px; border-radius:10px; border:0; background:var(--gold-a); color:#1a1200;
+    padding:9px; border-radius:10px; border:0; background:var(--gold-a); color:var(--gold-ink);
     font-size:13px; font-weight:700; cursor:pointer; -webkit-tap-highlight-color:transparent;
   }
   .vitrine-devis-go:disabled{opacity:.5}
@@ -1655,7 +1664,7 @@
   .vitrine-devis-result.open{display:flex}
   .vitrine-devis-result-url{flex:1; min-width:0; font-size:12px; color:var(--muted); overflow:hidden; text-overflow:ellipsis; white-space:nowrap}
   .vitrine-devis-copy{
-    flex:0 0 auto; padding:7px 10px; border-radius:8px; border:0; background:var(--gold-a); color:#1a1200;
+    flex:0 0 auto; padding:7px 10px; border-radius:8px; border:0; background:var(--gold-a); color:var(--gold-ink);
     font-size:12px; font-weight:700; cursor:pointer; -webkit-tap-highlight-color:transparent;
   }
   .vitrine-statut-actions{display:flex; gap:8px; flex-wrap:wrap}
@@ -1663,7 +1672,7 @@
     flex:1; min-width:76px; padding:9px; border-radius:10px; border:0; font-size:12.5px; font-weight:700;
     cursor:pointer; -webkit-tap-highlight-color:transparent; background:var(--bg); color:var(--ink);
   }
-  .vitrine-statut-btn.active{background:var(--gold-a); color:#1a1200}
+  .vitrine-statut-btn.active{background:var(--gold-a); color:var(--gold-ink)}
   #vitrine-empty, #vitrine-loading{color:var(--muted); text-align:center; padding:40px 20px; font-size:14px}
   /* Panneau plein ecran "SEO" (agent PLUME, 2026-07-25) — avancement de chaque site suivi + la
      prochaine intervention/strategie prevue par l'agent. Backend 100% independant (webhook dedie
@@ -1694,12 +1703,12 @@
   .plume-nom{font-size:15px; font-weight:600; display:block; margin-bottom:2px}
   .plume-meta{font-size:12.5px; color:var(--muted); display:block; margin-bottom:10px}
   .plume-statut-pill{
-    display:inline-block; font-size:12px; font-weight:700; color:#1a1200; background:var(--gold-a);
+    display:inline-block; font-size:12px; font-weight:700; color:var(--gold-ink); background:var(--gold-a);
     border-radius:99px; padding:5px 11px; margin-bottom:10px;
   }
   .plume-commencer-btn{
     display:block; width:100%; padding:11px; margin-bottom:10px; border-radius:10px; border:0;
-    background:var(--gold-a); color:#1a1200; font-size:14px; font-weight:700; cursor:pointer;
+    background:var(--gold-a); color:var(--gold-ink); font-size:14px; font-weight:700; cursor:pointer;
     -webkit-tap-highlight-color:transparent;
   }
   .plume-commencer-btn:disabled{opacity:.5}
@@ -1753,7 +1762,7 @@
     border:0.5px solid rgba(255,255,255,.18); border-radius:10px; padding:9px 11px; resize:vertical; min-height:220px;
   }
   .plume-rapport-send{
-    padding:9px; border-radius:10px; border:0; background:var(--gold-a); color:#1a1200;
+    padding:9px; border-radius:10px; border:0; background:var(--gold-a); color:var(--gold-ink);
     font-size:13px; font-weight:700; cursor:pointer; -webkit-tap-highlight-color:transparent;
   }
   .plume-rapport-send:disabled{opacity:.5}
@@ -1797,7 +1806,7 @@
     background:var(--surface); color:var(--muted); cursor:pointer; -webkit-tap-highlight-color:transparent;
     white-space:nowrap;
   }
-  .notes-tab.active{background:var(--gold-a); color:#1a1200}
+  .notes-tab.active{background:var(--gold-a); color:var(--gold-ink)}
   #notes-search-wrap{flex:0 0 auto; padding:0 14px 10px}
   #notes-search{
     width:100%; box-sizing:border-box; border:none; border-radius:12px;
@@ -1821,7 +1830,7 @@
   }
   #notes-bar-send{
     width:38px; height:38px; border-radius:50%; border:0; flex:0 0 auto; background:var(--gold-a);
-    color:#1a1200; display:flex; align-items:center; justify-content:center; cursor:pointer;
+    color:var(--gold-ink); display:flex; align-items:center; justify-content:center; cursor:pointer;
     -webkit-tap-highlight-color:transparent;
   }
   #notes-bar-send:disabled{opacity:.5}
@@ -1832,7 +1841,7 @@
   .notes-check{
     width:24px; height:24px; border-radius:50%; border:1.5px solid var(--muted); flex:0 0 auto;
     background:transparent; cursor:pointer; -webkit-tap-highlight-color:transparent; margin-top:2px;
-    display:flex; align-items:center; justify-content:center; font-size:13px; color:#1a1200;
+    display:flex; align-items:center; justify-content:center; font-size:13px; color:var(--gold-ink);
   }
   .notes-card.fait .notes-check{background:var(--gold-a); border-color:var(--gold-a)}
   .notes-body{flex:1; min-width:0}
@@ -1870,7 +1879,7 @@
     flex:1; padding:8px; border-radius:9px; border:0; font-size:12.5px; font-weight:700;
     cursor:pointer; -webkit-tap-highlight-color:transparent;
   }
-  .notes-garder{background:var(--gold-a); color:#1a1200}
+  .notes-garder{background:var(--gold-a); color:var(--gold-ink)}
   .notes-ignorer{background:#2E2E32; color:var(--muted)}
   /* Panneau plein ecran "Emails" — theme CLAIR dedie façon Mail iOS (le reste de l'app reste sombre :
      les couleurs sont re-definies en variables locales sur #emailsview, donc tous les elements
@@ -1994,7 +2003,7 @@
     background:#EFEFF2; color:#000; cursor:pointer; -webkit-tap-highlight-color:transparent;
   }
   .ed-send{
-    flex:1; font:inherit; font-size:15px; font-weight:600; color:#1A130A;
+    flex:1; font:inherit; font-size:15px; font-weight:600; color:var(--gold-ink-2);
     background:var(--gold-a); border:none; border-radius:12px; cursor:pointer;
     -webkit-tap-highlight-color:transparent;
   }
@@ -2063,10 +2072,10 @@
   .cal-cell .cal-daynum{font-size:14px; font-weight:600}
   .cal-cell.today .cal-daynum{color:var(--gold-a)}
   .cal-cell.selected{background:var(--gold-a)}
-  .cal-cell.selected .cal-daynum{color:#1A130A}
+  .cal-cell.selected .cal-daynum{color:var(--gold-ink-2)}
   .cal-dots{display:flex; gap:2px}
   .cal-dot{width:4px; height:4px; border-radius:50%; background:var(--gold-a)}
-  .cal-cell.selected .cal-dot{background:#1A130A}
+  .cal-cell.selected .cal-dot{background:var(--gold-ink-2)}
   #cal-day{flex:1; overflow-y:auto; -webkit-overflow-scrolling:touch; padding:6px 14px calc(90px + env(safe-area-inset-bottom))}
   #cal-day-empty{color:var(--muted); text-align:center; padding:30px 20px; font-size:13.5px}
   .cal-ev{
@@ -2080,7 +2089,7 @@
   #cal-add{
     position:absolute; right:18px; bottom:calc(18px + env(safe-area-inset-bottom));
     width:52px; height:52px; border-radius:50%; border:0; font-size:24px; font-weight:600;
-    background:var(--gold-a); color:#1A130A; cursor:pointer; -webkit-tap-highlight-color:transparent;
+    background:var(--gold-a); color:var(--gold-ink-2); cursor:pointer; -webkit-tap-highlight-color:transparent;
     box-shadow:0 6px 18px rgba(0,0,0,.35);
   }
   /* Sélecteur de vue (Mois/Semaine/3 jours/Jour), façon Google Agenda */
@@ -2091,7 +2100,7 @@
     flex:1; font:inherit; font-size:12.5px; font-weight:600; padding:7px 4px; border-radius:8px;
     border:0; background:var(--surface); color:var(--muted); cursor:pointer; -webkit-tap-highlight-color:transparent;
   }
-  #cal-viewswitch button.active{background:var(--gold-a); color:#1A130A}
+  #cal-viewswitch button.active{background:var(--gold-a); color:var(--gold-ink-2)}
   /* Vue agenda horaire (semaine/3 jours/jour) : gouttière d'heures a gauche + colonnes par jour,
      evenements positionnes en absolu selon horaire (hauteur proportionnelle a la duree). */
   #cal-agenda{display:none; flex:1; min-height:0; flex-direction:column}
@@ -2101,7 +2110,7 @@
   .cal-agenda-dow{font-size:10px; color:var(--muted); text-transform:uppercase}
   .cal-agenda-daynum{font-size:15px; font-weight:700; margin-top:2px}
   .cal-agenda-daycol.today .cal-agenda-daynum{
-    background:var(--gold-a); color:#1A130A; width:24px; height:24px; border-radius:50%;
+    background:var(--gold-a); color:var(--gold-ink-2); width:24px; height:24px; border-radius:50%;
     display:flex; align-items:center; justify-content:center; margin:2px auto 0;
   }
   #cal-agenda-scroll{flex:1; min-height:0; overflow-y:auto; -webkit-overflow-scrolling:touch; display:flex; position:relative}
@@ -2197,12 +2206,12 @@
   }
   body.cal-mcs-light .cal-cell .cal-daynum{color:#000000; font-weight:700; font-size:12.5px}
   body.cal-mcs-light .cal-cell.today .cal-daynum{
-    background:var(--gold-a); color:#1A130A; width:20px; height:20px; border-radius:50%;
+    background:var(--gold-a); color:var(--gold-ink-2); width:20px; height:20px; border-radius:50%;
     display:flex; align-items:center; justify-content:center;
   }
-  body.cal-mcs-light .cal-cell.selected{background:rgba(232,185,106,.28)}
+  body.cal-mcs-light .cal-cell.selected{background:rgba(var(--gold-rgb),.28)}
   body.cal-mcs-light .cal-cell.selected .cal-daynum{color:#000000}
-  body.cal-mcs-light .cal-cell.selected.today .cal-daynum{color:#1A130A}
+  body.cal-mcs-light .cal-cell.selected.today .cal-daynum{color:var(--gold-ink-2)}
   body.cal-mcs-light .cal-chips{display:flex; flex-direction:column; gap:2px; width:100%; padding:0 3px}
   body.cal-mcs-light .cal-chip{
     font-size:9.5px; line-height:13px; color:#fff; border-radius:3px; padding:0 4px;
@@ -2262,7 +2271,7 @@
     flex:0 0 auto; font:inherit; font-size:13px; font-weight:700;
     border-radius:10px; padding:9px 12px; cursor:pointer;
   }
-  #bc-new-btn{color:#1a1200; background:linear-gradient(145deg,var(--gold-a),var(--gold-b)); border:none}
+  #bc-new-btn{color:var(--gold-ink); background:linear-gradient(145deg,var(--gold-a),var(--gold-b)); border:none}
   #bc-clear-btn{background:rgba(255,69,58,.13); color:#FF453A; border:0.5px solid rgba(255,69,58,.4)}
   /* Fix F1 (audit UX 19/08/2026) : en mode Professionnel (9 champs), la fiche depassait
      la hauteur d'ecran sans aucun moyen de scroller pour atteindre "Enregistrer" -- body
@@ -2276,7 +2285,7 @@
     background:rgba(255,255,255,.05); border:0.5px solid rgba(255,255,255,.1); border-radius:10px;
     padding:10px 6px; cursor:pointer;
   }
-  .bc-type-btn.active{background:rgba(232,185,106,.15); color:var(--gold-a); border-color:rgba(232,185,106,.4)}
+  .bc-type-btn.active{background:rgba(var(--gold-rgb),.15); color:var(--gold-a); border-color:rgba(var(--gold-rgb),.4)}
   #bc-form label{display:flex; flex-direction:column; gap:5px; font-size:12.5px; color:var(--muted); position:relative}
   #bc-form input{
     font:inherit; font-size:15px; color:var(--ink); background:#2E2E32;
@@ -2425,7 +2434,7 @@
      pas "c'est casse"). */
   .vc-dest{
     display:flex; align-items:center; gap:8px;
-    background:rgba(232,185,106,.12); border:0.5px solid rgba(232,185,106,.35);
+    background:rgba(var(--gold-rgb),.12); border:0.5px solid rgba(var(--gold-rgb),.35);
     border-radius:12px; padding:9px 12px; margin-bottom:10px;
   }
   .vc-dest-ic{font-size:16px}
@@ -2447,7 +2456,7 @@
   @keyframes senter{from{transform:scale(.55); opacity:0}to{transform:scale(1); opacity:1}}
   .s-ring{
     position:absolute; inset:0; border-radius:50%;
-    background:conic-gradient(from 0deg, transparent 0 62%, rgba(232,185,106,.15) 72%, #E8B96A 88%, #F5D9A0 96%, transparent 100%);
+    background:conic-gradient(from 0deg, transparent 0 62%, rgba(var(--gold-rgb),.15) 72%, var(--gold-a) 88%, var(--gold-splash-light) 96%, transparent 100%);
     -webkit-mask:radial-gradient(farthest-side, transparent calc(100% - 3.5px), #fff calc(100% - 3px));
     mask:radial-gradient(farthest-side, transparent calc(100% - 3.5px), #fff calc(100% - 3px));
     animation:sring 1.15s linear infinite;
@@ -2455,12 +2464,12 @@
   @keyframes sring{to{transform:rotate(360deg)}}
   .s-logo{
     position:absolute; inset:13px; border-radius:50%;
-    background:linear-gradient(145deg,#E8B96A,#B87E2E); color:#1A130A;
+    background:linear-gradient(145deg,var(--gold-a),var(--gold-b)); color:var(--gold-ink-2);
     font-family:Georgia,serif; font-weight:800; font-size:46px;
     display:flex; align-items:center; justify-content:center;
     animation:sbreathe 2.2s ease-in-out infinite;
   }
-  @keyframes sbreathe{0%,100%{box-shadow:0 0 22px rgba(232,185,106,.22)}50%{box-shadow:0 0 58px rgba(232,185,106,.55)}}
+  @keyframes sbreathe{0%,100%{box-shadow:0 0 22px rgba(var(--gold-rgb),.22)}50%{box-shadow:0 0 58px rgba(var(--gold-rgb),.55)}}
   #splash .s-name{color:var(--muted); font-size:13px; font-weight:700; letter-spacing:.34em; text-transform:uppercase; padding-left:.34em}
   @media (prefers-reduced-motion: reduce){
     .s-ring{animation:none; opacity:.4}
@@ -3301,7 +3310,7 @@
 
 <script>
 (function(){
-  var APPV = 'v3.68';
+  var APPV = 'v3.69';
 
   // Debug : ?debug_modal=1 force l'affichage du modal "nouvelle version" sans attendre un vrai
   // déploiement. Capturé ICI, tout au début, car plus bas (login mémorisé, connexion) le code
@@ -3337,6 +3346,11 @@
   // (webhooks mcs-*, tables mcs_*, entièrement séparé) ; tout le reste parle au
   // workflow labo historique (webhooks jarvis-*). Voir clients/mcs/config-mcs.json.
   function isMcsCode(){ return String(read('jarvisCode') || '').trim().toLowerCase().indexOf('mcs-') === 0; }
+  // Prep terrain (25/08/2026) : lit une variable CSS depuis :root -- pour les 2 fallbacks JS
+  // (couleur de chip d'agenda) qui avaient la valeur hex recopiee en dur au lieu de la lire
+  // depuis la meme source que le CSS. Garantit exactement la meme valeur, jamais une 2e a tenir
+  // a jour a la main.
+  function cssVar(name){ return getComputedStyle(document.documentElement).getPropertyValue(name).trim(); }
   // Ecran dedie Bruno (2026-08-10, demande Mathéo) : un salarie MCS n'a qu'un seul usage reel --
   // dicter un devis, que Mickael valide ensuite. Role transmis par le serveur a la connexion,
   // jamais deduit du code cote client (meme garde que le reste du masquage par role).
@@ -4311,7 +4325,7 @@
     if (!/onglet Contrats/i.test(contenu)) return;
     var ctBtn = document.createElement('button');
     ctBtn.type = 'button'; ctBtn.textContent = '📋 Voir mes contrats';
-    ctBtn.style.cssText = 'display:block;margin-top:8px;background:var(--gold-a);color:#1a1200;border:0;border-radius:10px;padding:8px 12px;font-size:13px;font-weight:600;cursor:pointer;-webkit-tap-highlight-color:transparent';
+    ctBtn.style.cssText = 'display:block;margin-top:8px;background:var(--gold-a);color:var(--gold-ink);border:0;border-radius:10px;padding:8px 12px;font-size:13px;font-weight:600;cursor:pointer;-webkit-tap-highlight-color:transparent';
     ctBtn.addEventListener('click', function(){ contratsOpen(); });
     b.appendChild(ctBtn);
   }
@@ -9880,7 +9894,7 @@
         var chips = document.createElement('div'); chips.className = 'cal-chips';
         sorted.slice(0, 2).forEach(function(ev){
           var chip = document.createElement('div'); chip.className = 'cal-chip';
-          chip.style.background = ev.color || '#E8B96A';
+          chip.style.background = ev.color || cssVar('--gold-a');
           var heure = ev.allDay ? '' : (new Date(ev.start).toLocaleTimeString('fr-FR', { hour:'2-digit', minute:'2-digit' }) + ' ');
           chip.textContent = heure + ev.title;
           chips.appendChild(chip);
@@ -9994,7 +10008,7 @@
         block.style.height = Math.max(18, (endMin - startMin) / 60 * CAL_ROW_H) + 'px';
         block.style.left = (colIdx * (100 / totalCols)) + '%';
         block.style.width = (100 / totalCols) + '%';
-        block.style.background = ev.color || '#E8B96A';
+        block.style.background = ev.color || cssVar('--gold-a');
         var bTitre = document.createElement('b'); bTitre.textContent = ev.title || '';
         block.appendChild(bTitre);
         if (ev.location){ var sp = document.createElement('span'); sp.textContent = ev.location; block.appendChild(sp); }
