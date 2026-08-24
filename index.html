@@ -1455,6 +1455,23 @@
   #opp-relancer.spin svg{animation:meute-spin 1s linear infinite}
   #opp-status{padding:8px 14px; font-size:12.5px; color:var(--muted); text-align:center; display:none}
   #opp-status.show{display:block}
+  /* B5 (21/08/2026) : bandeau permanent (pas transitoire comme #opp-status) qui rend visible le
+     pipeline d'enrichissement sans jamais montrer les 96 fiches en cartes -- meme famille visuelle
+     que .testmode-banniere, propos different (etat du pipeline, pas un avertissement). */
+  #opp-enrichissement-banniere{
+    flex:0 0 auto; margin:0 14px 10px; padding:10px 12px; border-radius:12px;
+    background:rgba(232,185,106,.12); color:var(--gold-a); font-size:12.5px; line-height:1.4;
+  }
+  .opp-recherche-row{
+    display:flex; flex-direction:column; gap:2px; padding:10px 0; border-top:0.5px solid var(--hairline);
+  }
+  .opp-recherche-row:first-child{border-top:none}
+  .opp-recherche-row .opp-recherche-nom{font-size:14.5px; font-weight:600; color:var(--ink)}
+  .opp-recherche-row .opp-recherche-meta{font-size:12px; color:var(--muted)}
+  .opp-recherche-statut{font-size:11.5px; padding:2px 8px; border-radius:99px; align-self:flex-start; margin-top:2px}
+  .opp-recherche-statut.attente{background:rgba(120,120,128,.18); color:var(--muted)}
+  .opp-recherche-statut.recherche{background:rgba(10,132,255,.16); color:#5AB2FF}
+  .opp-recherche-statut.sans-contact{background:rgba(255,69,58,.15); color:var(--no)}
   #opp-tabs{
     flex:0 0 auto; display:flex; gap:8px; padding:10px 14px; overflow-x:auto; -webkit-overflow-scrolling:touch;
     border-bottom:0.5px solid var(--hairline);
@@ -3019,10 +3036,12 @@
     <button id="opp-close" type="button" aria-label="Fermer">✕</button>
   </div>
   <p id="opp-status"></p>
+  <p id="opp-enrichissement-banniere" style="display:none"></p>
   <div id="opp-tabs">
     <button class="meute-tab active" data-tab="a_valider" type="button">🆕 À valider</button>
     <button class="meute-tab" data-tab="contacte" type="button">📨 Contactés</button>
     <button class="meute-tab" data-tab="clos" type="button">✅ Clos</button>
+    <button class="meute-tab" data-tab="en_recherche" type="button">🔍 En recherche</button>
   </div>
   <div id="opp-list"></div>
 </div>
@@ -3256,7 +3275,7 @@
 
 <script>
 (function(){
-  var APPV = 'v3.65';
+  var APPV = 'v3.66';
 
   // Debug : ?debug_modal=1 force l'affichage du modal "nouvelle version" sans attendre un vrai
   // déploiement. Capturé ICI, tout au début, car plus bas (login mémorisé, connexion) le code
@@ -7734,12 +7753,17 @@
   var oppBadge = document.getElementById('menu-opp-badge');
   var oppStatus = document.getElementById('opp-status');
   var oppRelancerBtn = document.getElementById('opp-relancer');
+  var oppEnrichBanniere = document.getElementById('opp-enrichissement-banniere');
   var oppAll = [];
   var oppActiveTab = 'a_valider';
+  // B5 (21/08/2026) : 'a_enrichir'/'sans_contact' ne tombaient dans AUCUN onglet -- 96 fiches
+  // reelles invisibles, badge muet, empty-state "aucun prospect" mensonger. Le serveur (type:list)
+  // renvoie deja tout (verifie en reel) ; le filtrage est purement cote client.
   var OPP_TABS = {
     a_valider: function(p){ return !p.statut || p.statut === 'a_valider'; },
     contacte: function(p){ return p.statut === 'contacte'; },
     clos: function(p){ return p.statut === 'gagne' || p.statut === 'perdu' || p.statut === 'ignore'; },
+    en_recherche: function(p){ return p.statut === 'a_enrichir' || p.statut === 'sans_contact'; },
   };
   var OPP_STATUTS = [
     { v:'contacte', label:'Contacté' },
@@ -7844,13 +7868,64 @@
     return card;
   }
 
+  // B5 (21/08/2026) : ligne allegee pour l'onglet En recherche -- rien n'y est actionnable
+  // (email/telephone vides, aucune donnee a saisir : "Mickael ne doit RIEN saisir lui-meme" est
+  // deja la regle du module) donc pas de oppCard() complete, juste nom + statut de recherche.
+  function oppEnRechercheRow(p){
+    var row = document.createElement('div'); row.className = 'opp-recherche-row';
+    var nom = document.createElement('span'); nom.className = 'opp-recherche-nom'; nom.textContent = p.nom || '';
+    row.appendChild(nom);
+    var metaBits = [];
+    if (p.ville) metaBits.push(p.ville);
+    if (metaBits.length){
+      var meta = document.createElement('span'); meta.className = 'opp-recherche-meta'; meta.textContent = metaBits.join(' · ');
+      row.appendChild(meta);
+    }
+    var statut = document.createElement('span'); statut.className = 'opp-recherche-statut';
+    var tentatives = Number(p.tentatives_enrichissement) || 0;
+    if (p.statut === 'sans_contact'){
+      statut.classList.add('sans-contact');
+      statut.textContent = '✕ Sans contact trouvé après ' + (tentatives || 3) + ' essais';
+    } else if (tentatives > 0){
+      statut.classList.add('recherche');
+      statut.textContent = '🔍 Recherché ' + tentatives + '× · réessai la semaine prochaine';
+    } else {
+      statut.classList.add('attente');
+      statut.textContent = '⏳ Pas encore recherché';
+    }
+    row.appendChild(statut);
+    return row;
+  }
+
   function oppRender(){
     oppList.innerHTML = '';
+    // Bandeau permanent (pas #opp-status, transitoire) -- rend le pipeline visible sur TOUS les
+    // onglets, pas seulement celui En recherche : Mickael doit comprendre "ça travaille" sans
+    // avoir besoin d'y cliquer. Detail (60 pas cherches / 36 sans resultat) volontairement absent
+    // ici -- sa place est dans l'onglet, pas dans un bandeau permanent.
+    var enRecherche = oppAll.filter(OPP_TABS.en_recherche);
+    if (enRecherche.length){
+      oppEnrichBanniere.textContent = '🔍 ' + enRecherche.length + ' prospects en cours de qualification — nouvelle recherche chaque semaine.';
+      oppEnrichBanniere.style.display = '';
+    } else {
+      oppEnrichBanniere.style.display = 'none';
+    }
     var filtre = OPP_TABS[oppActiveTab] || OPP_TABS.a_valider;
     var prospects = oppAll.filter(filtre);
     if (!prospects.length){
-      var msg = oppActiveTab === 'a_valider' ? 'Aucun prospect pour l’instant — touche 🔄 pour lancer une recherche.' : 'Rien ici pour l’instant.';
+      var msg;
+      if (oppActiveTab === 'a_valider' && enRecherche.length){
+        msg = 'Rien à valider pour l’instant — ' + enRecherche.length + ' prospects sont en cours de recherche de contact, regarde l’onglet 🔍 En recherche.';
+      } else if (oppActiveTab === 'a_valider'){
+        msg = 'Aucun prospect pour l’instant — touche 🔄 pour lancer une recherche.';
+      } else {
+        msg = 'Rien ici pour l’instant.';
+      }
       oppList.innerHTML = '<p id="opp-empty">' + msg + '</p>';
+      return;
+    }
+    if (oppActiveTab === 'en_recherche'){
+      prospects.forEach(function(p){ oppList.appendChild(oppEnRechercheRow(p)); });
       return;
     }
     prospects.forEach(function(p){ oppList.appendChild(oppCard(p)); });
