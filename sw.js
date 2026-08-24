@@ -99,12 +99,17 @@ self.addEventListener('push', function(event){
     }
 
     const title = data.title || 'Jarvis';
+    // A4 (25/08/2026) : la cible (devis/relances/contrats/relations/opportunites/calendrier,
+    // meme vocabulaire que ACCUEIL_CIBLES cote page) voyage dans notification.data -- lue au
+    // clic, dans notificationclick ci-dessous. Absente si la charge push n'en porte pas
+    // (comportement d'avant inchange dans ce cas, voir plus bas).
     const options = {
       body: data.body || '',
       icon: './icon-512.png',
       badge: './icon-512.png',
       tag: 'jarvis-notif',
-      renotify: true
+      renotify: true,
+      data: { cible: data.cible || null }
     };
     await self.registration.showNotification(title, options);
   })());
@@ -112,8 +117,18 @@ self.addEventListener('push', function(event){
 
 self.addEventListener('notificationclick', function(event){
   event.notification.close();
+  // A4 (25/08/2026) : route vers le bon panneau au lieu d'un simple focus() -- SANS cible
+  // (data.cible absent/null), comportement inchange au caractere pres (focus la 1ere page
+  // trouvee, sinon ouvre une fenetre sur './', jamais de query string ajoutee).
+  const cible = (event.notification.data && event.notification.data.cible) || null;
   event.waitUntil(clients.matchAll({ type: 'window', includeUncontrolled: true }).then(function(list){
-    for (const c of list) { if ('focus' in c) return c.focus(); }
-    if (clients.openWindow) return clients.openWindow('./');
+    for (const c of list) {
+      if ('focus' in c) {
+        const p = c.focus();
+        if (cible) { try { c.postMessage({ type: 'jarvis-push-cible', cible: cible }); } catch(e){} }
+        return p;
+      }
+    }
+    if (clients.openWindow) return clients.openWindow(cible ? ('./?cible=' + encodeURIComponent(cible)) : './');
   }));
 });

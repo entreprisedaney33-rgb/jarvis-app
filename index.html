@@ -126,6 +126,14 @@
     -webkit-overflow-scrolling:touch;
     background:var(--bg);
   }
+  /* A3 (25/08/2026) : suggestions cliquables sous la bulle d'accueil (chat vide, patron MCS) */
+  #chat-suggestions{display:flex; flex-wrap:wrap; gap:8px; margin:2px 0 0}
+  .chat-sug-btn{
+    font:inherit; font-size:13.5px; font-weight:600; color:var(--gold-a);
+    background:rgba(232,185,106,.12); border:0.5px solid rgba(232,185,106,.35);
+    border-radius:99px; padding:8px 14px; cursor:pointer; -webkit-tap-highlight-color:transparent;
+  }
+  .chat-sug-btn:active{opacity:.6}
   #pullspin{
     flex:0 0 auto; height:0; overflow:hidden;
     display:flex; align-items:center; justify-content:center;
@@ -3275,7 +3283,7 @@
 
 <script>
 (function(){
-  var APPV = 'v3.66';
+  var APPV = 'v3.67';
 
   // Debug : ?debug_modal=1 force l'affichage du modal "nouvelle version" sans attendre un vrai
   // déploiement. Capturé ICI, tout au début, car plus bas (login mémorisé, connexion) le code
@@ -3283,6 +3291,13 @@
   // plus tard (ex. dans enterApp()), il aurait déjà disparu de location.search.
   var forceModalTest = false;
   try { forceModalTest = new URLSearchParams(location.search).get('debug_modal') === '1'; } catch(e){}
+
+  // A4 (25/08/2026) : routage push -- si le SW a ouvert une fenetre fraiche (clients.openWindow,
+  // aucune page deja ouverte pour lui envoyer un postMessage), la cible voyage par l'URL
+  // (?cible=devis). Capturee ICI, tout au meme endroit que debug_modal ci-dessus et pour la
+  // meme raison (avant que store('jarvisCode',...) ne reecrive location.search).
+  var pushCibleInitiale = null;
+  try { pushCibleInitiale = new URLSearchParams(location.search).get('cible') || null; } catch(e){}
 
   // ---- Mise à jour automatique (contourne le cache GitHub Pages) ----
   function checkUpdate(){
@@ -3686,6 +3701,11 @@
         text: 'Le nom du client. Écris-le comme tu l’entends, pas besoin d’être parfait.' },
       { selector: '#bc-tel', open: '#bc-new-btn', close: '#bc-cancel', title: 'Le téléphone',
         text: 'Son numéro de téléphone, si tu l’as.' },
+      // F2 (25/08/2026) : le seul champ vraiment obligatoire avec le nom et l'adresse (bcSave,
+      // "Indique un email valide.") n'avait aucune etape -- Bruno pouvait tout remplir sauf lui
+      // et rester bloque sans comprendre pourquoi.
+      { selector: '#bc-email', open: '#bc-new-btn', close: '#bc-cancel', title: 'L’email',
+        text: 'Obligatoire : c’est l’adresse à laquelle Jarvis enverra le devis. Demande-la au client si tu ne l’as pas.' },
       { selector: '#bc-adresse', open: '#bc-new-btn', close: '#bc-cancel', title: 'L’adresse',
         text: 'Commence à écrire l’adresse, une liste apparaît : appuie sur la bonne.' },
       { selector: '#bc-save', open: '#bc-new-btn', close: '#bc-cancel', title: 'Enregistrer',
@@ -3726,15 +3746,38 @@
   // source -- reste juste automatiquement si un futur badge suit le meme motif HTML/CSS.
   // Alimente AUSSI le badge sur le logo de l'en-tete (2026-08-11, demande Matheo : voir qu'il y a
   // quelque chose a traiter sans avoir a ouvrir le menu) -- meme total, jamais un 2e calcul.
+  // A2 (25/08/2026) : 2 corrections.
+  // 1) "badge email fantome" -- updateEmailBadge() pose display:flex sur menu-email-badge pour
+  //    TOUT tenant (le calcul vient du serveur, sans savoir que sh-emails est masque en dur pour
+  //    MCS -- et actuellement pour tout le monde). Le total comptait ce badge des lors que SON
+  //    PROPRE style.display n'etait pas 'none', sans jamais verifier que son bouton PARENT (la
+  //    tuile) l'etait. Fix : offsetParent===null detecte "invisible" en tenant compte de toute
+  //    la chaine de parents (verifie : #sheet est position:fixed + transform, jamais display:none,
+  //    donc offsetParent reste valide menu ouvert ET ferme -- pas de faux negatif).
+  // 2) "un 7 sur le logo ne dit pas de quoi il s'agit" -- construit un libelle ("3 Devis et
+  //    factures, 2 Relances clients") depuis .sh-tile-label du parent de chaque badge compte,
+  //    pose en title/aria-label sur le badge du logo (visible au survol desktop et aux lecteurs
+  //    d'ecran ; le chiffre seul reste l'affichage principal, cible mobile).
   function updateAppBadgeTotal(){
     var total = 0;
+    var details = [];
     document.querySelectorAll('.badge-count').forEach(function(el){
-      if (el.style.display === 'none') return;
+      if (el.offsetParent === null) return; // soi-meme OU un parent (la tuile) en display:none
       var n = parseInt(el.textContent, 10);
-      if (!isNaN(n)) total += n;
+      if (isNaN(n) || n <= 0) return;
+      total += n;
+      var tile = el.closest('.sh-tile');
+      var labelEl = tile ? tile.querySelector('.sh-tile-label') : null;
+      if (labelEl) details.push(n + ' ' + labelEl.textContent.trim());
     });
     var hb = document.getElementById('header-badge');
-    if (hb){ hb.textContent = total > 9 ? '9+' : String(total); hb.classList.toggle('on', total > 0); }
+    if (hb){
+      hb.textContent = total > 9 ? '9+' : String(total);
+      hb.classList.toggle('on', total > 0);
+      var libelle = details.join(', ');
+      if (libelle) { hb.title = libelle; hb.setAttribute('aria-label', libelle); }
+      else { hb.removeAttribute('title'); hb.removeAttribute('aria-label'); }
+    }
     if (!('setAppBadge' in navigator)) return;
     try { if (total > 0) navigator.setAppBadge(total); else navigator.clearAppBadge(); } catch(e){}
   }
@@ -3803,6 +3846,10 @@
     // filet de securite (verification espacee, voir plus bas).
     navigator.serviceWorker.addEventListener('message', function(e){
       if (e.data && e.data.type === 'jarvis-push-refresh') onResume();
+      // A4 (25/08/2026) : une page deja ouverte reçoit la cible par message (le SW l'a
+      // deja focus() avant d'envoyer ceci) -- meme accueilNavigate() que le Point du jour,
+      // aucun nouveau mecanisme de routage.
+      if (e.data && e.data.type === 'jarvis-push-cible' && e.data.cible) accueilNavigate(e.data.cible);
     });
   }
 
@@ -4288,6 +4335,27 @@
         ? 'Bonjour, je suis Jarvis. Je connais vos contacts, vos résidences, vos devis et votre agenda — posez-moi une question.'
         : 'Bonjour, je suis Jarvis. Je connais vos contacts, vos chantiers, vos devis et votre agenda — posez-moi une question.';
       bubble(welcomeTxt, 'jarvis');
+      // A3 (25/08/2026) : 3 suggestions cliquables, patron MCS uniquement (jamais Bruno --
+      // "Qui me doit de l'argent" et "Mes RDV" ne concernent que le patron). Un tap REMPLIT le
+      // champ sans envoyer (il doit pouvoir corriger avant, meme discipline que le reste de
+      // l'app : jamais d'action sans validation explicite) -- disparaissent des qu'il y a une
+      // conversation puisqu'elles vivent dans ce meme bloc "chat vide".
+      var roleAccueil = (extras && extras.role) || read('jarvisRole') || '';
+      if (isMcsCode() && roleAccueil === 'patron' && !isBrunoMode()){
+        var sugWrap = document.createElement('div');
+        sugWrap.id = 'chat-suggestions';
+        ['Fais-moi un devis', 'Qui me doit de l’argent ?', 'Mes RDV de demain'].forEach(function(txt){
+          var b = document.createElement('button');
+          b.type = 'button'; b.className = 'chat-sug-btn'; b.textContent = txt;
+          b.addEventListener('click', function(){
+            textin.value = txt;
+            autosize();
+            textin.focus();
+          });
+          sugWrap.appendChild(b);
+        });
+        chat.appendChild(sugWrap);
+      }
     }
     // Re-affiche le brouillon en attente (email/rdv/archive) et les derniers fichiers trouves
     // s'il y en a — sinon ils disparaissaient a chaque rafraichissement/reouverture de l'app
@@ -4508,6 +4576,14 @@
     // (cf. sa definition) -- rien ici ne peut casser le reste de enterApp().
     if (mcs && role === 'patron') refreshAccueil(); else hideAccueil();
     installTutoButtons();
+    // A4 (25/08/2026) : cible arrivee par l'URL (le SW a ouvert une fenetre fraiche, cf. plus
+    // haut) -- appliquee une seule fois (enterApp() tourne 2x par ouverture, cache puis frais ;
+    // remise a null tout de suite pour ne pas re-naviguer au 2e passage).
+    if (pushCibleInitiale){
+      var cibleAAppliquer = pushCibleInitiale;
+      pushCibleInitiale = null;
+      accueilNavigate(cibleAAppliquer);
+    }
   }
 
   // ---- Point du jour (carte mcs-accueil) ----
@@ -4827,10 +4903,22 @@
     sheetbg.classList.toggle('open', o);
     headerEl.classList.toggle('menu-open', o);
   }
+  // A2 (25/08/2026) : les 4 badges MCS (devis/relances/opportunites/relations) ne se
+  // rafraichissaient qu'une fois, a l'ouverture de l'app (enterApp()) -- jamais revus tant que
+  // la page restait ouverte. Factorise ici (meme garde mcs+patron que dans enterApp(), lu depuis
+  // le stockage local puisqu'on n'a pas "extras" en dehors d'enterApp()) pour etre appelable
+  // aussi a l'ouverture du menu et au retour au premier plan (onResume(), plus bas).
+  function refreshBadgesMcs(){
+    if (!isMcsCode() || read('jarvisRole') !== 'patron') return;
+    devisCheckBadge();
+    relancesCheckBadge();
+    oppCheckBadge();
+    relationsCheckBadge();
+  }
   headerEl.addEventListener('click', function(){
     var opening = !sheet.classList.contains('open');
     sheetOpen(opening);
-    if (opening) refreshPushToggle();
+    if (opening) { refreshPushToggle(); refreshBadgesMcs(); }
   });
   sheetbg.addEventListener('click', function(){ sheetOpen(false); });
   // ---- Sous-menu "Site" (SEO / Sites Vitrine regroupes) ----
@@ -10336,6 +10424,19 @@
   function bcShowForm(){
     bcSummary.style.display = 'none';
     bcForm.classList.add('open');
+    // Nit (25/08/2026) : les listes de suggestions (adresse, nom, residence, ville, contact)
+    // ne se refermaient qu'a un vidage EXPLICITE (bcClearFields) -- jamais a la reouverture d'un
+    // brouillon existant. Une liste laissee ouverte a la derniere fermeture du formulaire
+    // flottait par-dessus les champs au prochain "Nouveau client". Purement un etat d'affichage
+    // transitoire, sans rapport avec le CONTENU des champs -- ferme inconditionnellement, jamais
+    // les valeurs elles-memes (bcClearFields, lui, reste reserve au vidage explicite).
+    [bcSug, bcNomSug, bcResidenceSug, bcVilleSug, bcContactSug].forEach(function(ul){
+      ul.innerHTML = ''; ul.classList.remove('open');
+    });
+    // Nit (25/08/2026) : bcFormIsBlank() ne testait que les 9 champs texte, jamais bcType --
+    // un formulaire vide pouvait rester en "Pro" (ex apres Annuler sur une fiche Pro jamais
+    // enregistree). Comportement d'avant restaure : vierge = Particulier.
+    if (bcFormIsBlank()) bcSetType('particulier');
     // Ne force le clavier que sur un formulaire vraiment vierge -- l'ouvrir sur un brouillon
     // restaure recouvrirait une fiche deja remplie que Bruno n'a pas demande a retoucher.
     if (bcFormIsBlank()) setTimeout(function(){ bcNom.focus(); }, 50);
@@ -10809,7 +10910,7 @@
       if (done) done();
     }, function(){ refreshing = false; if (done) done(); });
   }
-  function onResume(){ pollInbox(); refreshFromServer(); }
+  function onResume(){ pollInbox(); refreshFromServer(); refreshBadgesMcs(); }
   document.addEventListener('visibilitychange', function(){ if (!document.hidden) onResume(); });
   window.addEventListener('focus', onResume);
   window.addEventListener('pageshow', function(e){ if (e.persisted) onResume(); });
