@@ -128,6 +128,12 @@
   }
   /* A3 (25/08/2026) : suggestions cliquables sous la bulle d'accueil (chat vide, patron MCS) */
   #chat-suggestions{display:flex; flex-wrap:wrap; gap:8px; margin:2px 0 0}
+  /* Zone 3 "devis ambigu" (25/08/2026 nuit) : AU-DESSUS du composeur, jamais dans #chat --
+     un renderHistory() l'aurait efface (meme piege que A3-b) et le texte n'a jamais ete envoye,
+     rien a faire figurer dans la conversation. Meme habillage visuel que .chat-sug-btn. */
+  #devis-ambigu-wrap{display:none; flex-wrap:wrap; align-items:center; gap:8px; padding:0 0 8px}
+  #devis-ambigu-wrap.on{display:flex}
+  #devis-ambigu-hint{font-size:12px; color:var(--muted); width:100%}
   .chat-sug-btn{
     font:inherit; font-size:13.5px; font-weight:600; color:var(--gold-a);
     background:rgba(232,185,106,.12); border:0.5px solid rgba(232,185,106,.35);
@@ -215,12 +221,12 @@
      -webkit-tap-highlight-color:transparent (global, ligne ~31) tue le retour tactile natif :
      sans :active, un tap dans une zone agrandie ne donne AUCUN retour visuel. user-scalable=no
      (index.html:5) : laisse tel quel, hors perimetre de cette passe. */
-  #micbtn, #sendbtn, [id$="-close"], .notes-del, .carnet-del{position:relative}
-  #micbtn::after, #sendbtn::after, [id$="-close"]::after, .notes-del::after, .carnet-del::after{
+  #micbtn, #sendbtn, [id$="-close"], .notes-del, .carnet-del, #devis-add{position:relative}
+  #micbtn::after, #sendbtn::after, [id$="-close"]::after, .notes-del::after, .carnet-del::after, #devis-add::after{
     content:''; position:absolute; top:50%; left:50%;
     width:max(44px,100%); height:max(44px,100%); transform:translate(-50%,-50%);
   }
-  #micbtn:active, [id$="-close"]:active, .notes-del:active, .carnet-del:active{opacity:.55}
+  #micbtn:active, [id$="-close"]:active, .notes-del:active, .carnet-del:active, #devis-add:active{opacity:.55}
 
   .devis-tab, .meute-tab, .vitrine-tab, .pf-tab, .rel-tab, .clients-tab, .df-chip, .notes-chip,
   .dv-actions .vc-ok, .dv-actions .vc-no, .ct-actions .vc-ok, .ct-actions .vc-no,
@@ -605,12 +611,18 @@
     border-bottom:0.5px solid var(--hairline);
   }
   #devis-head b{font-size:16px; flex:1; white-space:nowrap; overflow:hidden; text-overflow:ellipsis}
-  #devis-close{
+  /* 25/08/2026 (soir) : #devis-add ouvre la fiche client (devisOpen()) -- meme gabarit visuel
+     que #devis-close, jamais un bloc epingle (Mickael a 11 tuiles + le Point du jour, un bloc
+     de plus lui volerait de la place -- contrairement a Bruno, pour qui la fiche EST le seul
+     ecran). Regle A tactile (44x44 invisible) ajoutee separement, cf. plus haut dans ce fichier. */
+  #devis-add, #devis-close{
     width:32px; height:32px; border-radius:50%; border:0; flex:0 0 auto;
-    background:var(--surface); color:var(--ink); font-size:16px;
+    background:var(--surface); color:var(--ink);
     display:flex; align-items:center; justify-content:center; cursor:pointer;
     -webkit-tap-highlight-color:transparent;
   }
+  #devis-close{font-size:16px}
+  #devis-add{font-size:18px; font-weight:700}
   #devis-tabs{
     flex:0 0 auto; display:flex; gap:8px; padding:10px 14px; overflow-x:auto; -webkit-overflow-scrolling:touch;
     border-bottom:0.5px solid var(--hairline);
@@ -2613,6 +2625,11 @@
       <button id="pvsend" type="button" aria-label="Envoyer le vocal"><svg width="18" height="18" viewBox="0 0 20 20" fill="currentColor"><path d="M10 17V5.5M10 3l-6 6.2M10 3l6 6.2" stroke="currentColor" stroke-width="2.6" fill="none" stroke-linecap="round" stroke-linejoin="round"/></svg></button>
     </div>
     <div id="brunohint">Ou écris ici si le micro se trompe sur un nom</div>
+    <div id="devis-ambigu-wrap">
+      <span id="devis-ambigu-hint">Tu veux créer un nouveau devis, ou parler d’un devis existant ?</span>
+      <button id="devis-ambigu-creer" type="button" class="chat-sug-btn">📝 Nouveau devis</button>
+      <button id="devis-ambigu-continuer" type="button" class="chat-sug-btn">💬 Continuer la discussion</button>
+    </div>
     <div class="composer-row2">
       <textarea id="textin" rows="1" placeholder="Écrire à Jarvis…"></textarea>
       <button id="sendbtn" class="idle" type="button" aria-label="Envoyer">
@@ -2776,6 +2793,7 @@
 <div id="devisview">
   <div id="devis-head">
     <b id="devis-title">📝 Devis et factures</b>
+    <button id="devis-add" type="button" aria-label="Nouveau devis">＋</button>
     <button id="devis-close" type="button" aria-label="Fermer">✕</button>
   </div>
   <div id="devis-tabs">
@@ -3283,7 +3301,7 @@
 
 <script>
 (function(){
-  var APPV = 'v3.67';
+  var APPV = 'v3.68';
 
   // Debug : ?debug_modal=1 force l'affichage du modal "nouvelle version" sans attendre un vrai
   // déploiement. Capturé ICI, tout au début, car plus bas (login mémorisé, connexion) le code
@@ -3807,6 +3825,10 @@
   var textin = document.getElementById('textin');
   var sendbtn = document.getElementById('sendbtn');
   var micbtn = document.getElementById('micbtn');
+  // 25/08/2026 (nuit) : capture ICI, AVANT autosize() (definie plus bas) qui l'utilise a chaque
+  // frappe (hideDevisAmbigu) -- meme prudence d'ordre d'initialisation que le reste de cette
+  // zone (textin/sendbtn/micbtn capturent deja tot pour la meme raison).
+  var devisAmbiguWrap = document.getElementById('devis-ambigu-wrap');
   var subline = document.getElementById('subline');
   // Version affichée = TOUJOURS APPV (sert au diagnostic à distance : elle ne doit jamais mentir)
   var loginver = document.getElementById('loginver');
@@ -4336,19 +4358,30 @@
         : 'Bonjour, je suis Jarvis. Je connais vos contacts, vos chantiers, vos devis et votre agenda — posez-moi une question.';
       bubble(welcomeTxt, 'jarvis');
       // A3 (25/08/2026) : 3 suggestions cliquables, patron MCS uniquement (jamais Bruno --
-      // "Qui me doit de l'argent" et "Mes RDV" ne concernent que le patron). Un tap REMPLIT le
-      // champ sans envoyer (il doit pouvoir corriger avant, meme discipline que le reste de
-      // l'app : jamais d'action sans validation explicite) -- disparaissent des qu'il y a une
-      // conversation puisqu'elles vivent dans ce meme bloc "chat vide".
+      // "Qui me doit de l'argent" et "Mes RDV" ne concernent que le patron). Disparaissent des
+      // qu'il y a une conversation puisqu'elles vivent dans ce meme bloc "chat vide".
+      // Fix 25/08/2026 (soir) : "Fais-moi un devis" appelle devisOpen() DIRECTEMENT -- cette
+      // phrase n'est PAS dans DEVIS_TRIGGERS (correspondance exacte, pas de sous-chaine), donc
+      // la remplir dans le champ l'aurait envoyee au Cortex comme un message normal, lancant le
+      // parcours conversationnel que la fiche client existe precisement pour eviter (le devis
+      // part alors sans etre passe par le nom/email/adresse verifies de la fiche). Les 2 autres
+      // suggestions restent du conversationnel : elles REMPLISSENT le champ sans envoyer (il
+      // doit pouvoir corriger avant, meme discipline que le reste de l'app).
       var roleAccueil = (extras && extras.role) || read('jarvisRole') || '';
       if (isMcsCode() && roleAccueil === 'patron' && !isBrunoMode()){
         var sugWrap = document.createElement('div');
         sugWrap.id = 'chat-suggestions';
-        ['Fais-moi un devis', 'Qui me doit de l’argent ?', 'Mes RDV de demain'].forEach(function(txt){
+        var CHAT_SUGGESTIONS = [
+          { txt: 'Fais-moi un devis', action: 'devis' },
+          { txt: 'Qui me doit de l’argent ?', action: 'fill' },
+          { txt: 'Mes RDV de demain', action: 'fill' }
+        ];
+        CHAT_SUGGESTIONS.forEach(function(s){
           var b = document.createElement('button');
-          b.type = 'button'; b.className = 'chat-sug-btn'; b.textContent = txt;
+          b.type = 'button'; b.className = 'chat-sug-btn'; b.textContent = s.txt;
           b.addEventListener('click', function(){
-            textin.value = txt;
+            if (s.action === 'devis'){ devisOpen(); return; }
+            textin.value = s.txt;
             autosize();
             textin.focus();
           });
@@ -4796,13 +4829,58 @@
     textin.style.height = 'auto';
     textin.style.height = Math.min(textin.scrollHeight, 120) + 'px';
     sendbtn.classList.toggle('idle', !textin.value.trim());
+    // Zone 3 "devis ambigu" (25/08/2026 nuit) : les 2 choix ne valent que pour LE texte qui les
+    // a fait apparaitre -- toute frappe les rend caducs (hideDevisAmbigu defini plus bas, hoisted).
+    hideDevisAmbigu();
   }
   textin.addEventListener('input', autosize);
-  // Mot-cle "devis" tape en clair -> ouvre la fiche client (pas d'aller-retour serveur)
-  var DEVIS_TRIGGERS = ['devis', 'nouveau devis', 'faire un devis', 'un devis'];
+  // Message tape/dicte en clair au sujet d'un devis -> ouvre la fiche client SANS aller-retour
+  // Cortex (elle existe precisement pour eviter que le vocal massacre un nom/email/adresse de
+  // client). Revu le 25/08/2026 (nuit) : l'ancienne correspondance EXACTE sur 4 chaines
+  // ("devis"/"nouveau devis"/"faire un devis"/"un devis") ratait toute variation ("je veux
+  // faire un devis", "cr\u00e9er un devis"...) qui repartait alors au Cortex comme un message
+  // normal -- exactement le parcours que la fiche existe pour eviter. Remplacee par une
+  // classification a 3 zones, ZERO dependance a la ponctuation (Mickael dicte beaucoup, la
+  // dictee vocale ne produit quasiment jamais de "?" -- teste sur 26 phrases sans aucune
+  // ponctuation avant deploiement) :
+  //   Zone 1 "creer"  : intention de creation claire -> devisOpen() direct.
+  //   Zone 2 "cortex" : reference explicite a un devis DEJA EXISTANT (statut, cycle de vie,
+  //                     pluriel "les/des/mes devis") -> comportement inchange, part au Cortex.
+  //   Zone 3 "ambigu" : ni l'un ni l'autre -> 2 choix affiches AU-DESSUS DU COMPOSEUR (jamais
+  //                     dans #chat, voir showDevisAmbigu plus bas), texte garde dans le champ,
+  //                     rien n'est envoye tant que Mickael n'a pas tranche.
+  // Ordre d'evaluation delibere : le signal NEGATIF (zone 2) le plus specifique est verifie EN
+  // PREMIER -- asymetrie voulue (feedback explicite) : un faux positif zone 1 coute 1 tap pour
+  // fermer la modale, un faux negatif (devis cree avec un nom mal compris par le vocal) est
+  // exactement le probleme que cette fiche existe pour eviter -- donc en cas de doute reel,
+  // jamais un envoi silencieux au Cortex (zone 3, jamais zone 2, en dehors des marqueurs forts).
   function normDevis(s){
     return String(s || '').trim().toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '');
   }
+  var DEVIS_EXISTING_RE = /\b(parti|envoye|envoyee|recu|recue|signe|signee|valide|validee|accepte|acceptee|refuse|refusee|pret|prete|fini|finie|termine|terminee|avancement|statut|relance|relancer|annule|annuler|modifie|modifier)\b/;
+  var DEVIS_DE_QUELQUUN_RE = /\bdevis\s+de\s+\w/;      // "le devis DE Martin" = un devis precis
+                                                         // deja existant ; "un devis POUR X" n'est
+                                                         // volontairement PAS capte ici (creation
+                                                         // nommee, cf. DEVIS_UN_POUR_RE plus bas)
+  var DEVIS_PLURIEL_RE = /\b(les|des|mes|ces|nos|vos|leurs)\s+devis\b/; // "les/des/mes devis" =
+                                                         // presque toujours des devis EXISTANTS
+  var DEVIS_CREATION_RE = /\b(nouveau|nouvelle|creer|cree|faire|fais|veux|voudrais|aimerais)\b/;
+  var DEVIS_UN_POUR_RE = /\bun\s+devis\s+pour\s+\w/;    // "un devis pour Martin" se lit comme
+                                                         // une creation (principe permissif)
+  function classifyDevis(raw){
+    var s = normDevis(raw);
+    if (!s || !/\bdevis\b/.test(s)) return 'cortex';
+    if (DEVIS_EXISTING_RE.test(s) || DEVIS_DE_QUELQUUN_RE.test(s) || DEVIS_PLURIEL_RE.test(s)) return 'cortex';
+    if (s === 'devis' || s === 'un devis' || DEVIS_CREATION_RE.test(s) || DEVIS_UN_POUR_RE.test(s)) return 'creer';
+    return 'ambigu';
+  }
+  // Bascule le bloc de choix zone 3 (jamais dans #chat -- cf. commentaire CSS #devis-ambigu-wrap).
+  function hideDevisAmbigu(){ if (devisAmbiguWrap) devisAmbiguWrap.classList.remove('on'); }
+  function showDevisAmbigu(){ if (devisAmbiguWrap) devisAmbiguWrap.classList.add('on'); }
+  // Permet a "Continuer la discussion" de rappeler sendText() SANS reclassifier le meme texte
+  // (qui retomberait sinon systematiquement en zone ambigu -> boucle sans fin). Remis a false
+  // au tout debut de sendText(), donc valable pour un seul appel.
+  var devisAmbiguBypass = false;
   // Fix F3-b (audit UX 19/08/2026) : verrou d'envoi (prerequis, cf. journal) -- sendText()
   // n'avait aucune protection contre un double envoi (Entree + clic quasi simultanes, double-tap),
   // ce qui aurait rendu la restauration ci-dessous dangereuse (le 1er echec restaurant son texte
@@ -4875,15 +4953,30 @@
   function sendText(){
     var t = textin.value.trim();
     if (!t) return;
+    var bypass = devisAmbiguBypass;
+    devisAmbiguBypass = false;
     // Jamais pour Bruno (2026-08-10) : cette fiche exige nom/email/adresse au clavier,
     // à l'exact opposé de sa règle "zéro saisie clavier" (specs.md §3/§8) -- son seul
     // chemin de devis reste la dictée vocale normale, traitée par le cerveau (devis_mcs).
     // Chemin 100% local (pas de fetch) -- hors du perimetre du verrou d'envoi ci-dessous.
-    if (!isBrunoMode() && DEVIS_TRIGGERS.indexOf(normDevis(t)) !== -1){
-      textin.value = ''; autosize();
-      devisOpen();
-      return;
+    if (!isBrunoMode() && !bypass){
+      var devisZone = classifyDevis(t);
+      if (devisZone === 'creer'){
+        hideDevisAmbigu();
+        textin.value = ''; autosize();
+        devisOpen();
+        return;
+      }
+      if (devisZone === 'ambigu'){
+        // Rien n'est envoye -- le texte reste dans le champ (rien a faire figurer dans la
+        // conversation, cf. commentaire CSS #devis-ambigu-wrap). Les 2 choix disparaissent des
+        // que Mickael modifie le texte (autosize()) ou tranche (les 2 boutons appellent
+        // hideDevisAmbigu()).
+        showDevisAmbigu();
+        return;
+      }
     }
+    hideDevisAmbigu();
     if (sendInFlight) return;
     textin.value = ''; autosize();
     var ub = bubble(t, 'user');
@@ -4892,6 +4985,16 @@
   sendbtn.addEventListener('click', sendText);
   textin.addEventListener('keydown', function(e){
     if (e.key === 'Enter' && !e.shiftKey && window.innerWidth > 700){ e.preventDefault(); sendText(); }
+  });
+  document.getElementById('devis-ambigu-creer').addEventListener('click', function(){
+    hideDevisAmbigu();
+    textin.value = ''; autosize();
+    devisOpen();
+  });
+  document.getElementById('devis-ambigu-continuer').addEventListener('click', function(){
+    hideDevisAmbigu();
+    devisAmbiguBypass = true;
+    sendText();
   });
 
   // ---- Menu Jarvis (appui sur l'en-tête) ----
@@ -5557,6 +5660,11 @@
   });
   devisSearchInput.addEventListener('input', devisApplyFilter);
   document.getElementById('devis-close').addEventListener('click', devisAttenteClose);
+  // 25/08/2026 (soir) : devisOpen() (la fiche client, plus bas dans ce fichier -- declaration
+  // hoisted, disponible ici) ouvre une modale (z-index 53) AU-DESSUS de #devisview (z-index 50) ;
+  // devisClose() ne touche que #devis-form/#devis-form-bg, jamais #devisview -- superposition et
+  // fermeture verifiees sans effet de bord sur le panneau derriere (teste en reel, cf. session).
+  document.getElementById('devis-add').addEventListener('click', devisOpen);
   document.getElementById('sh-devis-attente').addEventListener('click', function(){ sheetOpen(false); devisAttenteOpen(); });
 
   // ---- Contrats (chantier 5 : contrats et échéances -- patron d'un tenant secondaire uniquement) ----
