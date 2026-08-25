@@ -1082,6 +1082,9 @@
     -webkit-appearance:none;
   }
   #relances-search::placeholder{color:var(--muted)}
+  #relances-fraicheur{font-size:12px; color:var(--muted); text-align:center; margin:8px 14px 0; padding:6px 10px; border-radius:10px; background:var(--surface)}
+  #relances-fraicheur.stale{color:var(--gold-a); background:rgba(var(--gold-rgb),.12)}
+  #relances-fraicheur.perime{color:var(--no); background:rgba(255,69,58,.12)}
   #relances-summary{font-size:12.5px; color:var(--muted); text-align:center; margin:10px 14px 0}
   #relances-list{flex:1; overflow-y:auto; -webkit-overflow-scrolling:touch; padding:10px 14px calc(20px + env(safe-area-inset-bottom))}
   #relances-empty, #relances-loading{color:var(--muted); text-align:center; padding:40px 20px; font-size:14px}
@@ -3016,6 +3019,7 @@
     <button class="devis-tab" data-tab="suspendues" type="button">Suspendues</button>
     <button class="devis-tab" data-tab="toutes" type="button">Toutes</button>
   </div>
+  <p id="relances-fraicheur"></p>
   <div id="relances-search-wrap">
     <input id="relances-search" type="search" inputmode="search" placeholder="🔍 Rechercher un client…" autocomplete="off" autocapitalize="off" autocorrect="off">
   </div>
@@ -3382,7 +3386,7 @@
 
 <script>
 (function(){
-  var APPV = 'v3.70';
+  var APPV = 'v3.71';
 
   // Debug : ?debug_modal=1 force l'affichage du modal "nouvelle version" sans attendre un vrai
   // déploiement. Capturé ICI, tout au début, car plus bas (login mémorisé, connexion) le code
@@ -6844,9 +6848,43 @@
   var relancesMenuBadge = document.getElementById('menu-relances-badge');
   var relancesSearchInput = document.getElementById('relances-search');
   var relancesSummary = document.getElementById('relances-summary');
+  var relancesFraicheur = document.getElementById('relances-fraicheur');
   var relancesData = [];
   var relancesActiveTab = 'arelancer';
   function relancesClose(){ relancesview.classList.remove('open'); }
+  var relancesFraicheurEtat = 'fraiche';
+  // S2+S3 chantier 3 (25/08/2026) : la fraicheur des donnees (date, jours ecoules, etat
+  // fraiche/a_verifier/perime) vient TOUJOURS du serveur (webhook mcs-relances, colonne recu_le
+  // de mcs_rentabilite_exports_bruts) -- jamais recalculee cote client (jamais new Date() pour
+  // juger l'anciennete, jamais de seuil duplique ici : le n8n "Formater relances (ok)" est
+  // l'unique source des seuils, cf. PLAN-CHANTIER-3-RELANCES.md). Si le serveur ne peut pas
+  // dater l'export, on l'affiche honnetement plutot que d'inventer une date.
+  function relancesAppliquerFraicheur(exportDonneesDu, joursEcoulesExport, fraicheurEtat){
+    // S1-bis (25/08/2026) : exportDonneesDu (de quand datent REELLEMENT les donnees MEG,
+    // hash+OLE+garde-fou cote script Python) -- JAMAIS exportRecuLe (quand le script a
+    // tourne, transmis par le serveur pour debug uniquement). Le rejeu du 18/08 avait
+    // recu_le a jour alors que les donnees avaient 26 jours -- c'est cette confusion
+    // qu'on corrige ici, pas seulement cote serveur.
+    relancesFraicheurEtat = fraicheurEtat || 'perime';
+    if (!relancesFraicheur) return;
+    relancesFraicheur.className = '';
+    if (!exportDonneesDu || joursEcoulesExport == null){
+      relancesFraicheur.textContent = '⚠️ Date d’import inconnue';
+      relancesFraicheur.classList.add('perime');
+      return;
+    }
+    var d = new Date(exportDonneesDu);
+    var dStr = isNaN(d.getTime()) ? '' : d.toLocaleDateString('fr-FR');
+    if (relancesFraicheurEtat === 'perime'){
+      relancesFraicheur.textContent = 'Dernier export MEG du ' + dStr + ' (' + joursEcoulesExport + ' j) — Dépose un export frais pour voir les relances à jour.';
+      relancesFraicheur.classList.add('perime');
+    } else if (relancesFraicheurEtat === 'a_verifier'){
+      relancesFraicheur.textContent = 'Données MEG du ' + dStr + ' (' + joursEcoulesExport + ' j) — vérifie avant d’envoyer une relance.';
+      relancesFraicheur.classList.add('stale');
+    } else {
+      relancesFraicheur.textContent = 'Relances au ' + dStr + (joursEcoulesExport > 0 ? ' (' + joursEcoulesExport + ' j)' : '');
+    }
+  }
   function fmtRelanceDateFr(s){
     // s = "JJ/MM/AAAA" (deja au format francais depuis MEG) ou une date ISO "AAAA-MM-JJ"
     if (!s) return '';
@@ -6953,7 +6991,21 @@
       relancesSummary.textContent = items.length ? (items.length + ' facture' + (items.length>1?'s':'') + ' à relancer · ' + fmtEuros(total)) : '';
     } else { relancesSummary.textContent = ''; }
     if (!items.length){
-      relancesList.innerHTML = '<p id="relances-empty">' + (relancesActiveTab === 'arelancer' ? 'Rien à relancer pour l’instant.' : relancesActiveTab === 'suspendues' ? 'Aucune relance suspendue.' : 'Aucune facture impayée.') + '</p>';
+      var msgVide;
+      if (relancesActiveTab === 'arelancer' && relancesFraicheurEtat === 'perime'){
+        // S3 chantier 3 : sur des donnees perimees, relanceDue est deja force a false cote
+        // serveur -- ne jamais dire "rien a relancer" ici, ce serait un mensonge (on ne SAIT
+        // simplement pas). La vraie raison est deja affichee juste au-dessus (#relances-fraicheur),
+        // ce message la reprend pour que ce soit visible meme si l'utilisateur ne l'a pas remarque.
+        msgVide = 'Données trop anciennes pour proposer des relances — dépose un export MEG frais.';
+      } else if (relancesActiveTab === 'arelancer'){
+        msgVide = 'Rien à relancer pour l’instant.';
+      } else if (relancesActiveTab === 'suspendues'){
+        msgVide = 'Aucune relance suspendue.';
+      } else {
+        msgVide = 'Aucune facture impayée.';
+      }
+      relancesList.innerHTML = '<p id="relances-empty">' + msgVide + '</p>';
       return;
     }
     items.forEach(function(l){ relancesList.appendChild(relancesBuildCard(l)); });
@@ -6970,6 +7022,7 @@
     relancesList.innerHTML = '<p id="relances-loading">Chargement…</p>';
     postRelances({}, function(j){
       relancesData = j.lignes || [];
+      relancesAppliquerFraicheur(j.exportDonneesDu, j.joursEcoulesExport, j.fraicheurEtat);
       relancesApplyFilter();
       relancesUpdateBadge();
     }, function(err){ relancesList.innerHTML = '<p id="relances-empty">' + err + '</p>'; });
