@@ -1136,6 +1136,9 @@
     background:rgba(var(--gold-rgb),.12); color:var(--ink);
   }
   .rl-echange-argent b{color:var(--gold-a); display:block; margin-bottom:2px; font-size:11.5px}
+  .rl-source-label{font-size:10.5px; color:var(--muted); margin-bottom:2px}
+  .rl-source-citation{font-style:italic}
+  .rl-source-label-resume{font-size:10.5px; color:var(--muted); font-style:italic; margin-bottom:2px}
   .rl-echeance-signal{
     font-size:12.5px; line-height:1.4; margin-top:6px; padding:9px 11px; border-radius:10px;
     background:rgba(10,132,255,.12); color:var(--ink);
@@ -1241,6 +1244,26 @@
      remonter. Donnee deja tracee cote serveur (boiteObjetConfirmation), juste jamais affichee. */
   .rl-conflit-opt-ctx{font-size:11px; color:var(--muted); margin-top:3px; line-height:1.35; display:block}
   .rl-conflit-opt-btn{flex:0 0 auto; padding:8px 12px; font-size:12.5px; font-weight:700; border-radius:99px; border:0; cursor:pointer; background:var(--gold-a); color:var(--gold-ink); -webkit-tap-highlight-color:transparent}
+  /* A (26/08/2026) : cartes "Relancées 2×" -- un bloc par facture (chacune sa propre note et son
+     propre historique, mcs_relances est indexee par numero, pas par groupe). */
+  .rl-termine-facture{
+    margin-top:10px; padding:10px 11px; border-radius:10px; background:rgba(255,255,255,.04);
+    border:0.5px solid rgba(255,255,255,.12);
+  }
+  .rl-termine-facture-tete{font-size:13px; font-weight:700; color:var(--ink)}
+  .rl-termine-histo{margin-top:6px; font-size:12px; color:var(--muted); line-height:1.5}
+  .rl-termine-histo-ligne{display:flex; align-items:center; gap:6px}
+  .rl-termine-histo-niveau{
+    font-size:10px; font-weight:700; border-radius:99px; padding:1px 7px; flex:0 0 auto;
+    background:rgba(255,255,255,.1); color:var(--ink);
+  }
+  .rl-termine-note-label{font-size:11px; color:var(--muted); text-transform:uppercase; letter-spacing:.03em; display:block; margin-top:9px; margin-bottom:4px}
+  .rl-termine-note{
+    width:100%; box-sizing:border-box; border:1px solid rgba(255,255,255,.16); border-radius:8px;
+    background:#232326; color:var(--ink); font-size:13px; line-height:1.4; font-family:inherit;
+    padding:7px 8px; resize:none; overflow:hidden; min-height:34px;
+  }
+  .rl-termine-note::placeholder{color:var(--muted)}
   /* Panneau plein ecran "Carnet bleu" (fiches par residence MCS -- nom + un commentaire libre,
      compte patron d'un tenant secondaire uniquement). Coffre-fort : le commentaire est editable
      en place (meme mecanisme que .notes-contenu-edit) et verrouillable contre une modification
@@ -3150,6 +3173,11 @@
     <button class="devis-tab active" data-tab="arelancer" type="button">À relancer</button>
     <button class="devis-tab" data-tab="suspendues" type="button">Suspendues</button>
     <button class="devis-tab" data-tab="toutes" type="button">Toutes</button>
+    <!-- A (26/08/2026) : le cul-de-sac apres R2 -- une facture a niveau r2 ne redevient jamais
+         "due" (rang deja au maximum), donc ne rejoignait plus AUCUN onglet. Terminologie choisie
+         par Mickael : honnete sur ce qu'on sait ("relancee 2 fois") vs ce qu'on ne sait pas (si le
+         client a repondu). -->
+    <button class="devis-tab" data-tab="termines" type="button">Relancées 2×</button>
   </div>
   <p id="relances-fraicheur"></p>
   <div id="relances-search-wrap">
@@ -3523,7 +3551,7 @@
 
 <script>
 (function(){
-  var APPV = 'v3.72';
+  var APPV = 'v3.73';
 
   // Debug : ?debug_modal=1 force l'affichage du modal "nouvelle version" sans attendre un vrai
   // déploiement. Capturé ICI, tout au début, car plus bas (login mémorisé, connexion) le code
@@ -6988,6 +7016,10 @@
   var relancesFraicheur = document.getElementById('relances-fraicheur');
   var relancesData = [];
   var relancesBrouillons = [];
+  // A (26/08/2026) : cartes "Relancées 2×" -- une par destinataire/client, chacune listant les
+  // factures a niveau terminal (r2, plus aucune escalade automatique possible) avec leur
+  // historique et leur note. Alimente par j.termines (webhook mcs-relances).
+  var relancesTermines = [];
   var relancesLignesParNumero = {};
   var relancesActiveTab = 'arelancer';
   var relancesTri = 'montant';
@@ -7069,13 +7101,45 @@
     });
     card.appendChild(list);
   }
+  // W1 (26/08/2026) : jamais presenter un resume genere comme si c'etaient les mots exacts d'un
+  // tiers -- meme discipline que fait/declare/suppose, appliquee ici aux mots d'un client. Deux
+  // libelles distincts, jamais confondus : "Extrait du message" (guillemets, mots exacts) si un
+  // extrait brut existe pour ce mail, sinon "Résumé du message" etiquete explicitement comme
+  // genere -- jamais une presentation qui ressemble a une citation sans en etre une.
+  function relancesAppendTexteSource(box, citation, resume){
+    if (citation){
+      var lbl = document.createElement('div'); lbl.className = 'rl-source-label'; lbl.textContent = 'Extrait du message :';
+      box.appendChild(lbl);
+      var q = document.createElement('div'); q.className = 'rl-source-citation'; q.textContent = '« ' + citation + ' »';
+      box.appendChild(q);
+    } else if (resume){
+      var lbl2 = document.createElement('div'); lbl2.className = 'rl-source-label-resume'; lbl2.textContent = 'Résumé du message (généré, pas les mots exacts) :';
+      box.appendChild(lbl2);
+      box.appendChild(document.createTextNode(resume));
+    }
+  }
   function relancesAppendEchangeArgent(card, b){
     if (!b.echangesALire || !b.dernierEchangeArgent) return;
     var d = b.dernierEchangeArgent.dateMs ? new Date(b.dernierEchangeArgent.dateMs).toLocaleDateString('fr-FR') : '';
     var box = document.createElement('div'); box.className = 'rl-echange-argent';
     var titre = document.createElement('b'); titre.textContent = '📬 À lire avant d’envoyer' + (d ? ' — ' + d : '');
     box.appendChild(titre);
-    box.appendChild(document.createTextNode(b.dernierEchangeArgent.resume || ''));
+    relancesAppendTexteSource(box, b.dernierEchangeArgent.citation, b.dernierEchangeArgent.resume);
+    card.appendChild(box);
+  }
+  // R-2 (26/08/2026, maillon 8 reduit) : detecter + montrer, rien de plus -- aucune facture,
+  // aucun bouton, aucune proposition ne depend de ce bloc. Rattache au DESTINATAIRE (b.destinataire),
+  // jamais a une facture precise. Silence total si b.reponseRelance est absent -- on ne sait pas
+  // ce qu'on n'a pas vu, donc on ne dit rien ("aucune réponse reçue" affirmerait une absence
+  // qu'on ne peut pas garantir).
+  function relancesAppendReponseRelance(card, b){
+    if (!b.reponseRelance) return;
+    var rr = b.reponseRelance;
+    var d = rr.dateMs ? new Date(rr.dateMs).toLocaleDateString('fr-FR') : '';
+    var box = document.createElement('div'); box.className = 'rl-echange-argent';
+    var titre = document.createElement('b'); titre.textContent = '📬 Ce client a répondu' + (d ? ' — ' + d : '');
+    box.appendChild(titre);
+    relancesAppendTexteSource(box, rr.citation, rr.resume);
     card.appendChild(box);
   }
   function relancesAppendEcheanceSignal(card, b){
@@ -7307,6 +7371,113 @@
       card.appendChild(box2);
     }
   }
+  // A (26/08/2026, chantier "le cul-de-sac apres R2") : une facture a niveau r2 ne redevient
+  // jamais "due" -- rang deja au maximum -- donc ne rejoignait plus AUCUNE carte nulle part.
+  // Cette fonction construit la carte "Relancées 2×" : plus de brouillon a editer ni d'envoi,
+  // juste ce qui s'est reellement passe (nombre de relances, dates, source de chacune) et un
+  // champ note libre pour que Mickael y consigne sa decision. AUCUNE escalade automatique, AUCUN
+  // 3e modele de relance -- ce que devient une facture apres 2 relances sans effet se decide avec
+  // Mickael et son comptable, jamais depuis l'app.
+  var RL_SOURCE_LABEL = { declare: 'déclarée par Mickael', jarvis: 'envoyée par Jarvis' };
+  var RL_NIVEAU_LABEL = { r1: 'R1', r2: 'R2' };
+  function relancesGroupeSuspenduTermine(t){
+    return t.factures.length > 0 && t.factures.every(function(f){ return !!f.suspendu; });
+  }
+  function relancesAppendTermineFacture(card, f){
+    var bloc = document.createElement('div'); bloc.className = 'rl-termine-facture';
+    var tete = document.createElement('div'); tete.className = 'rl-termine-facture-tete';
+    tete.textContent = f.numero + ' du ' + (f.dateLongue || fmtRelanceDateFr(f.date)) + ' — ' + fmtEuros(f.montant);
+    bloc.appendChild(tete);
+    var histo = document.createElement('div'); histo.className = 'rl-termine-histo';
+    var nb = f.historique.length;
+    var titre = document.createElement('div');
+    titre.textContent = nb + ' relance' + (nb > 1 ? 's' : '') + (nb ? ' :' : ' — aucune trace de relance enregistrée.');
+    histo.appendChild(titre);
+    f.historique.forEach(function(h){
+      var ligne = document.createElement('div'); ligne.className = 'rl-termine-histo-ligne';
+      var niv = document.createElement('span'); niv.className = 'rl-termine-histo-niveau'; niv.textContent = RL_NIVEAU_LABEL[h.niveau] || h.niveau;
+      var d = h.date ? new Date(h.date).toLocaleDateString('fr-FR') : '?';
+      var txt = document.createElement('span'); txt.textContent = 'le ' + d + ' — ' + (RL_SOURCE_LABEL[h.source] || h.source || '?');
+      ligne.appendChild(niv); ligne.appendChild(txt);
+      histo.appendChild(ligne);
+    });
+    bloc.appendChild(histo);
+    var noteLabel = document.createElement('span'); noteLabel.className = 'rl-termine-note-label'; noteLabel.textContent = 'Note';
+    bloc.appendChild(noteLabel);
+    var noteIn = document.createElement('textarea'); noteIn.className = 'rl-termine-note'; noteIn.value = f.note || '';
+    noteIn.placeholder = 'Ce que tu as décidé (ex : appelé le 3/09, il rappelle fin du mois)…';
+    bloc.appendChild(noteIn);
+    function autoGrowNote(){ noteIn.style.height = 'auto'; noteIn.style.height = noteIn.scrollHeight + 'px'; }
+    setTimeout(autoGrowNote, 0);
+    noteIn.addEventListener('input', autoGrowNote);
+    noteIn.addEventListener('blur', function(){
+      postRelancesAction({ action: 'noter', numero: f.numero, note: noteIn.value }, function(){
+        toast('Note enregistrée.');
+      }, function(err){ toast(err); });
+    });
+    card.appendChild(bloc);
+  }
+  function relancesBuildCarteTerminee(t){
+    var card = document.createElement('div'); card.className = 'devis-card rl-card';
+    var suspendu = relancesGroupeSuspenduTermine(t);
+    var clientsWrap = document.createElement('div'); clientsWrap.className = 'rl-clients';
+    t.clientsDistincts.forEach(function(c){ var s = document.createElement('span'); s.textContent = c; clientsWrap.appendChild(s); });
+    card.appendChild(clientsWrap);
+    if (suspendu){ var bs = document.createElement('span'); bs.className = 'df-badge suspendu'; bs.textContent = '⏸ Suspendue'; card.appendChild(bs); }
+    var montant = document.createElement('span'); montant.className = 'rl-montant-gros'; montant.textContent = fmtEuros(t.totalTTC) + ' dû';
+    card.appendChild(montant);
+    var anc = document.createElement('span'); anc.className = 'rl-anciennete';
+    anc.textContent = 'La plus ancienne remonte à ' + t.joursRetardMax + ' j.';
+    card.appendChild(anc);
+    if (t.destinataire) relancesAppendSourceLigne(card, t);
+    t.factures.forEach(function(f){ relancesAppendTermineFacture(card, f); });
+    // Boutons : Suspendre / Reprendre, rien d'autre -- pas d'Envoyer (la facture est deja au
+    // niveau terminal, il n'y a plus de brouillon a envoyer), pas de "Je l'ai relancé moi-même"
+    // (deja fait, deux fois, c'est precisement ce que cette carte documente).
+    if (suspendu){
+      var repBtn = document.createElement('button'); repBtn.type = 'button'; repBtn.className = 'rl-btn-fait'; repBtn.style.width = '100%'; repBtn.style.marginTop = '10px';
+      repBtn.textContent = '▶️ Reprendre le suivi';
+      repBtn.addEventListener('click', function(){
+        repBtn.disabled = true;
+        var restant = t.factures.length; var echoue = false;
+        t.factures.forEach(function(f){
+          postRelancesAction({ numero: f.numero, action: 'reprendre' }, function(){
+            restant--;
+            if (restant === 0 && !echoue){ toast('Suivi repris pour ' + t.clientsDistincts.join(', ')); relancesOpen(true); }
+          }, function(err){ echoue = true; repBtn.disabled = false; toast(err); });
+        });
+      });
+      card.appendChild(repBtn);
+    } else {
+      var susBtn = document.createElement('button'); susBtn.type = 'button'; susBtn.className = 'rl-btn-suspendre2'; susBtn.style.width = '100%'; susBtn.style.marginTop = '10px';
+      susBtn.textContent = '⏸ Suspendre';
+      var form = document.createElement('div'); form.className = 'rl-form';
+      var dateIn = document.createElement('input'); dateIn.type = 'date';
+      var noteIn2 = document.createElement('textarea'); noteIn2.placeholder = 'Pourquoi (ex : le syndic dit qu’il règle en septembre)…'; noteIn2.rows = 2;
+      form.appendChild(dateIn); form.appendChild(noteIn2);
+      var formActions = document.createElement('div'); formActions.className = 'rl-form-actions';
+      var confirmBtn = document.createElement('button'); confirmBtn.type = 'button'; confirmBtn.className = 'rl-confirm'; confirmBtn.textContent = 'Confirmer la suspension';
+      var cancelBtn = document.createElement('button'); cancelBtn.type = 'button'; cancelBtn.className = 'rl-cancel'; cancelBtn.textContent = 'Annuler';
+      formActions.appendChild(confirmBtn); formActions.appendChild(cancelBtn);
+      form.appendChild(formActions);
+      susBtn.addEventListener('click', function(){ form.classList.toggle('open'); });
+      cancelBtn.addEventListener('click', function(){ form.classList.remove('open'); dateIn.value=''; noteIn2.value=''; });
+      confirmBtn.addEventListener('click', function(){
+        if (!dateIn.value){ toast('Choisis une date de reprise.'); return; }
+        confirmBtn.disabled = true;
+        var restant = t.factures.length; var echoue = false;
+        t.factures.forEach(function(f){
+          postRelancesAction({ numero: f.numero, action: 'suspendre', suspenduJusquau: dateIn.value, note: noteIn2.value.trim() }, function(){
+            restant--;
+            if (restant === 0 && !echoue){ toast('⏸ Suspendu jusqu’au ' + fmtRelanceDateFr(dateIn.value)); relancesOpen(true); }
+          }, function(err){ echoue = true; confirmBtn.disabled = false; toast(err); });
+        });
+      });
+      card.appendChild(susBtn);
+      card.appendChild(form);
+    }
+    return card;
+  }
   function relancesBuildCard(b){
     var card = document.createElement('div'); card.className = 'devis-card rl-card';
     var suspendu = relancesGroupeSuspendu(b);
@@ -7333,6 +7504,8 @@
     card.appendChild(jamais);
     // 6) Echanges a lire AVANT le brouillon
     relancesAppendEchangeArgent(card, b);
+    // 6bis) Reponse a une relance (R-1/R-2, 26/08/2026) -- detection separee, silence si rien
+    relancesAppendReponseRelance(card, b);
     // 7) Signal d'echeance proche
     relancesAppendEcheanceSignal(card, b);
     if (estQuestion){
@@ -7374,6 +7547,23 @@
   }
   function relancesApplyFilter(){
     var q = normDoc(relancesSearchInput.value.trim());
+    // A (26/08/2026) : l'onglet "Relancées 2×" lit une source SEPAREE (relancesTermines, jamais
+    // relancesBrouillons -- ces factures ont quitte "dues" pour de bon, cf. Construire termines
+    // (ok)) et utilise son propre constructeur de carte (pas de brouillon a editer/envoyer ici).
+    if (relancesActiveTab === 'termines'){
+      var itemsT = relancesTermines.filter(function(t){ return !q || normDoc(t.clientsDistincts.join(' ')).indexOf(q) !== -1; });
+      itemsT.sort(function(a, c){ return relancesTri === 'anciennete' ? (c.joursRetardMax - a.joursRetardMax) : (c.totalTTC - a.totalTTC); });
+      relancesList.innerHTML = '';
+      var totalT = itemsT.reduce(function(s,t){ return s + (Number(t.totalTTC)||0); }, 0);
+      var nbClientsT = relancesCompterClients(itemsT);
+      relancesSummary.textContent = itemsT.length ? (fmtEuros(totalT) + ' en suivi · ' + nbClientsT + ' client' + (nbClientsT>1?'s':'') + ' relancé' + (nbClientsT>1?'s':'') + ' 2 fois') : '';
+      if (!itemsT.length){
+        relancesList.innerHTML = '<p id="relances-empty">Aucune facture relancée 2 fois pour l’instant.</p>';
+        return;
+      }
+      itemsT.forEach(function(t){ relancesList.appendChild(relancesBuildCarteTerminee(t)); });
+      return;
+    }
     var items;
     if (relancesActiveTab === 'suspendues') items = relancesBrouillons.filter(relancesGroupeSuspendu);
     else if (relancesActiveTab === 'arelancer') items = relancesBrouillons.filter(function(b){ return !relancesGroupeSuspendu(b); });
@@ -7428,6 +7618,7 @@
       relancesLignesParNumero = {};
       relancesData.forEach(function(l){ relancesLignesParNumero[l.numero] = l; });
       relancesBrouillons = j.brouillons || [];
+      relancesTermines = j.termines || [];
       relancesAppliquerFraicheur(j.exportDonneesDu, j.joursEcoulesExport, j.fraicheurEtat);
       relancesApplyFilter();
       relancesUpdateBadge();
