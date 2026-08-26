@@ -1109,6 +1109,138 @@
   .rl-form .rl-form-actions button{flex:1; padding:9px; font-size:13.5px; border-radius:10px; border:0; cursor:pointer}
   .rl-form .rl-confirm{background:var(--gold-a); color:var(--gold-ink); font-weight:700}
   .rl-form .rl-cancel{background:#2E2E32; color:var(--muted)}
+  /* R2 (25/08/2026) : refonte du panneau Relances -- une carte par DESTINATAIRE (brouillons),
+     plus par facture. Ajouts uniquement, les classes .devis-card/.dv-nom/.dv-meta/.dv-montant/
+     .df-badge/.rl-form existantes restent utilisees telles quelles. */
+  #relances-tri-row{flex:0 0 auto; display:flex; align-items:center; gap:8px; padding:8px 14px 0}
+  #relances-tri-label{font-size:11.5px; color:var(--muted)}
+  .rl-tri-btn{
+    padding:6px 12px; border-radius:99px; border:0; font-size:12.5px; font-weight:700;
+    background:var(--surface); color:var(--muted); cursor:pointer; -webkit-tap-highlight-color:transparent;
+  }
+  .rl-tri-btn.active{background:var(--gold-a); color:var(--gold-ink)}
+  .rl-clients{font-weight:700; font-size:15.5px; line-height:1.35}
+  .rl-clients span{display:block}
+  .rl-montant-gros{font-weight:700; color:var(--gold-a); font-size:22px; margin-top:2px}
+  .rl-anciennete{font-size:12.5px; color:var(--muted)}
+  .rl-source{font-size:12.5px; margin-top:2px; display:flex; align-items:center; gap:6px}
+  .rl-source-badge{font-size:10.5px; font-weight:700; border-radius:99px; padding:2px 8px}
+  .rl-source-badge.confirme{background:rgba(48,209,88,.15); color:var(--ok)}
+  .rl-source-badge.meg{background:rgba(10,132,255,.15); color:var(--blue)}
+  .rl-source-badge.manuel{background:rgba(48,209,88,.15); color:var(--ok)}
+  .rl-source-txt{color:var(--muted)}
+  .rl-facture-list{font-size:12.5px; color:var(--ink); opacity:.85; margin-top:4px; line-height:1.5}
+  .rl-jamais{font-size:11.5px; color:var(--muted); font-style:italic; margin-top:2px}
+  .rl-echange-argent{
+    font-size:12.5px; line-height:1.4; margin-top:8px; padding:9px 11px; border-radius:10px;
+    background:rgba(var(--gold-rgb),.12); color:var(--ink);
+  }
+  .rl-echange-argent b{color:var(--gold-a); display:block; margin-bottom:2px; font-size:11.5px}
+  .rl-echeance-signal{
+    font-size:12.5px; line-height:1.4; margin-top:6px; padding:9px 11px; border-radius:10px;
+    background:rgba(10,132,255,.12); color:var(--ink);
+  }
+  .rl-brouillon-wrap{margin-top:10px}
+  /* E1 (26/08/2026) : le brouillon replie derriere un bouton -- sur les 6 premieres captures,
+     les boutons d'action n'apparaissaient JAMAIS a l'ecran (le brouillon, toujours deploye,
+     les repoussait hors du viewport). La carte doit tenir jusqu'aux boutons sans scroller ; le
+     brouillon (texte long) devient un detail qu'on deplie d'un geste, pas ce qu'on voit d'abord. */
+  .rl-brouillon-toggle{
+    width:100%; display:flex; align-items:center; justify-content:space-between; gap:8px;
+    padding:9px 11px; border-radius:10px; border:0.5px solid rgba(255,255,255,.14);
+    background:rgba(255,255,255,.04); color:var(--muted); font-size:12.5px; font-weight:600;
+    font-family:inherit; cursor:pointer; -webkit-tap-highlight-color:transparent; margin-top:8px;
+  }
+  .rl-brouillon-toggle .car{transition:transform .2s ease}
+  .rl-brouillon-toggle.open .car{transform:rotate(180deg)}
+  .rl-brouillon-content{display:none; margin-top:8px}
+  .rl-brouillon-content.open{display:block}
+  .rl-brouillon-label{font-size:11px; color:var(--gold-a); text-transform:uppercase; letter-spacing:.03em; display:flex; align-items:center; gap:5px; margin-bottom:5px}
+  /* E5 : le label seul ("MODIFIABLE") ne suffisait pas -- l'icone crayon + une bordure doree sur
+     les champs eux-memes (au lieu du gris neutre precedent) donnent l'apparence d'un vrai champ
+     de saisie, pas d'un bloc de texte affiche. */
+  .rl-brouillon-objet, .rl-brouillon-corps{
+    width:100%; box-sizing:border-box; border:1px solid rgba(var(--gold-rgb),.35);
+    background:#232326; color:var(--ink); font-family:inherit; resize:none; overflow:hidden;
+  }
+  .rl-brouillon-objet{
+    border-radius:10px 10px 0 0; font-size:13.5px; font-weight:600; line-height:1.35;
+    padding:9px 10px; border-bottom:none; min-height:38px;
+  }
+  /* Champ de brouillon editable -- meme discipline que la fiche client de Bruno (#bc-form) pour
+     que le clavier ne mange jamais le texte : max-height + overflow-y + scroll tactile. */
+  .rl-brouillon-corps-wrap{max-height:60vh; overflow-y:auto; -webkit-overflow-scrolling:touch; border-radius:0 0 10px 10px; border:1px solid rgba(var(--gold-rgb),.35); border-top:none}
+  .rl-brouillon-corps{
+    border:0; background:rgba(255,255,255,.05); font-size:14px; line-height:1.5; padding:10px; min-height:140px; display:block;
+  }
+  .rl-brouillon-edite{font-size:11px; color:var(--gold-a); margin-top:4px; display:block}
+  /* P (26/08/2026) : banniere de peremption -- les montants/factures ont change DEPUIS que
+     Mickael a modifie ce brouillon. Jamais un remplacement silencieux : juste ce signal + un
+     geste explicite pour repartir du gabarit. */
+  .rl-perime{
+    display:flex; align-items:center; justify-content:space-between; gap:10px; flex-wrap:wrap;
+    font-size:12.5px; line-height:1.4; margin:0 0 8px; padding:9px 11px; border-radius:10px;
+    background:rgba(255,159,10,.14); color:var(--ink); border:0.5px solid rgba(255,159,10,.4);
+  }
+  .rl-perime-txt{flex:1; min-width:160px}
+  .rl-perime-btn{
+    padding:7px 12px; font-size:12.5px; font-weight:700; border-radius:8px; border:0; cursor:pointer;
+    background:rgba(255,159,10,.9); color:#1a1200; -webkit-tap-highlight-color:transparent; white-space:nowrap;
+  }
+  .rl-actions3{display:flex; flex-direction:column; gap:8px; margin-top:10px}
+  /* E7 (26/08/2026) : la hierarchie visuelle etait inversee -- [Je l'ai relance moi-meme] en
+     vert vif et plein (donc l'action la plus attirante de l'ecran) alors que c'est une
+     DECLARATION invérifiable (9 declarations ont deja sorti 4 270 € de creances du circuit sans
+     qu'aucun mail ne parte). [Envoyer] devient l'action principale visuellement -- le cadenas
+     suffit a dire qu'elle ne part pas encore, pas besoin d'un style terne en plus. Le vert reste
+     reserve a ce qui est reellement acquis (cf. .rl-btn-fait, gardee UNIQUEMENT pour "Reprendre
+     les relances" -- une vraie reprise de suivi, pas une declaration). */
+  .rl-btn-envoyer{
+    padding:13px; font-size:15px; font-weight:700; border-radius:12px; border:0; cursor:pointer;
+    background:var(--gold-a); color:var(--gold-ink);
+    -webkit-tap-highlight-color:transparent; display:flex; align-items:center; justify-content:center; gap:6px;
+  }
+  .rl-btn-row2{display:flex; gap:8px}
+  /* "Je l'ai relance moi-meme" -- desormais discret, au meme niveau que Suspendre (meme style,
+     jamais le vert "c'est acquis" pour une donnee qu'on ne peut pas verifier). */
+  .rl-btn-declare{flex:1; padding:11px; font-size:13.5px; font-weight:700; border-radius:12px; border:0; cursor:pointer; background:#2E2E32; color:var(--ink); -webkit-tap-highlight-color:transparent}
+  /* .rl-btn-fait : reservee a "Reprendre les relances" (carte suspendue) -- une vraie reprise de
+     suivi automatique, verifiable, jamais une declaration humaine. */
+  .rl-btn-fait{flex:1; padding:11px; font-size:13.5px; font-weight:700; border-radius:12px; border:0; cursor:pointer; background:var(--ok); color:#04210c; -webkit-tap-highlight-color:transparent}
+  .rl-btn-suspendre2{flex:1; padding:11px; font-size:13.5px; font-weight:700; border-radius:12px; border:0; cursor:pointer; background:#2E2E32; color:var(--ink); -webkit-tap-highlight-color:transparent}
+  /* E2 (26/08/2026) : l'explication du bouton [Envoyer] partait dans le toast global -- une
+     pilule etroite, en gris semi-transparent sur fond deja sombre, qui coupait le texte et se
+     superposait au contenu. Remplacee par un encadre DANS la carte, sous le bouton, opaque et
+     large -- la phrase qui dit exactement ce qui va se passer merite d'etre lisible. */
+  .rl-envoyer-explication{
+    display:none; margin-top:8px; padding:10px 12px; border-radius:10px; font-size:12.5px; line-height:1.4;
+    background:#232326; color:var(--ink); border:0.5px solid rgba(255,255,255,.16);
+  }
+  .rl-envoyer-explication.open{display:block}
+  /* Cartes-question (a_confirmer / conflit / aucune) -- pas une erreur, une conversation. */
+  .rl-question{
+    margin-top:8px; padding:12px; border-radius:12px; background:rgba(var(--gold-rgb),.08);
+    border:0.5px solid rgba(var(--gold-rgb),.3);
+  }
+  .rl-question-txt{font-size:14px; font-weight:600; color:var(--ink); margin-bottom:8px}
+  .rl-question-input{
+    width:100%; box-sizing:border-box; border:0.5px solid rgba(255,255,255,.25); border-radius:10px;
+    background:#2E2E32; color:var(--ink); font-size:15px; padding:9px 10px; font-family:inherit; margin-bottom:8px;
+  }
+  .rl-question-confirm{width:100%; padding:10px; font-size:13.5px; font-weight:700; border-radius:10px; border:0; cursor:pointer; background:var(--gold-a); color:var(--gold-ink); -webkit-tap-highlight-color:transparent}
+  .rl-conflit-opt{
+    display:flex; align-items:center; justify-content:space-between; gap:8px; padding:9px 10px;
+    border-radius:10px; background:#2E2E32; margin-bottom:8px;
+  }
+  .rl-conflit-opt{align-items:flex-start; flex-wrap:wrap}
+  .rl-conflit-opt-txt{flex:1; min-width:160px}
+  .rl-conflit-opt-source{font-size:10.5px; color:var(--muted); text-transform:uppercase; letter-spacing:.03em; display:block}
+  .rl-conflit-opt-email{font-size:13.5px; color:var(--ink); word-break:break-all}
+  /* E6 (26/08/2026) : sans ce contexte, choisir entre 2 adresses etait un choix a l'aveugle --
+     d'ou vient l'adresse, et pour la boite mail, le mail precis (date + objet) qui l'a fait
+     remonter. Donnee deja tracee cote serveur (boiteObjetConfirmation), juste jamais affichee. */
+  .rl-conflit-opt-ctx{font-size:11px; color:var(--muted); margin-top:3px; line-height:1.35; display:block}
+  .rl-conflit-opt-btn{flex:0 0 auto; padding:8px 12px; font-size:12.5px; font-weight:700; border-radius:99px; border:0; cursor:pointer; background:var(--gold-a); color:var(--gold-ink); -webkit-tap-highlight-color:transparent}
   /* Panneau plein ecran "Carnet bleu" (fiches par residence MCS -- nom + un commentaire libre,
      compte patron d'un tenant secondaire uniquement). Coffre-fort : le commentaire est editable
      en place (meme mecanisme que .notes-contenu-edit) et verrouillable contre une modification
@@ -3024,6 +3156,11 @@
     <input id="relances-search" type="search" inputmode="search" placeholder="🔍 Rechercher un client…" autocomplete="off" autocapitalize="off" autocorrect="off">
   </div>
   <p id="relances-summary"></p>
+  <div id="relances-tri-row">
+    <span id="relances-tri-label">Trier par</span>
+    <button class="rl-tri-btn active" id="relances-tri-montant" type="button">Montant</button>
+    <button class="rl-tri-btn" id="relances-tri-anciennete" type="button">Ancienneté</button>
+  </div>
   <div id="relances-list"></div>
 </div>
 
@@ -3386,7 +3523,7 @@
 
 <script>
 (function(){
-  var APPV = 'v3.71';
+  var APPV = 'v3.72';
 
   // Debug : ?debug_modal=1 force l'affichage du modal "nouvelle version" sans attendre un vrai
   // déploiement. Capturé ICI, tout au début, car plus bas (login mémorisé, connexion) le code
@@ -6850,7 +6987,10 @@
   var relancesSummary = document.getElementById('relances-summary');
   var relancesFraicheur = document.getElementById('relances-fraicheur');
   var relancesData = [];
+  var relancesBrouillons = [];
+  var relancesLignesParNumero = {};
   var relancesActiveTab = 'arelancer';
+  var relancesTri = 'montant';
   function relancesClose(){ relancesview.classList.remove('open'); }
   var relancesFraicheurEtat = 'fraiche';
   // S2+S3 chantier 3 (25/08/2026) : la fraicheur des donnees (date, jours ecoules, etat
@@ -6896,99 +7036,359 @@
     var v = Number(n) || 0;
     return v.toLocaleString('fr-FR', { minimumFractionDigits: 2, maximumFractionDigits: 2 }) + ' €';
   }
-  function relancesBuildCard(l){
+  // R2 (25/08/2026) : une carte par DESTINATAIRE (brouillon), plus par facture -- construit
+  // depuis j.brouillons (webhook mcs-relances), chaque brouillon deja regroupe cote serveur
+  // (cf. Construire brouillons (ok) / Chantier 3). j.lignes reste disponible (relancesData) pour
+  // savoir si une facture precise est suspendue (etat par facture, pas par destinataire).
+  function relancesFactureSuspendue(numero){
+    var l = relancesLignesParNumero[numero];
+    return !!(l && l.suspendu);
+  }
+  function relancesGroupeSuspendu(b){
+    return b.factures.length > 0 && b.factures.every(function(f){ return relancesFactureSuspendue(f.numero); });
+  }
+  var RL_SOURCE_INFO = {
+    confirme_deux_sources: { badge: 'confirme', ic: '✓✓', txt: 'Confirmé par MEG et les mails' },
+    confirme_manuel: { badge: 'manuel', ic: '✓', txt: 'Réponse que tu as déjà donnée' },
+    meg_seule: { badge: 'meg', ic: 'MEG', txt: 'Adresse MEG seule — jamais confirmée par un autre échange' },
+  };
+  function relancesAppendSourceLigne(card, b){
+    var info = RL_SOURCE_INFO[b.verdict];
+    if (!info) return;
+    var wrap = document.createElement('div'); wrap.className = 'rl-source';
+    var badge = document.createElement('span'); badge.className = 'rl-source-badge ' + info.badge; badge.textContent = info.ic;
+    var txt = document.createElement('span'); txt.className = 'rl-source-txt'; txt.textContent = info.txt;
+    wrap.appendChild(badge); wrap.appendChild(txt);
+    card.appendChild(wrap);
+  }
+  function relancesAppendFactureList(card, b){
+    var list = document.createElement('div'); list.className = 'rl-facture-list';
+    b.factures.forEach(function(f, i){
+      if (i > 0) list.appendChild(document.createElement('br'));
+      list.appendChild(document.createTextNode(f.numero + ' du ' + fmtRelanceDateFr(f.date) + ' — ' + fmtEuros(f.montant)));
+    });
+    card.appendChild(list);
+  }
+  function relancesAppendEchangeArgent(card, b){
+    if (!b.echangesALire || !b.dernierEchangeArgent) return;
+    var d = b.dernierEchangeArgent.dateMs ? new Date(b.dernierEchangeArgent.dateMs).toLocaleDateString('fr-FR') : '';
+    var box = document.createElement('div'); box.className = 'rl-echange-argent';
+    var titre = document.createElement('b'); titre.textContent = '📬 À lire avant d’envoyer' + (d ? ' — ' + d : '');
+    box.appendChild(titre);
+    box.appendChild(document.createTextNode(b.dernierEchangeArgent.resume || ''));
+    card.appendChild(box);
+  }
+  function relancesAppendEcheanceSignal(card, b){
+    if (!b.prochaineEcheance) return;
+    var pe = b.prochaineEcheance;
+    var box = document.createElement('div'); box.className = 'rl-echeance-signal';
+    var txt = pe.nombre === 1
+      ? ('📅 Une autre facture (' + fmtEuros(pe.montant) + ') atteindra 30 jours de retard dans ' + pe.joursDans + ' j.')
+      : ('📅 ' + pe.nombre + ' autres factures (' + fmtEuros(pe.montant) + ') atteindront 30 jours de retard d’ici ' + pe.joursDans + ' j.');
+    box.textContent = txt + ' Envoyer maintenant, ou attendre pour grouper ?';
+    card.appendChild(box);
+  }
+  // Champ de brouillon editable — objet + corps, sauvegarde automatique au blur (meme principe
+  // que l'edition en place du Carnet bleu). Reference vivante conservee pour que le prochain
+  // relancesOpen(true) (declenche par un bouton d'action) ne re-genere pas un textarea vide.
+  function relancesAppendBrouillon(card, b){
+    var wrap = document.createElement('div'); wrap.className = 'rl-brouillon-wrap';
+    // P (26/08/2026) : si Mickael a deja touche ce brouillon ET que les montants/factures ont
+    // change depuis (donneesChangeesDepuisEdition, calcule cote serveur) -- on ne remplace JAMAIS
+    // son texte en silence, on le signale et on propose un geste explicite pour repartir du
+    // gabarit frais.
+    if (b.editeManuellement && b.donneesChangeesDepuisEdition){
+      var perime = document.createElement('div'); perime.className = 'rl-perime';
+      var perimeTxt = document.createElement('span'); perimeTxt.className = 'rl-perime-txt';
+      perimeTxt.textContent = '⚠️ Les montants ont changé depuis ta version.';
+      perime.appendChild(perimeTxt);
+      var perimeBtn = document.createElement('button'); perimeBtn.type = 'button'; perimeBtn.className = 'rl-perime-btn';
+      perimeBtn.textContent = 'Revenir au gabarit';
+      perimeBtn.addEventListener('click', function(){
+        perimeBtn.disabled = true;
+        postRelancesAction({ action: 'reinitialiser_brouillon', cle: b.cle }, function(){
+          toast('Brouillon remis au gabarit.'); relancesOpen(true);
+        }, function(err){ perimeBtn.disabled = false; toast(err); });
+      });
+      perime.appendChild(perimeBtn);
+      wrap.appendChild(perime);
+    }
+    // E1 (26/08/2026) : le brouillon est replie par defaut derriere un bouton -- c'est lui, long,
+    // qui repoussait les boutons d'action hors de l'ecran (aucune des 6 premieres captures ne
+    // les montrait). Deplie d'un geste ; deja edite ou en peremption -> ouvert d'office (le
+    // signal doit se voir sans action supplementaire).
+    var toggle = document.createElement('button'); toggle.type = 'button'; toggle.className = 'rl-brouillon-toggle';
+    var toggleTxt = document.createElement('span'); toggleTxt.textContent = 'Voir le brouillon';
+    var toggleCar = document.createElement('span'); toggleCar.className = 'car'; toggleCar.textContent = '▾';
+    toggle.appendChild(toggleTxt); toggle.appendChild(toggleCar);
+    wrap.appendChild(toggle);
+    var content = document.createElement('div'); content.className = 'rl-brouillon-content';
+    // Deja edite -> ouvert d'office (donneesChangeesDepuisEdition n'est jamais vrai sans
+    // editeManuellement, cf. Construire brouillons (ok)) ; brouillon jamais touche -> replie.
+    var ouvertDoffice = !!b.editeManuellement;
+    function setOuvert(ouvert){
+      content.classList.toggle('open', ouvert); toggle.classList.toggle('open', ouvert);
+      toggleTxt.textContent = ouvert ? 'Masquer le brouillon' : 'Voir le brouillon';
+    }
+    setOuvert(ouvertDoffice);
+    toggle.addEventListener('click', function(){
+      var ouvrir = !content.classList.contains('open');
+      setOuvert(ouvrir);
+      // Bug trouve en testant (26/08/2026) : un textarea dans un ancetre display:none a un
+      // scrollHeight de 0 -- l'auto-grandissement lance au chargement (avant tout depliage)
+      // figeait donc la hauteur a 0px pour de bon (jamais recalculee ensuite, seul un evenement
+      // "input" la redeclenche). Sans ce recalcul au moment de deplier, le texte au-dela de
+      // min-height restait invisible (coupe par overflow:hidden) meme si b.corps le contenait.
+      if (ouvrir){ autoGrow(objetIn); autoGrow(corpsIn); }
+    });
+    // E5 (26/08/2026) : l'icone crayon + la bordure doree (CSS) donnent l'apparence d'un vrai
+    // champ de saisie -- le mot "(modifiable)" seul ne suffisait pas, c'etait un bloc de texte.
+    var label = document.createElement('span'); label.className = 'rl-brouillon-label'; label.textContent = '✏️ Brouillon — modifiable';
+    content.appendChild(label);
+    // E3 (26/08/2026) : l'objet etait un <input> une ligne, donc tronque visuellement des qu'il
+    // depassait la largeur de la carte ("Factures MCS en attente de règleme…"). Un textarea
+    // auto-agrandi (meme mecanisme que le corps) passe a la ligne au lieu de couper.
+    var objetIn = document.createElement('textarea'); objetIn.rows = 1; objetIn.className = 'rl-brouillon-objet'; objetIn.value = b.objet || '';
+    content.appendChild(objetIn);
+    var corpsWrap = document.createElement('div'); corpsWrap.className = 'rl-brouillon-corps-wrap';
+    var corpsIn = document.createElement('textarea'); corpsIn.className = 'rl-brouillon-corps'; corpsIn.value = b.corps || '';
+    corpsWrap.appendChild(corpsIn);
+    content.appendChild(corpsWrap);
+    function autoGrow(el){ el.style.height = 'auto'; el.style.height = el.scrollHeight + 'px'; }
+    setTimeout(function(){ autoGrow(objetIn); autoGrow(corpsIn); }, 0);
+    objetIn.addEventListener('input', function(){ autoGrow(objetIn); });
+    corpsIn.addEventListener('input', function(){ autoGrow(corpsIn); });
+    var editeInfo = document.createElement('span'); editeInfo.className = 'rl-brouillon-edite';
+    editeInfo.style.display = b.editeManuellement ? '' : 'none';
+    editeInfo.textContent = '✎ Modifié — ta version est conservée.';
+    content.appendChild(editeInfo);
+    wrap.appendChild(content);
+    function sauvegarder(){
+      // La signature envoyee est TOUJOURS celle que le serveur a calculee pour CE chargement
+      // (b.signatureActuelle) -- jamais recalculee cote client par une autre formule, jamais
+      // desynchronisee de celle utilisee par "Construire brouillons (ok)" pour la comparaison.
+      postRelancesAction({ action: 'editer_brouillon', cle: b.cle, objet: objetIn.value, corps: corpsIn.value, signature: b.signatureActuelle || '' }, function(){
+        editeInfo.style.display = '';
+        toast('Brouillon enregistré.');
+      }, function(err){ toast(err); });
+    }
+    objetIn.addEventListener('blur', sauvegarder);
+    corpsIn.addEventListener('blur', sauvegarder);
+    card.appendChild(wrap);
+  }
+  // Les 3 boutons -- [Envoyer] verrouille (explique, n'envoie jamais), [Je l'ai relancé
+  // moi-même] (declaration de Mickael, jamais confondue avec un envoi Jarvis -- lecon des 9
+  // lignes du 18/08), [Suspendre] (inchange, boucle sur toutes les factures du groupe).
+  function relancesAppendActions(card, b){
+    var wrap = document.createElement('div'); wrap.className = 'rl-actions3';
+    if (b.destinataire){
+      var envBtn = document.createElement('button'); envBtn.type = 'button'; envBtn.className = 'rl-btn-envoyer';
+      envBtn.textContent = '🔒 Envoyer';
+      // E2 (26/08/2026) : cette explication partait dans le toast global (pilule etroite, grise
+      // sur fond sombre, texte coupe) -- c'est pourtant la phrase la plus importante de l'ecran.
+      // Encadre opaque DANS la carte, sous le bouton, qui ne masque jamais rien.
+      var envExpl = document.createElement('div'); envExpl.className = 'rl-envoyer-explication';
+      envExpl.textContent = 'L’envoi n’est pas encore activé. Quand tu me diras d’y aller, ce bouton enverra ce texte à ' + b.destinataire + '.';
+      envBtn.addEventListener('click', function(){ envExpl.classList.toggle('open'); });
+      wrap.appendChild(envBtn);
+      wrap.appendChild(envExpl);
+    }
+    var row2 = document.createElement('div'); row2.className = 'rl-btn-row2';
+    if (b.destinataire){
+      // E7 (26/08/2026) : classe "declare" (sobre), plus "fait" (vert vif, reservee a une action
+      // reellement acquise, cf. le bouton "Reprendre les relances" plus bas) -- c'est une
+      // declaration invérifiable, pas un fait constate par le systeme.
+      var faitBtn = document.createElement('button'); faitBtn.type = 'button'; faitBtn.className = 'rl-btn-declare';
+      faitBtn.textContent = 'Je l’ai relancé moi-même';
+      faitBtn.addEventListener('click', function(){
+        faitBtn.disabled = true;
+        var dateFr = new Date().toLocaleDateString('fr-FR');
+        var restant = b.factures.length;
+        var echoue = false;
+        b.factures.forEach(function(f){
+          postRelancesAction({ numero: f.numero, action: 'marquer', niveau: f.niveauDu, note: 'Relancé par Mickael lui-même, hors Jarvis, le ' + dateFr + '.' }, function(){
+            restant--;
+            if (restant === 0 && !echoue){ toast('✅ Relance déclarée pour ' + b.clientsDistincts.join(', ')); relancesOpen(true); }
+          }, function(err){ echoue = true; faitBtn.disabled = false; toast(err); });
+        });
+      });
+      row2.appendChild(faitBtn);
+    }
+    var susBtn = document.createElement('button'); susBtn.type = 'button'; susBtn.className = 'rl-btn-suspendre2'; susBtn.textContent = '⏸ Suspendre';
+    row2.appendChild(susBtn);
+    wrap.appendChild(row2);
+    var form = document.createElement('div'); form.className = 'rl-form';
+    var dateIn = document.createElement('input'); dateIn.type = 'date';
+    var noteIn = document.createElement('textarea'); noteIn.placeholder = 'Pourquoi (ex : le syndic dit qu’il règle en septembre)…'; noteIn.rows = 2;
+    form.appendChild(dateIn); form.appendChild(noteIn);
+    var formActions = document.createElement('div'); formActions.className = 'rl-form-actions';
+    var confirmBtn = document.createElement('button'); confirmBtn.type = 'button'; confirmBtn.className = 'rl-confirm'; confirmBtn.textContent = 'Confirmer la suspension';
+    var cancelBtn = document.createElement('button'); cancelBtn.type = 'button'; cancelBtn.className = 'rl-cancel'; cancelBtn.textContent = 'Annuler';
+    formActions.appendChild(confirmBtn); formActions.appendChild(cancelBtn);
+    form.appendChild(formActions);
+    susBtn.addEventListener('click', function(){ form.classList.toggle('open'); });
+    cancelBtn.addEventListener('click', function(){ form.classList.remove('open'); dateIn.value=''; noteIn.value=''; });
+    confirmBtn.addEventListener('click', function(){
+      if (!dateIn.value){ toast('Choisis une date de reprise.'); return; }
+      confirmBtn.disabled = true;
+      var restant = b.factures.length; var echoue = false;
+      b.factures.forEach(function(f){
+        postRelancesAction({ numero: f.numero, action: 'suspendre', suspenduJusquau: dateIn.value, note: noteIn.value.trim() }, function(){
+          restant--;
+          if (restant === 0 && !echoue){ toast('⏸ Suspendu jusqu’au ' + fmtRelanceDateFr(dateIn.value)); relancesOpen(true); }
+        }, function(err){ echoue = true; confirmBtn.disabled = false; toast(err); });
+      });
+    });
+    wrap.appendChild(form);
+    card.appendChild(wrap);
+  }
+  // Cartes-question : "a qui dois-je ecrire ?" (a_confirmer/aucune) ou conflit (2 adresses, choix
+  // explicite). Ce ne sont pas des erreurs -- ce sont les seules questions que Jarvis pose.
+  function relancesAppendQuestion(card, b){
+    var client = b.clientsDistincts[0] || '';
+    if (b.verdict === 'conflit'){
+      var box = document.createElement('div'); box.className = 'rl-question';
+      var txt = document.createElement('div'); txt.className = 'rl-question-txt'; txt.textContent = 'Deux adresses possibles — laquelle est la bonne ?';
+      box.appendChild(txt);
+      // E6 (26/08/2026) : "d'ou vient cette adresse" -- pour MEG c'est toujours le meme fichier de
+      // facturation ; pour la boite mail, le mail precis (date + objet) qui l'a fait remonter
+      // quand on l'a (source mail_libre), ou "fiche contact" quand l'adresse vient d'une fiche
+      // deja consolidee (fiche_relation, pas de mail unique a citer) -- jamais invente.
+      var ctxMeg = 'Depuis l’export de facturation MEG.';
+      var ctxBoite;
+      if (b.boiteObjetConfirmation){
+        var dBoite = b.boiteObjetConfirmationDateMs ? new Date(b.boiteObjetConfirmationDateMs).toLocaleDateString('fr-FR') : '';
+        ctxBoite = (dBoite ? 'Mail du ' + dBoite + ' — ' : 'Mail — ') + '« ' + b.boiteObjetConfirmation + ' »';
+      } else if (b.boiteSource === 'fiche_relation'){
+        ctxBoite = 'Depuis la fiche contact enregistrée.';
+      } else { ctxBoite = ''; }
+      [{ email: b.megEmail, source: 'Export MEG', ctx: ctxMeg }, { email: b.boiteEmail, source: 'Boîte mail', ctx: ctxBoite }].forEach(function(opt){
+        if (!opt.email) return;
+        var row = document.createElement('div'); row.className = 'rl-conflit-opt';
+        var txtWrap = document.createElement('div'); txtWrap.className = 'rl-conflit-opt-txt';
+        var src = document.createElement('span'); src.className = 'rl-conflit-opt-source'; src.textContent = opt.source;
+        var em = document.createElement('span'); em.className = 'rl-conflit-opt-email'; em.textContent = opt.email;
+        txtWrap.appendChild(src); txtWrap.appendChild(em);
+        if (opt.ctx){
+          var ctxEl = document.createElement('span'); ctxEl.className = 'rl-conflit-opt-ctx'; ctxEl.textContent = opt.ctx;
+          txtWrap.appendChild(ctxEl);
+        }
+        var btn = document.createElement('button'); btn.type = 'button'; btn.className = 'rl-conflit-opt-btn'; btn.textContent = 'Utiliser celle-ci';
+        btn.addEventListener('click', function(){
+          btn.disabled = true;
+          postRelancesAction({ action: 'definir_destinataire', client: client, email: opt.email }, function(){
+            toast('✅ Adresse enregistrée pour ' + client);
+            relancesOpen(true);
+          }, function(err){ btn.disabled = false; toast(err); });
+        });
+        row.appendChild(txtWrap); row.appendChild(btn);
+        box.appendChild(row);
+      });
+      card.appendChild(box);
+    } else {
+      var box2 = document.createElement('div'); box2.className = 'rl-question';
+      var txt2 = document.createElement('div'); txt2.className = 'rl-question-txt'; txt2.textContent = 'À qui dois-je écrire ?';
+      box2.appendChild(txt2);
+      var input = document.createElement('input'); input.type = 'email'; input.className = 'rl-question-input';
+      input.placeholder = 'adresse@exemple.fr';
+      if (b.verdict === 'a_confirmer' && b.boiteEmail) input.value = b.boiteEmail; // proposition, jamais acquise
+      box2.appendChild(input);
+      var btn2 = document.createElement('button'); btn2.type = 'button'; btn2.className = 'rl-question-confirm'; btn2.textContent = 'Enregistrer cette adresse';
+      btn2.addEventListener('click', function(){
+        var v = input.value.trim();
+        if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(v)){ toast('Adresse email invalide.'); return; }
+        btn2.disabled = true;
+        postRelancesAction({ action: 'definir_destinataire', client: client, email: v }, function(){
+          toast('✅ Adresse enregistrée pour ' + client + ' — Jarvis s’en souviendra.');
+          relancesOpen(true);
+        }, function(err){ btn2.disabled = false; toast(err); });
+      });
+      box2.appendChild(btn2);
+      card.appendChild(box2);
+    }
+  }
+  function relancesBuildCard(b){
     var card = document.createElement('div'); card.className = 'devis-card rl-card';
-    var top = document.createElement('div'); top.className = 'df-row-top';
-    var nom = document.createElement('span'); nom.className = 'dv-nom'; nom.textContent = l.client || '(client non précisé)';
-    top.appendChild(nom);
-    if (l.suspendu){
-      var bs = document.createElement('span'); bs.className = 'df-badge suspendu'; bs.textContent = '⏸ Suspendue';
-      top.appendChild(bs);
-    } else if (l.relanceDue){
-      var bd = document.createElement('span'); bd.className = 'df-badge ' + l.niveauDu; bd.textContent = l.niveauDu.toUpperCase() + ' à envoyer';
-      top.appendChild(bd);
-    } else if (l.niveauFait !== 'aucune'){
-      var bf = document.createElement('span'); bf.className = 'df-badge ' + l.niveauFait; bf.textContent = l.niveauFait.toUpperCase() + ' déjà faite';
-      top.appendChild(bf);
+    var suspendu = relancesGroupeSuspendu(b);
+    // 1) Client(s), jamais fondus
+    var clientsWrap = document.createElement('div'); clientsWrap.className = 'rl-clients';
+    b.clientsDistincts.forEach(function(c){ var s = document.createElement('span'); s.textContent = c; clientsWrap.appendChild(s); });
+    card.appendChild(clientsWrap);
+    if (suspendu){
+      var bs = document.createElement('span'); bs.className = 'df-badge suspendu'; bs.textContent = '⏸ Suspendue'; card.appendChild(bs);
     }
-    card.appendChild(top);
-    var meta = document.createElement('span'); meta.className = 'dv-meta';
-    meta.textContent = (l.numero || '') + ' · facture du ' + fmtRelanceDateFr(l.date) + ' · ' + (l.joursRetard != null ? l.joursRetard + ' j de retard' : '');
-    card.appendChild(meta);
-    var montant = document.createElement('span'); montant.className = 'dv-montant'; montant.textContent = fmtEuros(l.resteDu) + ' dû';
+    // 2) Montant + anciennete
+    var montant = document.createElement('span'); montant.className = 'rl-montant-gros'; montant.textContent = fmtEuros(b.totalTTC) + ' dû';
     card.appendChild(montant);
-    if (l.promesseEnCours){
-      var promesse = document.createElement('span'); promesse.className = 'rl-promesse-note';
-      var echStr = l.promesseEcheanceMs ? new Date(l.promesseEcheanceMs).toLocaleDateString('fr-FR') : '';
-      promesse.textContent = '🤝 Promesse en cours' + (echStr ? ' (' + echStr + ')' : '') + ' — « ' + l.promesseEnCours + ' »';
-      card.appendChild(promesse);
+    var anc = document.createElement('span'); anc.className = 'rl-anciennete';
+    anc.textContent = 'La plus ancienne remonte à ' + b.joursRetardMax + ' j.';
+    card.appendChild(anc);
+    // 3) Destinataire + provenance, OU carte-question si rien de tranché
+    var estQuestion = (b.verdict === 'a_confirmer' || b.verdict === 'conflit' || b.verdict === 'aucune');
+    if (!estQuestion) relancesAppendSourceLigne(card, b);
+    // 4) Factures
+    relancesAppendFactureList(card, b);
+    // 5) Etat honnete
+    var jamais = document.createElement('span'); jamais.className = 'rl-jamais'; jamais.textContent = 'Jamais relancée par Jarvis.';
+    card.appendChild(jamais);
+    // 6) Echanges a lire AVANT le brouillon
+    relancesAppendEchangeArgent(card, b);
+    // 7) Signal d'echeance proche
+    relancesAppendEcheanceSignal(card, b);
+    if (estQuestion){
+      relancesAppendQuestion(card, b);
     }
-    if (l.suspendu){
-      var note = document.createElement('span'); note.className = 'rl-suspend-note';
-      note.textContent = 'Suspendue jusqu’au ' + fmtRelanceDateFr(l.suspenduJusquau) + (l.note ? ' — « ' + l.note + ' »' : '');
-      card.appendChild(note);
-    }
-    var actions = document.createElement('div'); actions.className = 'dv-actions';
-    if (l.suspendu){
-      var repBtn = document.createElement('button'); repBtn.type = 'button'; repBtn.className = 'rl-reprendre'; repBtn.textContent = '▶️ Reprendre les relances';
+    // E1 (26/08/2026) : les 3 boutons AVANT le brouillon, pas apres -- c'est le brouillon (texte
+    // long) qui les repoussait hors de l'ecran sur toutes les captures precedentes. La carte
+    // tient desormais en un ecran jusqu'aux boutons ; le brouillon devient un detail qu'on
+    // deplie, plus ce qu'on doit d'abord faire defiler pour agir.
+    if (!suspendu) relancesAppendActions(card, b);
+    else {
+      var repBtn = document.createElement('button'); repBtn.type = 'button'; repBtn.className = 'rl-btn-fait'; repBtn.style.width = '100%';
+      repBtn.textContent = '▶️ Reprendre les relances';
       repBtn.addEventListener('click', function(){
         repBtn.disabled = true;
-        postRelancesAction({ numero: l.numero, action: 'reprendre' }, function(){
-          toast('Relances reprises pour ' + (l.client || 'ce client'));
-          relancesOpen(true);
-        }, function(err){ repBtn.disabled = false; toast(err); });
-      });
-      actions.appendChild(repBtn);
-    } else {
-      if (l.relanceDue){
-        var okBtn = document.createElement('button'); okBtn.type = 'button'; okBtn.className = 'rl-marquer';
-        okBtn.textContent = '✅ Marquer ' + l.niveauDu.toUpperCase() + ' envoyée';
-        okBtn.addEventListener('click', function(){
-          okBtn.disabled = true;
-          postRelancesAction({ numero: l.numero, action: 'marquer', niveau: l.niveauDu }, function(){
-            toast('✅ ' + l.niveauDu.toUpperCase() + ' marquée pour ' + (l.client || 'ce client'));
-            relancesOpen(true);
-          }, function(err){ okBtn.disabled = false; toast(err); });
+        var restant = b.factures.length; var echoue = false;
+        b.factures.forEach(function(f){
+          postRelancesAction({ numero: f.numero, action: 'reprendre' }, function(){
+            restant--;
+            if (restant === 0 && !echoue){ toast('Relances reprises pour ' + b.clientsDistincts.join(', ')); relancesOpen(true); }
+          }, function(err){ echoue = true; repBtn.disabled = false; toast(err); });
         });
-        actions.appendChild(okBtn);
-      }
-      var susBtn = document.createElement('button'); susBtn.type = 'button'; susBtn.className = 'rl-suspendre'; susBtn.textContent = '⏸ Suspendre';
-      actions.appendChild(susBtn);
-      var form = document.createElement('div'); form.className = 'rl-form';
-      var dateIn = document.createElement('input'); dateIn.type = 'date';
-      var noteIn = document.createElement('textarea'); noteIn.placeholder = 'Pourquoi (ex : le syndic dit qu’il règle en septembre)…'; noteIn.rows = 2;
-      form.appendChild(dateIn); form.appendChild(noteIn);
-      var formActions = document.createElement('div'); formActions.className = 'rl-form-actions';
-      var confirmBtn = document.createElement('button'); confirmBtn.type = 'button'; confirmBtn.className = 'rl-confirm'; confirmBtn.textContent = 'Confirmer la suspension';
-      var cancelBtn = document.createElement('button'); cancelBtn.type = 'button'; cancelBtn.className = 'rl-cancel'; cancelBtn.textContent = 'Annuler';
-      formActions.appendChild(confirmBtn); formActions.appendChild(cancelBtn);
-      form.appendChild(formActions);
-      susBtn.addEventListener('click', function(){ form.classList.toggle('open'); });
-      cancelBtn.addEventListener('click', function(){ form.classList.remove('open'); dateIn.value=''; noteIn.value=''; });
-      confirmBtn.addEventListener('click', function(){
-        if (!dateIn.value){ toast('Choisis une date de reprise.'); return; }
-        confirmBtn.disabled = true;
-        postRelancesAction({ numero: l.numero, action: 'suspendre', suspenduJusquau: dateIn.value, note: noteIn.value.trim() }, function(){
-          toast('⏸ Relance suspendue jusqu’au ' + fmtRelanceDateFr(dateIn.value));
-          relancesOpen(true);
-        }, function(err){ confirmBtn.disabled = false; toast(err); });
       });
-      actions.appendChild(form);
+      card.appendChild(repBtn);
     }
-    card.appendChild(actions);
+    // Brouillon editable (toujours present, meme sans destinataire tranche -- le texte existe
+    // deja), replie par defaut derriere "Voir le brouillon" (cf. relancesAppendBrouillon).
+    relancesAppendBrouillon(card, b);
     return card;
+  }
+  // E4 (26/08/2026) : "1 client à relancer" s'affichait sur Julien de Oliveira alors que la carte
+  // montre 2 commerces -- items.length compte les CARTES (1 destinataire = 1 carte, parfois
+  // plusieurs clients dedans), pas les vrais clients. Compte les clients distincts a travers
+  // toutes les cartes affichees, reutilise partout ou "X client(s)" apparait.
+  function relancesCompterClients(items){
+    var set = {};
+    items.forEach(function(b){ b.clientsDistincts.forEach(function(c){ set[c] = true; }); });
+    return Object.keys(set).length;
   }
   function relancesApplyFilter(){
     var q = normDoc(relancesSearchInput.value.trim());
     var items;
-    if (relancesActiveTab === 'arelancer') items = relancesData.filter(function(l){ return l.relanceDue; });
-    else if (relancesActiveTab === 'suspendues') items = relancesData.filter(function(l){ return l.suspendu; });
-    else items = relancesData.slice();
-    items = items.filter(function(l){ return !q || normDoc(l.client).indexOf(q) !== -1; });
+    if (relancesActiveTab === 'suspendues') items = relancesBrouillons.filter(relancesGroupeSuspendu);
+    else if (relancesActiveTab === 'arelancer') items = relancesBrouillons.filter(function(b){ return !relancesGroupeSuspendu(b); });
+    else items = relancesBrouillons.slice(); // "Toutes" -- brouillons ne contient QUE les factures deja dues (cf. Construire
+    // brouillons (ok)) : il n'existe pas de notion de facture "pas encore due" a ce niveau, donc
+    // "Toutes" et "A relancer" coincident aujourd'hui hors suspensions -- simplification assumee.
+    items = items.filter(function(b){ return !q || normDoc(b.clientsDistincts.join(' ')).indexOf(q) !== -1; });
+    items.sort(function(a, c){
+      return relancesTri === 'anciennete' ? (c.joursRetardMax - a.joursRetardMax) : (c.totalTTC - a.totalTTC);
+    });
     relancesList.innerHTML = '';
-    if (relancesActiveTab === 'arelancer'){
-      var total = items.reduce(function(s,l){ return s + (Number(l.resteDu)||0); }, 0);
-      relancesSummary.textContent = items.length ? (items.length + ' facture' + (items.length>1?'s':'') + ' à relancer · ' + fmtEuros(total)) : '';
+    if (relancesActiveTab !== 'suspendues'){
+      var total = items.reduce(function(s,b){ return s + (Number(b.totalTTC)||0); }, 0);
+      var nbClients = relancesCompterClients(items);
+      relancesSummary.textContent = items.length ? (fmtEuros(total) + ' à récupérer · ' + nbClients + ' client' + (nbClients>1?'s':'') + ' à relancer') : '';
     } else { relancesSummary.textContent = ''; }
     if (!items.length){
       var msgVide;
@@ -7008,20 +7408,26 @@
       relancesList.innerHTML = '<p id="relances-empty">' + msgVide + '</p>';
       return;
     }
-    items.forEach(function(l){ relancesList.appendChild(relancesBuildCard(l)); });
+    items.forEach(function(b){ relancesList.appendChild(relancesBuildCard(b)); });
   }
   function relancesUpdateBadge(){
-    var n = relancesData.filter(function(l){ return l.relanceDue; }).length;
+    // Nb de VRAIS clients a relancer (pas de cartes/destinataires, pas de factures) -- Mickael
+    // pense en clients (R2). Meme fonction que le resume de l'ecran (E4) -- jamais 2 chiffres
+    // differents pour la meme idee.
+    var n = relancesCompterClients(relancesBrouillons.filter(function(b){ return !relancesGroupeSuspendu(b); }));
     if (!relancesMenuBadge) return;
     if (n > 0){ relancesMenuBadge.textContent = n; relancesMenuBadge.style.display = ''; } else { relancesMenuBadge.style.display = 'none'; }
     updateAppBadgeTotal();
   }
-  function relancesCheckBadge(){ postRelances({}, function(j){ relancesData = j.lignes || []; relancesUpdateBadge(); }, function(){}); }
+  function relancesCheckBadge(){ postRelances({}, function(j){ relancesBrouillons = j.brouillons || []; relancesData = j.lignes || []; relancesLignesParNumero = {}; relancesData.forEach(function(l){ relancesLignesParNumero[l.numero] = l; }); relancesUpdateBadge(); }, function(){}); }
   function relancesOpen(keepOpen){
     if (!keepOpen) relancesview.classList.add('open');
     relancesList.innerHTML = '<p id="relances-loading">Chargement…</p>';
     postRelances({}, function(j){
       relancesData = j.lignes || [];
+      relancesLignesParNumero = {};
+      relancesData.forEach(function(l){ relancesLignesParNumero[l.numero] = l; });
+      relancesBrouillons = j.brouillons || [];
       relancesAppliquerFraicheur(j.exportDonneesDu, j.joursEcoulesExport, j.fraicheurEtat);
       relancesApplyFilter();
       relancesUpdateBadge();
@@ -7033,6 +7439,18 @@
       relancesActiveTab = btn.dataset.tab;
       relancesApplyFilter();
     });
+  });
+  document.getElementById('relances-tri-montant').addEventListener('click', function(){
+    relancesTri = 'montant';
+    document.getElementById('relances-tri-montant').classList.add('active');
+    document.getElementById('relances-tri-anciennete').classList.remove('active');
+    relancesApplyFilter();
+  });
+  document.getElementById('relances-tri-anciennete').addEventListener('click', function(){
+    relancesTri = 'anciennete';
+    document.getElementById('relances-tri-anciennete').classList.add('active');
+    document.getElementById('relances-tri-montant').classList.remove('active');
+    relancesApplyFilter();
   });
   relancesSearchInput.addEventListener('input', relancesApplyFilter);
   document.getElementById('relances-close').addEventListener('click', relancesClose);
