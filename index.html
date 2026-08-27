@@ -1100,6 +1100,7 @@
   .rl-promesse-note{font-size:12px; color:var(--gold-a); margin-top:2px}
   .rl-form{display:none; flex-direction:column; gap:8px; margin-top:8px; padding-top:8px; border-top:0.5px solid var(--hairline)}
   .rl-form.open{display:flex}
+  .rl-form-label{font-size:12px; color:var(--muted); line-height:1.35}
   .rl-form input[type=date], .rl-form textarea{
     width:100%; box-sizing:border-box; border:none; border-radius:10px;
     background:var(--surface); color:var(--ink); font-size:14px; padding:9px 10px; font-family:inherit;
@@ -1144,15 +1145,18 @@
     background:rgba(10,132,255,.12); color:var(--ink);
   }
   .rl-brouillon-wrap{margin-top:10px}
-  /* E1 (26/08/2026) : le brouillon replie derriere un bouton -- sur les 6 premieres captures,
-     les boutons d'action n'apparaissaient JAMAIS a l'ecran (le brouillon, toujours deploye,
-     les repoussait hors du viewport). La carte doit tenir jusqu'aux boutons sans scroller ; le
-     brouillon (texte long) devient un detail qu'on deplie d'un geste, pas ce qu'on voit d'abord. */
+  /* E1 (26/08/2026) : replie par defaut -- deploye, le brouillon (texte long) repousse les
+     boutons d'action hors du viewport ; ce comportement reste inchange. V5 (27/08/2026) : le
+     TOGGLE lui-meme devient l'action principale de la carte (demande explicite : "lire le
+     brouillon est le geste central, il doit se voir immediatement") -- deplace en position 4bis
+     (juste apres la liste des factures, avant tout le reste) et restyle avec le meme poids
+     visuel que .rl-btn-envoyer (bordure doree pleine, fond assorti) plutot que le style discret
+     d'origine, pour qu'il ne se confonde plus avec un detail secondaire. */
   .rl-brouillon-toggle{
     width:100%; display:flex; align-items:center; justify-content:space-between; gap:8px;
-    padding:9px 11px; border-radius:10px; border:0.5px solid rgba(255,255,255,.14);
-    background:rgba(255,255,255,.04); color:var(--muted); font-size:12.5px; font-weight:600;
-    font-family:inherit; cursor:pointer; -webkit-tap-highlight-color:transparent; margin-top:8px;
+    padding:12px 13px; border-radius:12px; border:1px solid rgba(var(--gold-rgb),.55);
+    background:rgba(var(--gold-rgb),.1); color:var(--gold-a); font-size:14.5px; font-weight:700;
+    font-family:inherit; cursor:pointer; -webkit-tap-highlight-color:transparent; margin-top:10px;
   }
   .rl-brouillon-toggle .car{transition:transform .2s ease}
   .rl-brouillon-toggle.open .car{transform:rotate(180deg)}
@@ -3554,7 +3558,7 @@
 
 <script>
 (function(){
-  var APPV = 'v3.77';
+  var APPV = 'v3.78';
 
   // Debug : ?debug_modal=1 force l'affichage du modal "nouvelle version" sans attendre un vrai
   // déploiement. Capturé ICI, tout au début, car plus bas (login mémorisé, connexion) le code
@@ -7313,30 +7317,23 @@
       });
       row2.appendChild(faitBtn);
     }
-    // V4 (27/08/2026) : "tu t'en occupes" -- retire une facture du circuit Caroline SANS date de
-    // fin (contrairement a Suspendre, qui en exige une) -- ex. un arrangement donne de vive voix
-    // ("vous la reglerez quand vous pourrez"). Un geste, pas un formulaire -- clic direct, aucune
-    // note obligatoire (le champ note existant sur la carte "Relancees 2x" reste disponible pour
-    // qui veut ecrire pourquoi, mais rien ne le demande ici).
-    var pecBtn = document.createElement('button'); pecBtn.type = 'button'; pecBtn.className = 'rl-btn-suspendre2'; pecBtn.textContent = '🙋 Tu t’en occupes';
-    pecBtn.addEventListener('click', function(){
-      pecBtn.disabled = true;
-      var restant = b.factures.length; var echoue = false;
-      b.factures.forEach(function(f){
-        postRelancesAction({ numero: f.numero, action: 'prendre_en_charge' }, function(){
-          restant--;
-          if (restant === 0 && !echoue){ toast('🙋 Facture(s) reprise(s) pour ' + b.clientsDistincts.join(', ')); relancesOpen(true); }
-        }, function(err){ echoue = true; pecBtn.disabled = false; toast(err); });
-      });
-    });
-    row2.appendChild(pecBtn);
+    // V5 (27/08/2026) : "tu t'en occupes" retire -- construit avant la decision de signer
+    // Caroline ; depuis, reprendre la main = effacer sa signature et signer soi-meme. Ce qui
+    // restait utile (retirer une facture du circuit sans y repenser) est couvert par Suspendre,
+    // desormais utilisable SANS date de reprise (cf. le formulaire plus bas, plus de champ
+    // obligatoire) -- un seul mecanisme de retrait au lieu de deux.
     var susBtn = document.createElement('button'); susBtn.type = 'button'; susBtn.className = 'rl-btn-suspendre2'; susBtn.textContent = '⏸ Suspendre';
     row2.appendChild(susBtn);
     wrap.appendChild(row2);
     var form = document.createElement('div'); form.className = 'rl-form';
+    // V5 (27/08/2026) : la date de reprise devient OPTIONNELLE -- sans elle, la facture reste
+    // suspendue jusqu'a un clic explicite sur "Reprendre les relances" (plus de mecanisme
+    // "tu t'en occupes" a cote, c'est desormais le seul geste pour un retrait sans echeance).
+    var dateLabel = document.createElement('span'); dateLabel.className = 'rl-form-label';
+    dateLabel.textContent = 'Date de reprise (optionnelle — laisse vide pour suspendre sans échéance)';
     var dateIn = document.createElement('input'); dateIn.type = 'date';
     var noteIn = document.createElement('textarea'); noteIn.placeholder = 'Pourquoi (ex : le syndic dit qu’il règle en septembre)…'; noteIn.rows = 2;
-    form.appendChild(dateIn); form.appendChild(noteIn);
+    form.appendChild(dateLabel); form.appendChild(dateIn); form.appendChild(noteIn);
     var formActions = document.createElement('div'); formActions.className = 'rl-form-actions';
     var confirmBtn = document.createElement('button'); confirmBtn.type = 'button'; confirmBtn.className = 'rl-confirm'; confirmBtn.textContent = 'Confirmer la suspension';
     var cancelBtn = document.createElement('button'); cancelBtn.type = 'button'; cancelBtn.className = 'rl-cancel'; cancelBtn.textContent = 'Annuler';
@@ -7345,13 +7342,15 @@
     susBtn.addEventListener('click', function(){ form.classList.toggle('open'); });
     cancelBtn.addEventListener('click', function(){ form.classList.remove('open'); dateIn.value=''; noteIn.value=''; });
     confirmBtn.addEventListener('click', function(){
-      if (!dateIn.value){ toast('Choisis une date de reprise.'); return; }
       confirmBtn.disabled = true;
       var restant = b.factures.length; var echoue = false;
       b.factures.forEach(function(f){
         postRelancesAction({ numero: f.numero, action: 'suspendre', suspenduJusquau: dateIn.value, note: noteIn.value.trim() }, function(){
           restant--;
-          if (restant === 0 && !echoue){ toast('⏸ Suspendu jusqu’au ' + fmtRelanceDateFr(dateIn.value)); relancesOpen(true); }
+          if (restant === 0 && !echoue){
+            toast(dateIn.value ? ('⏸ Suspendu jusqu’au ' + fmtRelanceDateFr(dateIn.value)) : '⏸ Suspendu, sans date de reprise.');
+            relancesOpen(true);
+          }
         }, function(err){ echoue = true; confirmBtn.disabled = false; toast(err); });
       });
     });
@@ -7504,9 +7503,11 @@
       var susBtn = document.createElement('button'); susBtn.type = 'button'; susBtn.className = 'rl-btn-suspendre2'; susBtn.style.width = '100%'; susBtn.style.marginTop = '10px';
       susBtn.textContent = '⏸ Suspendre';
       var form = document.createElement('div'); form.className = 'rl-form';
+      var dateLabel2 = document.createElement('span'); dateLabel2.className = 'rl-form-label';
+      dateLabel2.textContent = 'Date de reprise (optionnelle — laisse vide pour suspendre sans échéance)';
       var dateIn = document.createElement('input'); dateIn.type = 'date';
       var noteIn2 = document.createElement('textarea'); noteIn2.placeholder = 'Pourquoi (ex : le syndic dit qu’il règle en septembre)…'; noteIn2.rows = 2;
-      form.appendChild(dateIn); form.appendChild(noteIn2);
+      form.appendChild(dateLabel2); form.appendChild(dateIn); form.appendChild(noteIn2);
       var formActions = document.createElement('div'); formActions.className = 'rl-form-actions';
       var confirmBtn = document.createElement('button'); confirmBtn.type = 'button'; confirmBtn.className = 'rl-confirm'; confirmBtn.textContent = 'Confirmer la suspension';
       var cancelBtn = document.createElement('button'); cancelBtn.type = 'button'; cancelBtn.className = 'rl-cancel'; cancelBtn.textContent = 'Annuler';
@@ -7515,13 +7516,15 @@
       susBtn.addEventListener('click', function(){ form.classList.toggle('open'); });
       cancelBtn.addEventListener('click', function(){ form.classList.remove('open'); dateIn.value=''; noteIn2.value=''; });
       confirmBtn.addEventListener('click', function(){
-        if (!dateIn.value){ toast('Choisis une date de reprise.'); return; }
         confirmBtn.disabled = true;
         var restant = t.factures.length; var echoue = false;
         t.factures.forEach(function(f){
           postRelancesAction({ numero: f.numero, action: 'suspendre', suspenduJusquau: dateIn.value, note: noteIn2.value.trim() }, function(){
             restant--;
-            if (restant === 0 && !echoue){ toast('⏸ Suspendu jusqu’au ' + fmtRelanceDateFr(dateIn.value)); relancesOpen(true); }
+            if (restant === 0 && !echoue){
+              toast(dateIn.value ? ('⏸ Suspendu jusqu’au ' + fmtRelanceDateFr(dateIn.value)) : '⏸ Suspendu, sans date de reprise.');
+              relancesOpen(true);
+            }
           }, function(err){ echoue = true; confirmBtn.disabled = false; toast(err); });
         });
       });
@@ -7530,40 +7533,10 @@
     }
     return card;
   }
-  // V4 (27/08/2026) : carte "tu t'en occupes" -- une facture toujours due (le montant compte
-  // toujours dans le total du panneau, cf. Construire brouillons (ok)) mais sortie du circuit
-  // Caroline sur decision explicite de Mickael. Pas de brouillon, pas de boutons Valider/Rejeter
-  // (il n'y a rien a envoyer) -- juste le rappel factuel (client/montant/factures) + un seul
-  // geste possible : redonner la main a Caroline.
-  function relancesBuildCartePriseEnCharge(b){
-    var card = document.createElement('div'); card.className = 'devis-card rl-card';
-    var clientsWrap = document.createElement('div'); clientsWrap.className = 'rl-clients';
-    b.clientsDistincts.forEach(function(c){ var s = document.createElement('span'); s.textContent = c; clientsWrap.appendChild(s); });
-    card.appendChild(clientsWrap);
-    var bs = document.createElement('span'); bs.className = 'df-badge suspendu'; bs.textContent = '🙋 Tu t’en occupes'; card.appendChild(bs);
-    var montant = document.createElement('span'); montant.className = 'rl-montant-gros'; montant.textContent = fmtEuros(b.totalTTC) + ' dû';
-    card.appendChild(montant);
-    var anc = document.createElement('span'); anc.className = 'rl-anciennete';
-    anc.textContent = 'La plus ancienne remonte à ' + b.joursRetardMax + ' j.';
-    card.appendChild(anc);
-    relancesAppendFactureList(card, b);
-    var redonBtn = document.createElement('button'); redonBtn.type = 'button'; redonBtn.className = 'rl-btn-fait'; redonBtn.style.width = '100%'; redonBtn.style.marginTop = '10px';
-    redonBtn.textContent = '↩️ Redonner à Caroline';
-    redonBtn.addEventListener('click', function(){
-      redonBtn.disabled = true;
-      var restant = b.factures.length; var echoue = false;
-      b.factures.forEach(function(f){
-        postRelancesAction({ numero: f.numero, action: 'rendre_a_caroline' }, function(){
-          restant--;
-          if (restant === 0 && !echoue){ toast('↩️ Rendu à Caroline pour ' + b.clientsDistincts.join(', ')); relancesOpen(true); }
-        }, function(err){ echoue = true; redonBtn.disabled = false; toast(err); });
-      });
-    });
-    card.appendChild(redonBtn);
-    return card;
-  }
+  // V5 (27/08/2026) : la carte "tu t'en occupes" et son mecanisme (prisEnCharge/redonner_a_caroline)
+  // sont retires -- Suspendre (sans date obligatoire desormais) couvre le meme besoin par un seul
+  // chemin, cf. relancesGroupeSuspendu/le formulaire de suspension plus haut.
   function relancesBuildCard(b){
-    if (b.prisEnCharge) return relancesBuildCartePriseEnCharge(b);
     var card = document.createElement('div'); card.className = 'devis-card rl-card';
     var suspendu = relancesGroupeSuspendu(b);
     // 1) Client(s), jamais fondus
@@ -7584,6 +7557,13 @@
     if (!estQuestion) relancesAppendSourceLigne(card, b);
     // 4) Factures
     relancesAppendFactureList(card, b);
+    // 4bis) Voir le brouillon -- V5 (27/08/2026) : c'est le geste central de la carte (lire avant
+    // de decider d'envoyer/suspendre), plus une action secondaire repliee tout en bas. Deplace ici
+    // (avant l'etat honnete, les echanges, les boutons) et restyle en action principale (cf.
+    // .rl-brouillon-toggle). Reste REPLIE par defaut -- E1 (26/08/2026) tient toujours : un
+    // brouillon deplie par defaut repousse les boutons hors ecran ; seul son EMPLACEMENT change,
+    // pas son comportement (ouverture toujours sur un tap explicite).
+    relancesAppendBrouillon(card, b);
     // 5) Etat honnete
     var jamais = document.createElement('span'); jamais.className = 'rl-jamais'; jamais.textContent = 'Jamais relancée par Jarvis.';
     card.appendChild(jamais);
@@ -7616,9 +7596,6 @@
       });
       card.appendChild(repBtn);
     }
-    // Brouillon editable (toujours present, meme sans destinataire tranche -- le texte existe
-    // deja), replie par defaut derriere "Voir le brouillon" (cf. relancesAppendBrouillon).
-    relancesAppendBrouillon(card, b);
     return card;
   }
   // E4 (26/08/2026) : "1 client à relancer" s'affichait sur Julien de Oliveira alors que la carte
@@ -7650,12 +7627,11 @@
       return;
     }
     var items;
-    // V4 (27/08/2026) : un item "tu t'en occupes" (b.prisEnCharge) n'est structurellement plus "a
-    // relancer" (pas de brouillon Caroline, cf. Construire brouillons (ok)) -- exclu de cet
-    // onglet, mais jamais de "Toutes" (c'est precisement la que son montant doit rester visible,
+    // V5 (27/08/2026) : une facture suspendue (avec ou sans date de reprise) n'est plus "a
+    // relancer" -- exclue de cet onglet, mais jamais de "Toutes" (son montant doit rester visible,
     // demande explicite de Mickael : "le montant reste compte dans le total du").
     if (relancesActiveTab === 'suspendues') items = relancesBrouillons.filter(relancesGroupeSuspendu);
-    else if (relancesActiveTab === 'arelancer') items = relancesBrouillons.filter(function(b){ return !relancesGroupeSuspendu(b) && !b.prisEnCharge; });
+    else if (relancesActiveTab === 'arelancer') items = relancesBrouillons.filter(function(b){ return !relancesGroupeSuspendu(b); });
     else items = relancesBrouillons.slice(); // "Toutes" -- brouillons ne contient QUE les factures deja dues (cf. Construire
     // brouillons (ok)) : il n'existe pas de notion de facture "pas encore due" a ce niveau, donc
     // "Toutes" et "A relancer" coincident aujourd'hui hors suspensions -- simplification assumee.
@@ -7693,9 +7669,9 @@
     // Nb de VRAIS clients a relancer (pas de cartes/destinataires, pas de factures) -- Mickael
     // pense en clients (R2). Meme fonction que le resume de l'ecran (E4) -- jamais 2 chiffres
     // differents pour la meme idee.
-    // V4 : un item "tu t'en occupes" ne compte pas dans le badge "N a relancer" -- meme logique
+    // V5 : une facture suspendue ne compte pas dans le badge "N a relancer" -- meme logique
     // que l'onglet "A relancer" (relancesApplyFilter).
-    var n = relancesCompterClients(relancesBrouillons.filter(function(b){ return !relancesGroupeSuspendu(b) && !b.prisEnCharge; }));
+    var n = relancesCompterClients(relancesBrouillons.filter(function(b){ return !relancesGroupeSuspendu(b); }));
     if (!relancesMenuBadge) return;
     if (n > 0){ relancesMenuBadge.textContent = n; relancesMenuBadge.style.display = ''; } else { relancesMenuBadge.style.display = 'none'; }
     updateAppBadgeTotal();
