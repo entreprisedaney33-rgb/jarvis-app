@@ -3551,7 +3551,7 @@
 
 <script>
 (function(){
-  var APPV = 'v3.73';
+  var APPV = 'v3.74';
 
   // Debug : ?debug_modal=1 force l'affichage du modal "nouvelle version" sans attendre un vrai
   // déploiement. Capturé ICI, tout au début, car plus bas (login mémorisé, connexion) le code
@@ -7278,6 +7278,23 @@
       });
       row2.appendChild(faitBtn);
     }
+    // V4 (27/08/2026) : "tu t'en occupes" -- retire une facture du circuit Caroline SANS date de
+    // fin (contrairement a Suspendre, qui en exige une) -- ex. un arrangement donne de vive voix
+    // ("vous la reglerez quand vous pourrez"). Un geste, pas un formulaire -- clic direct, aucune
+    // note obligatoire (le champ note existant sur la carte "Relancees 2x" reste disponible pour
+    // qui veut ecrire pourquoi, mais rien ne le demande ici).
+    var pecBtn = document.createElement('button'); pecBtn.type = 'button'; pecBtn.className = 'rl-btn-suspendre2'; pecBtn.textContent = '🙋 Tu t’en occupes';
+    pecBtn.addEventListener('click', function(){
+      pecBtn.disabled = true;
+      var restant = b.factures.length; var echoue = false;
+      b.factures.forEach(function(f){
+        postRelancesAction({ numero: f.numero, action: 'prendre_en_charge' }, function(){
+          restant--;
+          if (restant === 0 && !echoue){ toast('🙋 Facture(s) reprise(s) pour ' + b.clientsDistincts.join(', ')); relancesOpen(true); }
+        }, function(err){ echoue = true; pecBtn.disabled = false; toast(err); });
+      });
+    });
+    row2.appendChild(pecBtn);
     var susBtn = document.createElement('button'); susBtn.type = 'button'; susBtn.className = 'rl-btn-suspendre2'; susBtn.textContent = '⏸ Suspendre';
     row2.appendChild(susBtn);
     wrap.appendChild(row2);
@@ -7478,7 +7495,40 @@
     }
     return card;
   }
+  // V4 (27/08/2026) : carte "tu t'en occupes" -- une facture toujours due (le montant compte
+  // toujours dans le total du panneau, cf. Construire brouillons (ok)) mais sortie du circuit
+  // Caroline sur decision explicite de Mickael. Pas de brouillon, pas de boutons Valider/Rejeter
+  // (il n'y a rien a envoyer) -- juste le rappel factuel (client/montant/factures) + un seul
+  // geste possible : redonner la main a Caroline.
+  function relancesBuildCartePriseEnCharge(b){
+    var card = document.createElement('div'); card.className = 'devis-card rl-card';
+    var clientsWrap = document.createElement('div'); clientsWrap.className = 'rl-clients';
+    b.clientsDistincts.forEach(function(c){ var s = document.createElement('span'); s.textContent = c; clientsWrap.appendChild(s); });
+    card.appendChild(clientsWrap);
+    var bs = document.createElement('span'); bs.className = 'df-badge suspendu'; bs.textContent = '🙋 Tu t’en occupes'; card.appendChild(bs);
+    var montant = document.createElement('span'); montant.className = 'rl-montant-gros'; montant.textContent = fmtEuros(b.totalTTC) + ' dû';
+    card.appendChild(montant);
+    var anc = document.createElement('span'); anc.className = 'rl-anciennete';
+    anc.textContent = 'La plus ancienne remonte à ' + b.joursRetardMax + ' j.';
+    card.appendChild(anc);
+    relancesAppendFactureList(card, b);
+    var redonBtn = document.createElement('button'); redonBtn.type = 'button'; redonBtn.className = 'rl-btn-fait'; redonBtn.style.width = '100%'; redonBtn.style.marginTop = '10px';
+    redonBtn.textContent = '↩️ Redonner à Caroline';
+    redonBtn.addEventListener('click', function(){
+      redonBtn.disabled = true;
+      var restant = b.factures.length; var echoue = false;
+      b.factures.forEach(function(f){
+        postRelancesAction({ numero: f.numero, action: 'rendre_a_caroline' }, function(){
+          restant--;
+          if (restant === 0 && !echoue){ toast('↩️ Rendu à Caroline pour ' + b.clientsDistincts.join(', ')); relancesOpen(true); }
+        }, function(err){ echoue = true; redonBtn.disabled = false; toast(err); });
+      });
+    });
+    card.appendChild(redonBtn);
+    return card;
+  }
   function relancesBuildCard(b){
+    if (b.prisEnCharge) return relancesBuildCartePriseEnCharge(b);
     var card = document.createElement('div'); card.className = 'devis-card rl-card';
     var suspendu = relancesGroupeSuspendu(b);
     // 1) Client(s), jamais fondus
@@ -7565,8 +7615,12 @@
       return;
     }
     var items;
+    // V4 (27/08/2026) : un item "tu t'en occupes" (b.prisEnCharge) n'est structurellement plus "a
+    // relancer" (pas de brouillon Caroline, cf. Construire brouillons (ok)) -- exclu de cet
+    // onglet, mais jamais de "Toutes" (c'est precisement la que son montant doit rester visible,
+    // demande explicite de Mickael : "le montant reste compte dans le total du").
     if (relancesActiveTab === 'suspendues') items = relancesBrouillons.filter(relancesGroupeSuspendu);
-    else if (relancesActiveTab === 'arelancer') items = relancesBrouillons.filter(function(b){ return !relancesGroupeSuspendu(b); });
+    else if (relancesActiveTab === 'arelancer') items = relancesBrouillons.filter(function(b){ return !relancesGroupeSuspendu(b) && !b.prisEnCharge; });
     else items = relancesBrouillons.slice(); // "Toutes" -- brouillons ne contient QUE les factures deja dues (cf. Construire
     // brouillons (ok)) : il n'existe pas de notion de facture "pas encore due" a ce niveau, donc
     // "Toutes" et "A relancer" coincident aujourd'hui hors suspensions -- simplification assumee.
@@ -7604,7 +7658,9 @@
     // Nb de VRAIS clients a relancer (pas de cartes/destinataires, pas de factures) -- Mickael
     // pense en clients (R2). Meme fonction que le resume de l'ecran (E4) -- jamais 2 chiffres
     // differents pour la meme idee.
-    var n = relancesCompterClients(relancesBrouillons.filter(function(b){ return !relancesGroupeSuspendu(b); }));
+    // V4 : un item "tu t'en occupes" ne compte pas dans le badge "N a relancer" -- meme logique
+    // que l'onglet "A relancer" (relancesApplyFilter).
+    var n = relancesCompterClients(relancesBrouillons.filter(function(b){ return !relancesGroupeSuspendu(b) && !b.prisEnCharge; }));
     if (!relancesMenuBadge) return;
     if (n > 0){ relancesMenuBadge.textContent = n; relancesMenuBadge.style.display = ''; } else { relancesMenuBadge.style.display = 'none'; }
     updateAppBadgeTotal();
