@@ -2484,6 +2484,98 @@
   #df-sug li:active{background:rgba(255,255,255,.1)}
   #df-row{display:flex; gap:8px}
   #cf-delete{flex:0 0 auto; padding:12px 14px; border-radius:12px}
+  /* V6 (27/08/2026) : choix Devis/Facture directe au clic sur "+", meme gabarit que #devis-form. */
+  #fc-choice-bg{position:fixed; inset:0; background:rgba(0,0,0,.5); display:none; z-index:52}
+  #fc-choice-bg.open{display:block}
+  #fc-choice{
+    position:fixed; left:14px; right:14px; top:50%; transform:translateY(-50%) scale(.96); z-index:53;
+    background:#151517; border-radius:16px; padding:18px 18px calc(18px + env(safe-area-inset-bottom));
+    display:none; flex-direction:column; gap:10px; opacity:0; transition:opacity .2s ease, transform .2s ease;
+  }
+  #fc-choice.open{display:flex; opacity:1; transform:translateY(-50%) scale(1)}
+  @media (prefers-reduced-motion: reduce){#fc-choice{transition:none}}
+  #fc-choice b{font-size:16px}
+  .fc-choice-btn{
+    display:flex; align-items:center; gap:12px; text-align:left; font:inherit;
+    background:#2E2E32; border:0.5px solid rgba(255,255,255,.18); border-radius:12px;
+    padding:12px 14px; cursor:pointer; -webkit-tap-highlight-color:transparent;
+  }
+  .fc-choice-ic{font-size:22px; flex:0 0 auto}
+  .fc-choice-txt{display:flex; flex-direction:column; gap:2px; font-size:15px; font-weight:700; color:var(--ink)}
+  .fc-choice-sub{font-size:12px; font-weight:400; color:var(--muted)}
+  .fc-choice-link{background:none; border:0; color:var(--gold-a); font:inherit; font-size:13px; font-weight:600; cursor:pointer; padding:4px 0; text-align:center}
+  /* V6 : formulaire de facture directe, meme gabarit que #devis-form. */
+  #fd-form-bg{position:fixed; inset:0; background:rgba(0,0,0,.5); display:none; z-index:52}
+  #fd-form-bg.open{display:block}
+  #fd-form{
+    position:fixed; left:14px; right:14px; top:50%; transform:translateY(-50%) scale(.96); z-index:53;
+    background:#151517; border-radius:16px; padding:18px 18px calc(18px + env(safe-area-inset-bottom));
+    display:none; flex-direction:column; gap:10px; max-height:82vh; overflow-y:auto; -webkit-overflow-scrolling:touch;
+    opacity:0; transition:opacity .2s ease, transform .2s ease;
+  }
+  #fd-form.open{display:flex; opacity:1; transform:translateY(-50%) scale(1)}
+  @media (prefers-reduced-motion: reduce){#fd-form{transition:none}}
+  #fd-form b{font-size:16px}
+  #fd-form label{display:flex; flex-direction:column; gap:5px; font-size:12.5px; color:var(--muted)}
+  #fd-form input{
+    font:inherit; font-size:15px; color:var(--ink); background:#2E2E32;
+    border:0.5px solid rgba(255,255,255,.18); border-radius:10px; padding:9px 11px; box-sizing:border-box;
+  }
+  #fd-dates-row{display:flex; gap:8px}
+  #fd-dates-row label{flex:1; min-width:0}
+  #fd-lignes-label{font-size:12.5px; color:var(--muted); margin-top:2px}
+  .fd-ligne{display:flex; gap:6px; align-items:flex-start}
+  .fd-ligne-desig{flex:2; min-width:0}
+  .fd-ligne-qte, .fd-ligne-prix, .fd-ligne-tva{flex:1; min-width:0}
+  .fd-ligne-del{
+    flex:0 0 auto; width:32px; height:32px; margin-top:1px; border-radius:8px; border:0;
+    background:rgba(255,69,58,.13); color:#FF453A; font-size:14px; cursor:pointer; -webkit-tap-highlight-color:transparent;
+  }
+  .fd-ligne-mini{font-size:10.5px; color:var(--muted); margin-top:-3px}
+  .fd-ligne-add-btn{
+    align-self:flex-start; background:none; border:0.5px dashed rgba(255,255,255,.3); border-radius:10px;
+    color:var(--gold-a); font:inherit; font-size:13px; font-weight:600; padding:8px 12px; cursor:pointer;
+    -webkit-tap-highlight-color:transparent;
+  }
+  #fd-total{font-size:14px; font-weight:700; color:var(--ink); text-align:right}
+  /* V6 : liste des factures emises + bouton "annuler par un avoir" -- meme gabarit que #devis-form
+     mais plus large/scrollable (une liste, pas un formulaire court). */
+  #mf-view-bg{position:fixed; inset:0; background:rgba(0,0,0,.5); display:none; z-index:52}
+  #mf-view-bg.open{display:block}
+  #mf-view{
+    position:fixed; left:14px; right:14px; top:8vh; bottom:8vh; z-index:53;
+    background:#151517; border-radius:16px; padding:16px 16px calc(16px + env(safe-area-inset-bottom));
+    display:none; flex-direction:column; gap:10px; opacity:0; transition:opacity .2s ease;
+  }
+  #mf-view.open{display:flex; opacity:1}
+  @media (prefers-reduced-motion: reduce){#mf-view{transition:none}}
+  #mf-view-head{display:flex; align-items:center; justify-content:space-between; flex:0 0 auto}
+  #mf-view-head b{font-size:16px}
+  #mf-view-close{
+    width:32px; height:32px; border-radius:50%; border:0; flex:0 0 auto;
+    background:var(--surface); color:var(--ink); font-size:16px;
+    display:flex; align-items:center; justify-content:center; cursor:pointer;
+    -webkit-tap-highlight-color:transparent;
+  }
+  #mf-list{flex:1; overflow-y:auto; -webkit-overflow-scrolling:touch; display:flex; flex-direction:column; gap:10px}
+  #mf-empty{color:var(--muted); font-size:13px; text-align:center; margin-top:20px}
+  .mf-card{background:#1D1D20; border-radius:12px; padding:12px; display:flex; flex-direction:column; gap:6px}
+  .mf-card-head{display:flex; justify-content:space-between; gap:8px; align-items:baseline}
+  .mf-card-client{font-size:14px; font-weight:700; color:var(--ink)}
+  .mf-card-montant{font-size:14px; font-weight:700; color:var(--gold-a); white-space:nowrap}
+  .mf-card-sub{font-size:12px; color:var(--muted)}
+  .mf-card-annulee{font-size:11.5px; color:var(--muted); font-style:italic}
+  .mf-btn-avoir{
+    align-self:flex-start; background:rgba(255,69,58,.13); color:#FF453A; border:0.5px solid rgba(255,69,58,.35);
+    border-radius:10px; padding:8px 12px; font:inherit; font-size:12.5px; font-weight:700; cursor:pointer;
+    -webkit-tap-highlight-color:transparent;
+  }
+  .mf-avoir-form{display:none; flex-direction:column; gap:6px; margin-top:4px}
+  .mf-avoir-form.open{display:flex}
+  .mf-avoir-form textarea{
+    font:inherit; font-size:13px; color:var(--ink); background:#2E2E32;
+    border:0.5px solid rgba(255,255,255,.18); border-radius:10px; padding:8px 10px; box-sizing:border-box; resize:vertical; min-height:44px;
+  }
   /* Fiche client PINNEE en haut de la discussion (Bruno uniquement, 2026-08-11, demande Matheo) --
      different du #devis-form ci-dessus (modal plein ecran, demo interne) : celle-ci reste EN
      LIGNE, ancree sous l'en-tete, toujours visible, jamais un aller-retour vers un menu que
@@ -3524,6 +3616,60 @@
   </div>
 </div>
 
+<!-- V6 (27/08/2026) : le "+" propose desormais 2 chemins -- devis (ci-dessus, inchange) ou
+     facture directe (sans devis d'origine, cas courant : une destruction de nid de frelons ne
+     passe par aucun devis). L'avoir N'EST PAS ici -- on n'annule pas "a partir de rien", on
+     annule une facture PRECISE (bouton sur la facture elle-meme, cf. #mf-view). -->
+<div id="fc-choice-bg"></div>
+<div id="fc-choice">
+  <b>Nouveau document</b>
+  <button id="fc-choice-devis" type="button" class="fc-choice-btn">
+    <span class="fc-choice-ic">📝</span>
+    <span class="fc-choice-txt">Devis<span class="fc-choice-sub">Client à qualifier, prix à valider</span></span>
+  </button>
+  <button id="fc-choice-facture" type="button" class="fc-choice-btn">
+    <span class="fc-choice-ic">🧾</span>
+    <span class="fc-choice-txt">Facture directe<span class="fc-choice-sub">Sans devis d'origine — prestation déjà réalisée</span></span>
+  </button>
+  <button id="fc-choice-mesfactures" type="button" class="fc-choice-link">Voir mes factures émises →</button>
+  <button id="fc-choice-cancel" type="button" class="vc-no">Annuler</button>
+</div>
+
+<div id="fd-form-bg"></div>
+<div id="fd-form">
+  <b>Facture directe</b>
+  <p class="dfhint">Sans devis d'origine — pour une prestation déjà réalisée (ex. destruction de nid de frelons). Le reste (identité MCS, RIB, mentions légales) vient automatiquement.</p>
+  <label>Client
+    <input id="fd-nom" type="text" placeholder="Ex : SDC Les Tilleuls" autocomplete="off">
+  </label>
+  <label>Adresse de facturation
+    <input id="fd-adresse" type="text" placeholder="Adresse du client" autocomplete="off">
+  </label>
+  <label>Email <input id="fd-email" type="email" placeholder="contact@syndic.fr" autocomplete="off"></label>
+  <label>Prestation
+    <input id="fd-objet" type="text" placeholder="Ex : Destruction nid de frelons" autocomplete="off">
+  </label>
+  <div id="fd-dates-row">
+    <label>Date d'intervention <input id="fd-date-debut" type="date"></label>
+    <label>Fin (optionnel) <input id="fd-date-fin" type="date"></label>
+  </div>
+  <div id="fd-lignes-label">Lignes</div>
+  <div id="fd-lignes"></div>
+  <button id="fd-ligne-add" type="button" class="fd-ligne-add-btn">+ Ajouter une ligne</button>
+  <div id="fd-total">Total HT : 0,00 €</div>
+  <div id="fd-err"></div>
+  <div id="df-row">
+    <button id="fd-cancel" type="button" class="vc-no">Annuler</button>
+    <button id="fd-save" type="button" class="vc-ok">Émettre la facture</button>
+  </div>
+</div>
+
+<div id="mf-view-bg"></div>
+<div id="mf-view">
+  <div id="mf-view-head"><b>Mes factures émises</b><button id="mf-view-close" type="button" aria-label="Fermer">✕</button></div>
+  <div id="mf-list"><p id="mf-empty">Chargement…</p></div>
+</div>
+
 <div id="updModalBg"></div>
 <div id="updModal">
   <div class="upd-emoji">🆕</div>
@@ -3558,7 +3704,7 @@
 
 <script>
 (function(){
-  var APPV = 'v3.78';
+  var APPV = 'v3.79';
 
   // Debug : ?debug_modal=1 force l'affichage du modal "nouvelle version" sans attendre un vrai
   // déploiement. Capturé ICI, tout au début, car plus bas (login mémorisé, connexion) le code
@@ -4076,6 +4222,7 @@
   var API_RELATIONS = 'https://n8n-self-hosted-t0pz.onrender.com/webhook/mcs-relations-liste';
   var API_DOCREF = 'https://n8n-self-hosted-t0pz.onrender.com/webhook/mcs-documents-reference';
   var API_CONTRATS = 'https://n8n-self-hosted-t0pz.onrender.com/webhook/mcs-contrats';
+  var API_FACTURATION = 'https://n8n-self-hosted-t0pz.onrender.com/webhook/mcs-facturation';
   var API_IK = 'https://n8n-self-hosted-t0pz.onrender.com/webhook/mcs-ik';
   var API_IK_EXPORT = 'https://n8n-self-hosted-t0pz.onrender.com/webhook/mcs-ik-export';
   var login = document.getElementById('login');
@@ -4330,6 +4477,7 @@
       });
   }
   function postDevisFactures(payload, onOk, onErr){ postDevisWeb(API_DEVIS_FACTURES, payload, onOk, onErr); }
+  function postFacturation(payload, onOk, onErr){ postDevisWeb(API_FACTURATION, payload, onOk, onErr); }
   function postDevisValider(payload, onOk, onErr){ postDevisWeb(API_DEVIS_VALIDER, payload, onOk, onErr); }
   function postRentabilite(payload, onOk, onErr){ postDevisWeb(API_RENTABILITE, payload, onOk, onErr); }
   function postRelances(payload, onOk, onErr){ postDevisWeb(API_RELANCES, payload, onOk, onErr); }
@@ -5950,7 +6098,7 @@
   // hoisted, disponible ici) ouvre une modale (z-index 53) AU-DESSUS de #devisview (z-index 50) ;
   // devisClose() ne touche que #devis-form/#devis-form-bg, jamais #devisview -- superposition et
   // fermeture verifiees sans effet de bord sur le panneau derriere (teste en reel, cf. session).
-  document.getElementById('devis-add').addEventListener('click', devisOpen);
+  document.getElementById('devis-add').addEventListener('click', function(){ fcChoiceOpen(); });
   document.getElementById('sh-devis-attente').addEventListener('click', function(){ sheetOpen(false); devisAttenteOpen(); });
 
   // ---- Contrats (chantier 5 : contrats et échéances -- patron d'un tenant secondaire uniquement) ----
@@ -11257,6 +11405,198 @@
       dfErr.textContent = err || "Impossible d'enregistrer le client.";
     });
   });
+
+  // ---- V6 (27/08/2026) : choix Devis / Facture directe au clic sur "+" ----
+  // Le "+" ne créait que des devis jusqu'ici. Décision explicite : la facture directe (sans
+  // devis d'origine -- cas courant, ex. destruction de nid de frelons) devient un 2e chemin. Le
+  // parcours devis accepté -> facture (données reprises) N'EST PAS TOUCHÉ ici, il reste géré
+  // ailleurs. L'avoir N'A PAS SA PLACE dans ce choix -- on annule une facture PRÉCISE, jamais
+  // "à partir de rien" (bouton sur la facture elle-même, cf. #mf-view plus bas).
+  var fcChoiceBg = document.getElementById('fc-choice-bg');
+  var fcChoice = document.getElementById('fc-choice');
+  function fcChoiceOpen(){
+    sheetOpen(false);
+    fcChoiceBg.classList.add('open');
+    fcChoice.classList.add('open');
+  }
+  function fcChoiceClose(){
+    fcChoiceBg.classList.remove('open');
+    fcChoice.classList.remove('open');
+  }
+  fcChoiceBg.addEventListener('click', fcChoiceClose);
+  document.getElementById('fc-choice-cancel').addEventListener('click', fcChoiceClose);
+  document.getElementById('fc-choice-devis').addEventListener('click', function(){ fcChoiceClose(); devisOpen(); });
+  document.getElementById('fc-choice-facture').addEventListener('click', function(){ fcChoiceClose(); fdFormOpen(); });
+  document.getElementById('fc-choice-mesfactures').addEventListener('click', function(){ fcChoiceClose(); mfViewOpen(); });
+
+  // ---- V6 : formulaire "Facture directe" -- client, prestation, date(s), lignes (qté/prix/TVA),
+  // et RIEN de plus (tout le reste -- identité MCS, RIB, mentions légales -- vient de
+  // mcs_emetteur côté serveur, cf. MCS · Facturation). Poste vers le même webhook que le reste
+  // de la facturation (type:'emettre', type_doc:'facture'), déjà construit et testé ce jour-là.
+  var fdFormBg = document.getElementById('fd-form-bg');
+  var fdForm = document.getElementById('fd-form');
+  var fdNom = document.getElementById('fd-nom');
+  var fdAdresse = document.getElementById('fd-adresse');
+  var fdEmail = document.getElementById('fd-email');
+  var fdObjet = document.getElementById('fd-objet');
+  var fdDateDebut = document.getElementById('fd-date-debut');
+  var fdDateFin = document.getElementById('fd-date-fin');
+  var fdLignesWrap = document.getElementById('fd-lignes');
+  var fdTotal = document.getElementById('fd-total');
+  var fdErr = document.getElementById('fd-err');
+  var fdSave = document.getElementById('fd-save');
+  function fdLigneRow(){
+    var row = document.createElement('div'); row.className = 'fd-ligne';
+    var desig = document.createElement('input'); desig.type = 'text'; desig.className = 'fd-ligne-desig'; desig.placeholder = 'Désignation';
+    var qte = document.createElement('input'); qte.type = 'number'; qte.className = 'fd-ligne-qte'; qte.placeholder = 'Qté'; qte.min = '1'; qte.step = '1'; qte.value = '1';
+    var prix = document.createElement('input'); prix.type = 'number'; prix.className = 'fd-ligne-prix'; prix.placeholder = 'Prix'; prix.min = '0'; prix.step = '0.01';
+    var tva = document.createElement('input'); tva.type = 'number'; tva.className = 'fd-ligne-tva'; tva.placeholder = 'TVA %'; tva.min = '0'; tva.step = '0.1'; tva.value = '20';
+    var del = document.createElement('button'); del.type = 'button'; del.className = 'fd-ligne-del'; del.textContent = '✕';
+    [desig, qte, prix, tva].forEach(function(el){ el.addEventListener('input', fdRecalcTotal); });
+    del.addEventListener('click', function(){
+      if (fdLignesWrap.children.length <= 1) return; // toujours au moins 1 ligne
+      row.remove(); fdRecalcTotal();
+    });
+    row.appendChild(desig); row.appendChild(qte); row.appendChild(prix); row.appendChild(tva); row.appendChild(del);
+    return row;
+  }
+  function fdRecalcTotal(){
+    var total = 0;
+    fdLignesWrap.querySelectorAll('.fd-ligne').forEach(function(row){
+      var q = Number(row.querySelector('.fd-ligne-qte').value) || 0;
+      var p = Number(row.querySelector('.fd-ligne-prix').value) || 0;
+      total += q * p;
+    });
+    fdTotal.textContent = 'Total HT : ' + fmtEuros(total);
+  }
+  document.getElementById('fd-ligne-add').addEventListener('click', function(){
+    fdLignesWrap.appendChild(fdLigneRow());
+  });
+  function fdFormOpen(){
+    fdNom.value = ''; fdAdresse.value = ''; fdEmail.value = ''; fdObjet.value = '';
+    fdDateDebut.value = ''; fdDateFin.value = '';
+    fdLignesWrap.innerHTML = '';
+    fdLignesWrap.appendChild(fdLigneRow());
+    fdRecalcTotal();
+    fdErr.textContent = '';
+    fdSave.disabled = false;
+    fdSave.textContent = 'Émettre la facture';
+    fdFormBg.classList.add('open');
+    fdForm.classList.add('open');
+    setTimeout(function(){ fdNom.focus(); }, 50);
+  }
+  function fdFormClose(){
+    fdFormBg.classList.remove('open');
+    fdForm.classList.remove('open');
+  }
+  fdFormBg.addEventListener('click', fdFormClose);
+  document.getElementById('fd-cancel').addEventListener('click', fdFormClose);
+  fdSave.addEventListener('click', function(){
+    var nom = fdNom.value.trim();
+    var adresse = fdAdresse.value.trim();
+    var email = fdEmail.value.trim();
+    var objet = fdObjet.value.trim();
+    fdErr.textContent = '';
+    if (!nom){ fdErr.textContent = 'Le nom du client est obligatoire.'; return; }
+    if (!adresse){ fdErr.textContent = "L'adresse est obligatoire."; return; }
+    if (email && email.indexOf('@') === -1){ fdErr.textContent = 'Adresse email invalide.'; return; }
+    var lignes = [];
+    var ligneInvalide = false;
+    fdLignesWrap.querySelectorAll('.fd-ligne').forEach(function(row){
+      var d = row.querySelector('.fd-ligne-desig').value.trim();
+      var q = Number(row.querySelector('.fd-ligne-qte').value) || 0;
+      var p = row.querySelector('.fd-ligne-prix').value;
+      var t = Number(row.querySelector('.fd-ligne-tva').value);
+      if (!d && !p) return; // ligne vide, ignorée
+      if (!d || !p || Number(p) <= 0 || q <= 0){ ligneInvalide = true; return; }
+      lignes.push({ designation: d, quantite: q, prix_ht: Number(p), tva: isNaN(t) ? 20 : t });
+    });
+    if (ligneInvalide){ fdErr.textContent = 'Chaque ligne veut une désignation, une quantité et un prix HT.'; return; }
+    if (!lignes.length){ fdErr.textContent = 'Ajoute au moins une ligne.'; return; }
+    fdSave.disabled = true;
+    fdSave.textContent = 'Émission…';
+    postFacturation({
+      type: 'emettre', type_doc: 'facture',
+      client: { nom: nom, adresse: adresse, email: email },
+      objet: objet, lignes: lignes,
+      date_prestation: fdDateDebut.value || '', date_prestation_fin: fdDateFin.value || '',
+    }, function(r){
+      fdSave.disabled = false;
+      fdSave.textContent = 'Émettre la facture';
+      if (r && r.ok){
+        fdFormClose();
+        toast('✅ Facture émise pour ' + nom);
+      } else {
+        fdErr.textContent = (r && r.message) || 'Émission impossible.';
+      }
+    }, function(err){
+      fdSave.disabled = false;
+      fdSave.textContent = 'Émettre la facture';
+      fdErr.textContent = err || "Impossible d'émettre la facture.";
+    });
+  });
+
+  // ---- V6 : "Mes factures émises" -- liste des vraies factures (mcs_factures_emises), avec un
+  // bouton "Annuler par un avoir" SUR CHAQUE FACTURE. Jamais un avoir créé à partir de rien : la
+  // référence à la facture d'origine est automatique (numeroComplet de la carte), jamais fausse.
+  var mfViewBg = document.getElementById('mf-view-bg');
+  var mfView = document.getElementById('mf-view');
+  var mfList = document.getElementById('mf-list');
+  function mfCard(f){
+    var card = document.createElement('div'); card.className = 'mf-card';
+    var head = document.createElement('div'); head.className = 'mf-card-head';
+    var client = document.createElement('span'); client.className = 'mf-card-client'; client.textContent = f.clientNom || '(client inconnu)';
+    var montant = document.createElement('span'); montant.className = 'mf-card-montant'; montant.textContent = fmtEuros(f.montantTtc) + ' TTC';
+    head.appendChild(client); head.appendChild(montant);
+    card.appendChild(head);
+    var sub = document.createElement('span'); sub.className = 'mf-card-sub';
+    sub.textContent = f.numeroComplet + ' — ' + fmtRelanceDateFr(f.dateEmission) + (f.objet ? ' — ' + f.objet : '');
+    card.appendChild(sub);
+    if (f.dejaAnnuleePar){
+      var annulee = document.createElement('span'); annulee.className = 'mf-card-annulee';
+      annulee.textContent = 'Déjà annulée par l\'avoir ' + f.dejaAnnuleePar + '.';
+      card.appendChild(annulee);
+    } else {
+      var avoirBtn = document.createElement('button'); avoirBtn.type = 'button'; avoirBtn.className = 'mf-btn-avoir';
+      avoirBtn.textContent = '↩️ Annuler par un avoir';
+      var form = document.createElement('div'); form.className = 'mf-avoir-form';
+      var motif = document.createElement('textarea'); motif.placeholder = 'Motif (ex : erreur de facturation, double émission)…'; motif.rows = 2;
+      var actions = document.createElement('div'); actions.className = 'rl-form-actions';
+      var confirm = document.createElement('button'); confirm.type = 'button'; confirm.className = 'rl-confirm'; confirm.textContent = "Confirmer l'avoir";
+      var cancel = document.createElement('button'); cancel.type = 'button'; cancel.className = 'rl-cancel'; cancel.textContent = 'Annuler';
+      actions.appendChild(confirm); actions.appendChild(cancel);
+      form.appendChild(motif); form.appendChild(actions);
+      avoirBtn.addEventListener('click', function(){ form.classList.toggle('open'); });
+      cancel.addEventListener('click', function(){ form.classList.remove('open'); motif.value = ''; });
+      confirm.addEventListener('click', function(){
+        if (!motif.value.trim()){ toast('Précise le motif de l\'avoir.'); return; }
+        confirm.disabled = true;
+        postFacturation({
+          type: 'emettre', type_doc: 'avoir', avoir_de: f.numeroComplet, motif: motif.value.trim(),
+        }, function(r){
+          confirm.disabled = false;
+          if (r && r.ok){ toast('✅ Avoir émis pour ' + f.numeroComplet); mfViewOpen(true); }
+          else { toast('❌ ' + ((r && r.message) || 'Émission impossible.')); }
+        }, function(err){ confirm.disabled = false; toast('❌ ' + err); });
+      });
+      card.appendChild(avoirBtn);
+      card.appendChild(form);
+    }
+    return card;
+  }
+  function mfViewOpen(keepOpen){
+    if (!keepOpen){ mfViewBg.classList.add('open'); mfView.classList.add('open'); }
+    mfList.innerHTML = '<p id="mf-empty">Chargement…</p>';
+    postFacturation({ type: 'liste' }, function(r){
+      if (!r || !r.ok){ mfList.innerHTML = '<p id="mf-empty">Impossible de charger les factures.</p>'; return; }
+      mfList.innerHTML = '';
+      if (!r.factures || !r.factures.length){ mfList.innerHTML = '<p id="mf-empty">Aucune facture émise pour l’instant.</p>'; return; }
+      r.factures.forEach(function(f){ mfList.appendChild(mfCard(f)); });
+    }, function(err){ mfList.innerHTML = '<p id="mf-empty">' + err + '</p>'; });
+  }
+  function mfViewClose(){ mfViewBg.classList.remove('open'); mfView.classList.remove('open'); }
+  mfViewBg.addEventListener('click', mfViewClose);
+  document.getElementById('mf-view-close').addEventListener('click', mfViewClose);
 
   // ---- Fiche client PINNEE (Bruno, 2026-08-11) ----
   // Guide Bruno pas a pas : Nouveau client -> Particulier/Professionnel -> champs -> Enregistrer
