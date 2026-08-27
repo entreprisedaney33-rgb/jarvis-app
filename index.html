@@ -3554,7 +3554,7 @@
 
 <script>
 (function(){
-  var APPV = 'v3.76';
+  var APPV = 'v3.77';
 
   // Debug : ?debug_modal=1 force l'affichage du modal "nouvelle version" sans attendre un vrai
   // déploiement. Capturé ICI, tout au début, car plus bas (login mémorisé, connexion) le code
@@ -7276,7 +7276,12 @@
         postRelancesAction({ cle: b.cle, action: 'envoyer' }, function(r){
           envExpl.classList.remove('open');
           if (r && r.ok){
-            toast('✅ Envoyé' + (r.testMode ? ' (mode test)' : '') + ' à ' + (r.destinataireReel || b.destinataire));
+            // V2 (27/08/2026) : en mode test, le serveur ne fait plus avancer le niveau
+            // (Preparer historique envoi (ok)) -- le message le dit explicitement, pas de
+            // "envoyé" ambigu qui laisserait croire que la relance a progressé.
+            toast(r.testMode
+              ? ('🧪 Test envoyé à ' + (r.destinataireReel || b.destinataire) + ' — redirigé, n’a pas atteint le client, niveau inchangé.')
+              : ('✅ Envoyé à ' + (r.destinataireReel || b.destinataire)));
             relancesOpen(true);
           } else {
             envConfirmBtn.disabled = false; envBtn.disabled = false; envConfirmBtn.textContent = 'Confirmer l’envoi';
