@@ -1159,6 +1159,9 @@
   .rl-brouillon-content{display:none; margin-top:8px}
   .rl-brouillon-content.open{display:block}
   .rl-brouillon-label{font-size:11px; color:var(--gold-a); text-transform:uppercase; letter-spacing:.03em; display:flex; align-items:center; gap:5px; margin-bottom:5px}
+  /* V (27/08/2026) : discrete mais lisible AVANT le texte -- ni criarde (pas le meme poids que le
+     label MODIFIABLE en majuscules), ni cachee (pas la meme couleur que le corps neutre). */
+  .rl-brouillon-signataire{font-size:12px; color:var(--muted); margin-bottom:8px; line-height:1.4}
   /* E5 : le label seul ("MODIFIABLE") ne suffisait pas -- l'icone crayon + une bordure doree sur
      les champs eux-memes (au lieu du gris neutre precedent) donnent l'apparence d'un vrai champ
      de saisie, pas d'un bloc de texte affiche. */
@@ -3551,7 +3554,7 @@
 
 <script>
 (function(){
-  var APPV = 'v3.74';
+  var APPV = 'v3.75';
 
   // Debug : ?debug_modal=1 force l'affichage du modal "nouvelle version" sans attendre un vrai
   // déploiement. Capturé ICI, tout au début, car plus bas (login mémorisé, connexion) le code
@@ -7209,6 +7212,13 @@
     // champ de saisie -- le mot "(modifiable)" seul ne suffisait pas, c'etait un bloc de texte.
     var label = document.createElement('span'); label.className = 'rl-brouillon-label'; label.textContent = '✏️ Brouillon — modifiable';
     content.appendChild(label);
+    // V (27/08/2026) : Mickael doit voir AVANT de lire le texte que ce n'est plus lui qui signe --
+    // il valide un message ecrit au nom de quelqu'un d'autre, pas sa propre parole. Formulation
+    // validee par Mickael (tutoiement, coherent avec le reste de l'app) : la 2e phrase compte
+    // autant que la 1ere, elle dit que les reponses reviennent chez LUI, pas chez Caroline.
+    var signataire = document.createElement('div'); signataire.className = 'rl-brouillon-signataire';
+    signataire.textContent = '✉️ Ce message part au nom de Caroline Benitez (comptabilité), depuis ta boîte. Les réponses te reviendront.';
+    content.appendChild(signataire);
     // E3 (26/08/2026) : l'objet etait un <input> une ligne, donc tronque visuellement des qu'il
     // depassait la largeur de la carte ("Factures MCS en attente de règleme…"). Un textarea
     // auto-agrandi (meme mecanisme que le corps) passe a la ligne au lieu de couper.
