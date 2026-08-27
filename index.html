@@ -3554,7 +3554,7 @@
 
 <script>
 (function(){
-  var APPV = 'v3.75';
+  var APPV = 'v3.76';
 
   // Debug : ?debug_modal=1 force l'affichage du modal "nouvelle version" sans attendre un vrai
   // déploiement. Capturé ICI, tout au début, car plus bas (login mémorisé, connexion) le code
@@ -7250,20 +7250,40 @@
     corpsIn.addEventListener('blur', sauvegarder);
     card.appendChild(wrap);
   }
-  // Les 3 boutons -- [Envoyer] verrouille (explique, n'envoie jamais), [Je l'ai relancé
-  // moi-même] (declaration de Mickael, jamais confondue avec un envoi Jarvis -- lecon des 9
-  // lignes du 18/08), [Suspendre] (inchange, boucle sur toutes les factures du groupe).
+  // Les 3 boutons -- [Envoyer] (V, 27/08/2026 : envoi reel, cf. commentaire ci-dessous),
+  // [Je l'ai relancé moi-même] (declaration de Mickael, jamais confondue avec un envoi Jarvis --
+  // lecon des 9 lignes du 18/08), [Suspendre] (inchange, boucle sur toutes les factures du groupe).
   function relancesAppendActions(card, b){
     var wrap = document.createElement('div'); wrap.className = 'rl-actions3';
     if (b.destinataire){
+      // V (27/08/2026) : premier vrai envoi -- le clic n'affiche plus une explication passive,
+      // il DECLENCHE. Un 1er clic deplie une confirmation explicite (le destinataire en clair,
+      // jamais un envoi surprise) ; le 2e clic (bouton dedie dans l'encadre) envoie reellement.
+      // Cote serveur, le brouillon est RECALCULE via `cle` (Preparer envoi relance (ok)) --
+      // jamais un texte transmis d'ici, donc toujours "sa version" telle qu'affichee/editee.
       var envBtn = document.createElement('button'); envBtn.type = 'button'; envBtn.className = 'rl-btn-envoyer';
-      envBtn.textContent = '🔒 Envoyer';
-      // E2 (26/08/2026) : cette explication partait dans le toast global (pilule etroite, grise
-      // sur fond sombre, texte coupe) -- c'est pourtant la phrase la plus importante de l'ecran.
-      // Encadre opaque DANS la carte, sous le bouton, qui ne masque jamais rien.
+      envBtn.textContent = '✉️ Envoyer';
       var envExpl = document.createElement('div'); envExpl.className = 'rl-envoyer-explication';
-      envExpl.textContent = 'L’envoi n’est pas encore activé. Quand tu me diras d’y aller, ce bouton enverra ce texte à ' + b.destinataire + '.';
+      var envTxt = document.createElement('div');
+      envTxt.textContent = 'Envoyer ce message à ' + b.destinataire + ' ?';
+      var envConfirmBtn = document.createElement('button'); envConfirmBtn.type = 'button'; envConfirmBtn.className = 'rl-confirm';
+      envConfirmBtn.textContent = 'Confirmer l’envoi';
+      envExpl.appendChild(envTxt); envExpl.appendChild(envConfirmBtn);
       envBtn.addEventListener('click', function(){ envExpl.classList.toggle('open'); });
+      envConfirmBtn.addEventListener('click', function(){
+        envConfirmBtn.disabled = true; envBtn.disabled = true;
+        envConfirmBtn.textContent = 'Envoi…';
+        postRelancesAction({ cle: b.cle, action: 'envoyer' }, function(r){
+          envExpl.classList.remove('open');
+          if (r && r.ok){
+            toast('✅ Envoyé' + (r.testMode ? ' (mode test)' : '') + ' à ' + (r.destinataireReel || b.destinataire));
+            relancesOpen(true);
+          } else {
+            envConfirmBtn.disabled = false; envBtn.disabled = false; envConfirmBtn.textContent = 'Confirmer l’envoi';
+            toast('❌ ' + ((r && r.error) || 'Échec de l’envoi.'));
+          }
+        }, function(err){ envConfirmBtn.disabled = false; envBtn.disabled = false; envConfirmBtn.textContent = 'Confirmer l’envoi'; toast('❌ ' + err); });
+      });
       wrap.appendChild(envBtn);
       wrap.appendChild(envExpl);
     }
