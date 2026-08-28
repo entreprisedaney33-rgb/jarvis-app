@@ -271,6 +271,35 @@
     pointer-events:none; opacity:0; transition:opacity .15s ease;
   }
   .ma-fade.on{opacity:1}
+  /* Refonte accueil MCS (29/08/2026) : mode "home" -- les 11 tuiles visibles en permanence sans
+     passer par #sheet, sans defilement de page. #chat garde son display par defaut (flex, cf.
+     #chat{flex:1...} plus haut) tant que #app n'a pas la classe .home-mode -- jamais posee pour
+     le tenant labo ni pour Bruno (cf. applyHomeMode), donc leur affichage reste au pixel celui
+     d'avant ce chantier.
+     #homeGrid : flex:0 0 auto par defaut (les 11 tuiles toujours entieres, jamais coupees) --
+     SAUF .grow (carte Accueil masquee, hideAccueil) ou elle prend flex:1 pour que l'espace vide
+     soit sous les tuiles et non au-dessus (cas particulier demande). */
+  #homeGrid{display:none; flex:0 0 auto}
+  #homeGrid.grow{flex:1 1 auto}
+  #app.home-mode #homeGrid{display:block}
+  #app.home-mode #chat{display:none}
+  /* La carte prend tout ce qui reste et defile en interne si besoin (overflow-y:auto deja pose
+     sur #mcsAccueil plus haut, .ma-fade deja cable dessus) -- seule la hauteur allouee change,
+     aucun nouveau comportement de defilement code ici. */
+  #app.home-mode #mcsAccueil.on{flex:1 1 auto; min-height:0; max-height:none}
+  /* Ordre des tuiles sur la home (uniquement quand la grille vit dans #homeGrid -- l'ordre du
+     DOM lui-meme ne change jamais, donc rien ne bouge cote #sheet/tenant labo). */
+  #homeGrid #sh-relances{order:1}
+  #homeGrid #sh-devis-attente{order:2}
+  #homeGrid #sh-contrats{order:3}
+  #homeGrid #sh-calendar{order:4}
+  #homeGrid #sh-rentabilite{order:5}
+  #homeGrid #sh-relations{order:6}
+  #homeGrid #sh-opportunites{order:7}
+  #homeGrid #sh-carnet{order:8}
+  #homeGrid #sh-ik{order:9}
+  #homeGrid #sh-notes{order:10}
+  #homeGrid #sh-docref{order:11}
   /* ===== D2 (audit UX 19/08/2026, code le 21/08/2026) : cibles tactiles < 44px =============
      Seuil de reference : 44x44px (Apple HIG / WCAG 2.5.5). 2 regles generiques plutot que ~30
      corrections ponctuelles, appliquees par selecteur groupe -- AUCUNE modification HTML :
@@ -368,6 +397,14 @@
   }
   #micbtn.on{display:flex}
   #micbtn.rec{background:var(--no); color:#fff; animation:pulse 1.4s infinite}
+  /* Refonte accueil MCS (29/08/2026) : bascule home<->conversation -- meme gabarit que #micbtn
+     (40px, rond) pour ne rien deranger a l'alignement du composer. display gere en JS
+     (updateHomeToggleBtn), pas de classe .on -- un seul etat booleen, pas besoin d'un 2e systeme. */
+  #homeToggleBtn{
+    width:40px; height:40px; border-radius:50%; flex:0 0 auto; cursor:pointer;
+    border:none; background:var(--surface); color:var(--muted); font-size:18px;
+    display:flex; align-items:center; justify-content:center; margin-bottom:2px;
+  }
   @keyframes pulse{0%,100%{box-shadow:0 0 0 0 rgba(255,69,58,.5)}60%{box-shadow:0 0 0 12px rgba(255,69,58,0)}}
   @media (prefers-reduced-motion: reduce){#micbtn.rec{animation:none}}
   #textin{
@@ -2955,9 +2992,16 @@
     <div id="ma-body"></div>
     <div id="ma-fade" class="ma-fade"></div>
   </div>
+  <!-- Refonte accueil MCS (29/08/2026) : conteneur vide -- pour MCS patron, .sh-grid (definie
+       plus bas dans #sheet) y est deplacee par appendChild au demarrage (enterApp()), jamais
+       dupliquee. Pour tout autre tenant/role, reste vide et display:none (cf. CSS), aucun effet. -->
+  <div id="homeGrid"></div>
   <div id="pullspin"><span class="pullspin-ic"></span></div>
   <div id="chat"></div>
   <div id="composer">
+    <!-- Refonte accueil MCS (29/08/2026) : bascule home<->conversation, MCS patron seulement
+         (cf. updateHomeToggleBtn) -- a gauche du micro, sans coûter un pixel de hauteur. -->
+    <button id="homeToggleBtn" type="button" aria-label="Retour à l’accueil" style="display:none">🏠</button>
     <button id="micbtn" type="button" aria-label="Message vocal">
       <svg width="18" height="22" viewBox="0 0 22 26" fill="currentColor"><rect x="7" y="1" width="8" height="14" rx="4"/><path d="M3 12a8 8 0 0 0 16 0M11 20v4M7 24.5h8" stroke="currentColor" stroke-width="2" fill="none" stroke-linecap="round"/></svg>
     </button>
@@ -3709,7 +3753,7 @@
 
 <script>
 (function(){
-  var APPV = 'v3.82';
+  var APPV = 'v3.83';
 
   // Debug : ?debug_modal=1 force l'affichage du modal "nouvelle version" sans attendre un vrai
   // déploiement. Capturé ICI, tout au début, car plus bas (login mémorisé, connexion) le code
@@ -4193,11 +4237,19 @@
     var total = 0;
     var details = [];
     document.querySelectorAll('.badge-count').forEach(function(el){
-      if (el.offsetParent === null) return; // soi-meme OU un parent (la tuile) en display:none
+      // Refonte accueil MCS (29/08/2026) : offsetParent===null ne marchait que parce que #sheet
+      // n'etait jamais en display:none -- des que .sh-grid vit dans #homeGrid (masque en mode
+      // conversation), ce test aurait pris TOUS les badges pour invisibles et fait tomber le
+      // total a 0 des qu'on discute avec Jarvis, sans la moindre erreur. Remplace par un test de
+      // l'INTENTION de gating (la tuile est-elle volontairement masquee par le JS de gating par
+      // role/tenant, style.display==='none') plutot que de la peinture reelle a l'ecran --
+      // insensible au mode d'affichage du conteneur parent. Conserve le comportement du 25/08
+      // (sh-emails masque en dur -> sa tuile porte bien display:none, toujours ignore ici).
+      var tile = el.closest('.sh-tile');
+      if (tile && tile.style.display === 'none') return;
       var n = parseInt(el.textContent, 10);
       if (isNaN(n) || n <= 0) return;
       total += n;
-      var tile = el.closest('.sh-tile');
       var labelEl = tile ? tile.querySelector('.sh-tile-label') : null;
       if (labelEl) details.push(n + ' ' + labelEl.textContent.trim());
     });
@@ -4233,6 +4285,11 @@
   var login = document.getElementById('login');
   var app = document.getElementById('app');
   var chat = document.getElementById('chat');
+  // Refonte accueil MCS (29/08/2026) : mode home/conversation -- mcsHomeMode reinitialise a
+  // chaque chargement de page (jamais persiste), applyHomeMode()/updateHomeToggleBtn() plus bas.
+  var homeGrid = document.getElementById('homeGrid');
+  var homeToggleBtn = document.getElementById('homeToggleBtn');
+  var mcsHomeMode = false;
   var codein = document.getElementById('codein');
   var loginbtn = document.getElementById('loginbtn');
   var loginerr = document.getElementById('loginerr');
@@ -5034,6 +5091,20 @@
     // ci-dessus. refreshAccueil() est lui-meme non bloquant et ne leve jamais d'exception
     // (cf. sa definition) -- rien ici ne peut casser le reste de enterApp().
     if (mcs && role === 'patron') refreshAccueil(); else hideAccueil();
+    // Refonte accueil MCS (29/08/2026) : deplace .sh-grid de #sheet vers #homeGrid -- reserve
+    // strictement a MCS patron (jamais pour le tenant labo, jamais pour Bruno). Un appendChild
+    // deplace le noeud EXISTANT (pas une copie) : les 11 boutons gardent leurs ids, leurs
+    // ecouteurs (tous poses par getElementById plus bas dans ce fichier) et leurs badges -- rien
+    // a reecrire. Idempotent : enterApp() tourne 2x par ouverture (cache puis frais), un
+    // appendChild d'un noeud deja enfant du parent cible ne fait rien la 2e fois. Consequence
+    // voulue : cote MCS le menu de l'en-tete (#sheet) ne contient plus que les reglages
+    // (Notifications, Tutoriels, Signaler un bug, Se deconnecter, version).
+    if (mcs && role === 'patron' && !isBrunoMode() && homeGrid){
+      var shGrid = document.querySelector('.sh-grid');
+      if (shGrid && shGrid.parentElement !== homeGrid) homeGrid.appendChild(shGrid);
+      mcsHomeMode = true;
+    }
+    applyHomeMode();
     installTutoButtons();
     // A4 (25/08/2026) : cible arrivee par l'URL (le SW a ouvert une fenetre fraiche, cf. plus
     // haut) -- appliquee une seule fois (enterApp() tourne 2x par ouverture, cache puis frais ;
@@ -5058,9 +5129,76 @@
   var accueilBody = document.getElementById('ma-body');
   var accueilFade = document.getElementById('ma-fade');
 
+  // Refonte accueil MCS (29/08/2026) : factorise le calcul du fondu (identique a l'ancien calcul
+  // inline de renderAccueil) -- reutilise ici ET dans applyHomeMode(), pour que le fondu soit
+  // toujours coherent avec le DERNIER layout applique, peu importe l'ordre d'appel.
+  function accueilRecalcFade(){
+    if (accueilCard && accueilFade){
+      accueilFade.classList.toggle('on', accueilCard.scrollHeight > accueilCard.clientHeight);
+    }
+  }
+
+  // Refonte accueil MCS (29/08/2026) : applique le mode home/conversation -- reserve strictement
+  // a MCS patron (jamais pour le tenant labo, jamais pour Bruno). Sans la classe .home-mode sur
+  // #app, #chat garde son display par defaut (deja flex, cf. #chat{flex:1...}) : le compte labo
+  // et Bruno restent au pixel ce qu'ils etaient avant ce chantier, jamais touches par ce code.
+  function applyHomeMode(){
+    if (!isMcsCode() || read('jarvisRole') !== 'patron' || isBrunoMode()) return;
+    if (app) app.classList.toggle('home-mode', mcsHomeMode);
+    if (chat) chat.style.display = mcsHomeMode ? 'none' : '';
+    if (homeGrid){
+      homeGrid.style.display = mcsHomeMode ? '' : 'none';
+      // Cas particulier : carte Accueil masquee (hideAccueil, aucune ligne a afficher) --
+      // #homeGrid prend flex:1 pour que l'espace vide soit sous les tuiles, pas au-dessus.
+      var carteVisible = !!(accueilCard && accueilCard.classList.contains('on'));
+      homeGrid.classList.toggle('grow', mcsHomeMode && !carteVisible);
+    }
+    accueilRecalcFade();
+    updateHomeToggleBtn();
+  }
+
+  // Refonte accueil MCS (29/08/2026) : le bouton montre la DESTINATION du tap, pas l'etat actuel
+  // (comme un bouton mode sombre qui montre une lune en plein jour). En mode home, n'apparait que
+  // si la conversation contient deja au moins un message -- sinon il ne mene nulle part.
+  function updateHomeToggleBtn(){
+    if (!homeToggleBtn) return;
+    var eligible = isMcsCode() && read('jarvisRole') === 'patron' && !isBrunoMode();
+    if (!eligible){ homeToggleBtn.style.display = 'none'; return; }
+    if (mcsHomeMode){
+      var hasMsg = !!(chat && chat.children.length > 0);
+      homeToggleBtn.style.display = hasMsg ? '' : 'none';
+      homeToggleBtn.textContent = '💬';
+      homeToggleBtn.setAttribute('aria-label', 'Reprendre la conversation');
+    } else {
+      homeToggleBtn.style.display = '';
+      homeToggleBtn.textContent = '🏠';
+      homeToggleBtn.setAttribute('aria-label', 'Retour à l’accueil');
+    }
+  }
+  homeToggleBtn && homeToggleBtn.addEventListener('click', function(){
+    mcsHomeMode = !mcsHomeMode;
+    applyHomeMode();
+  });
+  // Fermeture d'un panneau -> mode home (point 5, refonte accueil MCS 29/08/2026). UN SEUL
+  // ecouteur delegue sur document, jamais une boucle sur ~20 fonctions xxxClose() individuelles
+  // (couplage sur le chemin chaud -- la classe de bug de la semaine). Les ~20 boutons de fermeture
+  // suivent tous la convention [id$="-close"] (deja documentee pour D2, cf. plus haut) -- le
+  // comportement de fermeture d'origine de chaque panneau n'est jamais touche, ce listener pose
+  // seulement le mode, en plus.
+  document.addEventListener('click', function(e){
+    var t = e.target && e.target.closest && e.target.closest('[id$="-close"]');
+    if (!t) return;
+    if (!isMcsCode() || read('jarvisRole') !== 'patron' || isBrunoMode()) return;
+    mcsHomeMode = true;
+    applyHomeMode();
+  });
+
   function hideAccueil(){
     if (accueilCard) accueilCard.classList.remove('on');
     if (accueilFade) accueilFade.classList.remove('on');
+    // Refonte accueil MCS (29/08/2026) : la carte masquee est le "cas particulier" ou #homeGrid
+    // doit prendre flex:1 (espace vide sous les tuiles, pas au-dessus) -- reevalue ici.
+    applyHomeMode();
   }
 
   function accueilDateCourte(iso){
@@ -5216,9 +5354,12 @@
     // La classe .on doit etre posee AVANT de mesurer scrollHeight/clientHeight -- un element
     // display:none n'a aucune dimension calculee, la mesure serait toujours 0/0.
     accueilCard.classList.add('on');
-    if (accueilFade){
-      accueilFade.classList.toggle('on', accueilCard.scrollHeight > accueilCard.clientHeight);
-    }
+    accueilRecalcFade();
+    // Refonte accueil MCS (29/08/2026) : re-evalue le mode home -- pour MCS patron, la hauteur
+    // allouee a la carte vient de changer (elle passe en flex:1), le fondu calcule juste au-dessus
+    // etait fait AVANT cet ajustement et serait perime. applyHomeMode() refait le calcul avec le
+    // bon layout ; sans effet pour tout autre tenant/role (retourne tot, cf. sa definition).
+    applyHomeMode();
   }
 
   function refreshAccueil(){
@@ -5348,6 +5489,11 @@
     return String(Date.now()) + '-' + Math.random().toString(36).slice(2);
   }
   function doSendText(t, userBubble, msgId){
+    // Refonte accueil MCS (29/08/2026) : "des qu'un message part" -- bascule vers le mode
+    // conversation immediatement (sans attendre la reponse serveur). Sans effet pour tout autre
+    // tenant/role (applyHomeMode retourne tot).
+    mcsHomeMode = false;
+    applyHomeMode();
     sendInFlight = true;
     sendbtn.disabled = true;
     typingOn();
@@ -12173,6 +12319,10 @@
     return d;
   }
   function sendVoice(blob, dur, wave){
+    // Refonte accueil MCS (29/08/2026) : "des qu'un message part" -- meme bascule que doSendText,
+    // avant meme la bulle optimiste (voiceBubble ajoute a #chat juste apres).
+    mcsHomeMode = false;
+    applyHomeMode();
     var vb = voiceBubble(blob, dur, wave);
     var fr = new FileReader();
     fr.onload = function(){
