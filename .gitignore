@@ -1,0 +1,16 @@
+# Ce dépôt est PUBLIC (GitHub Pages, https://entreprisedaney33-rgb.github.io/jarvis-app/).
+# Il ne doit contenir QUE l'app statique (index.html, sw.js, manifest, icône, version.json) —
+# jamais une donnée client. Filet de sécurité ajouté le 28/08/2026 : aucun document nominatif
+# (facture, devis, PDF, export) ne doit pouvoir atterrir ici, même par erreur de manipulation
+# future. Ces documents sont servis exclusivement par le webhook n8n authentifié par jeton,
+# jamais par ce dépôt statique.
+
+*.pdf
+*.xls
+*.xlsx
+*.csv
+clients/
+factures-meg/
+mcs-factures*/
+*facture*.json
+*devis*.json
