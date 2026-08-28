@@ -332,6 +332,14 @@
     width:max(44px,100%); height:max(44px,100%); transform:translate(-50%,-50%);
   }
   #micbtn:active, [id$="-close"]:active, .notes-del:active, .carnet-del:active, #devis-add:active{opacity:.55}
+  /* Point 4 (audit UX 29/08/2026) : croix de fermeture bien plus visible -- UNE regle generique,
+     pas 19 corrections (les ~19 blocs #xxx-close individuels ci-dessus/ci-dessous ont ete
+     debarrasses de leur propre background/color pour laisser gagner celle-ci). Bleu systeme, pas
+     rouge -- dans cette app le rouge signifie "destructif" (.danger, #sh-logout) ; une croix
+     rouge sur CHAQUE fermeture de panneau se lirait "supprimer" a tort, ~19 fois. --blue est deja
+     la couleur neutre-active du reste de l'app (jamais utilisee comme accent de marque, qui est
+     --gold-a) -- le choix standard iOS pour une action de fermeture/annulation sans ambiguite. */
+  [id$="-close"]{background:var(--blue); color:#fff}
 
   .devis-tab, .meute-tab, .vitrine-tab, .pf-tab, .rel-tab, .clients-tab, .df-chip, .notes-chip,
   .dv-actions .vc-ok, .dv-actions .vc-no, .ct-actions .vc-ok, .ct-actions .vc-no,
@@ -730,12 +738,15 @@
      ecran). Regle A tactile (44x44 invisible) ajoutee separement, cf. plus haut dans ce fichier. */
   #devis-add, #devis-close{
     width:32px; height:32px; border-radius:50%; border:0; flex:0 0 auto;
-    background:var(--surface); color:var(--ink);
     display:flex; align-items:center; justify-content:center; cursor:pointer;
     -webkit-tap-highlight-color:transparent;
   }
   #devis-close{font-size:16px}
-  #devis-add{font-size:18px; font-weight:700}
+  /* Point 4 (audit UX 29/08/2026) : #devis-add partageait son bloc avec #devis-close --
+     background/color retires de ce bloc COMBINE au profit de la regle generique [id$="-close"]
+     plus bas (qui ne le concerne pas, "devis-add" ne finit pas par "-close") -- lui redonner
+     explicitement son propre style pour ne pas le laisser transparent par effet de bord. */
+  #devis-add{font-size:18px; font-weight:700; background:var(--surface); color:var(--ink)}
   #devis-tabs{
     flex:0 0 auto; display:flex; gap:8px; padding:10px 14px; overflow-x:auto; -webkit-overflow-scrolling:touch;
     border-bottom:0.5px solid var(--hairline);
@@ -797,7 +808,7 @@
   #contrats-head b{font-size:16px; flex:1; white-space:nowrap; overflow:hidden; text-overflow:ellipsis}
   #contrats-close{
     width:32px; height:32px; border-radius:50%; border:0; flex:0 0 auto;
-    background:var(--surface); color:var(--ink); font-size:16px;
+    font-size:16px;
     display:flex; align-items:center; justify-content:center; cursor:pointer;
     -webkit-tap-highlight-color:transparent;
   }
@@ -863,6 +874,22 @@
   .ct-thumb-line3{top:34px; width:60%}
   .ct-thumb-amt{position:absolute; right:5px; bottom:5px; font-size:9px; font-weight:800; color:#1a1a1a}
   .ct-thumb-caption{font-size:10px; color:var(--muted); white-space:nowrap}
+  /* Point 6 (audit UX 29/08/2026) : CA par secteur, catalogue -- traitement valorisant (chiffre
+     dont on est fier), lisible sur 375px. 2 petits blocs cote a cote (secteurs) + le total en
+     dessous, plus gros, en pleine largeur -- jamais un montant qui deborde ou passe a la ligne
+     sur les grandeurs reelles observees (quelques dizaines de milliers d'euros). */
+  #contrats-ca-secteur{display:flex; flex-wrap:wrap; gap:8px; margin:2px 14px 14px}
+  .ct-ca-bloc{
+    flex:1 1 auto; min-width:140px; background:var(--surface); border-radius:14px;
+    padding:12px 14px; display:flex; flex-direction:column; gap:3px;
+  }
+  .ct-ca-label{font-size:11.5px; color:var(--muted); line-height:1.25}
+  .ct-ca-val{font-size:19px; font-weight:800; color:var(--ink)}
+  .ct-ca-bloc.ct-ca-total{
+    flex:1 1 100%; background:rgba(var(--gold-rgb),.13); border:0.5px solid rgba(var(--gold-rgb),.3);
+  }
+  .ct-ca-total .ct-ca-label{color:var(--gold-a); font-weight:700}
+  .ct-ca-total .ct-ca-val{font-size:26px; color:var(--gold-a)}
   .contrat-card .ct-badge{
     font-size:11px; font-weight:700; border-radius:99px; padding:2px 9px;
     background:rgba(255,255,255,.1); color:var(--muted); width:fit-content;
@@ -936,7 +963,7 @@
   #ik-head b{font-size:16px; flex:1; white-space:nowrap; overflow:hidden; text-overflow:ellipsis}
   #ik-close{
     width:32px; height:32px; border-radius:50%; border:0; flex:0 0 auto;
-    background:var(--surface); color:var(--ink); font-size:15px;
+    font-size:15px;
     display:flex; align-items:center; justify-content:center; cursor:pointer;
     -webkit-tap-highlight-color:transparent; text-decoration:none;
   }
@@ -1024,10 +1051,11 @@
   #couts-head b{font-size:16px; flex:1; white-space:nowrap; overflow:hidden; text-overflow:ellipsis}
   #couts-add, #couts-close{
     width:32px; height:32px; border-radius:50%; border:0; flex:0 0 auto;
-    background:var(--surface); color:var(--ink); font-size:16px;
+    font-size:16px;
     display:flex; align-items:center; justify-content:center; cursor:pointer;
     -webkit-tap-highlight-color:transparent;
   }
+  #couts-add{background:var(--surface); color:var(--ink)}
   #couts-list{flex:1; overflow-y:auto; -webkit-overflow-scrolling:touch; padding:6px 14px calc(20px + env(safe-area-inset-bottom))}
   #couts-empty, #couts-loading{color:var(--muted); text-align:center; padding:40px 20px; font-size:14px}
   .couts-row{
@@ -1104,7 +1132,7 @@
   #relances-head b{font-size:16px; flex:1; white-space:nowrap; overflow:hidden; text-overflow:ellipsis}
   #relances-close{
     width:32px; height:32px; border-radius:50%; border:0; flex:0 0 auto;
-    background:var(--surface); color:var(--ink); font-size:16px;
+    font-size:16px;
     display:flex; align-items:center; justify-content:center; cursor:pointer;
     -webkit-tap-highlight-color:transparent;
   }
@@ -1122,7 +1150,14 @@
   #relances-fraicheur{font-size:12px; color:var(--muted); text-align:center; margin:8px 14px 0; padding:6px 10px; border-radius:10px; background:var(--surface)}
   #relances-fraicheur.stale{color:var(--gold-a); background:rgba(var(--gold-rgb),.12)}
   #relances-fraicheur.perime{color:var(--no); background:rgba(255,69,58,.12)}
-  #relances-summary{font-size:12.5px; color:var(--muted); text-align:center; margin:10px 14px 0}
+  #relances-summary{text-align:center; margin:10px 14px 0}
+  /* Point 3 (audit UX 29/08/2026) : le montant a recuperer devient l'element dominant de
+     l'onglet (avant : 12.5px --muted, plus discret que les libelles des cartes en dessous --
+     une inversion de hierarchie). Meme couleur que .rl-montant-gros (deja le montant de chaque
+     carte individuelle), en plus grand pour marquer sa dominance sur le total de l'onglet. Le
+     nombre de clients reste au second plan (--muted, petit, comme avant). */
+  .rl-summary-montant{display:block; font-weight:800; color:var(--gold-a); font-size:26px; line-height:1.2}
+  .rl-summary-reste{display:block; font-size:12.5px; color:var(--muted); margin-top:2px}
   #relances-list{flex:1; overflow-y:auto; -webkit-overflow-scrolling:touch; padding:10px 14px calc(20px + env(safe-area-inset-bottom))}
   #relances-empty, #relances-loading{color:var(--muted); text-align:center; padding:40px 20px; font-size:14px}
   .df-badge.r1{background:rgba(var(--gold-rgb),.15); color:var(--gold-a)}
@@ -1332,10 +1367,11 @@
   #carnet-head b{font-size:16px; flex:1}
   #carnet-add, #carnet-close{
     width:32px; height:32px; border-radius:50%; border:0; flex:0 0 auto;
-    background:var(--surface); color:var(--ink); font-size:18px; font-weight:700;
+    font-size:18px; font-weight:700;
     display:flex; align-items:center; justify-content:center; cursor:pointer;
     -webkit-tap-highlight-color:transparent;
   }
+  #carnet-add{background:var(--surface); color:var(--ink)}
   #carnet-search-wrap{flex:0 0 auto; padding:10px 14px 0}
   #carnet-search{
     width:100%; box-sizing:border-box; border:none; border-radius:12px;
@@ -1415,7 +1451,7 @@
   #portefeuille-head b{font-size:16px; flex:1}
   #portefeuille-close{
     width:32px; height:32px; border-radius:50%; border:0; flex:0 0 auto;
-    background:var(--surface); color:var(--ink); font-size:16px;
+    font-size:16px;
     display:flex; align-items:center; justify-content:center; cursor:pointer;
     -webkit-tap-highlight-color:transparent;
   }
@@ -1462,7 +1498,7 @@
   #relations-head b{font-size:16px; flex:1}
   #relations-close{
     width:32px; height:32px; border-radius:50%; border:0; flex:0 0 auto;
-    background:var(--surface); color:var(--ink); font-size:16px;
+    font-size:16px;
     display:flex; align-items:center; justify-content:center; cursor:pointer;
     -webkit-tap-highlight-color:transparent;
   }
@@ -1524,10 +1560,11 @@
   #docref-head b{font-size:16px; flex:1}
   #docref-add, #docref-close{
     width:32px; height:32px; border-radius:50%; border:0; flex:0 0 auto;
-    background:var(--surface); color:var(--ink); font-size:16px;
+    font-size:16px;
     display:flex; align-items:center; justify-content:center; cursor:pointer;
     -webkit-tap-highlight-color:transparent;
   }
+  #docref-add{background:var(--surface); color:var(--ink)}
   #docref-note{font-size:12.5px; color:var(--muted); text-align:center; margin:10px 14px 0; line-height:1.4}
   #docref-list{flex:1; overflow-y:auto; -webkit-overflow-scrolling:touch; padding:10px 14px calc(20px + env(safe-area-inset-bottom))}
   #docref-empty, #docref-loading{color:var(--muted); text-align:center; padding:40px 20px; font-size:14px}
@@ -1555,7 +1592,7 @@
   #renta-head b{font-size:16px; flex:1; white-space:nowrap; overflow:hidden; text-overflow:ellipsis}
   #renta-close{
     width:32px; height:32px; border-radius:50%; border:0; flex:0 0 auto;
-    background:var(--surface); color:var(--ink); font-size:16px;
+    font-size:16px;
     display:flex; align-items:center; justify-content:center; cursor:pointer;
     -webkit-tap-highlight-color:transparent;
   }
@@ -1660,10 +1697,11 @@
   #meute-head b{font-size:16px; flex:1}
   #meute-relancer, #meute-close{
     width:32px; height:32px; border-radius:50%; border:0; flex:0 0 auto;
-    background:var(--surface); color:var(--ink); font-size:15px;
+    font-size:15px;
     display:flex; align-items:center; justify-content:center; cursor:pointer;
     -webkit-tap-highlight-color:transparent;
   }
+  #meute-relancer{background:var(--surface); color:var(--ink)}
   #meute-relancer.spin svg{animation:meute-spin 1s linear infinite}
   @keyframes meute-spin{from{transform:rotate(0)}to{transform:rotate(360deg)}}
   #meute-status{padding:8px 14px; font-size:12.5px; color:var(--muted); text-align:center; display:none}
@@ -1751,10 +1789,11 @@
   #opp-head b{font-size:16px; flex:1}
   #opp-relancer, #opp-close{
     width:32px; height:32px; border-radius:50%; border:0; flex:0 0 auto;
-    background:var(--surface); color:var(--ink); font-size:15px;
+    font-size:15px;
     display:flex; align-items:center; justify-content:center; cursor:pointer;
     -webkit-tap-highlight-color:transparent;
   }
+  #opp-relancer{background:var(--surface); color:var(--ink)}
   #opp-relancer.spin svg{animation:meute-spin 1s linear infinite}
   #opp-status{padding:8px 14px; font-size:12.5px; color:var(--muted); text-align:center; display:none}
   #opp-status.show{display:block}
@@ -1811,10 +1850,11 @@
   #vitrine-head b{font-size:16px; flex:1}
   #vitrine-lancer-toggle, #vitrine-refresh, #vitrine-close{
     width:32px; height:32px; border-radius:50%; border:0; flex:0 0 auto;
-    background:var(--surface); color:var(--ink); font-size:15px;
+    font-size:15px;
     display:flex; align-items:center; justify-content:center; cursor:pointer;
     -webkit-tap-highlight-color:transparent;
   }
+  #vitrine-lancer-toggle, #vitrine-refresh{background:var(--surface); color:var(--ink)}
   #vitrine-refresh.spin svg{animation:meute-spin 1s linear infinite}
   #vitrine-lancer-box{
     flex:0 0 auto; display:none; flex-direction:column; gap:8px; padding:12px 14px;
@@ -1967,10 +2007,11 @@
   #plume-head b{font-size:16px; flex:1}
   #plume-refresh, #plume-close{
     width:32px; height:32px; border-radius:50%; border:0; flex:0 0 auto;
-    background:var(--surface); color:var(--ink); font-size:15px;
+    font-size:15px;
     display:flex; align-items:center; justify-content:center; cursor:pointer;
     -webkit-tap-highlight-color:transparent;
   }
+  #plume-refresh{background:var(--surface); color:var(--ink)}
   #plume-refresh.spin svg{animation:meute-spin 1s linear infinite}
   #plume-list{flex:1; overflow-y:auto; -webkit-overflow-scrolling:touch; padding:10px 14px calc(20px + env(safe-area-inset-bottom))}
   .plume-card{background:var(--surface); border-radius:14px; padding:14px; margin-bottom:12px}
@@ -2070,10 +2111,11 @@
   #notes-head b{font-size:16px; flex:1}
   #notes-add, #notes-close{
     width:32px; height:32px; border-radius:50%; border:0; flex:0 0 auto;
-    background:var(--surface); color:var(--ink); font-size:18px; font-weight:700;
+    font-size:18px; font-weight:700;
     display:flex; align-items:center; justify-content:center; cursor:pointer;
     -webkit-tap-highlight-color:transparent;
   }
+  #notes-add{background:var(--surface); color:var(--ink)}
   #notes-tabs{display:flex; gap:8px; padding:0 14px 12px; overflow-x:auto; -webkit-overflow-scrolling:touch}
   .notes-tab{
     flex:0 0 auto; padding:8px 14px; border-radius:99px; border:0; font-size:13px; font-weight:700;
@@ -2326,7 +2368,7 @@
   #cal-head b{font-size:16px; flex:1}
   #cal-close{
     width:32px; height:32px; border-radius:50%; border:0; flex:0 0 auto;
-    background:var(--surface); color:var(--ink); font-size:16px;
+    font-size:16px;
     display:flex; align-items:center; justify-content:center; cursor:pointer;
     -webkit-tap-highlight-color:transparent;
   }
@@ -2595,7 +2637,7 @@
   #mf-view-head b{font-size:16px}
   #mf-view-close{
     width:32px; height:32px; border-radius:50%; border:0; flex:0 0 auto;
-    background:var(--surface); color:var(--ink); font-size:16px;
+    font-size:16px;
     display:flex; align-items:center; justify-content:center; cursor:pointer;
     -webkit-tap-highlight-color:transparent;
   }
@@ -3753,7 +3795,7 @@
 
 <script>
 (function(){
-  var APPV = 'v3.83';
+  var APPV = 'v3.84';
 
   // Debug : ?debug_modal=1 force l'affichage du modal "nouvelle version" sans attendre un vrai
   // déploiement. Capturé ICI, tout au début, car plus bas (login mémorisé, connexion) le code
@@ -6344,8 +6386,37 @@
   function contratsBuildThumb(f){
     if (!f.fichier_url) return null;
     var wrap = document.createElement('div'); wrap.className = 'ct-thumb-wrap';
-    var a = document.createElement('a'); a.className = 'ct-thumb'; a.target = '_blank'; a.title = 'Voir la facture';
-    a.href = 'https://n8n-self-hosted-t0pz.onrender.com' + f.fichier_url + '&code=' + encodeURIComponent(String(read('jarvisCode') || '').trim());
+    var a = document.createElement('a'); a.className = 'ct-thumb'; a.title = 'Voir la facture';
+    var url = 'https://n8n-self-hosted-t0pz.onrender.com' + f.fichier_url + '&code=' + encodeURIComponent(String(read('jarvisCode') || '').trim());
+    // Fix ecran blanc (29/08/2026) : diagnostic complet fait AVANT ce fix -- le lien lui-meme
+    // etait bien forme (fichier_url contient deja son '?token=', confirme sur une vraie
+    // execution). La cause reelle est cote n8n (workflow MCS . Devis et factures) : un nœud
+    // ajoute le 28/08 pour les factures MEG archivees (Charger fichier meg (get)) a ete chaine
+    // EN SERIE juste avant Controle devis fichier au lieu d'etre branche en parallele -- pour un
+    // token de DEVIS/CONTRAT (pas une facture MEG), ce nœud renvoie 0 ligne, ce qui arrete tout
+    // le pipeline avant meme d'atteindre Controle/Servir/Repondre : le webhook repond 200 avec un
+    // corps VIDE (content-type application/json, 0 octet) -- jamais un vrai echec HTTP, jamais
+    // une erreur n8n, juste rien. Non corrige ici (VERROU n8n = decision du patron, pas de cette
+    // session cote front). Ce que CE fix fait : ne jamais laisser un onglet vide s'ouvrir --
+    // verifie le contenu AVANT d'ouvrir quoi que ce soit, message explicite sinon. La fenetre est
+    // ouverte SYNCHRONE au clic (onglet vide, garde en reference) puis redirigee/fermee apres le
+    // fetch -- sinon le bloqueur de popup mobile (geste utilisateur exige, pas un callback async)
+    // empecherait l'ouverture meme en cas de succes.
+    a.addEventListener('click', function(e){
+      e.preventDefault();
+      var popup = window.open('', '_blank');
+      fetch(url).then(function(r){
+        if (!r.ok) throw new Error('http ' + r.status);
+        return r.blob();
+      }).then(function(blob){
+        if (!blob.size) throw new Error('corps vide');
+        var blobUrl = URL.createObjectURL(blob);
+        if (popup && !popup.closed) popup.location = blobUrl; else window.open(blobUrl, '_blank');
+      }).catch(function(){
+        if (popup && !popup.closed) popup.close();
+        toast('Impossible d’ouvrir ce document pour le moment.');
+      });
+    });
     var band = document.createElement('div'); band.className = 'ct-thumb-band'; a.appendChild(band);
     var l1 = document.createElement('div'); l1.className = 'ct-thumb-line ct-thumb-line1'; a.appendChild(l1);
     var l2 = document.createElement('div'); l2.className = 'ct-thumb-line ct-thumb-line2'; a.appendChild(l2);
@@ -6354,7 +6425,10 @@
     amt.textContent = (f.prix_ttc != null ? Math.round(Number(f.prix_ttc)) : '') + ' €';
     a.appendChild(amt);
     wrap.appendChild(a);
-    var caption = document.createElement('span'); caption.className = 'ct-thumb-caption'; caption.textContent = 'Pièce jointe';
+    // Point 2 (audit UX 29/08/2026) : "Pièce jointe" laissait croire que le dessin ci-dessus
+    // (bandeau + traits + montant) etait un apercu du vrai document -- c'est un pictogramme, pas
+    // un rendu PDF (chantier separe si un jour demande). Legende qui ne promet plus rien.
+    var caption = document.createElement('span'); caption.className = 'ct-thumb-caption'; caption.textContent = 'Ouvrir la facture';
     wrap.appendChild(caption);
     return wrap;
   }
@@ -6470,6 +6544,42 @@
     return c[key] || '';
   }
 
+  // Point 6 (audit UX 29/08/2026) : CA total TTC par secteur, sur le catalogue. Ce qui est
+  // exactement additionne (verifie sur les 229 vraies lignes avant d'ecrire ce code, pas suppose) :
+  //  - TOUS les contrats du catalogue -- le serveur (Charger catalogue (contrats)) filtre deja
+  //    actif='oui', et les 229 lignes reelles le sont TOUTES a ce jour (le filtre existe mais ne
+  //    retranche rien aujourd'hui) ; aucun contrat resilie/inactif dans ce total.
+  //  - c.prix_ttc EST le montant ANNUEL du contrat, pas un prix par passage : confirme en lisant
+  //    le mecanisme de generation des factures (Prep generation contrats (web)/(cron)) -- chaque
+  //    contrat n'est facture QU'UNE SEULE FOIS PAR AN (au mois de "passage_1"), quel que soit
+  //    passages_an (qui documente juste le nombre de passages PHYSIQUES du technicien, jamais
+  //    utilise pour multiplier un prix). Donc additionner prix_ttc sur les contrats actifs = la
+  //    valeur contractuelle annuelle totale de chaque secteur -- pas "deja facture cette annee"
+  //    (qui serait une notion differente, mesuree sur mcs_contrats_factures, pas sur le catalogue).
+  //  - "Dератisation/desinsectisation" = tout type_contrat !== 'VMC', c-a-d en pratique la seule
+  //    autre valeur reelle stockee : 'BRUNO' (le technicien qui gere ce secteur -- le libelle
+  //    metier n'est jamais stocke tel quel en base). Meme correspondance deja utilisee ailleurs
+  //    dans ce fichier (contratsBuildMoisCard/contratsBuildPrevisionnelCard), pas inventee ici.
+  function contratsBuildCatalogueCA(data){
+    var caVmc = 0, caDerat = 0;
+    (data || []).forEach(function(c){
+      var v = Number(c.prix_ttc) || 0;
+      if (c.type_contrat === 'VMC') caVmc += v; else caDerat += v;
+    });
+    var wrap = document.createElement('div'); wrap.id = 'contrats-ca-secteur';
+    function bloc(label, montant, cls){
+      var b = document.createElement('div'); b.className = 'ct-ca-bloc' + (cls ? ' ' + cls : '');
+      var l = document.createElement('span'); l.className = 'ct-ca-label'; l.textContent = label;
+      var v = document.createElement('span'); v.className = 'ct-ca-val'; v.textContent = fmtEuro(montant);
+      b.appendChild(l); b.appendChild(v);
+      return b;
+    }
+    wrap.appendChild(bloc('Dératisation / désinsectisation', caDerat));
+    wrap.appendChild(bloc('VMC', caVmc));
+    wrap.appendChild(bloc('Total du catalogue', caVmc + caDerat, 'ct-ca-total'));
+    return wrap;
+  }
+
   function contratsBuildCatalogueTable(items){
     var wrap = document.createElement('div'); wrap.id = 'contrats-table-wrap';
     var table = document.createElement('table'); table.className = 'contrat-table';
@@ -6544,10 +6654,17 @@
       if (!items.length){ contratsList.innerHTML = '<p id="contrats-empty">' + CONTRATS_STATUT_VIDE[contratsMoisStatutFiltre] + '</p>'; return; }
       items.forEach(function(f){ contratsList.appendChild(contratsBuildMoisCard(f)); });
     } else {
+      // Point 6 (audit UX 29/08/2026) : bandeau CA par secteur, sur TOUT le catalogue (pas
+      // seulement le sous-onglet affiche) -- cf. contratsBuildCatalogueCA pour ce qui est
+      // exactement additionne.
+      contratsList.appendChild(contratsBuildCatalogueCA(contratsCatalogueData || []));
       var itemsC = (contratsCatalogueData || []).filter(function(c){
         return c.type_contrat === contratsCatSubTab && (!q || normDoc(contratNomAffiche(c)).indexOf(q) !== -1);
       });
-      if (!itemsC.length){ contratsList.innerHTML = '<p id="contrats-empty">Aucun contrat dans cet onglet.</p>'; return; }
+      if (!itemsC.length){
+        var vide = document.createElement('p'); vide.id = 'contrats-empty'; vide.textContent = 'Aucun contrat dans cet onglet.';
+        contratsList.appendChild(vide); return;
+      }
       contratsList.appendChild(contratsBuildCatalogueTable(itemsC));
     }
   }
@@ -7144,10 +7261,11 @@
     var periodeTxt = (d.periode && d.periode.debut && d.periode.fin)
       ? (fmtDevisDateSimple(d.periode.debut) + ' → ' + fmtDevisDateSimple(d.periode.fin))
       : null;
+    // Point 5 (audit UX 29/08/2026) : panier moyen / nb factures / nb clients retires de
+    // l'affichage (demande explicite) -- suppression d'affichage uniquement, d.ca.panierMoyenHT/
+    // d.ca.nbFactures/d.levier4_contrats.nbClientsTotal restent calcules cote serveur, plus
+    // aucun usage cote client apres ce changement (signale, pas supprime -- pourraient resservir).
     grid.appendChild(tile('CA sur la période', fmtEuro(d.ca.reelHT), periodeTxt));
-    grid.appendChild(tile('Panier moyen par facture', fmtEuro(d.ca.panierMoyenHT)));
-    grid.appendChild(tile('Nombre de factures', String(d.ca.nbFactures)));
-    grid.appendChild(tile('Nombre de clients', String(d.levier4_contrats.nbClientsTotal)));
     grid.appendChild(tile('Total actuellement impayé', fmtEuro(d.levier1_impayes.totalImpaye)));
     wrap.appendChild(grid);
 
@@ -7310,10 +7428,10 @@
       rentaList.appendChild(rentaBuildOverview(d));
       var rcSection = rentaBuildResultatComptable(d);
       if (rcSection) rentaList.appendChild(rcSection);
-      rentaList.appendChild(rentaBuildPerso(d));
-      var widgets = document.createElement('div'); widgets.id = 'renta-widgets';
-      rentaList.appendChild(widgets);
-      rentaRenderWidgets(d);
+      // Point 5 (audit UX 29/08/2026) : les 2 cartes du bas ("impayés en retard" / "devis
+      // dormants") et leur toggle "Personnaliser mon tableau" retires de l'affichage (demande
+      // explicite). rentaBuildPerso/rentaRenderWidgets/RENTA_LEVERS/rentaBuildCard laisses
+      // intacts mais non appeles -- reversible en une ligne si redemande un jour.
     }, function(err){ rentaList.innerHTML = '<p id="renta-empty">' + err + '</p>'; });
   }
   document.getElementById('renta-close').addEventListener('click', rentaAttenteClose);
@@ -7331,6 +7449,16 @@
   var relancesMenuBadge = document.getElementById('menu-relances-badge');
   var relancesSearchInput = document.getElementById('relances-search');
   var relancesSummary = document.getElementById('relances-summary');
+  // Point 3 (audit UX 29/08/2026) : construit le resume en 2 spans (montant dominant + reste
+  // discret) au lieu d'un textContent uniforme -- comportement inchange (les 2 sous-onglets
+  // gardent exactement leurs libelles actuels), seule la hierarchie visuelle change.
+  function relancesSetSummary(montantTexte, restePhrase){
+    relancesSummary.innerHTML = '';
+    if (!montantTexte) return;
+    var m = document.createElement('span'); m.className = 'rl-summary-montant'; m.textContent = montantTexte;
+    var r = document.createElement('span'); r.className = 'rl-summary-reste'; r.textContent = restePhrase;
+    relancesSummary.appendChild(m); relancesSummary.appendChild(r);
+  }
   var relancesFraicheur = document.getElementById('relances-fraicheur');
   var relancesData = [];
   var relancesBrouillons = [];
@@ -7975,7 +8103,7 @@
       relancesList.innerHTML = '';
       var totalT = itemsT.reduce(function(s,t){ return s + (Number(t.totalTTC)||0); }, 0);
       var nbClientsT = relancesCompterClients(itemsT);
-      relancesSummary.textContent = itemsT.length ? (fmtEuros(totalT) + ' en suivi · ' + nbClientsT + ' client' + (nbClientsT>1?'s':'') + ' relancé' + (nbClientsT>1?'s':'') + ' 2 fois') : '';
+      relancesSetSummary(itemsT.length ? fmtEuros(totalT) : '', 'en suivi · ' + nbClientsT + ' client' + (nbClientsT>1?'s':'') + ' relancé' + (nbClientsT>1?'s':'') + ' 2 fois');
       if (!itemsT.length){
         relancesList.innerHTML = '<p id="relances-empty">Aucune facture relancée 2 fois pour l’instant.</p>';
         return;
@@ -8000,8 +8128,8 @@
     if (relancesActiveTab !== 'suspendues'){
       var total = items.reduce(function(s,b){ return s + (Number(b.totalTTC)||0); }, 0);
       var nbClients = relancesCompterClients(items);
-      relancesSummary.textContent = items.length ? (fmtEuros(total) + ' à récupérer · ' + nbClients + ' client' + (nbClients>1?'s':'') + ' à relancer') : '';
-    } else { relancesSummary.textContent = ''; }
+      relancesSetSummary(items.length ? fmtEuros(total) : '', 'à récupérer · ' + nbClients + ' client' + (nbClients>1?'s':'') + ' à relancer');
+    } else { relancesSummary.innerHTML = ''; }
     if (!items.length){
       var msgVide;
       if (relancesActiveTab === 'arelancer' && relancesFraicheurEtat === 'perime'){
@@ -9162,6 +9290,19 @@
   var oppStatus = document.getElementById('opp-status');
   var oppRelancerBtn = document.getElementById('opp-relancer');
   var oppEnrichBanniere = document.getElementById('opp-enrichissement-banniere');
+  // PANSEMENT DATE DU 29/08/2026 -- point 7 audit UX. Le vrai tri (Opportunites) est un chantier
+  // a part prevu apres le 1er septembre. En attendant, cote CLIENT uniquement (aucune
+  // modification n8n, aucun VERROU, rien de supprime cote serveur) : une courte liste
+  // d'exclusion en dur pour ecarter les evidences (noms d'enseignes/publicites remontees a tort
+  // par la recherche SIRENE, ex. observes par Mickael : "Intersport", "Play"). Comparaison sur le
+  // nom normalise (accents/casse), correspondance EXACTE uniquement -- jamais un sous-mot (un nom
+  // de syndic qui contiendrait par hasard "play" ne doit pas disparaitre). Pour l'ENLEVER : vider
+  // ce tableau (ou retirer la ligne oppAll = oppAll.filter(...) juste en dessous) une fois le
+  // vrai chantier de tri fait.
+  var OPP_EXCLUSION_NOMS = ['intersport', 'play'].map(normDoc);
+  function oppFiltrerExclus(liste){
+    return (liste || []).filter(function(p){ return OPP_EXCLUSION_NOMS.indexOf(normDoc(p.nom || '')) === -1; });
+  }
   var oppAll = [];
   var oppActiveTab = 'a_valider';
   // B5 (21/08/2026) : 'a_enrichir'/'sans_contact' ne tombaient dans AUCUN onglet -- 96 fiches
@@ -9347,7 +9488,7 @@
 
   function oppRefresh(){
     postOpportunites({ type:'list' }, function(j){
-      oppAll = j.prospects || [];
+      oppAll = oppFiltrerExclus(j.prospects);
       oppRender(); oppUpdateBadge();
     }, function(err){ oppList.innerHTML = '<p id="opp-empty">' + err + '</p>'; });
   }
@@ -9378,7 +9519,7 @@
       oppRefresh();
     }, function(err){ oppRelancerBtn.classList.remove('spin'); oppStatus.classList.remove('show'); toast(err); });
   });
-  function oppCheckBadge(){ postOpportunites({ type:'list' }, function(j){ oppAll = j.prospects || []; oppUpdateBadge(); }, function(){}); }
+  function oppCheckBadge(){ postOpportunites({ type:'list' }, function(j){ oppAll = oppFiltrerExclus(j.prospects); oppUpdateBadge(); }, function(){}); }
 
   // ---- Sites Vitrine : COCKPIT DE VENTE (etape 2 du plan, 2026-07-25) ----
   // Appel en 1 tap (tel:) + mail pre-redige envoyable d'1 clic (relu/edite avant envoi, jamais
