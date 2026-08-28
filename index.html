@@ -1227,6 +1227,11 @@
     background:#232326; color:var(--ink); border:0.5px solid rgba(255,255,255,.16);
   }
   .rl-envoyer-explication.open{display:block}
+  /* Point 3 (28/08/2026) : lien facture par ligne (jamais un bouton mort, present seulement si
+     f.pdfUrl existe) + case a cocher duplicata dans l'encadre de confirmation d'envoi. */
+  .rl-facture-pdf{font-size:12px; color:var(--blue); text-decoration:none; margin-left:6px}
+  .rl-duplicata-check{display:flex; align-items:center; gap:8px; margin:8px 0; font-size:12.5px; color:var(--ink); cursor:pointer}
+  .rl-duplicata-check input{width:16px; height:16px; flex-shrink:0}
   /* Cartes-question (a_confirmer / conflit / aucune) -- pas une erreur, une conversation. */
   .rl-question{
     margin-top:8px; padding:12px; border-radius:12px; background:rgba(var(--gold-rgb),.08);
@@ -3704,7 +3709,7 @@
 
 <script>
 (function(){
-  var APPV = 'v3.79';
+  var APPV = 'v3.80';
 
   // Debug : ?debug_modal=1 force l'affichage du modal "nouvelle version" sans attendre un vrai
   // déploiement. Capturé ICI, tout au début, car plus bas (login mémorisé, connexion) le code
@@ -6027,6 +6032,18 @@
     row.appendChild(meta);
     var montant = document.createElement('span'); montant.className = 'dv-montant'; montant.textContent = f.montantTtc + ' € TTC';
     row.appendChild(montant);
+    // Point 3 (28/08/2026) : les 50 factures impayées archivées deviennent consultables (même
+    // webhook authentifié que les devis) ; les autres ont un lien générique vers le portail MEG
+    // (aucun deep-link par facture n'existe côté MEG).
+    if (f.pdfUrl){
+      var pdfF = document.createElement('a'); pdfF.className = 'dv-pdf'; pdfF.textContent = '📄 Voir la facture'; pdfF.target = '_blank';
+      pdfF.href = 'https://n8n-self-hosted-t0pz.onrender.com' + f.pdfUrl + '&code=' + encodeURIComponent(String(read('jarvisCode') || '').trim());
+      row.appendChild(pdfF);
+    } else if (f.megUrl){
+      var megF = document.createElement('a'); megF.className = 'dv-pdf'; megF.textContent = '↗️ Ouvrir dans MEG'; megF.target = '_blank';
+      megF.href = f.megUrl;
+      row.appendChild(megF);
+    }
     return row;
   }
   function devisApplyFilter(){
@@ -7253,6 +7270,13 @@
     b.factures.forEach(function(f, i){
       if (i > 0) list.appendChild(document.createElement('br'));
       list.appendChild(document.createTextNode(f.numero + ' du ' + fmtRelanceDateFr(f.date) + ' — ' + fmtEuros(f.montant)));
+      // Point 3 (28/08/2026) : bouton present UNIQUEMENT si le PDF existe (50 factures impayees
+      // archivees depuis MEG) -- jamais un bouton mort qui ne mene nulle part.
+      if (f.pdfUrl){
+        var pdfL = document.createElement('a'); pdfL.className = 'rl-facture-pdf'; pdfL.textContent = '📄 Voir la facture'; pdfL.target = '_blank';
+        pdfL.href = 'https://n8n-self-hosted-t0pz.onrender.com' + f.pdfUrl + '&code=' + encodeURIComponent(String(read('jarvisCode') || '').trim());
+        list.appendChild(pdfL);
+      }
     });
     card.appendChild(list);
   }
@@ -7420,12 +7444,26 @@
       envTxt.textContent = 'Envoyer ce message à ' + b.destinataire + ' ?';
       var envConfirmBtn = document.createElement('button'); envConfirmBtn.type = 'button'; envConfirmBtn.className = 'rl-confirm';
       envConfirmBtn.textContent = 'Confirmer l’envoi';
-      envExpl.appendChild(envTxt); envExpl.appendChild(envConfirmBtn);
+      envExpl.appendChild(envTxt);
+      // Point 3 (28/08/2026) : le gabarit dit déjà "si vous avez besoin d'un duplicata,
+      // dites-le-moi" -- jamais joint automatiquement, Mickael décide en un geste. Visible
+      // seulement si au moins une facture du groupe a un PDF archivé.
+      var facturesAvecPdf = b.factures.filter(function(f){ return !!f.pdfUrl; });
+      var dupCheck = null;
+      if (facturesAvecPdf.length){
+        var dupWrap = document.createElement('label'); dupWrap.className = 'rl-duplicata-check';
+        dupCheck = document.createElement('input'); dupCheck.type = 'checkbox';
+        var dupTxt = document.createElement('span');
+        dupTxt.textContent = 'Joindre le duplicata (' + facturesAvecPdf.map(function(f){ return f.numero; }).join(', ') + ')';
+        dupWrap.appendChild(dupCheck); dupWrap.appendChild(dupTxt);
+        envExpl.appendChild(dupWrap);
+      }
+      envExpl.appendChild(envConfirmBtn);
       envBtn.addEventListener('click', function(){ envExpl.classList.toggle('open'); });
       envConfirmBtn.addEventListener('click', function(){
         envConfirmBtn.disabled = true; envBtn.disabled = true;
         envConfirmBtn.textContent = 'Envoi…';
-        postRelancesAction({ cle: b.cle, action: 'envoyer' }, function(r){
+        postRelancesAction({ cle: b.cle, action: 'envoyer', avecDuplicata: !!(dupCheck && dupCheck.checked) }, function(r){
           envExpl.classList.remove('open');
           if (r && r.ok){
             // V2 (27/08/2026) : en mode test, le serveur ne fait plus avancer le niveau
