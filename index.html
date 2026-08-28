@@ -3709,7 +3709,7 @@
 
 <script>
 (function(){
-  var APPV = 'v3.80';
+  var APPV = 'v3.81';
 
   // Debug : ?debug_modal=1 force l'affichage du modal "nouvelle version" sans attendre un vrai
   // déploiement. Capturé ICI, tout au début, car plus bas (login mémorisé, connexion) le code
@@ -7188,6 +7188,31 @@
   var relancesFraicheur = document.getElementById('relances-fraicheur');
   var relancesData = [];
   var relancesBrouillons = [];
+  // Audit perf 28/08/2026 : le badge de menu appelait le meme calcul complet (postRelances({}))
+  // que le panneau lui-meme -- ouvrir simplement le menu declenchait deja les ~20s du calcul,
+  // et l'enchainement badge+panneau (deux appels quasi simultanes au meme calcul lourd) faisait
+  // grimper la contention a 90s+ en usage reel (mesure : voir notes d'audit). Fix : le badge ne
+  // fait plus JAMAIS d'appel reseau -- il lit relancesData deja en memoire depuis la derniere
+  // vraie ouverture du panneau (relancesChargeUneFois). Badge absent tant que rien n'a encore
+  // ete charge cette session : un badge manquant est invisible, un blocage de 90s pour l'afficher
+  // ne l'est pas.
+  var relancesChargeUneFois = false;
+  // Verrou anti double-appel, meme principe que sendInFlight (F3-b) mais en mode "reutiliser"
+  // plutot que "refuser" : si un calcul est deja en vol quand un 2e appelant arrive (ex. deux
+  // ouvertures rapprochees du panneau), on accroche son callback au meme resultat au lieu de
+  // relancer un 2e appel identique au calcul lourd.
+  var relancesCalcEnVol = null;
+  function relancesChargerCalcul(onOk, onErr){
+    if (relancesCalcEnVol){ relancesCalcEnVol.push({ onOk: onOk, onErr: onErr }); return; }
+    relancesCalcEnVol = [{ onOk: onOk, onErr: onErr }];
+    postRelances({}, function(j){
+      var attente = relancesCalcEnVol; relancesCalcEnVol = null;
+      attente.forEach(function(cb){ cb.onOk(j); });
+    }, function(err){
+      var attente = relancesCalcEnVol; relancesCalcEnVol = null;
+      attente.forEach(function(cb){ cb.onErr(err); });
+    });
+  }
   // A (26/08/2026) : cartes "Relancées 2×" -- une par destinataire/client, chacune listant les
   // factures a niveau terminal (r2, plus aucune escalade automatique possible) avec leur
   // historique et leur note. Alimente par j.termines (webhook mcs-relances).
@@ -7862,11 +7887,16 @@
     if (n > 0){ relancesMenuBadge.textContent = n; relancesMenuBadge.style.display = ''; } else { relancesMenuBadge.style.display = 'none'; }
     updateAppBadgeTotal();
   }
-  function relancesCheckBadge(){ postRelances({}, function(j){ relancesBrouillons = j.brouillons || []; relancesData = j.lignes || []; relancesLignesParNumero = {}; relancesData.forEach(function(l){ relancesLignesParNumero[l.numero] = l; }); relancesUpdateBadge(); }, function(){}); }
+  function relancesCheckBadge(){
+    // Ne calcule plus jamais rien lui-meme (voir note sur relancesChargeUneFois) -- relit juste
+    // ce qui est deja en memoire. Rien a faire si aucune vraie ouverture n'a encore eu lieu.
+    if (relancesChargeUneFois) relancesUpdateBadge();
+  }
   function relancesOpen(keepOpen){
     if (!keepOpen) relancesview.classList.add('open');
     relancesList.innerHTML = '<p id="relances-loading">Chargement…</p>';
-    postRelances({}, function(j){
+    relancesChargerCalcul(function(j){
+      relancesChargeUneFois = true;
       relancesData = j.lignes || [];
       relancesLignesParNumero = {};
       relancesData.forEach(function(l){ relancesLignesParNumero[l.numero] = l; });
