@@ -3709,7 +3709,7 @@
 
 <script>
 (function(){
-  var APPV = 'v3.81';
+  var APPV = 'v3.82';
 
   // Debug : ?debug_modal=1 force l'affichage du modal "nouvelle version" sans attendre un vrai
   // déploiement. Capturé ICI, tout au début, car plus bas (login mémorisé, connexion) le code
@@ -7874,7 +7874,15 @@
       relancesList.innerHTML = '<p id="relances-empty">' + msgVide + '</p>';
       return;
     }
-    items.forEach(function(b){ relancesList.appendChild(relancesBuildCard(b)); });
+    // Audit perf 28/08 : le bandeau de fraicheur (relancesAppliquerFraicheur, appele juste
+    // avant depuis relancesOpen) et le total ci-dessus (relancesSummary) sont deja dans le DOM
+    // a ce stade -- differer la construction des cartes d'une frame laisse le navigateur les
+    // peindre EN PREMIER au lieu de tout peindre d'un bloc en meme temps que ~38 cartes.
+    // Purement cosmetique (rien n'est retarde cote reseau, tout est deja recu ; le cout est de
+    // l'ordre d'une frame, ~16ms) -- pas de mensonge sur l'avancement, juste un ordre de peinture.
+    requestAnimationFrame(function(){
+      items.forEach(function(b){ relancesList.appendChild(relancesBuildCard(b)); });
+    });
   }
   function relancesUpdateBadge(){
     // Nb de VRAIS clients a relancer (pas de cartes/destinataires, pas de factures) -- Mickael
@@ -7894,7 +7902,10 @@
   }
   function relancesOpen(keepOpen){
     if (!keepOpen) relancesview.classList.add('open');
-    relancesList.innerHTML = '<p id="relances-loading">Chargement…</p>';
+    // Audit perf 28/08 : "Chargement..." nu remplace par un mot qui decrit ce qui se passe
+    // reellement (le calcul serveur, ~3s) -- pas une promesse de sous-etapes qu'on ne peut
+    // pas garantir dans l'ordre reel, juste un texte honnete sur ce qui prend le temps.
+    relancesList.innerHTML = '<p id="relances-loading">Calcul des relances en cours…</p>';
     relancesChargerCalcul(function(j){
       relancesChargeUneFois = true;
       relancesData = j.lignes || [];
