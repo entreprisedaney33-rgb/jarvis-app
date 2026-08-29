@@ -1583,10 +1583,16 @@
   #docref-note{font-size:12.5px; color:var(--muted); text-align:center; margin:10px 14px 0; line-height:1.4}
   #docref-list{flex:1; overflow-y:auto; -webkit-overflow-scrolling:touch; padding:10px 14px calc(20px + env(safe-area-inset-bottom))}
   #docref-empty, #docref-loading{color:var(--muted); text-align:center; padding:40px 20px; font-size:14px}
-  .docref-card{background:var(--surface); border-radius:14px; padding:12px 14px; margin-bottom:10px; display:flex; align-items:center; gap:10px}
-  .docref-info{flex:1; min-width:0}
+  .docref-card{background:var(--surface); border-radius:14px; padding:12px 14px; margin-bottom:10px; display:flex; flex-direction:column; gap:10px}
+  .docref-info{min-width:0}
   .docref-nom{font-size:15px; font-weight:700; display:block}
   .docref-meta{font-size:12px; color:var(--muted); display:block; margin-top:3px; overflow:hidden; text-overflow:ellipsis; white-space:nowrap}
+  .docref-exp{font-size:11.5px; font-weight:600; display:inline-block; margin-top:5px; padding:2px 8px; border-radius:99px}
+  .docref-exp-ok{background:rgba(255,255,255,.08); color:var(--muted)}
+  .docref-exp-bientot{background:rgba(255,159,10,.18); color:#ffb454}
+  .docref-exp-perime{background:rgba(255,69,58,.18); color:#ff8a8a}
+  .docref-actions{display:flex; gap:8px; flex-wrap:wrap}
+  .docref-actions .vc-no{flex:1 1 auto; min-width:120px; padding:8px 10px; font-size:13px}
   .docref-del{width:32px; height:32px; border-radius:50%; border:0; flex:0 0 auto; background:#3a2020; color:#ff8a8a; font-size:14px; cursor:pointer; -webkit-tap-highlight-color:transparent}
   #docref-form-bg{position:fixed; inset:0; z-index:55; background:rgba(0,0,0,.55); display:none}
   #docref-form-bg.open{display:block}
@@ -1835,6 +1841,8 @@
   }
   #opp-list{flex:1; overflow-y:auto; -webkit-overflow-scrolling:touch; padding:10px 14px calc(20px + env(safe-area-inset-bottom))}
   #opp-empty, #opp-loading{color:var(--muted); text-align:center; padding:40px 20px; font-size:14px}
+  .opp-group-titre{font-size:12px; font-weight:700; color:var(--muted); text-transform:uppercase; letter-spacing:.04em; margin:14px 0 4px; padding:0 2px}
+  .opp-group-titre:first-child{margin-top:0}
   .opp-source-badge{font-size:11px; font-weight:700; flex:0 0 auto; padding:3px 8px; border-radius:99px; white-space:nowrap}
   .opp-source-syndic{background:rgba(10,132,255,.16); color:#5AB2FF}
   .opp-source-copro{background:rgba(var(--gold-rgb),.18); color:var(--gold-a)}
@@ -3459,6 +3467,7 @@
     <h3>Nouveau document de référence</h3>
     <label>Nom (ex : RIB MCS, Kbis, Assurance décennale)</label><input id="docreff-nom" type="text" placeholder="RIB MCS">
     <label>Mots-clés (pour que Jarvis le reconnaisse dans un mail)</label><input id="docreff-mots-cles" type="text" placeholder="rib, iban, coordonnées bancaires">
+    <label>Date d'expiration (facultatif — assurances, agréments…)</label><input id="docreff-expiration" type="date">
     <input id="docreff-file" type="file" style="display:none">
     <button class="vc-no" id="docreff-choose" type="button" style="width:100%;margin-top:12px">📎 Choisir le fichier</button>
     <p id="docreff-file-chip" style="display:none"></p>
@@ -3812,7 +3821,7 @@
 
 <script>
 (function(){
-  var APPV = 'v3.86';
+  var APPV = 'v3.87';
 
   // Debug : ?debug_modal=1 force l'affichage du modal "nouvelle version" sans attendre un vrai
   // déploiement. Capturé ICI, tout au début, car plus bas (login mémorisé, connexion) le code
@@ -8731,8 +8740,38 @@
   var docreffFile = document.getElementById('docreff-file');
   var docreffChip = document.getElementById('docreff-file-chip');
   var docreffSave = document.getElementById('docreff-save');
+  var docreffExpiration = document.getElementById('docreff-expiration');
   var DOCREF_MAX_BYTES = 8 * 1024 * 1024;
   var docrefPendingFile = null;
+
+  // D2 (29/08/2026) : ouvre/telecharge le document depuis le telephone -- Blob + URL.createObjectURL
+  // (pas une data: URI, deja evite ailleurs dans cette app pour cette raison exacte : Safari iOS la
+  // gere mal sur les gros fichiers et ne propose pas toujours l'enregistrement).
+  function docrefOuvrir(d){
+    try {
+      var bin = atob(d.data);
+      var bytes = new Uint8Array(bin.length);
+      for (var i = 0; i < bin.length; i++) bytes[i] = bin.charCodeAt(i);
+      var blob = new Blob([bytes], { type: d.mime || 'application/octet-stream' });
+      var url = URL.createObjectURL(blob);
+      var a = document.createElement('a'); a.href = url; a.target = '_blank'; a.rel = 'noopener'; a.download = d.filename || d.nom;
+      document.body.appendChild(a); a.click(); document.body.removeChild(a);
+      setTimeout(function(){ URL.revokeObjectURL(url); }, 30000);
+    } catch (e) { toast('Impossible d’ouvrir ce document.'); }
+  }
+
+  // D5 : delai avant expiration, alerte visuelle sous 30 jours (assurances/agrements).
+  function docrefExpirationInfo(dateExpiration){
+    if (!dateExpiration) return null;
+    var exp = new Date(dateExpiration + 'T00:00:00');
+    if (isNaN(exp.getTime())) return null;
+    var joursRestants = Math.round((exp.getTime() - Date.now()) / 86400000);
+    var label = 'Expire le ' + exp.toLocaleDateString('fr-FR');
+    var classe = 'docref-exp-ok';
+    if (joursRestants < 0){ label = 'Expiré depuis le ' + exp.toLocaleDateString('fr-FR'); classe = 'docref-exp-perime'; }
+    else if (joursRestants <= 30){ label += ' (dans ' + joursRestants + ' j)'; classe = 'docref-exp-bientot'; }
+    return { label: label, classe: classe };
+  }
 
   function docrefCard(d){
     var card = document.createElement('div'); card.className = 'docref-card';
@@ -8740,16 +8779,45 @@
     var nom = document.createElement('span'); nom.className = 'docref-nom'; nom.textContent = d.nom;
     info.appendChild(nom);
     var meta = document.createElement('span'); meta.className = 'docref-meta';
-    meta.textContent = (d.motsCles ? d.motsCles + ' · ' : '') + d.filename;
+    var majTxt = d.majMs ? ('maj le ' + new Date(d.majMs).toLocaleDateString('fr-FR')) : '';
+    meta.textContent = [d.motsCles, d.filename, majTxt].filter(Boolean).join(' · ');
     info.appendChild(meta);
+    var expInfo = docrefExpirationInfo(d.dateExpiration);
+    if (expInfo){
+      var exp = document.createElement('span'); exp.className = 'docref-exp ' + expInfo.classe; exp.textContent = '⏳ ' + expInfo.label;
+      info.appendChild(exp);
+    }
     card.appendChild(info);
+
+    var actions = document.createElement('div'); actions.className = 'docref-actions';
+    var voir = document.createElement('button'); voir.type = 'button'; voir.className = 'vc-no'; voir.textContent = '📄 Voir / télécharger';
+    voir.addEventListener('click', function(){ docrefOuvrir(d); });
+    actions.appendChild(voir);
+    var envoyer = document.createElement('button'); envoyer.type = 'button'; envoyer.className = 'vc-no'; envoyer.textContent = '✉️ Envoyer par mail';
+    envoyer.addEventListener('click', function(){ docrefEnvoyerPrompt(d); });
+    actions.appendChild(envoyer);
     var del = document.createElement('button'); del.type = 'button'; del.className = 'docref-del'; del.textContent = '✕';
     del.addEventListener('click', function(){
       del.disabled = true;
       postDocref({ type:'supprimer', id: d.id }, function(){ toast('Document supprimé'); docrefLoad(); }, function(err){ del.disabled = false; toast(err); });
     });
-    card.appendChild(del);
+    actions.appendChild(del);
+    card.appendChild(actions);
     return card;
+  }
+
+  // D3 : Mickael tape le destinataire A CHAQUE FOIS (jamais un modele/une adresse memorisee pour
+  // cet envoi precis) -- le formulaire lui-meme EST la confirmation demandee ("rien ne part sans
+  // un clic de Mickael"), pas de brouillon differe comme pour les devis/factures (ici aucune
+  // ambiguite de destinataire n'existe : c'est TOUJOURS lui qui choisit a qui l'envoyer).
+  function docrefEnvoyerPrompt(d){
+    var dest = window.prompt('Envoyer « ' + d.nom + ' » à quelle adresse ?', '');
+    if (dest === null) return;
+    dest = dest.trim();
+    if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(dest)){ toast('Adresse email invalide.'); return; }
+    postDocref({ type:'envoyer', id: d.id, destinataire: dest }, function(){
+      toast('✅ Envoyé à ' + dest);
+    }, function(err){ toast(err); });
   }
 
   function docrefLoad(){
@@ -8767,7 +8835,7 @@
   document.getElementById('sh-docref').addEventListener('click', function(){ sheetOpen(false); docrefOpen(); });
 
   function docrefFormReset(){
-    docreffNom.value = ''; docreffMotsCles.value = ''; docreffFile.value = '';
+    docreffNom.value = ''; docreffMotsCles.value = ''; docreffFile.value = ''; docreffExpiration.value = '';
     docrefPendingFile = null; docreffChip.style.display = 'none'; docreffChip.textContent = '';
   }
   document.getElementById('docref-add').addEventListener('click', function(){ docrefFormReset(); docrefFormBg.classList.add('open'); });
@@ -8795,10 +8863,13 @@
     postDocref({
       type:'ajouter', nom: nom, motsCles: docreffMotsCles.value.trim(),
       filename: docrefPendingFile.filename, mime: docrefPendingFile.mime, data: docrefPendingFile.data,
+      dateExpiration: docreffExpiration.value,
     }, function(){
       docreffSave.disabled = false;
       docrefFormBg.classList.remove('open');
-      toast('✅ Document ajouté');
+      // D1 : "Nom" fait office de cle de remplacement (upsert cote serveur) -- redeposer un
+      // document avec le meme nom REMPLACE le fichier existant, pas de doublon.
+      toast('✅ Document enregistré (remplace l’ancien s’il portait le même nom)');
       docrefLoad();
     }, function(err){ docreffSave.disabled = false; toast(err); });
   });
@@ -9418,18 +9489,15 @@
   var oppStatus = document.getElementById('opp-status');
   var oppRelancerBtn = document.getElementById('opp-relancer');
   var oppEnrichBanniere = document.getElementById('opp-enrichissement-banniere');
-  // PANSEMENT DATE DU 29/08/2026 -- point 7 audit UX. Le vrai tri (Opportunites) est un chantier
-  // a part prevu apres le 1er septembre. En attendant, cote CLIENT uniquement (aucune
-  // modification n8n, aucun VERROU, rien de supprime cote serveur) : une courte liste
-  // d'exclusion en dur pour ecarter les evidences (noms d'enseignes/publicites remontees a tort
-  // par la recherche SIRENE, ex. observes par Mickael : "Intersport", "Play"). Comparaison sur le
-  // nom normalise (accents/casse), correspondance EXACTE uniquement -- jamais un sous-mot (un nom
-  // de syndic qui contiendrait par hasard "play" ne doit pas disparaitre). Pour l'ENLEVER : vider
-  // ce tableau (ou retirer la ligne oppAll = oppAll.filter(...) juste en dessous) une fois le
-  // vrai chantier de tri fait.
-  var OPP_EXCLUSION_NOMS = ['intersport', 'play'].map(normDoc);
+  // Chantier C (29/08/2026) : le pansement du 29/08 (liste d'exclusion en dur cote client,
+  // "Intersport"/"Play" signales par Mickael) est REMPLACE par une vraie classification cote
+  // SERVEUR (nature_prospect/visible_mickael/motif_masque, calculee par
+  // clients/mcs/scripts/classer-prospects-opportunites.js -- meme denylist exacte reprise +
+  // signaux C1/C2). Les fiches ecartees restent en base, jamais supprimees (motif_masque
+  // explique pourquoi) -- juste invisibles ici. visible_mickael absent (fiche pas encore
+  // reclassee par le script) = visible par defaut, jamais un ecran vide par erreur de deploiement.
   function oppFiltrerExclus(liste){
-    return (liste || []).filter(function(p){ return OPP_EXCLUSION_NOMS.indexOf(normDoc(p.nom || '')) === -1; });
+    return (liste || []).filter(function(p){ return p.visible_mickael !== false; });
   }
   var oppAll = [];
   var oppActiveTab = 'a_valider';
@@ -9605,7 +9673,21 @@
       prospects.forEach(function(p){ oppList.appendChild(oppEnRechercheRow(p)); });
       return;
     }
-    prospects.forEach(function(p){ oppList.appendChild(oppCard(p)); });
+    // Chantier C (29/08/2026) : regroupement par NATURE (sous-titres, pas des onglets a part --
+    // 8 onglets [4 statuts x 2 natures] aurait ete illisible pour 3 coproprietes directes sur
+    // 100 fiches). Le badge par carte existait deja (opp-source-badge) ; ce regroupement rend le
+    // tri visible d'un coup d'oeil sans avoir a lire chaque badge un par un.
+    var groupes = [
+      { key: 'syndic_gestionnaire', titre: '🏢 Syndics / gestionnaires', test: function(p){ return p.nature_prospect !== 'copropriete_directe'; } },
+      { key: 'copropriete_directe', titre: '🏠 Copropriétés directes', test: function(p){ return p.nature_prospect === 'copropriete_directe'; } },
+    ];
+    groupes.forEach(function(g){
+      var items = prospects.filter(g.test);
+      if (!items.length) return;
+      var h = document.createElement('p'); h.className = 'opp-group-titre'; h.textContent = g.titre + ' (' + items.length + ')';
+      oppList.appendChild(h);
+      items.forEach(function(p){ oppList.appendChild(oppCard(p)); });
+    });
   }
 
   function oppUpdateBadge(){
