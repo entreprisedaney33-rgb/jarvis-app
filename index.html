@@ -3812,7 +3812,7 @@
 
 <script>
 (function(){
-  var APPV = 'v3.85';
+  var APPV = 'v3.86';
 
   // Debug : ?debug_modal=1 force l'affichage du modal "nouvelle version" sans attendre un vrai
   // déploiement. Capturé ICI, tout au début, car plus bas (login mémorisé, connexion) le code
@@ -6464,7 +6464,12 @@
     badge.textContent = bloque ? '🚫 Désignation manquante' : (f.type_contrat === 'VMC' ? 'VMC · +3 % auto' : 'Dératisation / désinsectisation');
     main.appendChild(badge);
     var meta = document.createElement('span'); meta.className = 'dv-meta';
-    meta.textContent = (f.prestation || '') + ' · ' + f.annee + (f.prix_ht_n1 != null ? (' · N-1 : ' + Number(f.prix_ht_n1).toFixed(2) + ' € HT') : '');
+    // 30/08/2026 : la valeur RESOLUE (celle qui sert reellement a la facture, apres cascade des
+    // "idem"), jamais le texte brut du tableur -- avant ce fix, "idem" ou "derat/desin" (une
+    // categorie, pas une designation) pouvaient s'afficher ici alors que la facture generee etait
+    // deja correcte. prestation_resolue peut manquer sur une tres vieille ligne jamais regeneree
+    // depuis -- repli sur le brut dans ce seul cas, jamais l'inverse.
+    meta.textContent = (f.prestation_resolue || f.prestation || '') + ' · ' + f.annee + (f.prix_ht_n1 != null ? (' · N-1 : ' + Number(f.prix_ht_n1).toFixed(2) + ' € HT') : '');
     main.appendChild(meta);
     var montant = document.createElement('span'); montant.className = 'dv-montant';
     montant.textContent = Number(f.prix_ttc).toFixed(2) + ' € TTC';
@@ -6517,7 +6522,17 @@
     card.appendChild(toggleBtn);
 
     var detail = document.createElement('div'); detail.className = 'ct-detail';
-    var destInput = contratField(detail, 'Destinataire (email) — "à renseigner" si aucune correspondance trouvée dans l\'export MEG', 'input', f.destinataire_email); destInput.type = 'text';
+    // 30/08/2026 : si aucun destinataire confirme mais qu'un CANDIDAT existe (syndic retrouve via
+    // la memoire relationnelle ou les mails de la boite MCS, ou adresse MEG en conflit avec une
+    // variante proche) -- on PRE-REMPLIT le champ pour que Mickael n'ait qu'a verifier/valider,
+    // avec la preuve juste en dessous. Jamais ecrit dans destinataire_email tant que Mickael n'a
+    // pas lui-meme valide (le champ reste un simple <input>, editable, rien n'est pre-valide).
+    var destInput = contratField(detail, 'Destinataire (email) — "à renseigner" si aucune correspondance trouvée dans l\'export MEG', 'input', f.destinataire_email || f.destinataire_candidat); destInput.type = 'text';
+    if (!f.destinataire_email && f.destinataire_candidat) {
+      var destPreuve = document.createElement('p'); destPreuve.className = 'ct-motif-blocage';
+      destPreuve.textContent = '🔎 À confirmer — ' + (f.destinataire_preuve || 'candidat trouvé, à vérifier.');
+      detail.appendChild(destPreuve);
+    }
     var designationInput = contratField(detail,
       bloque ? 'Désignation (verbatim MEG) — à saisir avant tout envoi, aucune n\'a pu être vérifiée automatiquement' : 'Désignation (verbatim MEG)',
       'textarea', f.designation);
@@ -6696,11 +6711,16 @@
     var card = document.createElement('div'); card.className = 'contrat-card previsionnel';
     var nom = document.createElement('span'); nom.className = 'dv-nom'; nom.textContent = contratNomAffiche(p);
     card.appendChild(nom);
-    var badge = document.createElement('span'); badge.className = 'ct-badge' + (p.type_contrat === 'VMC' ? ' vmc' : '');
-    badge.textContent = (p.type_contrat === 'VMC' ? 'VMC · +3 % auto' : 'Dératisation / désinsectisation') + ' · 🔮 prévisionnel';
+    // 30/08/2026 : un ecran ne promet jamais ce que le calcul ne tient pas -- avant ce fix, le
+    // badge annonçait "VMC"/"Dératisation" sur la seule foi de type_contrat, MEME pour un contrat
+    // qui finira BLOQUÉ à la génération (désignation MEG non identifiée, ex. "Araignées"/"MS").
+    // p.famille (calculé cote serveur, même règle que la génération réelle) dit la vérité ici.
+    var bloquePrevisionnel = !p.famille;
+    var badge = document.createElement('span'); badge.className = 'ct-badge' + (bloquePrevisionnel ? ' bloque' : (p.type_contrat === 'VMC' ? ' vmc' : ''));
+    badge.textContent = (bloquePrevisionnel ? '🚫 Désignation manquante' : (p.familleLibelle || p.type_contrat)) + ' · 🔮 prévisionnel';
     card.appendChild(badge);
     var meta = document.createElement('span'); meta.className = 'dv-meta';
-    meta.textContent = (p.prestation || '') + ' · estimé depuis N-1 : ' + Number(p.prixHtN1).toFixed(2) + ' € HT';
+    meta.textContent = (p.prestationResolue || p.prestation || '') + ' · estimé depuis N-1 : ' + Number(p.prixHtN1).toFixed(2) + ' € HT';
     card.appendChild(meta);
     var montant = document.createElement('span'); montant.className = 'dv-montant';
     montant.textContent = '≈ ' + Number(p.prixTtc).toFixed(2) + ' € TTC';
