@@ -842,6 +842,21 @@
     font-weight:600;
   }
   .contrat-card.previsionnel{opacity:.85}
+  /* Ecran de revue des factures de contrats (29/08/2026) : bouton generation a la demande +
+     bouton lot TVA -- meme gabarit que les autres boutons pleine largeur de ce panneau. */
+  #contrats-generer-btn, #contrats-tva-lot-btn{
+    flex:0 0 auto; margin:10px 14px 0; padding:12px; border-radius:12px; border:0;
+    background:linear-gradient(145deg,var(--gold-a),var(--gold-b)); color:var(--gold-ink);
+    font-size:14px; font-weight:700; cursor:pointer; -webkit-tap-highlight-color:transparent;
+  }
+  #contrats-tva-lot-btn{background:var(--surface); color:var(--blue); border:0.5px solid rgba(10,132,255,.4)}
+  .contrat-card .ct-badge.bloque{background:rgba(255,69,58,.15); color:#FF453A}
+  .ct-motif-blocage{font-size:12.5px; color:#FF453A; line-height:1.4}
+  .ct-tva-choix{display:flex; flex-direction:column; gap:6px; font-size:13px}
+  .ct-tva-choix label{display:flex; align-items:center; gap:8px; color:var(--ink); font-size:13px}
+  .ct-tva-choix input[type=radio]{margin:0}
+  .ct-tva-source{color:var(--muted); font-size:11.5px}
+  .ct-numero{font-size:11.5px; color:var(--muted); font-weight:600; letter-spacing:.3px}
   #contrats-list{flex:1; overflow-y:auto; -webkit-overflow-scrolling:touch; padding:14px 14px calc(20px + env(safe-area-inset-bottom))}
   #contrats-empty, #contrats-loading{color:var(--muted); text-align:center; padding:40px 20px; font-size:14px}
   #contrats-add-btn{
@@ -3264,7 +3279,9 @@
     <button class="df-chip" data-statut="envoyee" type="button">✅ Facture envoyée</button>
     <button class="df-chip" data-statut="skip" type="button">⏭️ Pas cette année</button>
   </div>
+  <button id="contrats-tva-lot-btn" type="button" style="display:none">⚖️ Choisir le taux de TVA pour tout le lot VMC</button>
   <p id="contrats-previsionnel-banniere" style="display:none">🔮 Rien n'est encore généré pour ce mois — aperçu de ce qui sera facturé automatiquement le 1<sup>er</sup> (prix indicatifs, peuvent encore changer d'ici là).</p>
+  <button id="contrats-generer-btn" type="button" style="display:none">🚀 Générer les brouillons de ce mois maintenant</button>
   <div id="contrats-search-wrap">
     <input id="contrats-search" type="search" inputmode="search" placeholder="🔍 Rechercher un client…" autocomplete="off" autocapitalize="off" autocorrect="off">
   </div>
@@ -3795,7 +3812,7 @@
 
 <script>
 (function(){
-  var APPV = 'v3.84';
+  var APPV = 'v3.85';
 
   // Debug : ?debug_modal=1 force l'affichage du modal "nouvelle version" sans attendre un vrai
   // déploiement. Capturé ICI, tout au début, car plus bas (login mémorisé, connexion) le code
@@ -6433,14 +6450,18 @@
     return wrap;
   }
 
+  // Ecran de revue des factures de contrats (29/08/2026). Desormais base sur famille_prestation
+  // (jamais la colonne "prestation" brute) : voir clients/mcs/INVENTAIRE-SOURCES-CONTRATS-29-08-2026.md.
   function contratsBuildMoisCard(f){
+    var bloque = !f.famille_prestation;
     var card = document.createElement('div'); card.className = 'contrat-card';
     var head = document.createElement('div'); head.className = 'ct-head';
     var main = document.createElement('div'); main.className = 'ct-main';
     var nom = document.createElement('span'); nom.className = 'dv-nom'; nom.textContent = contratNomAffiche(f);
     main.appendChild(nom);
-    var badge = document.createElement('span'); badge.className = 'ct-badge' + (f.type_contrat === 'VMC' ? ' vmc' : '');
-    badge.textContent = f.type_contrat === 'VMC' ? 'VMC · +3 % auto' : 'Dératisation / désinsectisation';
+    var badge = document.createElement('span');
+    badge.className = 'ct-badge' + (bloque ? ' bloque' : (f.type_contrat === 'VMC' ? ' vmc' : ''));
+    badge.textContent = bloque ? '🚫 Désignation manquante' : (f.type_contrat === 'VMC' ? 'VMC · +3 % auto' : 'Dératisation / désinsectisation');
     main.appendChild(badge);
     var meta = document.createElement('span'); meta.className = 'dv-meta';
     meta.textContent = (f.prestation || '') + ' · ' + f.annee + (f.prix_ht_n1 != null ? (' · N-1 : ' + Number(f.prix_ht_n1).toFixed(2) + ' € HT') : '');
@@ -6455,6 +6476,11 @@
 
     // ---- Statut "envoyee" : lecture seule, rien à modifier ni à traiter ----
     if (f.statut === 'envoyee'){
+      if (f.numero_facture){
+        var numEnvoi = document.createElement('span'); numEnvoi.className = 'ct-numero';
+        numEnvoi.textContent = '№ ' + f.numero_facture;
+        card.appendChild(numEnvoi);
+      }
       var metaEnvoi = document.createElement('span'); metaEnvoi.className = 'dv-meta';
       metaEnvoi.textContent = '✅ Envoyée le ' + fmtDevisDateSimple(f.date_envoi) + (f.destinataire_email ? (' à ' + f.destinataire_email) : '');
       card.appendChild(metaEnvoi);
@@ -6481,26 +6507,78 @@
     }
 
     // ---- Statut "a_traiter" (par défaut) : formulaire éditable + Envoyer/Pas cette année ----
+    if (bloque){
+      var motifP = document.createElement('p'); motifP.className = 'ct-motif-blocage';
+      motifP.textContent = f.motif_blocage || 'Aucune désignation MEG vérifiée pour cette prestation.';
+      card.appendChild(motifP);
+    }
     var toggleBtn = document.createElement('button'); toggleBtn.type = 'button'; toggleBtn.className = 'ct-toggle';
-    toggleBtn.textContent = '✏️ Modifier et traiter';
+    toggleBtn.textContent = bloque ? '✏️ Saisir la désignation et traiter' : '✏️ Modifier et traiter';
     card.appendChild(toggleBtn);
 
     var detail = document.createElement('div'); detail.className = 'ct-detail';
-    var destInput = contratField(detail, 'Destinataire (email)', 'input', f.destinataire_email); destInput.type = 'text';
+    var destInput = contratField(detail, 'Destinataire (email) — "à renseigner" si aucune correspondance trouvée dans l\'export MEG', 'input', f.destinataire_email); destInput.type = 'text';
+    var designationInput = contratField(detail,
+      bloque ? 'Désignation (verbatim MEG) — à saisir avant tout envoi, aucune n\'a pu être vérifiée automatiquement' : 'Désignation (verbatim MEG)',
+      'textarea', f.designation);
+    var passagesInput = contratField(detail, 'Passages / an', 'input', f.passages_an != null ? f.passages_an : 1);
+    passagesInput.type = 'number'; passagesInput.step = '1'; passagesInput.min = '1';
+    var prixInput = contratField(detail, 'Montant HT (€) — réindexation ' + (f.type_contrat === 'VMC' ? 'automatique +3 % déjà appliquée' : 'libre, à toi de choisir'), 'input', f.prix_ht);
+    prixInput.type = 'number'; prixInput.step = '0.01';
+
+    // ---- TVA : les deux sources affichées cote a cote, jamais tranchees par Jarvis (demande
+    // explicite du 29/08/2026 -- "afficher le desaccord, ne rien trancher"). Par defaut le taux
+    // des vraies factures MEG est retenu pour la VMC (un fait constate), mais Mickael choisit. ----
+    var tvaWrap = document.createElement('div'); tvaWrap.className = 'ct-tva-choix';
+    var tvaLabel = document.createElement('label'); tvaLabel.style.color = 'var(--muted)'; tvaLabel.style.fontSize = '12px'; tvaLabel.textContent = 'Taux de TVA';
+    tvaWrap.appendChild(tvaLabel);
+    var radioName = 'ct-tva-' + f.id;
+    var tvaOptions = [];
+    if (f.tva_meg_reel != null) tvaOptions.push({ valeur: f.tva_meg_reel, provenance: 'meg_reel', libelle: (f.tva_meg_reel*100).toFixed(0) + ' % — taux de vos factures réelles' });
+    if (f.tva_tableur != null) tvaOptions.push({ valeur: f.tva_tableur, provenance: 'tableur', libelle: (f.tva_tableur*100).toFixed(0) + ' % — taux du tableur' });
+    if (!tvaOptions.length) tvaOptions.push({ valeur: f.tva, provenance: f.tva_provenance || 'tableur', libelle: (Number(f.tva)*100).toFixed(0) + ' % — taux enregistré' });
+    var tvaRadios = tvaOptions.map(function(opt){
+      var lab = document.createElement('label');
+      var radio = document.createElement('input'); radio.type = 'radio'; radio.name = radioName; radio.value = String(opt.valeur);
+      radio.dataset.provenance = opt.provenance;
+      if (String(f.tva_provenance) === opt.provenance || (tvaOptions.length === 1)) radio.checked = true;
+      var span = document.createElement('span'); span.className = 'ct-tva-source'; span.textContent = opt.libelle;
+      lab.appendChild(radio); lab.appendChild(span);
+      tvaWrap.appendChild(lab);
+      return radio;
+    });
+    detail.appendChild(tvaWrap);
+
+    var ttcPreview = document.createElement('span'); ttcPreview.className = 'dv-meta';
+    function recalcPreview(){
+      var ht = parseFloat(prixInput.value) || 0;
+      var checked = tvaRadios.find(function(r){ return r.checked; });
+      var tva = checked ? parseFloat(checked.value) : Number(f.tva) || 0.2;
+      ttcPreview.textContent = 'Recalcul : ' + (ht*(1+tva)).toFixed(2) + ' € TTC (' + ht.toFixed(2) + ' € HT + ' + (tva*100).toFixed(0) + ' % TVA)';
+    }
+    prixInput.addEventListener('input', recalcPreview);
+    tvaRadios.forEach(function(r){ r.addEventListener('change', recalcPreview); });
+    recalcPreview();
+    detail.appendChild(ttcPreview);
+
     var objetInput = contratField(detail, 'Objet', 'input', f.objet_mail); objetInput.type = 'text';
     var corpsInput = contratField(detail, 'Corps du mail', 'textarea', f.corps_mail);
-    var prixInput = contratField(detail, 'Montant HT (€) — réindexation ' + (f.type_contrat === 'VMC' ? 'automatique +3 %' : 'libre, à toi de choisir'), 'input', f.prix_ht);
-    prixInput.type = 'number'; prixInput.step = '0.01';
 
     var actions = document.createElement('div'); actions.className = 'ct-actions';
     var okBtn = document.createElement('button'); okBtn.className = 'vc-ok'; okBtn.type = 'button'; okBtn.textContent = '✅ Envoyer';
     var skipBtn = document.createElement('button'); skipBtn.className = 'vc-no'; skipBtn.type = 'button'; skipBtn.textContent = '⏭️ Pas cette année';
     okBtn.addEventListener('click', function(){
+      var checked = tvaRadios.find(function(r){ return r.checked; });
+      if (bloque && !designationInput.value.trim()){ toast('Saisis une désignation avant d\'envoyer.'); return; }
       okBtn.disabled = true; skipBtn.disabled = true;
       postContrats({
         type: 'mois-action', id: f.id, choix: 'envoyer',
         destinataire: destInput.value.trim(), objet: objetInput.value.trim(), corps: corpsInput.value.trim(),
         prix_ht: parseFloat(prixInput.value) || 0,
+        designation: designationInput.value.trim(),
+        passages_an: parseInt(passagesInput.value, 10) || 1,
+        tva: checked ? parseFloat(checked.value) : undefined,
+        tva_provenance: checked ? checked.dataset.provenance : undefined,
       }, function(j){
         toast(j.testMode ? '✅ Facture envoyée (mode test → Altaestima)' : '✅ Facture envoyée');
         f.statut = 'envoyee'; f.destinataire_email = destInput.value.trim(); f.date_envoi = new Date().toISOString();
@@ -6639,6 +6717,13 @@
     var enModePrevisionnel = contratsActiveTab === 'mois' && !(contratsMoisData && contratsMoisData.length);
     document.getElementById('contrats-mois-substatuts').style.display = (contratsActiveTab === 'mois' && !enModePrevisionnel) ? '' : 'none';
     document.getElementById('contrats-previsionnel-banniere').style.display = enModePrevisionnel ? '' : 'none';
+    document.getElementById('contrats-generer-btn').style.display = enModePrevisionnel ? '' : 'none';
+    // Le bouton "lot TVA" n'a de sens que sur l'onglet "à traiter" (brouillons pas encore
+    // envoyes) et seulement s'il y a au moins un contrat VMC dans cette liste -- inutile
+    // ailleurs (rien de deja envoye ne se recalcule).
+    var aDesVmcATraiter = contratsActiveTab === 'mois' && !enModePrevisionnel && contratsMoisStatutFiltre === 'a_traiter'
+      && (contratsMoisData || []).some(function(f){ return f.type_contrat === 'VMC' && f.statut === 'a_traiter'; });
+    document.getElementById('contrats-tva-lot-btn').style.display = aDesVmcATraiter ? '' : 'none';
     // C4 (21/08/2026) : bandeau permanent, visible uniquement sur l'onglet Facturation (le
     // Catalogue n'envoie rien) -- meme donnee testMode que le panneau Devis, cf. Formater
     // factures du mois (contrats) et Calculer previsionnel (mois-liste).
@@ -6688,6 +6773,29 @@
   }
 
   function contratsOpen(){ contratsview.classList.add('open'); contratsLoadTab(); }
+
+  // Generer les brouillons du mois actuellement affiche (le mois n'a encore aucune facture,
+  // seulement un apercu previsionnel) -- meme route que le cron mensuel, appelee a la demande.
+  document.getElementById('contrats-generer-btn').addEventListener('click', function(){
+    var btn = this; btn.disabled = true; btn.textContent = 'Génération en cours…';
+    postContrats({ type: 'generer', mois: contratsMoisMois, annee: contratsMoisAnnee }, function(j){
+      toast('✅ ' + (j.nb != null ? j.nb : '') + ' brouillon(s) généré(s)');
+      btn.disabled = false; btn.textContent = '🚀 Générer les brouillons de ce mois maintenant';
+      contratsLoadTab();
+    }, function(err){ btn.disabled = false; btn.textContent = '🚀 Générer les brouillons de ce mois maintenant'; toast(err); });
+  });
+
+  // Choix du taux de TVA pour TOUT le lot VMC "à traiter" du mois affiché, en un geste (demande
+  // explicite du 29/08/2026 : "une décision unique de Mickael, pas dix-neuf").
+  document.getElementById('contrats-tva-lot-btn').addEventListener('click', function(){
+    if (!confirm('Choisir un taux de TVA pour TOUS les contrats VMC en attente de ce mois, en une seule fois ?\n\nRien n\'est envoyé — seuls les brouillons sont recalculés, tu pourras encore corriger une facture précise ensuite.')) return;
+    var choix = confirm('OK = 10 % (le taux de vos vraies factures MEG)\nAnnuler = 20 % (le taux du tableur)');
+    var provenance = choix ? 'meg_reel' : 'tableur';
+    postContrats({ type: 'mois-tva-lot', mois: contratsMoisMois, annee: contratsMoisAnnee, provenance: provenance }, function(j){
+      toast('⚖️ TVA (' + (provenance === 'meg_reel' ? '10 %' : '20 %') + ') appliquée à ' + j.nb + ' contrat(s)');
+      contratsLoadTab();
+    }, function(err){ toast(err); });
+  });
 
   document.querySelectorAll('#contrats-tabs .devis-tab').forEach(function(btn){
     btn.addEventListener('click', function(){
