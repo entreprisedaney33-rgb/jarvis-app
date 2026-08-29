@@ -1758,6 +1758,14 @@
   .meute-email-send:disabled{opacity:.5}
   .meute-rapport-envoye{font-size:12px; color:#34C759; font-weight:600; margin-bottom:8px; display:block}
   .meute-notes-label{font-size:12px; color:var(--gold-a); font-weight:600; margin-bottom:6px; display:block}
+  /* Point 4 (session suite, 29/08/2026) : meme bug que le message prepare d'Opportunites, trouve
+     en elargissant l'audit -- ce textarea (note d'appel, TOUJOURS visible sur cet ecran) n'avait
+     lui non plus aucune classe/regle, fond blanc du navigateur au milieu d'une appli sombre. */
+  .meute-notes-textarea{
+    width:100%; box-sizing:border-box; border:0.5px solid rgba(255,255,255,.18); border-radius:10px;
+    background:#2E2E32; color:var(--ink); font-family:inherit; font-size:14px;
+    padding:9px 10px; resize:vertical; margin-bottom:8px;
+  }
   .meute-notes-actions{display:flex; gap:6px; margin-bottom:10px}
   .meute-notes-mic{
     flex:0 0 auto; padding:7px 12px; border-radius:9px; border:0; background:#2E2E32; color:var(--ink);
@@ -1847,6 +1855,25 @@
   .opp-source-syndic{background:rgba(10,132,255,.16); color:#5AB2FF}
   .opp-source-copro{background:rgba(var(--gold-rgb),.18); color:var(--gold-a)}
   .opp-msg-box{margin-top:6px}
+  /* Point 4 (session suite, 29/08/2026) : le textarea du message prepare (Claude) etait cree en
+     JS SANS classe -- aucune regle ne s'appliquait, il heritait de l'apparence par defaut du
+     navigateur (fond blanc, petite police) au milieu d'une appli entierement sombre. Meme
+     traitement que la reference du projet pour un texte a relire avant envoi (.rl-brouillon-* de
+     Relances) : cartouche sombre, bordure doree discrete, hauteur genereuse, redimensionnable. */
+  .opp-msg-label{
+    font-size:11px; color:var(--gold-a); text-transform:uppercase; letter-spacing:.03em;
+    display:block; margin-bottom:5px;
+  }
+  .opp-msg-box textarea{
+    width:100%; box-sizing:border-box; border:1px solid rgba(var(--gold-rgb),.35); border-radius:10px;
+    background:#232326; color:var(--ink); font-family:inherit; font-size:14px; line-height:1.5;
+    padding:10px; min-height:150px; resize:vertical; margin-bottom:8px;
+  }
+  .opp-notes-area{
+    width:100%; box-sizing:border-box; border:0.5px solid rgba(255,255,255,.18); border-radius:10px;
+    background:#2E2E32; color:var(--ink); font-family:inherit; font-size:14px;
+    padding:9px 10px; resize:vertical; margin-bottom:8px;
+  }
   .opp-prepare-btn{
     width:100%; padding:9px; border-radius:10px; border:0.5px solid rgba(255,255,255,.18); background:#2E2E32;
     color:var(--ink); font-size:13px; font-weight:700; cursor:pointer; -webkit-tap-highlight-color:transparent; margin-bottom:8px;
@@ -2612,6 +2639,9 @@
   .fc-choice-sub{font-size:12px; font-weight:400; color:var(--muted)}
   .fc-choice-link{background:none; border:0; color:var(--gold-a); font:inherit; font-size:13px; font-weight:600; cursor:pointer; padding:4px 0; text-align:center}
   /* V6 : formulaire de facture directe, meme gabarit que #devis-form. */
+  /* Point 2 (session suite, 29/08/2026) : badge discret "déjà connu" -- mémoire commune,
+     partagé par tous les formulaires qui la consultent (jamais imposé, juste indicatif). */
+  .mem-badge{font-size:11px; color:var(--gold-a); opacity:.85; margin-top:1px; display:none}
   #fd-form-bg{position:fixed; inset:0; background:rgba(0,0,0,.5); display:none; z-index:52}
   #fd-form-bg.open{display:block}
   #fd-form{
@@ -3821,7 +3851,7 @@
 
 <script>
 (function(){
-  var APPV = 'v3.87';
+  var APPV = 'v3.88';
 
   // Debug : ?debug_modal=1 force l'affichage du modal "nouvelle version" sans attendre un vrai
   // déploiement. Capturé ICI, tout au début, car plus bas (login mémorisé, connexion) le code
@@ -4350,6 +4380,7 @@
   var API_FACTURATION = 'https://n8n-self-hosted-t0pz.onrender.com/webhook/mcs-facturation';
   var API_IK = 'https://n8n-self-hosted-t0pz.onrender.com/webhook/mcs-ik';
   var API_IK_EXPORT = 'https://n8n-self-hosted-t0pz.onrender.com/webhook/mcs-ik-export';
+  var API_MEMOIRE = 'https://n8n-self-hosted-t0pz.onrender.com/webhook/mcs-memoire-app';
   var login = document.getElementById('login');
   var app = document.getElementById('app');
   var chat = document.getElementById('chat');
@@ -4618,6 +4649,57 @@
   function postDocref(payload, onOk, onErr){ postDevisWeb(API_DOCREF, payload, onOk, onErr); }
   function postContrats(payload, onOk, onErr){ postDevisWeb(API_CONTRATS, payload, onOk, onErr); }
   function postIk(payload, onOk, onErr){ postDevisWeb(API_IK, payload, onOk, onErr); }
+  function postMemoire(payload, onOk, onErr){ postDevisWeb(API_MEMOIRE, payload, onOk, onErr); }
+
+  // Point 2 (session suite, 29/08/2026) : mémoire commune, générique pour tout écran qui a des
+  // champs d'identité/coordonnées. Un champ CONNU se pré-remplit SEULEMENT s'il est vide (jamais
+  // imposé), avec un badge discret "déjà connu — saisi par X le DATE" ; éditer le champ (au blur)
+  // EST le geste de correction (2d) -- le serveur garde l'ancienne valeur en historique, rien
+  // n'est jamais perdu. Une adresse mémorisée reste un simple champ de formulaire : elle ne part
+  // jamais toute seule, l'envoi réel reste derrière le bouton de validation existant de l'écran (2e).
+  function memoireBadge(inputEl){
+    var b = inputEl.parentNode.querySelector('.mem-badge');
+    if (!b){ b = document.createElement('div'); b.className = 'mem-badge'; inputEl.parentNode.appendChild(b); }
+    return b;
+  }
+  function memoireDateFr(iso){ if (!iso) return ''; try { return new Date(iso).toLocaleDateString('fr-FR'); } catch(e){ return ''; } }
+  function memoireLibelle(info){
+    return '🧠 déjà connu — saisi par ' + (info.saisiPar === 'salarie' ? 'Bruno' : 'Mickael') + (info.maj ? ' le ' + memoireDateFr(info.maj) : '');
+  }
+  // typeEntite/identifiantBrut : clé de recherche (ex: 'client'/'Nom du client tapé'). champs =
+  // { champKey: inputEl, ... }. N'écrase jamais un champ déjà rempli par l'utilisateur.
+  function memoireAppliquer(typeEntite, identifiantBrut, champs, ecranSource){
+    if (!identifiantBrut || identifiantBrut.trim().length < 3) return;
+    postMemoire({ type:'lire', typeEntite:typeEntite, identifiant:identifiantBrut, ecranSource:ecranSource }, function(r){
+      var connus = (r && r.champs) || {};
+      Object.keys(champs).forEach(function(champKey){
+        var inputEl = champs[champKey];
+        var info = connus[champKey];
+        if (!info || !info.valeur || !inputEl) return;
+        if (!inputEl.value){
+          inputEl.value = info.valeur;
+          inputEl.dataset.memValeur = info.valeur;
+          var badge = memoireBadge(inputEl);
+          badge.textContent = memoireLibelle(info);
+          badge.style.display = '';
+        }
+      });
+    }, function(){ /* mémoire = confort, jamais bloquant si indisponible */ });
+  }
+  // Enregistre une correction quand l'utilisateur quitte le champ avec une valeur différente de
+  // celle proposée par la mémoire (ou une toute première valeur pour ce client) -- pas de bouton
+  // dédié, l'édition normale du champ suffit (2d).
+  function memoireCorrigerSurBlur(typeEntite, identifiantGetter, champKey, inputEl, ecranSource){
+    inputEl.addEventListener('blur', function(){
+      var val = inputEl.value.trim();
+      var identifiant = identifiantGetter();
+      if (!val || !identifiant || identifiant.trim().length < 3) return;
+      if (inputEl.dataset.memValeur === val) return;
+      postMemoire({ type:'ecrire', typeEntite:typeEntite, identifiant:identifiant, champ:champKey, valeur:val, ecranSource:ecranSource }, function(){
+        inputEl.dataset.memValeur = val;
+      }, function(){ /* silencieux, le formulaire reste utilisable meme si la memorisation echoue */ });
+    });
+  }
 
   function postVitrine(payload, onOk, onErr){
     payload.code = String(read('jarvisCode') || '').trim();
@@ -6863,8 +6945,28 @@
     document.getElementById('cf-email').value = c ? c.email : '';
     document.getElementById('cf-renouv').value = c ? c.renouvellement : '';
     document.getElementById('ctf-delete').style.display = c ? '' : 'none';
+    // Point 2 (session suite, 29/08/2026) : mémoire commune -- uniquement à la CRÉATION (c===null) ;
+    // en édition on affiche les vraies valeurs du contrat, jamais une suggestion de mémoire par-dessus.
+    delete document.getElementById('cf-email').dataset.memValeur;
+    contratFormBg.querySelectorAll('.mem-badge').forEach(function(b){ b.style.display = 'none'; });
     contratFormBg.classList.add('open');
   }
+  // Listeners posés UNE SEULE FOIS (pas à chaque ouverture, pour ne jamais empiler les écouteurs) --
+  // `contratFormEditingId` distingue création (mémoire active) et édition (jamais de suggestion
+  // par-dessus une vraie valeur de contrat déjà enregistrée).
+  (function(){
+    var cfResidence = document.getElementById('cf-residence');
+    var cfClient = document.getElementById('cf-client');
+    var cfEmail = document.getElementById('cf-email');
+    var identifiantContrat = function(){ return cfResidence.value.trim() || cfClient.value.trim(); };
+    var essayerMemoire = function(){
+      if (contratFormEditingId) return;
+      memoireAppliquer('residence', identifiantContrat(), { email: cfEmail }, 'contrats');
+    };
+    cfResidence.addEventListener('blur', essayerMemoire);
+    cfClient.addEventListener('blur', essayerMemoire);
+    memoireCorrigerSurBlur('residence', identifiantContrat, 'email', cfEmail, 'contrats');
+  })();
   function contratFormClose(){ contratFormBg.classList.remove('open'); }
   document.getElementById('ctf-cancel').addEventListener('click', contratFormClose);
   contratFormBg.addEventListener('click', function(e){ if (e.target === this) contratFormClose(); });
@@ -8641,7 +8743,17 @@
     if (r.resume){ var resume = document.createElement('span'); resume.className = 'rel-resume'; resume.textContent = r.resume; card.appendChild(resume); }
     var metaBits = [];
     if (r.societe && r.societe !== titre) metaBits.push(r.societe);
-    if (r.residences) metaBits.push('📍 ' + r.residences);
+    // Point 1d (session suite, 29/08/2026) : "residences" veut dire "a ete evoquee dans un mail
+    // avec cet interlocuteur", PAS "il/elle gere cette residence" -- confusion reelle constatee
+    // (ex. Caroline Benitez, la comptable, apparaissait rattachee a 8 residences). Le pin de
+    // localisation (qui suggere une gestion/responsabilite) n'est garde QUE pour les roles qui
+    // gerent reellement de l'habitat collectif ; les autres (fournisseur/administration/commerce/
+    // particulier/inconnu) recoivent un libelle neutre, jamais l'implication "gestionnaire de".
+    var ROLES_GESTION_RESIDENCE = ['syndic', 'gestionnaire', 'copro'];
+    if (r.residences){
+      if (ROLES_GESTION_RESIDENCE.indexOf(r.role) !== -1) metaBits.push('📍 ' + r.residences);
+      else metaBits.push('Résidence(s) évoquée(s) dans un mail : ' + r.residences);
+    }
     if (r.dernierEchangeMs) metaBits.push('dernier échange le ' + new Date(r.dernierEchangeMs).toLocaleDateString('fr-FR'));
     if (metaBits.length){ var meta = document.createElement('span'); meta.className = 'rel-meta'; meta.textContent = metaBits.join(' · '); card.appendChild(meta); }
     if (r.promesseEnCours){
@@ -8682,7 +8794,9 @@
     relationsList.innerHTML = '';
     if (!relationsData){ relationsList.innerHTML = '<p id="relations-empty">Chargement…</p>'; return; }
     var q = relNorm(relationsQuery);
-    var filtered = relationsData.slice();
+    // Point 1c (session suite, 29/08/2026) : masque, jamais supprime -- visibleMickael absent
+    // (fiche pas encore classee) = visible par defaut, jamais un ecran vide par erreur.
+    var filtered = relationsData.filter(function(r){ return r.visibleMickael !== false; });
     if (relationsTab === 'promesse') filtered = filtered.filter(function(r){ return !!r.promesseEnCours; });
     if (q) filtered = filtered.filter(function(r){
       return relNorm(r.nom).indexOf(q) !== -1 || relNorm(r.societe).indexOf(q) !== -1 || relNorm(r.resume).indexOf(q) !== -1;
@@ -9332,7 +9446,7 @@
     // qui sert ensuite de contexte au rapport genere plus bas (jamais envoye directement, toujours relu).
     var notesLabel = document.createElement('span'); notesLabel.className = 'meute-notes-label';
     notesLabel.textContent = '📝 Note d’appel (clavier ou micro 🎙️ ci-dessous)';
-    var notesArea = document.createElement('textarea'); notesArea.rows = 3; notesArea.placeholder = 'Infos recueillies pendant l’appel… (tape ou dicte au micro)';
+    var notesArea = document.createElement('textarea'); notesArea.className = 'meute-notes-textarea'; notesArea.rows = 3; notesArea.placeholder = 'Infos recueillies pendant l’appel… (tape ou dicte au micro)';
     notesArea.value = s.notes || '';
     var notesRow = document.createElement('div'); notesRow.className = 'meute-notes-actions';
     var notesMic = document.createElement('button'); notesMic.className = 'meute-notes-mic'; notesMic.type = 'button'; notesMic.textContent = '🎙️ Dicter';
@@ -9556,7 +9670,7 @@
     card.appendChild(contactRow);
 
     // Note libre (comme Meute, sans le micro -- pas demandé ici, juste du clavier).
-    var notesArea = document.createElement('textarea'); notesArea.rows = 2; notesArea.placeholder = 'Notes…';
+    var notesArea = document.createElement('textarea'); notesArea.className = 'opp-notes-area'; notesArea.rows = 2; notesArea.placeholder = 'Notes…';
     notesArea.value = p.notes || '';
     var notesSave = document.createElement('button'); notesSave.className = 'meute-notes-save'; notesSave.type = 'button'; notesSave.textContent = 'Enregistrer la note';
     notesSave.addEventListener('click', function(){
@@ -9573,6 +9687,12 @@
     var msgBox = document.createElement('div'); msgBox.className = 'opp-msg-box';
     var prepBtn = document.createElement('button'); prepBtn.className = 'opp-prepare-btn'; prepBtn.type = 'button';
     prepBtn.textContent = p.message_prepare ? '🔄 Regénérer le message' : '✍️ Préparer un message de prise de contact';
+    // Point 4 (session suite, 29/08/2026) : label explicite + classe manquante (le textarea etait
+    // cree SANS classe -- fond blanc du navigateur, aucun style ne s'appliquait). Meme esprit que
+    // le brouillon de Relances (.rl-brouillon-label) : dire ce que c'est, avant de le montrer.
+    var msgLabel = document.createElement('div'); msgLabel.className = 'opp-msg-label';
+    msgLabel.textContent = 'Message préparé — relis-le avant d’envoyer';
+    msgLabel.style.display = p.message_prepare ? '' : 'none';
     var msgArea = document.createElement('textarea'); msgArea.rows = 6; msgArea.style.display = p.message_prepare ? '' : 'none';
     if (p.message_prepare) msgArea.value = p.message_prepare;
     var sendBtn = document.createElement('button'); sendBtn.className = 'meute-email-send'; sendBtn.type = 'button';
@@ -9583,7 +9703,7 @@
       prepBtn.disabled = true; prepBtn.textContent = 'Préparation…';
       postOpportunites({ type:'preparer_message', id:p.id }, function(j){
         p.message_prepare = j.message || '';
-        msgArea.value = p.message_prepare; msgArea.style.display = '';
+        msgArea.value = p.message_prepare; msgArea.style.display = ''; msgLabel.style.display = '';
         sendBtn.style.display = ''; sendBtn.disabled = !emailInput.value.trim();
         prepBtn.disabled = false; prepBtn.textContent = '🔄 Regénérer le message';
         toast('✍️ Message préparé — relis-le avant d’envoyer');
@@ -9597,7 +9717,7 @@
         toast('✅ Message envoyé'); p.statut = 'contacte'; oppRefresh();
       }, function(err){ sendBtn.disabled = false; sendBtn.textContent = '✉️ Envoyer'; toast(err); });
     });
-    msgBox.appendChild(prepBtn); msgBox.appendChild(msgArea); msgBox.appendChild(sendBtn);
+    msgBox.appendChild(prepBtn); msgBox.appendChild(msgLabel); msgBox.appendChild(msgArea); msgBox.appendChild(sendBtn);
     card.appendChild(msgBox);
 
     var actions = document.createElement('div'); actions.className = 'meute-actions';
@@ -12050,6 +12170,8 @@
   });
   function fdFormOpen(){
     fdNom.value = ''; fdAdresse.value = ''; fdEmail.value = ''; fdObjet.value = '';
+    delete fdNom.dataset.memValeur; delete fdAdresse.dataset.memValeur; delete fdEmail.dataset.memValeur;
+    fdForm.querySelectorAll('.mem-badge').forEach(function(b){ b.style.display = 'none'; });
     fdDateDebut.value = ''; fdDateFin.value = '';
     fdLignesWrap.innerHTML = '';
     fdLignesWrap.appendChild(fdLigneRow());
@@ -12061,6 +12183,14 @@
     fdForm.classList.add('open');
     setTimeout(function(){ fdNom.focus(); }, 50);
   }
+  // Point 2 (session suite, 29/08/2026) : mémoire commune -- une fois le nom du client tapé,
+  // propose adresse/email déjà connus (jamais écrase un champ déjà rempli). Éditer ces champs
+  // ensuite (blur) enregistre la correction, historique gardé côté serveur.
+  fdNom.addEventListener('blur', function(){
+    memoireAppliquer('client', fdNom.value.trim(), { adresse: fdAdresse, email: fdEmail }, 'facture-directe');
+  });
+  memoireCorrigerSurBlur('client', function(){ return fdNom.value.trim(); }, 'adresse', fdAdresse, 'facture-directe');
+  memoireCorrigerSurBlur('client', function(){ return fdNom.value.trim(); }, 'email', fdEmail, 'facture-directe');
   function fdFormClose(){
     fdFormBg.classList.remove('open');
     fdForm.classList.remove('open');
