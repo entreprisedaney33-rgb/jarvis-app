@@ -1550,6 +1550,17 @@
   .rel-resume{font-size:13.5px; color:var(--ink); display:block; margin-top:6px; line-height:1.4}
   .rel-meta{font-size:12px; color:var(--muted); display:block; margin-top:6px}
   .rel-promesse{font-size:12.5px; color:var(--gold-a); display:block; margin-top:6px}
+  /* Point 6 (30/08/2026, gros chantier) : Niveau 1 (Ecrire/Appeler, toujours dispo si la donnee
+     existe) + Niveau 2 (1 seule action suggeree, vocabulaire ferme cote serveur). */
+  .rel-actions-l1{display:flex; gap:8px; margin-top:8px; flex-wrap:wrap}
+  .rel-action-btn{
+    display:inline-flex; align-items:center; padding:7px 12px; font-size:12.5px; font-weight:600;
+    border-radius:9px; border:0; cursor:pointer; background:#2E2E32; color:var(--ink);
+    text-decoration:none; -webkit-tap-highlight-color:transparent;
+  }
+  .rel-action-l2{margin-top:8px; padding:8px 10px; border-radius:10px; background:rgba(var(--gold-rgb),.1)}
+  .rel-action-l2-phrase{display:block; font-size:12.5px; color:var(--ink); margin-bottom:6px}
+  .rel-action-btn-l2{background:var(--gold-a); color:var(--gold-ink)}
   /* Observations (2026-08-11, "Jarvis proactif" phase 2) : schémas repérés par relecture croisée
      de tout l'historique d'un contact -- affichées directement sur SA fiche, jamais un onglet à
      part ni une notification push (demande explicite Mathéo : "quand il est en train de faire un
@@ -3857,7 +3868,7 @@
 
 <script>
 (function(){
-  var APPV = 'v3.89';
+  var APPV = 'v3.90';
 
   // Debug : ?debug_modal=1 force l'affichage du modal "nouvelle version" sans attendre un vrai
   // déploiement. Capturé ICI, tout au début, car plus bas (login mémorisé, connexion) le code
@@ -8512,6 +8523,15 @@
       relancesUpdateBadge();
     }, function(err){ relancesList.innerHTML = '<p id="relances-empty">' + err + '</p>'; });
   }
+  // Point 6b (30/08/2026) : "Voir le brouillon de relance" depuis Mes contacts -- REUTILISE le
+  // panneau Relances existant (recherche pre-remplie), aucune 2e logique d'affichage du
+  // brouillon inventee ici.
+  function relancesOpenPourClient(nom){
+    relationsClose(); sheetOpen(false);
+    relancesSearchInput.value = nom || '';
+    if (relancesChargeUneFois){ relancesview.classList.add('open'); relancesApplyFilter(); }
+    else relancesOpen();
+  }
   document.querySelectorAll('#relances-tabs .devis-tab').forEach(function(btn){
     btn.addEventListener('click', function(){
       document.querySelectorAll('#relances-tabs .devis-tab').forEach(function(b){ b.classList.toggle('active', b === btn); });
@@ -8847,6 +8867,58 @@
       var echStr = r.promesseEcheanceMs ? new Date(r.promesseEcheanceMs).toLocaleDateString('fr-FR') : '';
       promesse.textContent = '🤝 Promesse en cours' + (echStr ? ' (' + echStr + ')' : '') + ' — « ' + r.promesseEnCours + ' »';
       card.appendChild(promesse);
+    }
+    // Point 6a (30/08/2026, gros chantier) : NIVEAU 1, aucune intelligence requise. Un email
+    // connu -> "Ecrire" (mailto:, ouvre l'app mail du telephone, jamais un envoi Jarvis). Un
+    // telephone : AUCUNE colonne structuree dans mcs_relations aujourd'hui -- extrait du texte
+    // libre du resume UNIQUEMENT si la forme est un numero FRANCAIS plausible (jamais invente,
+    // jamais un faux positif genant : au pire rien ne s'affiche, jamais un mauvais numero puisque
+    // Mickael voit le texte exact avant d'appeler).
+    var actionsL1 = document.createElement('div'); actionsL1.className = 'rel-actions-l1';
+    if (r.email){
+      var ecrireBtn = document.createElement('a'); ecrireBtn.className = 'rel-action-btn';
+      ecrireBtn.href = 'mailto:' + r.email; ecrireBtn.textContent = '✉️ Écrire';
+      actionsL1.appendChild(ecrireBtn);
+    }
+    var telMatch = String(r.resume || '').match(/(?:\+33\s?|0)[1-9](?:[\s.-]?\d{2}){4}/);
+    if (telMatch){
+      var appelerBtn = document.createElement('a'); appelerBtn.className = 'rel-action-btn';
+      appelerBtn.href = 'tel:' + telMatch[0].replace(/[\s.-]+/g, '');
+      appelerBtn.textContent = '📞 ' + telMatch[0];
+      actionsL1.appendChild(appelerBtn);
+    }
+    if (actionsL1.children.length) card.appendChild(actionsL1);
+    // Point 6b/6c/6d (30/08/2026) : NIVEAU 2 -- le modele choisit une INTENTION dans un
+    // vocabulaire FERME (action_suggeree, ecrit une fois par nuit par la consolidation), l'app
+    // decide SEULE du libelle et de la destination du bouton. Une valeur hors liste ou absente
+    // n'affiche RIEN (deja garanti cote serveur, "Lire consolidation" retombe sur 'aucune' --
+    // ce switch est un 2e filet, jamais un texte genere par le modele affiche tel quel).
+    // Vocabulaire Supose, pas Declare (6d) : "Il a demande un devis le X" + bouton, jamais
+    // "A faire : devis" -- une proposition, pas un ordre.
+    var dateEch = r.dernierEchangeMs ? new Date(r.dernierEchangeMs).toLocaleDateString('fr-FR') : '';
+    var ACTIONS_L2 = {
+      devis_a_faire: { phrase: 'A semblé demander un devis' + (dateEch ? ' le ' + dateEch : '') + '.', bouton: '📝 Faire un devis' },
+      intervention_a_planifier: { phrase: 'Une intervention semble à planifier' + (dateEch ? ' (échange du ' + dateEch + ')' : '') + '.', bouton: '📅 Planifier' },
+      rappel_telephone: { phrase: 'Semble à rappeler' + (dateEch ? ' (échange du ' + dateEch + ')' : '') + '.', bouton: '📞 Appeler' },
+      reponse_attendue: { phrase: 'Une réponse de votre part semble attendue' + (dateEch ? ' depuis le ' + dateEch : '') + '.', bouton: '✉️ Répondre' },
+      information_demandee: { phrase: 'A semblé demander une information' + (dateEch ? ' le ' + dateEch : '') + '.', bouton: '✉️ Répondre' },
+      paiement_promis: { phrase: '', bouton: '📬 Voir le brouillon de relance' }, // texte deja affiche par le bloc "promesse" ci-dessus, pas duplique ici
+    };
+    var l2 = ACTIONS_L2[r.actionSuggeree];
+    if (l2){
+      var l2Wrap = document.createElement('div'); l2Wrap.className = 'rel-action-l2';
+      if (l2.phrase){ var l2Phrase = document.createElement('span'); l2Phrase.className = 'rel-action-l2-phrase'; l2Phrase.textContent = l2.phrase; l2Wrap.appendChild(l2Phrase); }
+      var l2Btn = document.createElement('button'); l2Btn.type = 'button'; l2Btn.className = 'rel-action-btn rel-action-btn-l2'; l2Btn.textContent = l2.bouton;
+      l2Btn.addEventListener('click', function(){
+        var action = r.actionSuggeree;
+        if (action === 'devis_a_faire'){ devisOpen({ nom: r.societe || r.nom, email: r.email }); }
+        else if (action === 'intervention_a_planifier'){ relationsClose(); sheetOpen(false); calendarOpen(); calOpenForm('create', null, null, r.residences || r.societe || r.nom); }
+        else if (action === 'rappel_telephone'){ if (telMatch) window.location.href = 'tel:' + telMatch[0].replace(/[\s.-]+/g, ''); else toast('Aucun numéro trouvé dans les échanges — vérifie le résumé.'); }
+        else if (action === 'reponse_attendue' || action === 'information_demandee'){ if (r.email) window.location.href = 'mailto:' + r.email; }
+        else if (action === 'paiement_promis'){ relancesOpenPourClient(r.societe || r.nom); }
+      });
+      l2Wrap.appendChild(l2Btn);
+      card.appendChild(l2Wrap);
     }
     if ((r.observations || []).length){
       var obsWrap = document.createElement('div'); obsWrap.className = 'rel-obs';
@@ -11870,13 +11942,15 @@
     calLoadData();
   });
 
-  function calOpenForm(mode, ev, presetBase){
+  // Point 6b (30/08/2026) : presetLieu optionnel -- Mes contacts -> "Planifier" pre-remplit le
+  // lieu (residence) sans creer un 2e formulaire. Aucun appel existant ne passe ce 4e argument.
+  function calOpenForm(mode, ev, presetBase, presetLieu){
     calEditingId = mode === 'edit' ? ev.id : '';
     document.getElementById('cal-form-title').textContent = mode === 'edit' ? 'Modifier le rendez-vous' : 'Nouveau rendez-vous';
     // Vocabulaire MCS (2026-08-09) : "chantier Carignan" est un exemple du labo interne, sans
     // rapport avec MCS (qui ne dit jamais "chantier") -- placeholder neutre côté MCS.
     document.getElementById('cf-titre').placeholder = isMcsCode() ? 'Ex : Passage résidence Les Tilleuls' : 'Ex : RDV chantier Carignan';
-    document.getElementById('cf-titre').value = mode === 'edit' ? ev.title : '';
+    document.getElementById('cf-titre').value = mode === 'edit' ? ev.title : (presetLieu ? ('Passage ' + presetLieu) : '');
     var base;
     if (mode === 'edit') base = new Date(ev.start);
     else if (presetBase) base = new Date(presetBase);
@@ -11889,7 +11963,7 @@
     var end = mode === 'edit' ? new Date(ev.end) : new Date(base.getTime() + 3600000);
     document.getElementById('cf-debut').value = calDtLocal(base);
     document.getElementById('cf-fin').value = calDtLocal(end);
-    document.getElementById('cf-lieu').value = mode === 'edit' ? (ev.location || '') : '';
+    document.getElementById('cf-lieu').value = mode === 'edit' ? (ev.location || '') : (presetLieu || '');
     document.getElementById('cf-err').textContent = '';
     document.getElementById('cf-delete').style.display = mode === 'edit' ? '' : 'none';
     cfSug.innerHTML = ''; cfSug.classList.remove('open');
@@ -12126,10 +12200,14 @@
     if (!dfEmailFact.value.trim() && item.email) dfEmailFact.value = item.email;
   });
 
-  function devisOpen(){
+  // Point 6b (30/08/2026) : preset optionnel {nom, email} -- Mes contacts -> "Faire un devis"
+  // pre-remplit le client, jamais un nouveau formulaire dedie (reutilise TEL QUEL le meme
+  // gabarit que "+" -> Nouveau devis). Aucun appel existant ne passe cet argument -> comportement
+  // strictement inchange partout ailleurs (undefined -> vide, comme avant).
+  function devisOpen(preset){
     sheetOpen(false);
-    dfNom.value = ''; dfResidence.value = ''; dfVille.value = ''; dfNature.value = '';
-    dfContact.value = ''; dfTel.value = ''; dfEmail.value = ''; dfEmailFact.value = ''; dfAdresse.value = '';
+    dfNom.value = (preset && preset.nom) || ''; dfResidence.value = ''; dfVille.value = ''; dfNature.value = '';
+    dfContact.value = ''; dfTel.value = ''; dfEmail.value = (preset && preset.email) || ''; dfEmailFact.value = ''; dfAdresse.value = '';
     dfSug.classList.remove('open'); dfSug.innerHTML = '';
     dfNomSug.classList.remove('open'); dfNomSug.innerHTML = '';
     dfResidenceSug.classList.remove('open'); dfResidenceSug.innerHTML = '';
