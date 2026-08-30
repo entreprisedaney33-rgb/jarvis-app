@@ -3868,7 +3868,7 @@
 
 <script>
 (function(){
-  var APPV = 'v3.90';
+  var APPV = 'v3.91';
 
   // Debug : ?debug_modal=1 force l'affichage du modal "nouvelle version" sans attendre un vrai
   // déploiement. Capturé ICI, tout au début, car plus bas (login mémorisé, connexion) le code
@@ -4698,7 +4698,12 @@
           inputEl.dataset.memValeur = info.valeur;
           var badge = memoireBadge(inputEl);
           badge.textContent = memoireLibelle(info);
-          badge.style.display = '';
+          // Point 7 (30/08/2026, gros chantier) : VRAI BUG trouve en testant (deja present
+          // avant ce chantier, affectait donc aussi Devis/Facture directe/Contrats/Catalogue,
+          // pas seulement les ecrans ajoutes ici) -- style.display='' retire juste le style
+          // inline, retombe sur la regle CSS ".mem-badge{display:none}" qui gagne toujours.
+          // Il faut une valeur explicite pour l'emporter.
+          badge.style.display = 'block';
         }
       });
     }, function(){ /* mémoire = confort, jamais bloquant si indisponible */ });
@@ -9848,10 +9853,24 @@
       postOpportunites({ type:'contact', id:p.id, email:emailInput.value.trim(), telephone:telInput.value.trim() }, function(){
         p.email = emailInput.value.trim(); p.telephone = telInput.value.trim();
         contactSave.disabled = false; toast('✅ Coordonnées enregistrées');
+        // Point 7a (30/08/2026) : la sauvegarde propre a la fiche prospect (ci-dessus) reste la
+        // source de verite pour CETTE fiche -- ceci est un AJOUT en parallele, jamais un
+        // remplacement, pour que la meme coordonnee profite aussi a Devis/Facture directe/
+        // Carnet bleu/Calendrier si le meme nom y est tape un jour.
+        var nomTrim = (p.nom || '').trim();
+        if (nomTrim.length >= 3 && emailInput.value.trim()){
+          postMemoire({ type:'ecrire', typeEntite:'client', identifiant:nomTrim, champ:'email', valeur:emailInput.value.trim(), ecranSource:'opportunites' }, function(){}, function(){});
+        }
+        if (nomTrim.length >= 3 && telInput.value.trim()){
+          postMemoire({ type:'ecrire', typeEntite:'client', identifiant:nomTrim, champ:'tel', valeur:telInput.value.trim(), ecranSource:'opportunites' }, function(){}, function(){});
+        }
       }, function(err){ contactSave.disabled = false; toast(err); });
     });
     contactRow.appendChild(emailInput); contactRow.appendChild(telInput); contactRow.appendChild(contactSave);
     card.appendChild(contactRow);
+    // Point 7a : lecture seule, ne remplit QUE si vide -- p.email/p.telephone (deja affectes
+    // ci-dessus) font toujours foi en premier, la memoire commune ne comble qu'un vrai trou.
+    if (p.nom) memoireAppliquer('client', p.nom, { email: emailInput, tel: telInput }, 'opportunites');
 
     // Note libre (comme Meute, sans le micro -- pas demandé ici, juste du clavier).
     var notesArea = document.createElement('textarea'); notesArea.className = 'opp-notes-area'; notesArea.rows = 2; notesArea.placeholder = 'Notes…';
@@ -11616,7 +11635,16 @@
   var calEditingId = '';
   var CAL_DOW = ['Lun','Mar','Mer','Jeu','Ven','Sam','Dim'];
   var cfLieu = document.getElementById('cf-lieu');
+  var cfTelephone = document.getElementById('cf-telephone');
   var cfSug = document.getElementById('cf-sug');
+  // Point 7a (30/08/2026, gros chantier) : meme memoire commune -- le telephone du client
+  // rattache a un lieu/residence, propose des qu'un lieu deja connu est tape (jamais impose,
+  // jamais sur un rdv en edition -- ev.phone fait deja foi la, cf. calOpenForm juste au-dessus).
+  cfLieu.addEventListener('blur', function(){
+    if (calEditingId) return; // en edition, le telephone vient du rdv existant, pas de la memoire
+    memoireAppliquer('residence', cfLieu.value.trim(), { tel: cfTelephone }, 'calendrier');
+  });
+  memoireCorrigerSurBlur('residence', function(){ return cfLieu.value.trim(); }, 'tel', cfTelephone, 'calendrier');
   var cfAdrTimer = null;
   var cfWaze = document.getElementById('cf-waze');
   var cfMcsExtra = document.getElementById('cf-mcs-extra');
