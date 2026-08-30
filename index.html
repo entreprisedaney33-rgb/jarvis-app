@@ -3868,7 +3868,7 @@
 
 <script>
 (function(){
-  var APPV = 'v3.92';
+  var APPV = 'v3.93';
 
   // Debug : ?debug_modal=1 force l'affichage du modal "nouvelle version" sans attendre un vrai
   // déploiement. Capturé ICI, tout au début, car plus bas (login mémorisé, connexion) le code
@@ -6380,6 +6380,14 @@
       var megF = document.createElement('a'); megF.className = 'dv-pdf'; megF.textContent = '↗️ Ouvrir dans MEG'; megF.target = '_blank';
       megF.href = f.megUrl;
       row.appendChild(megF);
+    }
+    // Point 1 (30/08/2026) : le geste "annuler par un avoir" existait déjà (#mf-view / mfCard),
+    // mais fallait aller le chercher dans "+" -> "Nouveau document" -> "Voir mes factures émises".
+    // Remonté ici, sur la facture elle-même -- réutilise mfAppendAvoir telle quelle (aucune
+    // duplication). Réservé aux vraies factures Jarvis (source==='jarvis', série MCS) : une ligne
+    // MEG importée n'a pas de numeroComplet exploitable par ce mécanisme.
+    if (f.source === 'jarvis' && f.numeroComplet){
+      mfAppendAvoir(row, f, function(){ devisAttenteOpen(); });
     }
     return row;
   }
@@ -12485,6 +12493,43 @@
   var mfViewBg = document.getElementById('mf-view-bg');
   var mfView = document.getElementById('mf-view');
   var mfList = document.getElementById('mf-list');
+  // Point 1 (30/08/2026, gros chantier) : logique d'avoir extraite ici, PARTAGÉE entre #mf-view
+  // (mfCard, ci-dessous) et le sous-onglet Factures de "Devis et factures" (devisRenderRowFacture,
+  // plus bas) -- une seule implémentation de l'annulation d'une facture, jamais dupliquée.
+  // card = l'élément DOM à compléter ; f = {numeroComplet, dejaAnnuleePar} ; onEmitted = rappel
+  // après une émission réussie (chaque appelant recharge SA PROPRE liste).
+  function mfAppendAvoir(card, f, onEmitted){
+    if (f.dejaAnnuleePar){
+      var annulee = document.createElement('span'); annulee.className = 'mf-card-annulee';
+      annulee.textContent = 'Déjà annulée par l\'avoir ' + f.dejaAnnuleePar + '.';
+      card.appendChild(annulee);
+      return;
+    }
+    var avoirBtn = document.createElement('button'); avoirBtn.type = 'button'; avoirBtn.className = 'mf-btn-avoir';
+    avoirBtn.textContent = '↩️ Annuler par un avoir';
+    var form = document.createElement('div'); form.className = 'mf-avoir-form';
+    var motif = document.createElement('textarea'); motif.placeholder = 'Motif (ex : erreur de facturation, double émission)…'; motif.rows = 2;
+    var actions = document.createElement('div'); actions.className = 'rl-form-actions';
+    var confirm = document.createElement('button'); confirm.type = 'button'; confirm.className = 'rl-confirm'; confirm.textContent = "Confirmer l'avoir";
+    var cancel = document.createElement('button'); cancel.type = 'button'; cancel.className = 'rl-cancel'; cancel.textContent = 'Annuler';
+    actions.appendChild(confirm); actions.appendChild(cancel);
+    form.appendChild(motif); form.appendChild(actions);
+    avoirBtn.addEventListener('click', function(){ form.classList.toggle('open'); });
+    cancel.addEventListener('click', function(){ form.classList.remove('open'); motif.value = ''; });
+    confirm.addEventListener('click', function(){
+      if (!motif.value.trim()){ toast('Précise le motif de l\'avoir.'); return; }
+      confirm.disabled = true;
+      postFacturation({
+        type: 'emettre', type_doc: 'avoir', avoir_de: f.numeroComplet, motif: motif.value.trim(),
+      }, function(r){
+        confirm.disabled = false;
+        if (r && r.ok){ toast('✅ Avoir émis pour ' + f.numeroComplet); if (onEmitted) onEmitted(); }
+        else { toast('❌ ' + ((r && r.message) || 'Émission impossible.')); }
+      }, function(err){ confirm.disabled = false; toast('❌ ' + err); });
+    });
+    card.appendChild(avoirBtn);
+    card.appendChild(form);
+  }
   function mfCard(f){
     var card = document.createElement('div'); card.className = 'mf-card';
     var head = document.createElement('div'); head.className = 'mf-card-head';
@@ -12495,36 +12540,7 @@
     var sub = document.createElement('span'); sub.className = 'mf-card-sub';
     sub.textContent = f.numeroComplet + ' — ' + fmtRelanceDateFr(f.dateEmission) + (f.objet ? ' — ' + f.objet : '');
     card.appendChild(sub);
-    if (f.dejaAnnuleePar){
-      var annulee = document.createElement('span'); annulee.className = 'mf-card-annulee';
-      annulee.textContent = 'Déjà annulée par l\'avoir ' + f.dejaAnnuleePar + '.';
-      card.appendChild(annulee);
-    } else {
-      var avoirBtn = document.createElement('button'); avoirBtn.type = 'button'; avoirBtn.className = 'mf-btn-avoir';
-      avoirBtn.textContent = '↩️ Annuler par un avoir';
-      var form = document.createElement('div'); form.className = 'mf-avoir-form';
-      var motif = document.createElement('textarea'); motif.placeholder = 'Motif (ex : erreur de facturation, double émission)…'; motif.rows = 2;
-      var actions = document.createElement('div'); actions.className = 'rl-form-actions';
-      var confirm = document.createElement('button'); confirm.type = 'button'; confirm.className = 'rl-confirm'; confirm.textContent = "Confirmer l'avoir";
-      var cancel = document.createElement('button'); cancel.type = 'button'; cancel.className = 'rl-cancel'; cancel.textContent = 'Annuler';
-      actions.appendChild(confirm); actions.appendChild(cancel);
-      form.appendChild(motif); form.appendChild(actions);
-      avoirBtn.addEventListener('click', function(){ form.classList.toggle('open'); });
-      cancel.addEventListener('click', function(){ form.classList.remove('open'); motif.value = ''; });
-      confirm.addEventListener('click', function(){
-        if (!motif.value.trim()){ toast('Précise le motif de l\'avoir.'); return; }
-        confirm.disabled = true;
-        postFacturation({
-          type: 'emettre', type_doc: 'avoir', avoir_de: f.numeroComplet, motif: motif.value.trim(),
-        }, function(r){
-          confirm.disabled = false;
-          if (r && r.ok){ toast('✅ Avoir émis pour ' + f.numeroComplet); mfViewOpen(true); }
-          else { toast('❌ ' + ((r && r.message) || 'Émission impossible.')); }
-        }, function(err){ confirm.disabled = false; toast('❌ ' + err); });
-      });
-      card.appendChild(avoirBtn);
-      card.appendChild(form);
-    }
+    mfAppendAvoir(card, f, function(){ mfViewOpen(true); });
     return card;
   }
   function mfViewOpen(keepOpen){
