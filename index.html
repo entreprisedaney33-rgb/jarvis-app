@@ -3893,7 +3893,7 @@
 
 <script>
 (function(){
-  var APPV = 'v3.96';
+  var APPV = 'v3.97';
 
   // Debug : ?debug_modal=1 force l'affichage du modal "nouvelle version" sans attendre un vrai
   // déploiement. Capturé ICI, tout au début, car plus bas (login mémorisé, connexion) le code
@@ -6614,7 +6614,11 @@
   ];
 
   function contratsClose(){ contratsview.classList.remove('open'); }
-  function contratNomAffiche(c){ return c.client || c.residence || '(client non identifié)'; }
+  // 02/09/2026 : repli sur l'adresse quand client ET residence sont vides -- avant ce fix, un
+  // contrat identifie seulement par son adresse (ex. les 4 contrats VMC rattrapes le 29/08)
+  // affichait "(client non identifie)" sur 2 cartes indiscernables l'une de l'autre alors que
+  // l'adresse existe deja en base. "(client non identifie)" ne reste que si les 3 sont vides.
+  function contratNomAffiche(c){ return c.client || c.residence || c.adresse || '(client non identifié)'; }
 
   function contratField(parent, labelText, tag, value){
     var l = document.createElement('label'); l.textContent = labelText; parent.appendChild(l);
