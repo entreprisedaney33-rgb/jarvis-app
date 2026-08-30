@@ -2757,6 +2757,15 @@
      overflow-y. Cap + scroll interne, sans toucher au reste de la fiche ni au layout du chat. */
   #bc-form{display:none; flex-direction:column; gap:9px; padding-top:2px; max-height:60vh; overflow-y:auto; -webkit-overflow-scrolling:touch}
   #bc-form.open{display:flex}
+  /* Point 3 (30/08/2026) : "intervention faite" -- vide et invisible par defaut (.on ajoute par
+     JS seulement si Bruno a au moins un devis accepte en attente de sa declaration). */
+  #bc-interventions{display:none; flex-direction:column; gap:8px; margin-top:10px; padding-top:10px; border-top:0.5px solid var(--hairline)}
+  #bc-interventions.on{display:flex}
+  #bc-int-title{font-size:12.5px; font-weight:700; color:var(--muted)}
+  .bc-int-card{background:#1D1D20; border-radius:12px; padding:12px; display:flex; flex-direction:column; gap:6px}
+  .bc-int-nom{font-size:14px; font-weight:700; color:var(--ink)}
+  .bc-int-objet{font-size:13px; color:var(--muted)}
+  .bc-int-montant{font-size:13px; color:var(--gold-a); font-weight:700}
   #bc-type-toggle{display:flex; gap:6px}
   .bc-type-btn{
     flex:1; font:inherit; font-size:13.5px; font-weight:600; color:var(--muted);
@@ -3095,6 +3104,14 @@
         <button id="bc-cancel" type="button" class="vc-no">Annuler</button>
         <button id="bc-save" type="button" class="vc-ok">Enregistrer</button>
       </div>
+    </div>
+    <!-- Point 3 (30/08/2026, point 4b d'origine) : "intervention faite" -- seule exception au
+         perimetre "ecran de Bruno inchange", volontaire. Liste SES devis (dictes par lui,
+         acceptes par Mickael), en attente de sa propre declaration -- invisible tant qu'il n'y a
+         rien a declarer (jamais un cadre vide sur son ecran). -->
+    <div id="bc-interventions">
+      <div id="bc-int-title">📋 Interventions à déclarer terminées</div>
+      <div id="bc-int-list"></div>
     </div>
   </div>
   <!-- Bloc C (audit UX 21/08/2026) : Point du jour, meme emplacement structurel que #brunoClient
@@ -3868,7 +3885,7 @@
 
 <script>
 (function(){
-  var APPV = 'v3.93';
+  var APPV = 'v3.94';
 
   // Debug : ?debug_modal=1 force l'affichage du modal "nouvelle version" sans attendre un vrai
   // déploiement. Capturé ICI, tout au début, car plus bas (login mémorisé, connexion) le code
@@ -4301,7 +4318,13 @@
       { selector: '#bc-save', open: '#bc-new-btn', close: '#bc-cancel', title: 'Enregistrer',
         text: 'Une fois rempli, appuie ici pour valider la fiche.' },
       { selector: '#textin', title: 'Et maintenant ?',
-        text: 'Écris ce qu’il faut faire chez ce client. Tu peux aussi utiliser le micro de ton clavier pour le dicter. Jarvis prépare le devis, Mickael le valide.' }
+        text: 'Écris ce qu’il faut faire chez ce client. Tu peux aussi utiliser le micro de ton clavier pour le dicter. Jarvis prépare le devis, Mickael le valide.' },
+      // Point 3 (30/08/2026) : cible #bc-summary (TOUJOURS visible) plutôt que #bc-interventions
+      // (masqué tant qu'aucun devis n'est accepté) -- sinon cette étape serait silencieusement
+      // sautée au tout premier lancement de Bruno (aucun devis accepté le jour où il découvre
+      // l'app), et il ne verrait jamais l'explication.
+      { selector: '#bc-summary', title: 'Une fois le travail fini',
+        text: 'Quand Mickael aura accepté un devis que tu as dicté, il apparaîtra en bas de cet écran avec un bouton « ✅ Intervention faite ». Appuie dessus une fois le travail terminé chez le client.' }
     ]
   };
   function brunoTutoSeen(){ return read('mcsBrunoTutoSeen') === '1'; }
@@ -4386,6 +4409,10 @@
   function API_NOTES(){ return 'https://n8n-self-hosted-t0pz.onrender.com/webhook/' + (isMcsCode() ? 'mcs-notes-liste' : 'notes-liste'); }
   var API_DEVIS_FACTURES = 'https://n8n-self-hosted-t0pz.onrender.com/webhook/mcs-devis-factures';
   var API_DEVIS_VALIDER = 'https://n8n-self-hosted-t0pz.onrender.com/webhook/mcs-devis-valider';
+  // Point 3 (30/08/2026) : route dediee et separee de API_DEVIS_VALIDER (celle-ci reste
+  // patron-seul, confirmer/rejeter/accepter -- jamais touchee). "Terminer" une intervention
+  // ne valide ni n'envoie rien, c'est pour ca que Bruno (role salarie) peut l'appeler.
+  var API_DEVIS_INTERVENTION = 'https://n8n-self-hosted-t0pz.onrender.com/webhook/mcs-devis-intervention';
   var API_RENTABILITE = 'https://n8n-self-hosted-t0pz.onrender.com/webhook/mcs-rentabilite';
   var API_RELANCES = 'https://n8n-self-hosted-t0pz.onrender.com/webhook/mcs-relances';
   var API_RELANCES_ACTION = 'https://n8n-self-hosted-t0pz.onrender.com/webhook/mcs-relances-action';
@@ -4657,6 +4684,7 @@
   function postDevisFactures(payload, onOk, onErr){ postDevisWeb(API_DEVIS_FACTURES, payload, onOk, onErr); }
   function postFacturation(payload, onOk, onErr){ postDevisWeb(API_FACTURATION, payload, onOk, onErr); }
   function postDevisValider(payload, onOk, onErr){ postDevisWeb(API_DEVIS_VALIDER, payload, onOk, onErr); }
+  function postDevisIntervention(payload, onOk, onErr){ postDevisWeb(API_DEVIS_INTERVENTION, payload, onOk, onErr); }
   function postRentabilite(payload, onOk, onErr){ postDevisWeb(API_RENTABILITE, payload, onOk, onErr); }
   function postRelances(payload, onOk, onErr){ postDevisWeb(API_RELANCES, payload, onOk, onErr); }
   function postRelancesAction(payload, onOk, onErr){ postDevisWeb(API_RELANCES_ACTION, payload, onOk, onErr); }
@@ -5187,6 +5215,8 @@
     document.body.classList.toggle('bruno-mode', mcsSalarie);
     // Tutoriel Bruno (2026-08-13) : bouton ❓ permanent + lancement auto la toute 1ere fois.
     if (mcsSalarie) installBrunoTuto();
+    // Point 3 (30/08/2026) : charge ses interventions en attente de declaration a l'ouverture.
+    if (mcsSalarie) bcIntLoad();
     // "Signaler un bug / remarque" (2026-08-13) : patron ET salarié (contrairement au toggle
     // tutoriels réservé au patron) -- jamais le compte principal. Gating à part, pas calqué sur
     // le bloc `mcs && role === 'patron'` du reste de ce fichier.
@@ -12799,6 +12829,40 @@
       bcErr.textContent = err || "Impossible d'enregistrer le client.";
     });
   });
+
+  // ---- Point 3 (30/08/2026) : "intervention faite" -- SEULE exception au perimetre "ecran de
+  // Bruno inchange" (volontaire). Il declare terminee une intervention issue d'un devis QU'IL A
+  // DICTE et que Mickael a ACCEPTE -- il ne facture rien, ne valide rien, n'envoie rien (le
+  // garde-fou existant "Bruno ne peut jamais valider un envoi" reste sur mcs-devis-valider,
+  // jamais touche ici). Invisible tant qu'il n'y a rien a declarer.
+  var bcInterventions = document.getElementById('bc-interventions');
+  var bcIntList = document.getElementById('bc-int-list');
+  function bcIntCard(item){
+    var card = document.createElement('div'); card.className = 'bc-int-card';
+    var nom = document.createElement('span'); nom.className = 'bc-int-nom'; nom.textContent = item.nom || '(client non précisé)';
+    card.appendChild(nom);
+    if (item.objet){ var objet = document.createElement('span'); objet.className = 'bc-int-objet'; objet.textContent = item.objet; card.appendChild(objet); }
+    if (item.montant){ var montant = document.createElement('span'); montant.className = 'bc-int-montant'; montant.textContent = item.montant + ' € TTC'; card.appendChild(montant); }
+    var btn = document.createElement('button'); btn.type = 'button'; btn.className = 'vc-ok';
+    btn.style.marginTop = '4px'; btn.textContent = '✅ Intervention faite';
+    btn.addEventListener('click', function(){
+      btn.disabled = true; btn.textContent = 'Enregistrement…';
+      postDevisIntervention({ type: 'terminer', token: item.token }, function(r){
+        if (r && r.ok){ toast('✅ Intervention déclarée terminée pour ' + (item.nom || 'ce client')); bcIntLoad(); }
+        else { btn.disabled = false; btn.textContent = '✅ Intervention faite'; toast('❌ ' + ((r && r.message) || 'Impossible.')); }
+      }, function(err){ btn.disabled = false; btn.textContent = '✅ Intervention faite'; toast('❌ ' + err); });
+    });
+    card.appendChild(btn);
+    return card;
+  }
+  function bcIntLoad(){
+    postDevisIntervention({ type: 'liste' }, function(r){
+      var items = (r && r.ok && r.items) || [];
+      bcIntList.innerHTML = '';
+      items.forEach(function(it){ bcIntList.appendChild(bcIntCard(it)); });
+      bcInterventions.classList.toggle('on', items.length > 0);
+    }, function(){ /* silencieux : jamais bloquant pour le reste de l'ecran de Bruno */ });
+  }
 
   // Badge du menu = nombre d'emails "important" pas encore traites (vient de la reponse history)
   var menuEmailBadge = document.getElementById('menu-email-badge');
