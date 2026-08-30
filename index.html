@@ -2723,6 +2723,8 @@
     align-self:flex-start; background:rgba(255,69,58,.13); color:#FF453A; border:0.5px solid rgba(255,69,58,.35);
     border-radius:10px; padding:8px 12px; font:inherit; font-size:12.5px; font-weight:700; cursor:pointer;
     -webkit-tap-highlight-color:transparent;
+    /* 30/08/2026 (verif visuelle 375/360px) : mesuré 34px de haut, sous le seuil tactile de 44px. */
+    min-height:44px; display:inline-flex; align-items:center;
   }
   .mf-avoir-form{display:none; flex-direction:column; gap:6px; margin-top:4px}
   .mf-avoir-form.open{display:flex}
@@ -3891,7 +3893,7 @@
 
 <script>
 (function(){
-  var APPV = 'v3.95';
+  var APPV = 'v3.96';
 
   // Debug : ?debug_modal=1 force l'affichage du modal "nouvelle version" sans attendre un vrai
   // déploiement. Capturé ICI, tout au début, car plus bas (login mémorisé, connexion) le code
