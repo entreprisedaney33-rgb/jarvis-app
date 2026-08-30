@@ -2726,6 +2726,12 @@
   }
   .mf-avoir-form{display:none; flex-direction:column; gap:6px; margin-top:4px}
   .mf-avoir-form.open{display:flex}
+  /* Point 4 (30/08/2026) : "Facturer ce devis" -- meme principe de recap-avant-confirmation que
+     l'avoir (mf-avoir-form), classes dediees pour rester lisible dans un contexte different
+     (.devis-card, pas .mf-card). */
+  .dv-fac-recap{display:none; flex-direction:column; gap:6px; margin-top:6px}
+  .dv-fac-recap.open{display:flex}
+  .dv-fac-recap-txt{font-size:13px; color:var(--muted)}
   .mf-avoir-form textarea{
     font:inherit; font-size:13px; color:var(--ink); background:#2E2E32;
     border:0.5px solid rgba(255,255,255,.18); border-radius:10px; padding:8px 10px; box-sizing:border-box; resize:vertical; min-height:44px;
@@ -3885,7 +3891,7 @@
 
 <script>
 (function(){
-  var APPV = 'v3.94';
+  var APPV = 'v3.95';
 
   // Debug : ?debug_modal=1 force l'affichage du modal "nouvelle version" sans attendre un vrai
   // déploiement. Capturé ICI, tout au début, car plus bas (login mémorisé, connexion) le code
@@ -4413,6 +4419,11 @@
   // patron-seul, confirmer/rejeter/accepter -- jamais touchee). "Terminer" une intervention
   // ne valide ni n'envoie rien, c'est pour ca que Bruno (role salarie) peut l'appeler.
   var API_DEVIS_INTERVENTION = 'https://n8n-self-hosted-t0pz.onrender.com/webhook/mcs-devis-intervention';
+  // Point 4 (30/08/2026) : "Facturer ce devis" -- prepare/valide UNIQUEMENT (aucun numero
+  // consomme ici), reutilise le devis (client/lignes/prix/TVA) sans rien ressaisir. L'emission
+  // reelle passe ensuite par API_FACTURATION (postFacturation), exactement le meme chemin deja
+  // utilise par l'avoir et la facture directe -- jamais duplique.
+  var API_DEVIS_FACTURER = 'https://n8n-self-hosted-t0pz.onrender.com/webhook/mcs-devis-facturer';
   var API_RENTABILITE = 'https://n8n-self-hosted-t0pz.onrender.com/webhook/mcs-rentabilite';
   var API_RELANCES = 'https://n8n-self-hosted-t0pz.onrender.com/webhook/mcs-relances';
   var API_RELANCES_ACTION = 'https://n8n-self-hosted-t0pz.onrender.com/webhook/mcs-relances-action';
@@ -4685,6 +4696,7 @@
   function postFacturation(payload, onOk, onErr){ postDevisWeb(API_FACTURATION, payload, onOk, onErr); }
   function postDevisValider(payload, onOk, onErr){ postDevisWeb(API_DEVIS_VALIDER, payload, onOk, onErr); }
   function postDevisIntervention(payload, onOk, onErr){ postDevisWeb(API_DEVIS_INTERVENTION, payload, onOk, onErr); }
+  function postDevisFacturer(payload, onOk, onErr){ postDevisWeb(API_DEVIS_FACTURER, payload, onOk, onErr); }
   function postRentabilite(payload, onOk, onErr){ postDevisWeb(API_RENTABILITE, payload, onOk, onErr); }
   function postRelances(payload, onOk, onErr){ postDevisWeb(API_RELANCES, payload, onOk, onErr); }
   function postRelancesAction(payload, onOk, onErr){ postDevisWeb(API_RELANCES_ACTION, payload, onOk, onErr); }
@@ -6297,7 +6309,10 @@
   var devisActiveTab = 'avalider';
   var devisFilterDevisVal = 'attente'; // choix unique : attente OU valides (rejetés jamais affichés, sur demande de Mathéo)
   var devisFilterFactures = { payees:true, impayees:true };
-  function devisCatDevis(dv){ return (dv.statut === 'brouillon' || dv.statut === 'envoye') ? 'attente' : (dv.statut === 'accepte' ? 'valides' : 'rejetes'); }
+  // Point 4 (30/08/2026) : intervention_faite ajoute a "valides" -- meme famille qu'accepte
+  // (etape suivante du meme parcours positif), sinon il tombait dans "rejetes" qui n'est JAMAIS
+  // affiche (choix explicite de Mathéo) -- le geste "Facturer ce devis" aurait ete invisible.
+  function devisCatDevis(dv){ return (dv.statut === 'brouillon' || dv.statut === 'envoye') ? 'attente' : ((dv.statut === 'accepte' || dv.statut === 'intervention_faite') ? 'valides' : 'rejetes'); }
   function devisCatFacture(f){ return f.paye ? 'payees' : 'impayees'; }
   function devisAttenteClose(){ devisview.classList.remove('open'); }
   function fmtDevisDate(iso){
@@ -6350,7 +6365,7 @@
   }
   // Point 4a (30/08/2026) : "Accepté (MEG)" devenait trompeur -- un devis Jarvis peut desormais
   // etre marque accepte par un geste manuel, pas seulement lu depuis un import MEG.
-  var DEVIS_STATUT_LABEL = { envoye: 'Envoyé', rejete: 'Rejeté', accepte: 'Accepté', brouillon: 'Devis MEG (en attente)' };
+  var DEVIS_STATUT_LABEL = { envoye: 'Envoyé', rejete: 'Rejeté', accepte: 'Accepté', brouillon: 'Devis MEG (en attente)', intervention_faite: 'Intervention faite' };
   function devisRenderRowDevis(dv){
     var row = document.createElement('div'); row.className = 'devis-card';
     var top = document.createElement('div'); top.className = 'df-row-top';
@@ -6384,6 +6399,44 @@
         }, function(err){ accBtn.disabled = false; toast(err); });
       });
       row.appendChild(accBtn);
+    }
+    // Point 4 (30/08/2026, point 4c d'origine -- LE point sensible) : "Facturer ce devis".
+    // Ordre impose : accepte -> intervention faite -> facturable (dv.statut==='intervention_faite'
+    // ne peut structurellement etre atteint qu'apres 'accepte', cf. Point 3). Reprend TOUT du
+    // devis (client/lignes/prix/TVA) via mcs-devis-facturer -- si un champ manque, refus honnete
+    // et nomme, jamais de saisie ici. L'emission reelle (le vrai clic qui consomme un numero)
+    // passe par postFacturation, EXACTEMENT le meme chemin deja utilise par l'avoir et la facture
+    // directe (deja gate patron seul + deja protege par le garde-fou de reservation existant).
+    if (dv.source === 'jarvis' && dv.statut === 'intervention_faite' && dv.token){
+      var facBtn = document.createElement('button'); facBtn.type = 'button'; facBtn.className = 'vc-ok';
+      facBtn.style.marginTop = '8px'; facBtn.style.width = '100%'; facBtn.textContent = '🧾 Facturer ce devis';
+      var facRecap = document.createElement('div'); facRecap.className = 'dv-fac-recap';
+      var facTxt = document.createElement('span'); facTxt.className = 'dv-fac-recap-txt';
+      var facConfirm = document.createElement('button'); facConfirm.type = 'button'; facConfirm.className = 'vc-ok';
+      facConfirm.style.width = '100%'; facConfirm.textContent = 'Confirmer la facturation';
+      facRecap.appendChild(facTxt); facRecap.appendChild(facConfirm);
+      var facPayload = null;
+      facBtn.addEventListener('click', function(){
+        facBtn.disabled = true; facBtn.textContent = 'Vérification…';
+        postDevisFacturer({ type: 'preparer', token: dv.token }, function(r){
+          facBtn.disabled = false; facBtn.textContent = '🧾 Facturer ce devis';
+          if (!r || !r.ok){ toast('❌ ' + ((r && r.message) || 'Impossible de préparer la facture.')); return; }
+          facPayload = r.payload;
+          facTxt.textContent = 'Facturer ' + r.recap.clientNom + ' — ' + r.recap.montantTtc + ' € TTC — série ' + r.recap.serie + '.';
+          facRecap.classList.add('open');
+        }, function(err){ facBtn.disabled = false; facBtn.textContent = '🧾 Facturer ce devis'; toast('❌ ' + err); });
+      });
+      facConfirm.addEventListener('click', function(){
+        if (!facPayload) return;
+        facConfirm.disabled = true; facConfirm.textContent = 'Émission…';
+        postFacturation({ type: 'emettre', type_doc: 'facture', client: facPayload.client, objet: facPayload.objet, lignes: facPayload.lignes, devis_origine_token: facPayload.devis_origine_token }, function(r){
+          facConfirm.disabled = false; facConfirm.textContent = 'Confirmer la facturation';
+          if (r && r.ok){ toast('✅ Facture émise pour ' + (facPayload.client && facPayload.client.nom)); devisAttenteOpen(); }
+          else { toast('❌ ' + ((r && r.message) || 'Émission impossible.')); }
+        }, function(err){ facConfirm.disabled = false; facConfirm.textContent = 'Confirmer la facturation'; toast('❌ ' + err); });
+      });
+      row.appendChild(facBtn);
+      row.appendChild(facRecap);
     }
     return row;
   }
