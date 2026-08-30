@@ -1165,6 +1165,11 @@
   #relances-fraicheur{font-size:12px; color:var(--muted); text-align:center; margin:8px 14px 0; padding:6px 10px; border-radius:10px; background:var(--surface)}
   #relances-fraicheur.stale{color:var(--gold-a); background:rgba(var(--gold-rgb),.12)}
   #relances-fraicheur.perime{color:var(--no); background:rgba(255,69,58,.12)}
+  /* Point 5 (30/08/2026) : la banniere de fraicheur perimee posait une question sans bouton
+     ("depose un export frais") -- Mickael ne peut pas deposer un export lui-meme (import externe
+     gere par l'equipe), donc un vrai geste utile = copier un message pret a transmettre plutot
+     qu'inventer une action qu'il ne peut pas accomplir. */
+  #relances-fraicheur-copy{display:block; margin:6px auto 0; padding:6px 12px; font-size:11.5px; font-weight:600; border-radius:8px; border:0; cursor:pointer; background:rgba(255,255,255,.1); color:inherit; -webkit-tap-highlight-color:transparent}
   #relances-summary{text-align:center; margin:10px 14px 0}
   /* Point 3 (audit UX 29/08/2026) : le montant a recuperer devient l'element dominant de
      l'onglet (avant : 12.5px --muted, plus discret que les libelles des cartes en dessous --
@@ -1541,6 +1546,7 @@
   .rel-top{display:flex; align-items:center; gap:8px; flex-wrap:wrap}
   .rel-nom{font-size:15px; font-weight:700}
   .rel-badge{font-size:11px; font-weight:700; padding:3px 9px; border-radius:99px; background:#2E2E32; color:var(--muted); text-transform:capitalize}
+  .rel-badge-averifier{background:rgba(var(--gold-rgb),.16); color:var(--gold-a); text-transform:none}
   .rel-resume{font-size:13.5px; color:var(--ink); display:block; margin-top:6px; line-height:1.4}
   .rel-meta{font-size:12px; color:var(--muted); display:block; margin-top:6px}
   .rel-promesse{font-size:12.5px; color:var(--gold-a); display:block; margin-top:6px}
@@ -3279,7 +3285,7 @@
     <button id="devis-close" type="button" aria-label="Fermer">✕</button>
   </div>
   <div id="devis-tabs">
-    <button class="devis-tab active" data-tab="avalider" type="button">À valider</button>
+    <button class="devis-tab active" data-tab="avalider" type="button">Devis à valider/envoyer</button>
     <button class="devis-tab" data-tab="devis" type="button">Devis</button>
     <button class="devis-tab" data-tab="factures" type="button">Factures</button>
   </div>
@@ -3424,7 +3430,7 @@
          client a repondu). -->
     <button class="devis-tab" data-tab="termines" type="button">Relancées 2×</button>
   </div>
-  <p id="relances-fraicheur"></p>
+  <div id="relances-fraicheur"><span id="relances-fraicheur-txt"></span><button id="relances-fraicheur-copy" type="button" style="display:none">📋 Copier pour l’équipe</button></div>
   <div id="relances-search-wrap">
     <input id="relances-search" type="search" inputmode="search" placeholder="🔍 Rechercher un client…" autocomplete="off" autocapitalize="off" autocorrect="off">
   </div>
@@ -3851,7 +3857,7 @@
 
 <script>
 (function(){
-  var APPV = 'v3.88';
+  var APPV = 'v3.89';
 
   // Debug : ?debug_modal=1 force l'affichage du modal "nouvelle version" sans attendre un vrai
   // déploiement. Capturé ICI, tout au début, car plus bas (login mémorisé, connexion) le code
@@ -6353,7 +6359,7 @@
     document.getElementById('devis-testmode-banniere').style.display = devisData.testMode ? '' : 'none';
     if (devisActiveTab === 'avalider'){
       var itemsA = (devisData.aValider || []).filter(function(dv){ return !q || normDoc(dv.nom).indexOf(q) !== -1; });
-      if (!itemsA.length){ devisList.innerHTML = '<p id="devis-empty">Aucun devis en attente.</p>'; return; }
+      if (!itemsA.length){ devisList.innerHTML = '<p id="devis-empty">Aucun devis à valider ou à envoyer pour le moment.</p>'; return; }
       itemsA.forEach(function(dv){ devisList.appendChild(devisBuildCardAValider(dv)); });
     } else if (devisActiveTab === 'devis'){
       var itemsD = (devisData.devis || []).filter(function(dv){ return devisCatDevis(dv) === devisFilterDevisVal && (!q || normDoc(dv.nom).indexOf(q) !== -1); });
@@ -7699,6 +7705,15 @@
     relancesSummary.appendChild(m); relancesSummary.appendChild(r);
   }
   var relancesFraicheur = document.getElementById('relances-fraicheur');
+  var relancesFraicheurTxt = document.getElementById('relances-fraicheur-txt');
+  var relancesFraicheurCopyBtn = document.getElementById('relances-fraicheur-copy');
+  var relancesFraicheurMessage = '';
+  if (relancesFraicheurCopyBtn) relancesFraicheurCopyBtn.addEventListener('click', function(){
+    var msg = relancesFraicheurMessage || 'Peux-tu déposer un export MEG frais pour les relances MCS ?';
+    if (navigator.clipboard && navigator.clipboard.writeText){
+      navigator.clipboard.writeText(msg).then(function(){ toast('📋 Copié — colle-le où tu veux (SMS, WhatsApp…)'); }).catch(function(){ toast('Copie impossible'); });
+    } else { toast('Copie non prise en charge'); }
+  });
   var relancesData = [];
   var relancesBrouillons = [];
   // Audit perf 28/08/2026 : le badge de menu appelait le meme calcul complet (postRelances({}))
@@ -7748,23 +7763,29 @@
     // recu_le a jour alors que les donnees avaient 26 jours -- c'est cette confusion
     // qu'on corrige ici, pas seulement cote serveur.
     relancesFraicheurEtat = fraicheurEtat || 'perime';
-    if (!relancesFraicheur) return;
+    if (!relancesFraicheur || !relancesFraicheurTxt) return;
     relancesFraicheur.className = '';
+    // Point 5 (30/08/2026) : le bouton "Copier pour l'équipe" n'a de sens QUE sur l'etat
+    // 'perime' -- Mickael ne peut rien faire lui-meme d'un export "a verifier" ou "fraiche",
+    // masque sinon (jamais un bouton qui ne repond a rien).
+    if (relancesFraicheurCopyBtn) relancesFraicheurCopyBtn.style.display = 'none';
     if (!exportDonneesDu || joursEcoulesExport == null){
-      relancesFraicheur.textContent = '⚠️ Date d’import inconnue';
+      relancesFraicheurTxt.textContent = '⚠️ Date d’import inconnue';
       relancesFraicheur.classList.add('perime');
       return;
     }
     var d = new Date(exportDonneesDu);
     var dStr = isNaN(d.getTime()) ? '' : d.toLocaleDateString('fr-FR');
     if (relancesFraicheurEtat === 'perime'){
-      relancesFraicheur.textContent = 'Dernier export MEG du ' + dStr + ' (' + joursEcoulesExport + ' j) — Dépose un export frais pour voir les relances à jour.';
+      relancesFraicheurTxt.textContent = 'Dernier export MEG du ' + dStr + ' (' + joursEcoulesExport + ' j).';
       relancesFraicheur.classList.add('perime');
+      relancesFraicheurMessage = 'Peux-tu déposer un export MEG frais pour les relances MCS ? Le dernier date du ' + dStr + ' (' + joursEcoulesExport + ' j).';
+      if (relancesFraicheurCopyBtn) relancesFraicheurCopyBtn.style.display = '';
     } else if (relancesFraicheurEtat === 'a_verifier'){
-      relancesFraicheur.textContent = 'Données MEG du ' + dStr + ' (' + joursEcoulesExport + ' j) — vérifie avant d’envoyer une relance.';
+      relancesFraicheurTxt.textContent = 'Données MEG du ' + dStr + ' (' + joursEcoulesExport + ' j) — vérifie avant d’envoyer une relance.';
       relancesFraicheur.classList.add('stale');
     } else {
-      relancesFraicheur.textContent = 'Relances au ' + dStr + (joursEcoulesExport > 0 ? ' (' + joursEcoulesExport + ' j)' : '');
+      relancesFraicheurTxt.textContent = 'Relances au ' + dStr + (joursEcoulesExport > 0 ? ' (' + joursEcoulesExport + ' j)' : '');
     }
   }
   function fmtRelanceDateFr(s){
@@ -7859,6 +7880,16 @@
     relancesAppendTexteSource(box, rr.citation, rr.resume);
     card.appendChild(box);
   }
+  // 5a/5b (30/08/2026, gros chantier -- Point 5 "aucune question sans le bouton qui y repond") :
+  // la question posee ci-dessous porte desormais ses 2 reponses reelles, branchees sur les
+  // memes actions serveur que le reste de l'ecran (jamais dupliquees, juste reutilisees) --
+  // "Envoyer maintenant" = action 'envoyer' (armee avant confirmation, meme discipline que
+  // l'annulation de devis, cf. annulerDevis plus haut) ; "Attendre pour grouper" = action
+  // 'suspendre' sur TOUT le groupe, avec la date PRE-CALCULEE depuis pe.joursDans (le meme
+  // nombre deja affiche dans le texte -- pas une nouvelle donnee jugee cote client, juste
+  // convertie en date). LE CHOIX EST ENREGISTRE : une fois "Attendre" confirme, le groupe passe
+  // "Suspendue" et relancesBuildCard() (voir plus bas) ne rappelle plus cette fonction tant qu'il
+  // l'est -- la question ne revient pas a l'identique le lendemain.
   function relancesAppendEcheanceSignal(card, b){
     if (!b.prochaineEcheance) return;
     var pe = b.prochaineEcheance;
@@ -7866,7 +7897,55 @@
     var txt = pe.nombre === 1
       ? ('📅 Une autre facture (' + fmtEuros(pe.montant) + ') atteindra 30 jours de retard dans ' + pe.joursDans + ' j.')
       : ('📅 ' + pe.nombre + ' autres factures (' + fmtEuros(pe.montant) + ') atteindront 30 jours de retard d’ici ' + pe.joursDans + ' j.');
-    box.textContent = txt + ' Envoyer maintenant, ou attendre pour grouper ?';
+    box.textContent = txt;
+    var row = document.createElement('div'); row.className = 'rl-btn-row2'; row.style.marginTop = '8px';
+    var envBtn2 = null;
+    if (b.destinataire){
+      envBtn2 = document.createElement('button'); envBtn2.type = 'button'; envBtn2.className = 'rl-btn-envoyer';
+      envBtn2.textContent = 'Envoyer maintenant';
+      var arme = false, armeTimer = null;
+      envBtn2.addEventListener('click', function(){
+        if (!arme){
+          arme = true; envBtn2.textContent = 'Confirmer l’envoi ?';
+          armeTimer = setTimeout(function(){ arme = false; envBtn2.textContent = 'Envoyer maintenant'; }, 4000);
+          return;
+        }
+        clearTimeout(armeTimer);
+        envBtn2.disabled = true; if (attBtn) attBtn.disabled = true; envBtn2.textContent = 'Envoi…';
+        postRelancesAction({ cle: b.cle, action: 'envoyer', avecDuplicata: false }, function(r){
+          if (r && r.ok){
+            toast(r.testMode
+              ? ('🧪 Test envoyé à ' + (r.destinataireReel || b.destinataire) + ' — redirigé, n’a pas atteint le client, niveau inchangé.')
+              : ('✅ Envoyé à ' + (r.destinataireReel || b.destinataire)));
+            relancesOpen(true);
+          } else {
+            arme = false; envBtn2.disabled = false; if (attBtn) attBtn.disabled = false; envBtn2.textContent = 'Envoyer maintenant';
+            toast('❌ ' + ((r && r.error) || 'Échec de l’envoi.'));
+          }
+        }, function(err){ arme = false; envBtn2.disabled = false; if (attBtn) attBtn.disabled = false; envBtn2.textContent = 'Envoyer maintenant'; toast('❌ ' + err); });
+      });
+      row.appendChild(envBtn2);
+    }
+    var attBtn = document.createElement('button'); attBtn.type = 'button'; attBtn.className = 'rl-btn-suspendre2';
+    attBtn.textContent = 'Attendre pour grouper';
+    attBtn.addEventListener('click', function(){
+      attBtn.disabled = true; if (envBtn2) envBtn2.disabled = true; attBtn.textContent = 'Groupage…';
+      var d = new Date(); d.setDate(d.getDate() + pe.joursDans);
+      var dateIso = d.toISOString().slice(0, 10);
+      var note = 'Groupé avec la prochaine échéance à 30 j (dans ' + pe.joursDans + ' j).';
+      var restant = b.factures.length; var echoue = false;
+      b.factures.forEach(function(f){
+        postRelancesAction({ numero: f.numero, action: 'suspendre', suspenduJusquau: dateIso, note: note }, function(){
+          restant--;
+          if (restant === 0 && !echoue){
+            toast('⏸ Groupé — reprise prévue le ' + fmtRelanceDateFr(dateIso) + '.');
+            relancesOpen(true);
+          }
+        }, function(err){ echoue = true; attBtn.disabled = false; if (envBtn2) envBtn2.disabled = false; attBtn.textContent = 'Attendre pour grouper'; toast(err); });
+      });
+    });
+    row.appendChild(attBtn);
+    box.appendChild(row);
     card.appendChild(box);
   }
   // Champ de brouillon editable — objet + corps, sauvegarde automatique au blur (meme principe
@@ -8295,8 +8374,10 @@
     relancesAppendEchangeArgent(card, b);
     // 6bis) Reponse a une relance (R-1/R-2, 26/08/2026) -- detection separee, silence si rien
     relancesAppendReponseRelance(card, b);
-    // 7) Signal d'echeance proche
-    relancesAppendEcheanceSignal(card, b);
+    // 7) Signal d'echeance proche -- Point 5b (30/08/2026) : jamais si deja suspendu (le choix
+    // "attendre" a deja ete pris et enregistre ; le reposer serait la meme question qui revient
+    // a l'identique -- et sans destinataire ni action d'envoi possibles sur une carte suspendue).
+    if (!suspendu) relancesAppendEcheanceSignal(card, b);
     if (estQuestion){
       relancesAppendQuestion(card, b);
     }
@@ -8739,6 +8820,11 @@
     var nom = document.createElement('span'); nom.className = 'rel-nom'; nom.textContent = titre;
     top.appendChild(nom);
     if (r.role){ var badge = document.createElement('span'); badge.className = 'rel-badge'; badge.textContent = r.role; top.appendChild(badge); }
+    // Point 1c (gros chantier 30/08/2026) : les fiches "jamais ecrit, aucun signal de diffusion"
+    // sont desormais VISIBLES (avant : masquees comme les vraies diffusions -- un vrai client
+    // joint uniquement par telephone se retrouvait enterre). Ce badge les distingue sans les
+    // cacher : Mickael voit tout, avec un signal de prudence sur celles jamais confirmees par ecrit.
+    if (r.aEcrit === false){ var bAverifier = document.createElement('span'); bAverifier.className = 'rel-badge rel-badge-averifier'; bAverifier.textContent = '🔍 à vérifier'; top.appendChild(bAverifier); }
     card.appendChild(top);
     if (r.resume){ var resume = document.createElement('span'); resume.className = 'rel-resume'; resume.textContent = r.resume; card.appendChild(resume); }
     var metaBits = [];
@@ -8910,6 +8996,15 @@
     var envoyer = document.createElement('button'); envoyer.type = 'button'; envoyer.className = 'vc-no'; envoyer.textContent = '✉️ Envoyer par mail';
     envoyer.addEventListener('click', function(){ docrefEnvoyerPrompt(d); });
     actions.appendChild(envoyer);
+    // Point 5 (30/08/2026) : le badge d'expiration ("Expire dans X j" / "Expiré depuis...")
+    // signalait sans jamais offrir de geste -- ni "Voir" ni "Envoyer" n'y répondent. Le bouton
+    // n'apparaît QUE si une échéance est proche ou passée (classe bientot/perime), jamais sur un
+    // document valide sans besoin d'attention.
+    if (expInfo && (expInfo.classe === 'docref-exp-bientot' || expInfo.classe === 'docref-exp-perime')){
+      var renouv = document.createElement('button'); renouv.type = 'button'; renouv.className = 'vc-no'; renouv.textContent = '📅 Renouveler';
+      renouv.addEventListener('click', function(){ docrefRenouvelerPrompt(d); });
+      actions.appendChild(renouv);
+    }
     var del = document.createElement('button'); del.type = 'button'; del.className = 'docref-del'; del.textContent = '✕';
     del.addEventListener('click', function(){
       del.disabled = true;
@@ -8931,6 +9026,23 @@
     if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(dest)){ toast('Adresse email invalide.'); return; }
     postDocref({ type:'envoyer', id: d.id, destinataire: dest }, function(){
       toast('✅ Envoyé à ' + dest);
+    }, function(err){ toast(err); });
+  }
+
+  // Point 5 (30/08/2026) : reponse reelle au badge d'expiration -- meme pattern (window.prompt)
+  // que docrefEnvoyerPrompt juste au-dessus, pour rester coherent avec ce qui existe deja. Ne
+  // touche QUE la date (nouvelle action serveur dediee, ne re-uploade jamais le fichier).
+  function docrefRenouvelerPrompt(d){
+    var actuelle = d.dateExpiration ? new Date(d.dateExpiration + 'T00:00:00').toLocaleDateString('fr-FR') : '';
+    var saisie = window.prompt('Nouvelle date d’expiration pour « ' + d.nom + ' » (JJ/MM/AAAA) :', actuelle);
+    if (saisie === null) return;
+    saisie = saisie.trim();
+    var m = saisie.match(/^(\d{2})\/(\d{2})\/(\d{4})$/);
+    if (!m){ toast('Date invalide — format attendu JJ/MM/AAAA.'); return; }
+    var iso = m[3] + '-' + m[2] + '-' + m[1];
+    if (isNaN(new Date(iso + 'T00:00:00').getTime())){ toast('Date invalide.'); return; }
+    postDocref({ type:'modifier_expiration', id: d.id, dateExpiration: iso }, function(){
+      toast('📅 Date mise à jour.'); docrefLoad();
     }, function(err){ toast(err); });
   }
 
