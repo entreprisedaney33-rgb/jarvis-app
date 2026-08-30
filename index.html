@@ -3868,7 +3868,7 @@
 
 <script>
 (function(){
-  var APPV = 'v3.91';
+  var APPV = 'v3.92';
 
   // Debug : ?debug_modal=1 force l'affichage du modal "nouvelle version" sans attendre un vrai
   // déploiement. Capturé ICI, tout au début, car plus bas (login mémorisé, connexion) le code
@@ -6318,7 +6318,9 @@
       }
     }, function(err){ okBtn.disabled = false; noBtn.disabled = false; toast(err); });
   }
-  var DEVIS_STATUT_LABEL = { envoye: 'Envoyé', rejete: 'Rejeté', accepte: 'Accepté (MEG)', brouillon: 'Devis MEG (en attente)' };
+  // Point 4a (30/08/2026) : "Accepté (MEG)" devenait trompeur -- un devis Jarvis peut desormais
+  // etre marque accepte par un geste manuel, pas seulement lu depuis un import MEG.
+  var DEVIS_STATUT_LABEL = { envoye: 'Envoyé', rejete: 'Rejeté', accepte: 'Accepté', brouillon: 'Devis MEG (en attente)' };
   function devisRenderRowDevis(dv){
     var row = document.createElement('div'); row.className = 'devis-card';
     var top = document.createElement('div'); top.className = 'df-row-top';
@@ -6335,6 +6337,23 @@
       var pdf = document.createElement('a'); pdf.className = 'dv-pdf'; pdf.textContent = '📄 Voir le PDF'; pdf.target = '_blank';
       pdf.href = 'https://n8n-self-hosted-t0pz.onrender.com' + dv.url + '&code=' + encodeURIComponent(String(read('jarvisCode') || '').trim());
       row.appendChild(pdf);
+    }
+    // Point 4a (30/08/2026, gros chantier) : sans ce geste, un devis Jarvis ("source":"jarvis")
+    // ne pouvait JAMAIS devenir "accepte" -- seul un import MEG le pouvait, et a partir de
+    // mardi Mickael ne fait plus ses devis dans MEG. dv.token n'existe que pour les devis
+    // Jarvis (les devis MEG n'ont pas de jeton exploitable ici) -- geste reserve a ce cas.
+    if (dv.source === 'jarvis' && dv.statut === 'envoye' && dv.token){
+      var accBtn = document.createElement('button'); accBtn.type = 'button'; accBtn.className = 'vc-ok'; accBtn.style.marginTop = '8px'; accBtn.style.width = '100%';
+      accBtn.textContent = '✅ Le client a accepté';
+      accBtn.addEventListener('click', function(){
+        accBtn.disabled = true;
+        postDevisValider({ token: dv.token, choix: 'accepter' }, function(){
+          dv.statut = 'accepte';
+          toast('✅ Devis marqué accepté');
+          devisApplyFilter();
+        }, function(err){ accBtn.disabled = false; toast(err); });
+      });
+      row.appendChild(accBtn);
     }
     return row;
   }
