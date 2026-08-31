@@ -3905,7 +3905,7 @@
 
 <script>
 (function(){
-  var APPV = 'v4.00';
+  var APPV = 'v4.01';
 
   // Debug : ?debug_modal=1 force l'affichage du modal "nouvelle version" sans attendre un vrai
   // déploiement. Capturé ICI, tout au début, car plus bas (login mémorisé, connexion) le code
@@ -4705,6 +4705,26 @@
           ? 'Connexion impossible. Vérifiez le réseau et réessayez.'
           : 'Jarvis rencontre un problème technique — réessaie dans un instant.');
       });
+  }
+  // Point 3 (31/08/2026, audit vitesse) : meme motif que relancesChargerCalcul (deja en place
+  // depuis l'audit du 28/08, cf. plus bas) -- dedoublonne 2 appels IDENTIQUES lances a quelques
+  // secondes d'ecart (typiquement : le badge du menu qui recalcule tout, puis l'ouverture du
+  // panneau juste apres) pour ne jamais faire tourner 2x le meme calcul lourd en meme temps sur
+  // ce service a ressources limitees (source de contention deja documentee -- vue en reproduisant
+  // par accident l'effet en testant ce jour meme). `etat` = un objet {enVol} prive par appelant ;
+  // un appel deja en vol REJOINT sa file de rappels au lieu d'en relancer un second.
+  function dedupeAppel(etat, poster, payload){
+    return function(onOk, onErr){
+      if (etat.enVol){ etat.enVol.push({ onOk: onOk, onErr: onErr }); return; }
+      etat.enVol = [{ onOk: onOk, onErr: onErr }];
+      poster(payload, function(j){
+        var attente = etat.enVol; etat.enVol = null;
+        attente.forEach(function(cb){ cb.onOk(j); });
+      }, function(err){
+        var attente = etat.enVol; etat.enVol = null;
+        attente.forEach(function(cb){ cb.onErr(err); });
+      });
+    };
   }
   function postDevisFactures(payload, onOk, onErr){ postDevisWeb(API_DEVIS_FACTURES, payload, onOk, onErr); }
   function postFacturation(payload, onOk, onErr){ postDevisWeb(API_FACTURATION, payload, onOk, onErr); }
@@ -6646,11 +6666,13 @@
   // Badge menu (2026-08-10) : meme principe que meuteCheckBadge -- un appel leger au demarrage
   // (patron MCS uniquement, cf. enterApp) pour savoir s'il y a des devis/factures en attente
   // sans attendre que le panneau soit ouvert.
-  function devisCheckBadge(){ postDevisFactures({}, function(j){ devisData = j; devisUpdateBadge(); }, function(){}); }
+  var devisChargeEnVol = {};
+  var devisChargerListe = dedupeAppel(devisChargeEnVol, postDevisFactures, {});
+  function devisCheckBadge(){ devisChargerListe(function(j){ devisData = j; devisUpdateBadge(); }, function(){}); }
   function devisAttenteOpen(){
     devisview.classList.add('open');
     devisList.innerHTML = '<p id="devis-loading">Chargement…</p>';
-    postDevisFactures({}, function(j){
+    devisChargerListe(function(j){
       devisData = j;
       devisApplyFilter();
       devisUpdateBadge();
@@ -9273,10 +9295,12 @@
     }
   }
 
+  var relationsChargeEnVol = {};
+  var relationsChargerListe = dedupeAppel(relationsChargeEnVol, postRelations, {});
   function relationsOpen(){
     relationsview.classList.add('open');
     relationsList.innerHTML = '<p id="relations-loading">Chargement…</p>';
-    postRelations({}, function(j){
+    relationsChargerListe(function(j){
       relationsData = j.relations || [];
       relationsSummary.textContent = relationsData.length
         ? relationsData.length + ' contact' + (relationsData.length > 1 ? 's' : '') + ' connus, construits automatiquement à partir des mails échangés.'
@@ -9295,7 +9319,7 @@
     if (n > 0){ relationsMenuBadge.textContent = n; relationsMenuBadge.style.display = ''; } else { relationsMenuBadge.style.display = 'none'; }
     updateAppBadgeTotal();
   }
-  function relationsCheckBadge(){ postRelations({}, function(j){ relationsUpdateBadge(j.observationsCount); }, function(){}); }
+  function relationsCheckBadge(){ relationsChargerListe(function(j){ relationsUpdateBadge(j.observationsCount); }, function(){}); }
   document.getElementById('relations-close').addEventListener('click', relationsClose);
   document.getElementById('sh-relations').addEventListener('click', function(){ sheetOpen(false); relationsOpen(); });
   document.querySelectorAll('#relations-tabs .rel-tab').forEach(function(btn){
@@ -10321,8 +10345,10 @@
     updateAppBadgeTotal();
   }
 
+  var oppChargeEnVol = {};
+  var oppChargerListe = dedupeAppel(oppChargeEnVol, postOpportunites, { type: 'list' });
   function oppRefresh(){
-    postOpportunites({ type:'list' }, function(j){
+    oppChargerListe(function(j){
       oppAll = oppFiltrerExclus(j.prospects);
       oppRender(); oppUpdateBadge();
     }, function(err){ oppList.innerHTML = '<p id="opp-empty">' + err + '</p>'; });
@@ -10354,7 +10380,7 @@
       oppRefresh();
     }, function(err){ oppRelancerBtn.classList.remove('spin'); oppStatus.classList.remove('show'); toast(err); });
   });
-  function oppCheckBadge(){ postOpportunites({ type:'list' }, function(j){ oppAll = oppFiltrerExclus(j.prospects); oppUpdateBadge(); }, function(){}); }
+  function oppCheckBadge(){ oppChargerListe(function(j){ oppAll = oppFiltrerExclus(j.prospects); oppUpdateBadge(); }, function(){}); }
 
   // ---- Sites Vitrine : COCKPIT DE VENTE (etape 2 du plan, 2026-07-25) ----
   // Appel en 1 tap (tel:) + mail pre-redige envoyable d'1 clic (relu/edite avant envoi, jamais
@@ -12212,6 +12238,12 @@
   }
 
   function calLoadData(){
+    // Point 3 (31/08/2026, audit vitesse) : deja present a la toute premiere ouverture
+    // (calendarOpen), mais PAS sur un changement de mois (cal-prev/cal-next) -- la grille
+    // restait figee sur l'ancien mois pendant le chargement (~1s, plus en cas de contention),
+    // lisible comme "le clic n'a rien fait". Meme texte que l'ouverture initiale, vue mois
+    // seulement (l'agenda affiche sa propre grille horaire, hors perimetre de ce fix ponctuel).
+    if (calView === 'month') calDayEl.innerHTML = '<p id="cal-day-empty">Chargement…</p>';
     var range = calVisibleRange();
     var months = calMonthsTouching(range);
     var results = [];
