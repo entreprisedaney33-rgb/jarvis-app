@@ -1550,6 +1550,14 @@
   .rel-resume{font-size:13.5px; color:var(--ink); display:block; margin-top:6px; line-height:1.4}
   .rel-meta{font-size:12px; color:var(--muted); display:block; margin-top:6px}
   .rel-promesse{font-size:12.5px; color:var(--gold-a); display:block; margin-top:6px}
+  /* 31/08/2026 (refonte du tri) : ligne discrete, jamais un vrai bouton d'action -- ouvre/ferme
+     la sous-liste "a verifier", separee de la liste principale. */
+  .rel-averifier-footer{display:block; width:100%; text-align:center; background:none; border:0;
+    border-top:0.5px solid var(--hairline); padding:14px 10px 6px; margin-top:6px;
+    font-size:12.5px; color:var(--muted); cursor:pointer; -webkit-tap-highlight-color:transparent}
+  .rel-averifier-back{display:block; width:100%; text-align:left; background:none; border:0;
+    padding:4px 2px 12px; margin-bottom:4px; font-size:13px; font-weight:600; color:var(--gold-a);
+    cursor:pointer; -webkit-tap-highlight-color:transparent}
   /* Point 6 (30/08/2026, gros chantier) : Niveau 1 (Ecrire/Appeler, toujours dispo si la donnee
      existe) + Niveau 2 (1 seule action suggeree, vocabulaire ferme cote serveur). */
   .rel-actions-l1{display:flex; gap:8px; margin-top:8px; flex-wrap:wrap}
@@ -3893,7 +3901,7 @@
 
 <script>
 (function(){
-  var APPV = 'v3.97';
+  var APPV = 'v3.98';
 
   // Debug : ?debug_modal=1 force l'affichage du modal "nouvelle version" sans attendre un vrai
   // déploiement. Capturé ICI, tout au début, car plus bas (login mémorisé, connexion) le code
@@ -8928,6 +8936,9 @@
   var relationsData = null;
   var relationsTab = 'tous';
   var relationsQuery = '';
+  // 31/08/2026 : 3e etat -- bascule vers la sous-liste "a verifier" (jamais melangee a la liste
+  // principale), ouverte uniquement via la ligne discrete en bas de liste.
+  var relationsShowAVerifier = false;
 
   function relNorm(s){ return String(s || '').toLowerCase().normalize('NFD').replace(/[̀-ͯ]/g, ''); }
 
@@ -9073,18 +9084,37 @@
     relationsList.innerHTML = '';
     if (!relationsData){ relationsList.innerHTML = '<p id="relations-empty">Chargement…</p>'; return; }
     var q = relNorm(relationsQuery);
-    // Point 1c (session suite, 29/08/2026) : masque, jamais supprime -- visibleMickael absent
-    // (fiche pas encore classee) = visible par defaut, jamais un ecran vide par erreur.
-    var filtered = relationsData.filter(function(r){ return r.visibleMickael !== false; });
-    if (relationsTab === 'promesse') filtered = filtered.filter(function(r){ return !!r.promesseEnCours; });
+    // 31/08/2026 (refonte du tri) : 3 etats reels, statutRelation fait foi (jamais visibleMickael
+    // seul, qui n'existe plus que comme miroir de compatibilite). "exclu" n'apparait NULLE PART
+    // dans l'app -- seuls "visible" (liste principale) et "a_verifier" (sous-liste separee,
+    // ouverte uniquement via la ligne discrete en bas) sont jamais montres a Mickael.
+    if (relationsShowAVerifier){
+      var back = document.createElement('button'); back.type = 'button'; back.className = 'rel-averifier-back';
+      back.textContent = '← Retour aux contacts';
+      back.addEventListener('click', function(){ relationsShowAVerifier = false; relationsQuery = ''; relationsSearchInput.value = ''; relationsApplyFilter(); });
+      relationsList.appendChild(back);
+    }
+    var filtered = relationsData.filter(function(r){ return r.statutRelation === (relationsShowAVerifier ? 'a_verifier' : 'visible'); });
+    if (!relationsShowAVerifier && relationsTab === 'promesse') filtered = filtered.filter(function(r){ return !!r.promesseEnCours; });
     if (q) filtered = filtered.filter(function(r){
       return relNorm(r.nom).indexOf(q) !== -1 || relNorm(r.societe).indexOf(q) !== -1 || relNorm(r.resume).indexOf(q) !== -1;
     });
     if (!filtered.length){
-      relationsList.innerHTML = '<p id="relations-empty">' + (q ? 'Aucun contact ne correspond.' : 'Aucun contact dans cette catégorie.') + '</p>';
-      return;
+      var msg = document.createElement('p'); msg.id = 'relations-empty';
+      msg.textContent = q ? 'Aucun contact ne correspond.' : (relationsShowAVerifier ? 'Aucun contact à vérifier.' : 'Aucun contact dans cette catégorie.');
+      relationsList.appendChild(msg);
+    } else {
+      filtered.forEach(function(r){ relationsList.appendChild(relationsCard(r)); });
     }
-    filtered.forEach(function(r){ relationsList.appendChild(relationsCard(r)); });
+    if (!relationsShowAVerifier){
+      var nAV = relationsData.filter(function(r){ return r.statutRelation === 'a_verifier'; }).length;
+      if (nAV > 0){
+        var footer = document.createElement('button'); footer.type = 'button'; footer.className = 'rel-averifier-footer';
+        footer.textContent = '🔍 ' + nAV + ' contact' + (nAV > 1 ? 's' : '') + ' à vérifier';
+        footer.addEventListener('click', function(){ relationsShowAVerifier = true; relationsQuery = ''; relationsSearchInput.value = ''; relationsApplyFilter(); });
+        relationsList.appendChild(footer);
+      }
+    }
   }
 
   function relationsOpen(){
