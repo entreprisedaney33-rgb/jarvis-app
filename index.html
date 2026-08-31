@@ -3901,7 +3901,7 @@
 
 <script>
 (function(){
-  var APPV = 'v3.98';
+  var APPV = 'v3.99';
 
   // Debug : ?debug_modal=1 force l'affichage du modal "nouvelle version" sans attendre un vrai
   // déploiement. Capturé ICI, tout au début, car plus bas (login mémorisé, connexion) le code
@@ -8020,6 +8020,29 @@
     relancesAppendTexteSource(box, rr.citation, rr.resume);
     card.appendChild(box);
   }
+  // 31/08/2026 (constat de Mathéo, fiche Coopairs Syndics) : "Jamais relancée par Jarvis" (ligne
+  // fixe plus haut) reste vrai mais devient trompeur par omission si Mickael l'a DEJA relancé lui-
+  // meme par mail -- ce bloc jumeau de relancesAppendReponseRelance (meme composant
+  // relancesAppendTexteSource, meme grammaire visuelle, aucune nouvelle interface) rend cette
+  // relance manuelle visible, PREUVE a l'appui (citation exacte si connue, sinon resume etiquete
+  // comme genere -- jamais une conclusion tranchee par la machine, cf. relancesAppendTexteSource).
+  // N'avance JAMAIS R1/R2 automatiquement : b.relanceManuelle est purement informatif, calcule
+  // cote serveur sans aucune ecriture sur mcs_relances/le suivi.
+  function relancesAppendRelanceManuelle(card, b){
+    if (!b.relanceManuelle) return;
+    var rm = b.relanceManuelle;
+    var d = rm.derniereDateMs ? new Date(rm.derniereDateMs).toLocaleDateString('fr-FR') : '';
+    var box = document.createElement('div'); box.className = 'rl-echange-argent';
+    var titre = document.createElement('b');
+    titre.textContent = '📤 Tu l’as déjà relancé — ' + rm.nombre + ' fois' + (d ? ', la dernière le ' + d : '');
+    box.appendChild(titre);
+    relancesAppendTexteSource(box, rm.citation, rm.resume);
+    var avert = document.createElement('div'); avert.className = 'rl-source-label-resume';
+    avert.style.marginTop = '6px';
+    avert.textContent = '⚠️ Le brouillon ci-dessous est rédigé comme un premier contact — probablement à revoir.';
+    box.appendChild(avert);
+    card.appendChild(box);
+  }
   // 5a/5b (30/08/2026, gros chantier -- Point 5 "aucune question sans le bouton qui y repond") :
   // la question posee ci-dessous porte desormais ses 2 reponses reelles, branchees sur les
   // memes actions serveur que le reste de l'ecran (jamais dupliquees, juste reutilisees) --
@@ -8510,6 +8533,9 @@
     // 5) Etat honnete
     var jamais = document.createElement('span'); jamais.className = 'rl-jamais'; jamais.textContent = 'Jamais relancée par Jarvis.';
     card.appendChild(jamais);
+    // 5bis) Relance manuelle deja envoyee par Mickael (31/08/2026) -- juste apres "Jamais
+    // relancee par Jarvis" pour ne jamais laisser cette phrase seule si elle est trompeuse.
+    relancesAppendRelanceManuelle(card, b);
     // 6) Echanges a lire AVANT le brouillon
     relancesAppendEchangeArgent(card, b);
     // 6bis) Reponse a une relance (R-1/R-2, 26/08/2026) -- detection separee, silence si rien
