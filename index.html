@@ -918,6 +918,7 @@
     font-size:13.5px; font-weight:600; cursor:pointer; -webkit-tap-highlight-color:transparent;
   }
   #cal-client-changer-def{border-color:rgba(255,69,58,.4); color:#FF453A}
+  #cal-client-facture-note{font-size:12px; color:var(--muted); margin:2px 0 0; line-height:1.4}
   #cal-client-tel-inline{display:flex; gap:8px}
   #cal-client-tel-inline input{
     flex:1; min-height:44px; box-sizing:border-box; border:0.5px solid rgba(255,255,255,.18); border-radius:12px;
@@ -3573,7 +3574,11 @@
   <div id="cal-client-decalage-zone">
     <button id="cal-client-decaler" type="button">↔️ Décaler ce passage (2026)</button>
     <button id="cal-client-changer-def" type="button">✏️ Changer le mois du contrat (définitif)</button>
+    <!-- Point 1 (31/08/2026 soir) : bouton "Décaler aussi la facture" retiré de l'affichage --
+         voir cal-client-facture-note ci-dessous et le commentaire sur decalerFactureBtn dans le
+         script. Le nœud/la route serveur restent en place, inertes, tracés -- rien supprimé. -->
     <button id="cal-client-decaler-facture" type="button" style="display:none">🧾 Décaler aussi la facture</button>
+    <p id="cal-client-facture-note" style="display:none">Ce décalage ne change PAS le mois de facturation : la facture reste prévue comme avant. Pour la déplacer aussi, il faudra le faire à la main dans MEG.</p>
   </div>
   <button id="cal-client-signaler" type="button" style="display:none">📣 Signaler un report</button>
   <div id="cal-signaler-inline" style="display:none">
@@ -4148,7 +4153,7 @@
 
 <script>
 (function(){
-  var APPV = 'v4.05';
+  var APPV = 'v4.06';
 
   // Debug : ?debug_modal=1 force l'affichage du modal "nouvelle version" sans attendre un vrai
   // déploiement. Capturé ICI, tout au début, car plus bas (login mémorisé, connexion) le code
@@ -7904,9 +7909,17 @@
     var decalerBtn = document.getElementById('cal-client-decaler');
     var changerBtn = document.getElementById('cal-client-changer-def');
     var decalerFactureBtn = document.getElementById('cal-client-decaler-facture');
+    var factureNote = document.getElementById('cal-client-facture-note');
     decZone.style.display = calIsBrunoFlow ? 'none' : 'flex';
     signalerBtn.style.display = calIsBrunoFlow ? '' : 'none';
-    decalerFactureBtn.style.display = (!calIsBrunoFlow && item.quelPassage === 1 && item.decalageActif) ? '' : 'none';
+    // Point 1 (31/08/2026 soir) : le bouton reste EN PERMANENCE cache -- il ecrivait bien le
+    // flag affecte_facturation en base (route calendrier-decaler-facture-aussi, jamais retiree,
+    // toujours testable a la main) mais AUCUN moteur de generation ne le lit -- le bouton
+    // affichait donc un succes ("Facture decalee aussi") qui ne se produisait jamais. Tant que
+    // ce branchement n'est pas fait (et teste en non-regression sur le moteur de facturation),
+    // ce bouton reste retire de l'affichage -- remplace par une phrase honnete ci-dessous.
+    decalerFactureBtn.style.display = 'none';
+    factureNote.style.display = (!calIsBrunoFlow && item.quelPassage === 1 && item.decalageActif) ? '' : 'none';
     // Chantier 6.5 : reutilise la memoire commune DEJA construite (MCS · Mémoire partagée),
     // jamais une deuxieme intelligence de memorisation.
     var identifiant = item.residence || item.client;
