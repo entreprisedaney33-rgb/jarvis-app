@@ -3912,7 +3912,7 @@
 
 <script>
 (function(){
-  var APPV = 'v4.03';
+  var APPV = 'v4.04';
 
   // Debug : ?debug_modal=1 force l'affichage du modal "nouvelle version" sans attendre un vrai
   // déploiement. Capturé ICI, tout au début, car plus bas (login mémorisé, connexion) le code
@@ -3983,7 +3983,16 @@
         { selector: '#devis-list .devis-card', title: 'Une fiche',
           text: 'Le nom du client, le montant TTC, et un lien pour ouvrir le PDF.' },
         { selector: '#devis-list .dv-actions', title: 'Valider ou refuser',
-          text: 'Dans « À valider » : ✅ prépare un mail personnalisé et modifiable à envoyer au client, ❌ refuse ce que Jarvis a préparé. Rien ne part sans votre clic.' }
+          text: 'Dans « À valider » : ✅ prépare un mail personnalisé et modifiable à envoyer au client, ❌ refuse ce que Jarvis a préparé. Rien ne part sans votre clic.' },
+        // Point 7 (31/08/2026, gros chantier) : la chaine accepte -> intervention faite ->
+        // facturer (Point 2 du meme chantier) n'avait aucune etape -- ces 2 boutons n'existent
+        // QUE sur un devis dans le bon etat (onglet Devis -> Valides), pas toujours presents a
+        // l'ecran -- comme les autres etapes "conditionnelles" deja dans ce fichier, le moteur
+        // saute silencieusement l'etape si le bouton n'est pas visible (jamais bloquant).
+        { selector: '.dv-intervention-btn', title: 'Intervention faite',
+          text: 'Sur un devis accepté par le client (onglet « Devis » → « Validés ») : appuyez ici une fois le travail terminé chez le client. Vous pouvez le faire vous-même, pas seulement Bruno.' },
+        { selector: '.dv-facturer-btn', title: 'Facturer ce devis',
+          text: 'Une fois l’intervention déclarée terminée, ce bouton reprend tout le devis (client, lignes, prix) pour préparer la facture — vous n’avez rien à ressaisir. Un récapitulatif s’affiche avant l’émission réelle.' }
       ]
     },
     contrats: {
@@ -3991,6 +4000,17 @@
       steps: [
         { selector: '#contrats-tabs', title: 'Les 2 vues',
           text: '« Facturation » = ce qui doit être généré et envoyé ce mois-ci, résidence par résidence. « Catalogue » = la liste de tous vos contrats actifs (prix, périodicité).' },
+        // Point 7 (31/08/2026, gros chantier) : "la revue des factures de contrats" (l'onglet
+        // Facturation lui-meme, le coeur de cette section) n'avait AUCUNE etape -- seul le
+        // formulaire "nouveau contrat" (Catalogue) etait explique.
+        { selector: '#contrats-mois-selector', title: 'Le mois à traiter',
+          text: 'Changez de mois et d’année pour voir les résidences à facturer sur cette période.' },
+        { selector: '#contrats-mois-substatuts', title: 'Où en est chaque résidence',
+          text: '« À traiter » = pas encore généré. « Facture envoyée » = déjà fait ce mois-ci. « Pas cette année » = mise de côté volontairement (contrat suspendu, litige…).' },
+        { selector: '.ct-toggle', title: 'Traiter une résidence',
+          text: 'Vérifiez la désignation et le prix, puis générez et envoyez la facture pour cette résidence.' },
+        { selector: '#contrats-tva-lot-btn', title: 'TVA du lot VMC',
+          text: 'S’il y a plusieurs contrats VMC ce mois-ci, ce bouton permet de choisir le taux de TVA (10% ou 20%) pour tout le lot en un coup, plutôt qu’un par un.' },
         { selector: '#contrats-search-wrap', title: 'Rechercher',
           text: 'Tapez le nom d’un client ou d’une résidence pour retrouver son contrat.' },
         // Pas d'étape de surface sur #contrats-add-btn : ce bouton n'est visible QUE sur
@@ -4014,6 +4034,10 @@
           text: 'Le prix HT, et le taux de TVA juste à côté (20% ou 10% selon la prestation).' },
         { selector: '#cf-email', open: '#contrats-add-btn', close: '#ctf-cancel', title: 'Email de facturation',
           text: 'L’adresse qui recevra les factures générées pour ce contrat.' },
+        // Point 7 (31/08/2026, gros chantier) : "la memorisation" (memoireAppliquer, deja active
+        // sur ce meme champ email de contrat depuis un chantier anterieur) n'avait aucune etape.
+        { selector: '#cf-email', open: '#contrats-add-btn', close: '#ctf-cancel', title: 'Jarvis retient',
+          text: 'Une fois cette adresse enregistrée pour cette résidence, Jarvis s’en souvient — elle se pré-remplira toute seule la prochaine fois, ici comme ailleurs dans l’app (devis, factures directes…).' },
         { selector: '#cf-renouv', open: '#contrats-add-btn', close: '#ctf-cancel', title: 'Renouvellement',
           text: 'Tacite reconduction, 3 ans… comme convenu avec le client.' },
         { selector: '#ctf-save', open: '#contrats-add-btn', close: '#ctf-cancel', title: 'Enregistrer',
@@ -4092,7 +4116,15 @@
         { selector: '#relations-summary', title: 'Résumé',
           text: 'Un aperçu rapide de vos contacts et promesses en cours.' },
         { selector: '#relations-list .rel-card', title: 'Une fiche contact',
-          text: 'Ce que Jarvis sait de cette personne : promesses en cours, historique des échanges.' }
+          text: 'Ce que Jarvis sait de cette personne : promesses en cours, historique des échanges.' },
+        // Point 7 (31/08/2026, gros chantier) : les 3 vrais etats (Point du 31/08 -- session
+        // precedente du meme jour) n'avaient aucune etape. ".rel-averifier-footer" n'existe que
+        // s'il reste au moins 1 contact a verifier -- saute silencieusement sinon, comme les
+        // autres etapes conditionnelles de ce fichier.
+        { selector: '#relations-list', title: 'Trois états, pas deux',
+          text: 'Un contact peut être visible (la liste que vous voyez), à vérifier (probablement un vrai contact, mais pas encore certain), ou exclu (spam/newsletter — jamais affiché). Jarvis classe automatiquement à partir des mails échangés.' },
+        { selector: '.rel-averifier-footer', title: 'Les contacts à vérifier',
+          text: 'S’il y en a, ce lien discret en bas de liste les montre — ils n’encombrent jamais la liste principale tant que vous n’allez pas les consulter volontairement.' }
       ]
     },
     docref: {
@@ -4150,6 +4182,23 @@
           text: 'Retrouvez une note en tapant un mot de son contenu.' },
         { selector: '#notes-bar', title: 'Ajouter une note',
           text: 'Écrivez une tâche, une idée ou un objectif, et validez.' }
+      ]
+    },
+    // Point 7 (31/08/2026, gros chantier) : section entierement absente jusqu'ici -- Opportunites
+    // n'avait aucun tutoriel (aucune etape ❓ ne s'affichait sur ce panneau). Le bouton ❓ est
+    // injecte automatiquement par installTutoButtons() des que cette cle existe, aucun autre
+    // changement necessaire.
+    opportunites: {
+      head: 'opp-head', close: 'opp-close',
+      steps: [
+        { selector: '#opp-tabs', title: 'Les 4 onglets',
+          text: '« À valider » = les nouveaux syndics/copropriétés trouvés par la recherche hebdomadaire. « Contactés », « Clos » et « En recherche » gardent l’historique.' },
+        { selector: '#opp-relancer', title: 'Chercher maintenant',
+          text: 'Lance une nouvelle recherche tout de suite, sans attendre le passage automatique de la semaine.' },
+        { selector: '#opp-list', title: 'Une fiche prospect',
+          text: 'Coordonnées trouvées automatiquement, une note libre, et un message déjà rédigé — à relire avant tout envoi.' },
+        { selector: '.opp-msg-label', title: 'Relisez avant d’envoyer',
+          text: 'Le message est une proposition, jamais envoyée toute seule : relisez-le, régénérez-le si besoin, puis validez l’envoi vous-même.' }
       ]
     }
   };
@@ -6487,7 +6536,7 @@
     // ailleurs. Identifiant = token (jarvis) ou numero (meg, avec les champs deja connus du
     // devis, evite un aller-retour supplementaire).
     if (dv.statut === 'accepte' && (dv.token || dv.numero)){
-      var intBtn = document.createElement('button'); intBtn.type = 'button'; intBtn.className = 'vc-ok';
+      var intBtn = document.createElement('button'); intBtn.type = 'button'; intBtn.className = 'vc-ok dv-intervention-btn';
       intBtn.style.marginTop = '8px'; intBtn.style.width = '100%'; intBtn.textContent = '✅ Intervention faite';
       intBtn.addEventListener('click', function(){
         intBtn.disabled = true; intBtn.textContent = 'Enregistrement…';
@@ -6512,7 +6561,7 @@
     // vrai clic qui consomme un numero) passe par postFacturation, EXACTEMENT le meme chemin
     // deja utilise par l'avoir et la facture directe.
     if (dv.statut === 'intervention_faite' && (dv.token || dv.numero) && !dv.dejaFacturee){
-      var facBtn = document.createElement('button'); facBtn.type = 'button'; facBtn.className = 'vc-ok';
+      var facBtn = document.createElement('button'); facBtn.type = 'button'; facBtn.className = 'vc-ok dv-facturer-btn';
       facBtn.style.marginTop = '8px'; facBtn.style.width = '100%'; facBtn.textContent = '🧾 Facturer ce devis';
       var facRecap = document.createElement('div'); facRecap.className = 'dv-fac-recap';
       var facTxt = document.createElement('span'); facTxt.className = 'dv-fac-recap-txt';
