@@ -850,13 +850,132 @@
     font-size:14px; font-weight:700; cursor:pointer; -webkit-tap-highlight-color:transparent;
   }
   #contrats-tva-lot-btn{background:var(--surface); color:var(--blue); border:0.5px solid rgba(10,132,255,.4)}
-  .contrat-card .ct-badge.bloque{background:rgba(255,69,58,.15); color:#FF453A}
-  .ct-motif-blocage{font-size:12.5px; color:#FF453A; line-height:1.4}
+  /* 31/08/2026 (chantier A) : le badge "designation a confirmer" doit se voir -- retour explicite
+     "lisible, pas une note grise en 12px" -- taille/poids releves par rapport au badge par defaut. */
+  .contrat-card .ct-badge.bloque{background:rgba(255,69,58,.18); color:#FF453A; font-size:13px; font-weight:800; padding:4px 11px}
+  .ct-motif-blocage{font-size:14px; color:#FF453A; line-height:1.4; background:rgba(255,69,58,.08); border-radius:10px; padding:8px 10px; margin:2px 0}
   .ct-tva-choix{display:flex; flex-direction:column; gap:6px; font-size:13px}
   .ct-tva-choix label{display:flex; align-items:center; gap:8px; color:var(--ink); font-size:13px}
   .ct-tva-choix input[type=radio]{margin:0}
   .ct-tva-source{color:var(--muted); font-size:11.5px}
   .ct-numero{font-size:11.5px; color:var(--muted); font-weight:600; letter-spacing:.3px}
+  /* Chantier 6 -- Calendrier des interventions (6.4). Mobile first, 375px, un mois a la fois. */
+  #cal-view{display:flex; flex-direction:column; flex:1; min-height:0}
+  #cal-mois-band{
+    flex:0 0 auto; display:flex; gap:8px; overflow-x:auto; -webkit-overflow-scrolling:touch;
+    padding:10px 14px 4px; scrollbar-width:none;
+  }
+  #cal-mois-band::-webkit-scrollbar{display:none}
+  .cal-mois-pill{
+    flex:0 0 auto; min-width:64px; padding:8px 10px; border-radius:12px; border:0.5px solid rgba(255,255,255,.14);
+    background:var(--surface); color:var(--ink); font-size:12px; text-align:center; cursor:pointer;
+    -webkit-tap-highlight-color:transparent; min-height:44px; display:flex; flex-direction:column; justify-content:center; gap:2px;
+  }
+  .cal-mois-pill b{font-size:12.5px; font-weight:700}
+  .cal-mois-pill span{font-size:11px; color:var(--muted)}
+  .cal-mois-pill.active{background:linear-gradient(145deg,var(--gold-a),var(--gold-b)); color:var(--gold-ink)}
+  .cal-mois-pill.active span{color:var(--gold-ink); opacity:.85}
+  .cal-mois-pill.passe{opacity:.55}
+  #cal-filtre-chips{flex:0 0 auto; padding:8px 14px 0}
+  #cal-list{flex:1; overflow-y:auto; -webkit-overflow-scrolling:touch; padding:10px 14px calc(20px + env(safe-area-inset-bottom))}
+  .cal-line{
+    display:flex; flex-direction:column; gap:4px; width:100%; box-sizing:border-box;
+    padding:12px 14px; border-radius:14px; background:var(--surface); margin-bottom:10px;
+    min-height:44px; cursor:pointer; -webkit-tap-highlight-color:transparent;
+  }
+  .cal-line-top{display:flex; align-items:flex-start; justify-content:space-between; gap:8px}
+  .cal-line-nom{font-weight:700; font-size:15px; word-break:break-word}
+  .cal-line-sous{font-size:12.5px; color:var(--muted)}
+  .cal-line-pill{flex:0 0 auto; font-size:11px; font-weight:700; padding:4px 9px; border-radius:20px; white-space:nowrap}
+  .cal-line-pill.facture{background:rgba(48,209,88,.16); color:#30D158}
+  .cal-line-pill.a_facturer{background:rgba(var(--gold-rgb),.16); color:var(--gold-a)}
+  .cal-line-pill.passage_seul{background:rgba(255,255,255,.1); color:var(--muted)}
+  .cal-line-dec{font-size:11px; color:var(--blue); margin-top:2px}
+  #contrats-empty.cal-empty{padding:30px 14px}
+
+  /* Carte client (6.5) */
+  #cal-client-bg{position:fixed; inset:0; z-index:64; background:rgba(0,0,0,.5); display:none}
+  #cal-client-bg.show{display:block}
+  #cal-client-card{
+    position:fixed; left:14px; right:14px; bottom:calc(16px + env(safe-area-inset-bottom)); z-index:65;
+    background:var(--bg2,#151517); border-radius:18px; padding:18px; display:none; flex-direction:column; gap:10px;
+    max-height:80vh; overflow-y:auto;
+  }
+  #cal-client-card.show{display:flex}
+  #cal-client-close{position:absolute; top:10px; right:10px; width:32px; height:32px; border-radius:50%; border:0; background:var(--surface); color:var(--ink); font-size:14px; cursor:pointer}
+  #cal-client-titre{font-size:17px; font-weight:700; margin:0; padding-right:30px}
+  #cal-client-sous{font-size:13px; color:var(--muted); margin:0}
+  #cal-client-actions{display:flex; flex-wrap:wrap; gap:8px}
+  #cal-client-actions a, #cal-client-actions button{
+    flex:1 1 auto; min-width:120px; min-height:44px; display:flex; align-items:center; justify-content:center; gap:6px;
+    border-radius:12px; border:0; background:var(--surface); color:var(--ink); font-size:13.5px; font-weight:600;
+    text-decoration:none; cursor:pointer; -webkit-tap-highlight-color:transparent; padding:0 10px;
+  }
+  #cal-client-mail-secours{opacity:.75; font-size:12px}
+  #cal-client-decalage-zone{display:flex; flex-direction:column; gap:8px; margin-top:6px; border-top:0.5px solid var(--hairline); padding-top:10px}
+  #cal-client-decalage-zone button{
+    min-height:44px; border-radius:12px; border:0.5px solid rgba(10,132,255,.4); background:transparent; color:var(--blue);
+    font-size:13.5px; font-weight:600; cursor:pointer; -webkit-tap-highlight-color:transparent;
+  }
+  #cal-client-changer-def{border-color:rgba(255,69,58,.4); color:#FF453A}
+  #cal-client-tel-inline{display:flex; gap:8px}
+  #cal-client-tel-inline input{
+    flex:1; min-height:44px; box-sizing:border-box; border:0.5px solid rgba(255,255,255,.18); border-radius:12px;
+    background:var(--surface); color:var(--ink); font-size:15px; padding:0 12px; font:inherit;
+  }
+  #cal-client-tel-inline button, #cal-signaler-go{
+    min-height:44px; padding:0 16px; border-radius:12px; border:0; background:linear-gradient(145deg,var(--gold-a),var(--gold-b));
+    color:var(--gold-ink); font-size:14px; font-weight:700; cursor:pointer; -webkit-tap-highlight-color:transparent;
+  }
+  #cal-signaler-inline{display:flex; flex-direction:column; gap:6px; margin-top:6px}
+  #cal-signaler-inline label{font-size:12px; color:var(--muted)}
+  #cal-signaler-inline select, #cal-signaler-inline input{
+    box-sizing:border-box; border:0.5px solid rgba(255,255,255,.18); border-radius:12px;
+    background:var(--surface); color:var(--ink); font-size:15px; padding:9px 12px; font:inherit;
+  }
+  #cal-client-signaler{
+    min-height:44px; margin-top:6px; border-radius:12px; border:0; background:linear-gradient(145deg,var(--gold-a),var(--gold-b));
+    color:var(--gold-ink); font-size:14px; font-weight:700; cursor:pointer; -webkit-tap-highlight-color:transparent;
+  }
+
+  /* Formulaires de decalage -- geste (a) vs geste (b) explicitement separes (6.3) */
+  #cal-decaler-bg{position:fixed; inset:0; z-index:66; background:rgba(0,0,0,.55); display:none}
+  #cal-decaler-bg.show{display:block}
+  #cal-decaler-form{
+    position:fixed; left:14px; right:14px; top:50%; transform:translateY(-50%); z-index:67;
+    background:var(--bg2,#151517); border-radius:18px; padding:18px; display:none; flex-direction:column; gap:8px;
+  }
+  #cal-decaler-form.show{display:flex}
+  #cal-decaler-form h3{margin:0; font-size:16px}
+  #cal-decaler-explication{font-size:12.5px; color:var(--muted); margin:0}
+  #cal-decaler-form label{font-size:12.5px; color:var(--muted); margin-top:4px}
+  #cal-decaler-form select, #cal-decaler-form input[type=text]{
+    box-sizing:border-box; border:0.5px solid rgba(255,255,255,.18); border-radius:12px;
+    background:var(--surface); color:var(--ink); font-size:15px; padding:10px 12px; font:inherit;
+  }
+  .cal-decaler-checkbox{display:flex; align-items:center; gap:8px; font-size:13px; color:var(--ink)}
+  .cal-decaler-row{display:flex; gap:8px; margin-top:8px}
+  .cal-decaler-row button{
+    flex:1; min-height:46px; border-radius:12px; border:0; font-size:14px; font-weight:700; cursor:pointer;
+    -webkit-tap-highlight-color:transparent;
+  }
+  #cal-decaler-annuler{background:var(--surface); color:var(--ink)}
+  #cal-decaler-go{background:linear-gradient(145deg,var(--gold-a),var(--gold-b)); color:var(--gold-ink)}
+
+  /* Vue Bruno (6.6) -- panneau plein ecran distinct, jamais d'argent */
+  #brunocalview{
+    position:fixed; inset:0; z-index:50; background:var(--bg); display:none; flex-direction:column;
+  }
+  #brunocalview.open{display:flex}
+  #bcal-head{
+    flex:0 0 auto; display:flex; align-items:center; gap:10px;
+    padding:calc(10px + env(safe-area-inset-top)) 14px 12px; border-bottom:0.5px solid var(--hairline);
+  }
+  #bcal-head b{font-size:16px; flex:1}
+  #bcal-close{width:32px; height:32px; border-radius:50%; border:0; background:var(--surface); color:var(--ink); font-size:16px; cursor:pointer}
+  #bcal-mois-titre{flex:0 0 auto; margin:10px 14px 0; font-size:13px; color:var(--muted)}
+  #bcal-list{flex:1; overflow-y:auto; -webkit-overflow-scrolling:touch; padding:10px 14px calc(20px + env(safe-area-inset-bottom))}
+
   #contrats-list{flex:1; overflow-y:auto; -webkit-overflow-scrolling:touch; padding:14px 14px calc(20px + env(safe-area-inset-bottom))}
   #contrats-empty, #contrats-loading{color:var(--muted); text-align:center; padding:40px 20px; font-size:14px}
   #contrats-add-btn{
@@ -941,8 +1060,29 @@
   table.contrat-table tbody tr:active{background:rgba(255,255,255,.06)}
   table.contrat-table td.ct-td-nom{font-weight:700; white-space:normal; min-width:140px}
   table.contrat-table td.ct-td-montant{color:var(--gold-a); font-weight:700; text-align:right}
+  /* Chantier 5 (31/08/2026) : catalogue regroupe par mois de facturation -- en-tete cliquable
+     (nombre de contrats + total TTC du mois), replie par defaut pour les mois deja ecoules. */
+  #contrats-catalogue-par-mois{display:flex; flex-direction:column; gap:10px}
+  .ct-mois-section{border:0.5px solid var(--hairline); border-radius:12px; overflow:hidden}
+  .ct-mois-head{
+    width:100%; display:flex; align-items:center; gap:10px; padding:12px 14px; border:0;
+    background:var(--surface); color:var(--ink); font:inherit; text-align:left; cursor:pointer;
+    -webkit-tap-highlight-color:transparent;
+  }
+  .ct-mois-titre{font-weight:800; font-size:14.5px}
+  .ct-mois-compte{margin-left:auto; color:var(--muted); font-size:12.5px; white-space:nowrap}
+  .ct-mois-chevron{color:var(--gold-a); font-size:13px}
+  .ct-mois-section.replie .ct-mois-head{opacity:.75}
+  .ct-mois-body{padding:0 0 4px}
   #contrat-catalogue-form-bg{position:fixed; inset:0; z-index:55; background:rgba(0,0,0,.55); display:none}
   #contrat-catalogue-form-bg.open{display:block}
+  #designations-groupe-form-bg{position:fixed; inset:0; z-index:55; background:rgba(0,0,0,.55); display:none}
+  #designations-groupe-form-bg.open{display:block}
+  .dg-row{margin-bottom:12px; padding-bottom:12px; border-bottom:0.5px solid var(--hairline)}
+  .dg-row label{font-size:12px; color:var(--muted); display:block; margin-bottom:4px}
+  .dg-row .dg-libelle{font-weight:700; color:var(--ink)}
+  .dg-row input{width:100%; box-sizing:border-box; background:var(--surface); border:1px solid rgba(255,255,255,.12); border-radius:10px; padding:9px 11px; color:var(--ink); font-size:14px}
+  #contrats-designations-groupe-btn{margin:8px 14px 0; align-self:flex-start; background:rgba(255,159,10,.15); color:#FF9F0A; border:0; border-radius:10px; padding:7px 12px; font-size:13px; font-weight:700; cursor:pointer}
   #bug-form-bg{position:fixed; inset:0; z-index:55; background:rgba(0,0,0,.55); display:none}
   #bug-form-bg.open{display:block}
   .contrat-form{
@@ -3087,6 +3227,12 @@
     <button id="hcallbtn" type="button" aria-label="Appeler Jarvis">
       <svg width="21" height="21" viewBox="0 0 24 24" fill="currentColor"><path d="M6.6 10.8c1.4 2.8 3.8 5.1 6.6 6.6l2.2-2.2c.3-.3.7-.4 1.1-.2 1.2.4 2.5.6 3.8.6.6 0 1 .5 1 1V20.5c0 .6-.4 1-1 1C11.5 21.5 2.5 12.5 2.5 1.7c0-.6.4-1 1-1H7c.6 0 1 .4 1 1 0 1.3.2 2.6.6 3.8.1.4 0 .8-.2 1.1L6.6 10.8Z"/></svg>
     </button>
+    <!-- Chantier C (31/08/2026) : tutoriel dédié à l'écran d'accueil (11 tuiles, points du jour,
+         chat en bas) -- jusque-là AUCUNE étape ne couvrait cet écran (seuls les 11 sous-écrans
+         ouverts avaient leur propre tutoriel). Bouton toujours visible en tête (jamais dans un
+         head/close de panneau comme les autres -- pas de sous-écran ici), même gating MCS patron
+         que les autres, câblé à part comme #bruno-tuto-btn (cf. applyTutoVisibility). -->
+    <button id="accueil-tuto-btn" class="tuto-btn" type="button" aria-label="Tutoriel de l'accueil" style="display:none">❓</button>
   </header>
   <div id="brunoClient">
     <div id="bc-summary">
@@ -3201,6 +3347,7 @@
     <button class="sh-tile" id="sh-relances" type="button" style="display:none"><span class="sh-tile-ic">📨</span><span class="sh-tile-label">Relances clients</span><span class="badge-count" id="menu-relances-badge" style="display:none"></span></button>
     <button class="sh-tile" id="sh-opportunites" type="button" style="display:none"><span class="sh-tile-ic">🏗️</span><span class="sh-tile-label">Opportunités</span><span class="badge-count" id="menu-opp-badge" style="display:none"></span></button>
     <button class="sh-tile" id="sh-carnet" type="button" style="display:none"><span class="sh-tile-ic">📘</span><span class="sh-tile-label">Carnet bleu</span></button>
+    <button class="sh-tile" id="sh-bcal" type="button" style="display:none"><span class="sh-tile-ic">📅</span><span class="sh-tile-label">Mon calendrier</span></button>
     <button class="sh-tile" id="sh-portefeuille" type="button" style="display:none"><span class="sh-tile-ic">📇</span><span class="sh-tile-label">Portefeuille clients</span></button>
     <button class="sh-tile" id="sh-relations" type="button" style="display:none"><span class="sh-tile-ic">👥</span><span class="sh-tile-label">Mes contacts</span><span class="badge-count" id="menu-relations-badge" style="display:none"></span></button>
     <button class="sh-tile" id="sh-docref" type="button" style="display:none"><span class="sh-tile-ic">📎</span><span class="sh-tile-label">Documents de référence</span></button>
@@ -3367,8 +3514,10 @@
   <div id="contrats-tabs">
     <button class="devis-tab active" data-tab="mois" type="button">Facturation</button>
     <button class="devis-tab" data-tab="catalogue" type="button">Catalogue</button>
+    <button class="devis-tab" data-tab="calendrier" type="button">Calendrier</button>
   </div>
   <p id="contrats-testmode-banniere" class="testmode-banniere" style="display:none">🧪 Mode test : les factures de contrat partent chez Altaestima, jamais chez le client.</p>
+  <button id="contrats-designations-groupe-btn" type="button">🏷️ Désignations à confirmer</button>
   <div id="contrats-mois-selector" style="display:none">
     <select id="contrats-mois-select" aria-label="Mois"></select>
     <select id="contrats-annee-select" aria-label="Année"></select>
@@ -3385,11 +3534,83 @@
     <input id="contrats-search" type="search" inputmode="search" placeholder="🔍 Rechercher un client…" autocomplete="off" autocapitalize="off" autocorrect="off">
   </div>
   <div class="df-filter-group" id="contrats-cat-subtabs" style="display:none">
-    <button class="df-chip active" data-subtab="BRUNO" type="button">🐜 Dératisation / désinsectisation</button>
+    <button class="df-chip active" data-subtab="TOUT" type="button">Tout</button>
+    <button class="df-chip" data-subtab="BRUNO" type="button">🐜 Dératisation / désinsectisation</button>
     <button class="df-chip" data-subtab="VMC" type="button">🌬️ VMC</button>
   </div>
   <div id="contrats-list"></div>
   <button id="contrats-add-btn" type="button" aria-label="Ajouter un contrat">+</button>
+
+  <!-- Chantier 6 : Calendrier des interventions (distinct de la facturation, 6.1) -->
+  <div id="cal-view" style="display:none">
+    <div id="cal-mois-band"></div>
+    <div class="df-filter-group" id="cal-filtre-chips">
+      <button class="df-chip active" data-filtre="TOUT" type="button">Tout</button>
+      <button class="df-chip" data-filtre="BRUNO" type="button">🐜 Dérat</button>
+      <button class="df-chip" data-filtre="VMC" type="button">🌬️ VMC</button>
+    </div>
+    <div id="cal-list"></div>
+  </div>
+</div>
+
+<!-- Carte client (6.5) -- reutilisee par le Calendrier patron ET par la vue Bruno -->
+<div id="cal-client-bg"></div>
+<div id="cal-client-card">
+  <button id="cal-client-close" type="button" aria-label="Fermer">✕</button>
+  <h3 id="cal-client-titre"></h3>
+  <p id="cal-client-sous"></p>
+  <div id="cal-client-actions">
+    <a id="cal-client-tel" href="#"><span>📞</span><span>Appeler</span></a>
+    <button id="cal-client-tel-manque" type="button">📞 Ajouter un téléphone</button>
+    <button id="cal-client-mail" type="button"><span>✉️</span><span>Écrire (Jarvis)</span></button>
+    <a id="cal-client-mail-secours" href="#"><span>✉️</span><span>Écrire (app mail)</span></a>
+    <a id="cal-client-waze" href="#" target="_blank" rel="noopener"><span>🚗</span><span>Itinéraire</span></a>
+  </div>
+  <div id="cal-client-tel-inline" style="display:none">
+    <input id="cal-client-tel-input" type="tel" placeholder="06 xx xx xx xx" inputmode="tel">
+    <button id="cal-client-tel-go" type="button">OK</button>
+  </div>
+  <div id="cal-client-decalage-zone">
+    <button id="cal-client-decaler" type="button">↔️ Décaler ce passage (2026)</button>
+    <button id="cal-client-changer-def" type="button">✏️ Changer le mois du contrat (définitif)</button>
+    <button id="cal-client-decaler-facture" type="button" style="display:none">🧾 Décaler aussi la facture</button>
+  </div>
+  <button id="cal-client-signaler" type="button" style="display:none">📣 Signaler un report</button>
+  <div id="cal-signaler-inline" style="display:none">
+    <label>Reporter à quel mois</label>
+    <select id="cal-signaler-mois"></select>
+    <label>Motif</label>
+    <input id="cal-signaler-motif" type="text" placeholder="ex : client absent">
+    <button id="cal-signaler-go" type="button">Envoyer à Mickael</button>
+  </div>
+</div>
+
+<!-- Geste (a)/(b) : formulaires de decalage, explicitement separes (6.3) -->
+<div id="cal-decaler-bg"></div>
+<div id="cal-decaler-form">
+  <h3 id="cal-decaler-titre">Décaler ce passage</h3>
+  <p id="cal-decaler-explication"></p>
+  <label>Nouveau mois</label>
+  <select id="cal-decaler-mois"></select>
+  <label>Motif</label>
+  <input id="cal-decaler-motif" type="text" placeholder="ex : client absent, accès bloqué…">
+  <div id="cal-decaler-confirm-def-wrap" style="display:none">
+    <label class="cal-decaler-checkbox"><input id="cal-decaler-confirm-def" type="checkbox"> Je confirme ce changement définitif du contrat</label>
+  </div>
+  <div class="cal-decaler-row">
+    <button id="cal-decaler-annuler" type="button">Annuler</button>
+    <button id="cal-decaler-go" type="button">Valider</button>
+  </div>
+</div>
+
+<!-- Vue reduite Bruno (6.6) : derat uniquement, mois courant uniquement, aucun montant. -->
+<div id="brunocalview">
+  <div id="bcal-head">
+    <b>📅 Mon calendrier</b>
+    <button id="bcal-close" type="button" aria-label="Fermer">✕</button>
+  </div>
+  <p id="bcal-mois-titre"></p>
+  <div id="bcal-list"></div>
 </div>
 
 <div id="contrat-catalogue-form-bg">
@@ -3417,6 +3638,21 @@
       <button class="vc-no" id="ctf-cancel" type="button">Annuler</button>
     </div>
     <button class="vc-no" id="ctf-delete" type="button" style="width:100%;margin-top:8px;display:none">🗑 Retirer ce contrat</button>
+  </div>
+</div>
+
+<!-- 31/08/2026 (chantier A, vocabulaire des prestations) : saisie groupee -- tous les libelles
+     'a_confirmer' d'un coup, pour que Mickael les remplisse en une fois plutot que carte par
+     carte. Meme gabarit visuel que le formulaire catalogue juste au-dessus. -->
+<div id="designations-groupe-form-bg">
+  <div class="contrat-form" id="designations-groupe-form">
+    <h3>🏷️ Désignations à confirmer</h3>
+    <p id="designations-groupe-intro" style="font-size:13px;color:var(--muted);margin:0 0 10px">Écris, pour chaque libellé tel qu'il apparaît dans ton classeur, le texte exact qui doit s'imprimer sur la facture. Un champ laissé vide reste « à confirmer » et bloque l'envoi.</p>
+    <div id="designations-groupe-list"></div>
+    <div class="cf-actions">
+      <button class="vc-ok" id="dg-save" type="button">✅ Enregistrer tout</button>
+      <button class="vc-no" id="dg-cancel" type="button">Fermer</button>
+    </div>
   </div>
 </div>
 
@@ -3912,7 +4148,7 @@
 
 <script>
 (function(){
-  var APPV = 'v4.04';
+  var APPV = 'v4.05';
 
   // Debug : ?debug_modal=1 force l'affichage du modal "nouvelle version" sans attendre un vrai
   // déploiement. Capturé ICI, tout au début, car plus bas (login mémorisé, connexion) le code
@@ -4009,6 +4245,15 @@
           text: '« À traiter » = pas encore généré. « Facture envoyée » = déjà fait ce mois-ci. « Pas cette année » = mise de côté volontairement (contrat suspendu, litige…).' },
         { selector: '.ct-toggle', title: 'Traiter une résidence',
           text: 'Vérifiez la désignation et le prix, puis générez et envoyez la facture pour cette résidence.' },
+        // Chantier A/C (31/08/2026) : nouvelle designation "a confirmer" -- un libelle du
+        // registre que Jarvis ne connait pas encore (ex "MS", "3D") bloque l'emission tant que
+        // vous n'avez pas ecrit la vraie formule a faire apparaitre sur la facture. Sauté
+        // silencieusement si aucune facture du mois n'est dans ce cas (étape conditionnelle,
+        // comme les autres de ce fichier).
+        { selector: '.ct-badge.bloque', title: 'Désignation à confirmer',
+          text: 'Ce libellé (repris tel quel du registre) n’est pas encore reconnu par Jarvis -- il ne peut pas deviner la formule exacte à écrire sur la facture. Aucun envoi n’est possible tant que ce n’est pas confirmé.' },
+        { selector: '.ct-confirm-designation', title: 'Confirmer une bonne fois pour toutes',
+          text: 'Écrivez la désignation exacte puis validez ici : Jarvis s’en souvient et l’applique immédiatement à TOUTES les factures qui portent ce même libellé brut, sans qu’il faille le refaire une par une.' },
         { selector: '#contrats-tva-lot-btn', title: 'TVA du lot VMC',
           text: 'S’il y a plusieurs contrats VMC ce mois-ci, ce bouton permet de choisir le taux de TVA (10% ou 20%) pour tout le lot en un coup, plutôt qu’un par un.' },
         { selector: '#contrats-search-wrap', title: 'Rechercher',
@@ -4041,7 +4286,28 @@
         { selector: '#cf-renouv', open: '#contrats-add-btn', close: '#ctf-cancel', title: 'Renouvellement',
           text: 'Tacite reconduction, 3 ans… comme convenu avec le client.' },
         { selector: '#ctf-save', open: '#contrats-add-btn', close: '#ctf-cancel', title: 'Enregistrer',
-          text: 'Une fois tout correct, validez ici pour ajouter le contrat.' }
+          text: 'Une fois tout correct, validez ici pour ajouter le contrat.' },
+        // Chantier 5 (31/08/2026) : le Catalogue est maintenant trié par MOIS DE FACTURATION
+        // (mois en cours en premier), pas par ordre alphabétique -- sauté silencieusement si le
+        // catalogue est vide (même garde que les autres étapes conditionnelles de ce fichier).
+        { selector: '.ct-mois-section', title: 'Le catalogue, mois par mois',
+          text: 'Vos contrats sont regroupés par mois de facturation, le mois en cours en premier. Chaque en-tête affiche le nombre de contrats et le total TTC du mois -- tapez dessus pour replier ou déplier.' },
+        // Chantier 6 (31/08/2026) : le Calendrier, nouvel onglet -- distinct de la Facturation
+        // (qui parle argent) : ceci ne montre QUE les interventions à effectuer, jamais un
+        // montant. Toutes ces étapes sont conditionnelles : sautées si l'onglet Calendrier n'est
+        // pas encore chargé (même garde que le reste de ce fichier).
+        { selector: '#cal-mois-band', title: 'Le calendrier des interventions', open: '[data-tab="calendrier"]',
+          text: 'Ceci est différent de la Facturation : ici, ce sont TOUTES vos interventions (jusqu’à 4 passages par an et par contrat), pas seulement le mois où vous facturez. Le mois en cours est sélectionné, glissez pour voir les suivants.' },
+        { selector: '#cal-filtre-chips', title: 'Filtrer', open: '[data-tab="calendrier"]',
+          text: 'Tout, dératisation/désinsectisation seule, ou VMC seule.' },
+        { selector: '.cal-line', title: 'Une intervention', open: '[data-tab="calendrier"]',
+          text: 'Résidence et client (ou client et adresse en dératisation). La pastille dit si c’est déjà facturé, à facturer, ou juste un passage sans facture.' },
+        { selector: '#cal-client-actions', open: '.cal-line', close: '#cal-client-close', title: 'La fiche client',
+          text: 'Un tap sur une ligne ouvre cette fiche : appelez en un tap, écrivez un mail (le composeur de Jarvis s’ouvre déjà rempli), ou lancez l’itinéraire.' },
+        { selector: '#cal-client-decaler', open: '.cal-line', close: '#cal-client-close', title: 'Décaler ce passage',
+          text: 'Un imprévu cette année ? Ce bouton décale UNIQUEMENT ce passage, pour 2026 seulement -- le contrat et la facture ne bougent pas.' },
+        { selector: '#cal-client-changer-def', open: '.cal-line', close: '#cal-client-close', title: 'Changer le mois du contrat',
+          text: 'Celui-ci est définitif : il modifie le contrat pour de bon, à partir de maintenant, avec confirmation demandée à chaque fois.' }
       ]
     },
     ik: {
@@ -4089,8 +4355,17 @@
           text: 'Un aperçu rapide du nombre de relances en cours.' },
         { selector: '#relances-list .rl-card', title: 'Une fiche client',
           text: 'Le nom du client et depuis quand la relance est en attente.' },
-        { selector: '#relances-list .rl-suspendre', title: 'Suspendre',
-          text: 'Met la relance en pause sans la supprimer — utile si le client vous a dit « rappelez-moi plus tard ».' }
+        // Chantier C (31/08/2026) : ce sélecteur ciblait '.rl-suspendre', une classe qui n'existe
+        // QU'en CSS -- jamais assignée par le code réel (relancesAppendActions crée
+        // '.rl-btn-suspendre2') depuis un renommage antérieur jamais répercuté ici. L'étape était
+        // donc silencieusement sautée à chaque fois (le garde "élément absent -> étape suivante"
+        // masque ce genre d'oubli, jamais un plantage visible -- d'où la vérification manuelle).
+        { selector: '#relances-list .rl-btn-envoyer', title: 'Envoyer la relance',
+          text: 'Un premier appui déplie le message prêt à partir (avec le vrai destinataire, en clair) ; un second, dans l’encadré, l’envoie pour de vrai. Rien ne part au premier clic.' },
+        { selector: '#relances-list .rl-btn-declare', title: '« Je l’ai relancé moi-même »',
+          text: 'Si vous avez rappelé ou recroisé ce client sans passer par Jarvis, déclarez-le ici pour que le suivi reste juste.' },
+        { selector: '#relances-list .rl-btn-suspendre2', title: 'Suspendre',
+          text: 'Met la relance en pause sans la supprimer — utile si le client vous a dit « rappelez-moi plus tard ». Le montant reste compté dans le total dû.' }
       ]
     },
     carnet: {
@@ -4403,6 +4678,27 @@
         text: 'Quand Mickael aura accepté un devis que tu as dicté, il apparaîtra en bas de cet écran avec un bouton « ✅ Intervention faite ». Appuie dessus une fois le travail terminé chez le client.' }
     ]
   };
+  // ---- Tutoriel Accueil (31/08/2026, chantier C) ----
+  // Réutilise EXACTEMENT le même moteur (tutoState/tutoRenderStep/tutoNext/tutoClose) -- gardé à
+  // part de TUTO_CONFIGS (pas de head/close de panneau, c'est l'écran racine lui-même) pour ne
+  // jamais être itéré par installTutoButtons(). Couvre les 3 zones de l'accueil MCS patron
+  // jamais expliquées jusqu'ici : les onze tuiles, les "points du jour" (conditionnels, sautés
+  // silencieusement s'il n'y a rien à signaler aujourd'hui -- même garde que toutes les étapes
+  // conditionnelles de ce fichier), et le champ de conversation en bas.
+  var TUTO_ACCUEIL_CONFIG = {
+    steps: [
+      { selector: '#homeGrid', title: 'Vos onze raccourcis',
+        text: 'Chaque tuile ouvre un écran dédié -- appuyez dessus pour l’ouvrir. Vous pouvez à tout moment appuyer sur ❓ en haut de cet écran pour revoir ce tutoriel.' },
+      { selector: '#mcsAccueil', title: 'Ce qu’il y a à savoir aujourd’hui',
+        text: 'Quand il y a quelque chose d’important (une facture bloquée, une relance urgente…), ça apparaît ici, au-dessus des raccourcis. Rien à faire si c’est vide -- ça veut dire qu’il n’y a rien à signaler.' },
+      { selector: '#textin', title: 'Ou parlez-lui directement',
+        text: 'Pas besoin d’ouvrir un écran pour tout : vous pouvez aussi écrire ou dicter une demande ici (« fais-moi un devis pour... », « où en est telle facture ? ») -- Jarvis comprend et prépare, vous validez toujours avant tout envoi réel.' }
+    ]
+  };
+  function startAccueilTuto(){
+    TUTO_CONFIGS.__accueil__ = TUTO_ACCUEIL_CONFIG; // réutilise tutoStart/tutoRenderStep tels quels
+    tutoStart('__accueil__');
+  }
   function brunoTutoSeen(){ return read('mcsBrunoTutoSeen') === '1'; }
   function markBrunoTutoSeen(){ store('mcsBrunoTutoSeen', '1'); }
   function startBrunoTuto(){
@@ -5329,6 +5625,11 @@
     // ET salarié), reste inchangé pour le compte principal.
     var docsBtn = document.getElementById('sh-docs');
     if (docsBtn) docsBtn.style.display = mcs ? 'none' : '';
+    // "Mon calendrier" (chantier 6, Bruno uniquement -- 6.6) : derat seul, mois courant seul,
+    // jamais d'argent -- le serveur re-verifie deja tout (Controle contrats), ce gating cote
+    // ecran n'est qu'un confort, jamais la vraie protection.
+    var bcalBtn = document.getElementById('sh-bcal');
+    if (bcalBtn) bcalBtn.style.display = mcsSalarie ? '' : 'none';
     // Notifications : PAS masquées pour un salarié MCS (chantier 12 audit) — Bruno doit pouvoir
     // les activer pour recevoir rappels et invitations de rendez-vous (poussés par le cron/la
     // synchro d'invités côté serveur), même s'il n'a pas d'écran Calendrier visuel.
@@ -6810,7 +7111,7 @@
   // Catalogue en "vue tableur" avec 2 onglets par activité (demande explicite : Mickael doit
   // retrouver ses onglets Excel habituels -- Dératisation/désinsectisation vs VMC -- au lieu
   // d'une seule liste mélangée).
-  var contratsCatSubTab = 'BRUNO';
+  var contratsCatSubTab = 'TOUT';
   var CONTRATS_COLONNES = [
     { key:'nom', label:'Client / Résidence', cls:'ct-td-nom' },
     { key:'adresse', label:'Adresse' },
@@ -6895,10 +7196,87 @@
     return wrap;
   }
 
+  // 31/08/2026 (chantier A) : applique une designation confirmee a TOUTES les factures deja
+  // chargees en memoire qui partagent la meme cle (famille_prestation), sans recharger la page --
+  // c'est ce qui fait disparaitre le badge "a confirmer" instantanement sur toutes les cartes
+  // concernees. Le serveur a deja fait la meme propagation en base (route designations-ecrire) ;
+  // ceci est le miroir cote client pour un rendu immediat.
+  function contratsAppliquerDesignationPartout(cleNormalisee, valeur){
+    (contratsMoisData || []).forEach(function(f){
+      if (f.famille_prestation === cleNormalisee && f.statut === 'a_traiter'){
+        f.designation = valeur;
+        f.designation_confirmee = true;
+        f.motif_blocage = '';
+      }
+    });
+    contratsApplyFilter();
+  }
+
+  // 31/08/2026 (chantier A) : saisie groupee des designations 'a_confirmer' -- ouvre un champ
+  // par libelle, permet a Mickael de tout remplir en une fois plutot que carte par carte.
+  var designationsGroupeBg = document.getElementById('designations-groupe-form-bg');
+  var designationsGroupeList = document.getElementById('designations-groupe-list');
+  var designationsGroupeBtn = document.getElementById('contrats-designations-groupe-btn');
+  var dgSaveBtn = document.getElementById('dg-save');
+  var dgCancelBtn = document.getElementById('dg-cancel');
+  var dgCurrentInputs = [];
+  function designationsGroupeOuvrir(){
+    designationsGroupeList.innerHTML = '<p style="color:var(--muted);font-size:13px">Chargement…</p>';
+    designationsGroupeBg.classList.add('open');
+    postContrats({ type: 'designations-liste' }, function(j){
+      var rows = (j.designations || []).filter(function(d){ return d.statut !== 'confirme'; });
+      designationsGroupeList.innerHTML = '';
+      dgCurrentInputs = [];
+      if (!rows.length){
+        designationsGroupeList.innerHTML = '<p style="color:var(--muted);font-size:13px">Tout est déjà confirmé — rien à faire ici.</p>';
+        return;
+      }
+      rows.forEach(function(d){
+        var row = document.createElement('div'); row.className = 'dg-row';
+        var lab = document.createElement('label');
+        var span = document.createElement('span'); span.className = 'dg-libelle'; span.textContent = d.libelleBrut || d.cleNormalisee;
+        lab.appendChild(span);
+        row.appendChild(lab);
+        var input = document.createElement('input'); input.type = 'text'; input.value = d.designationFacture || '';
+        input.placeholder = 'Ce qui doit s\'imprimer sur la facture…';
+        row.appendChild(input);
+        designationsGroupeList.appendChild(row);
+        dgCurrentInputs.push({ cle: d.cleNormalisee, input: input });
+      });
+    }, function(err){ designationsGroupeList.innerHTML = ''; toast(err); });
+  }
+  if (designationsGroupeBtn) designationsGroupeBtn.addEventListener('click', designationsGroupeOuvrir);
+  if (dgCancelBtn) dgCancelBtn.addEventListener('click', function(){ designationsGroupeBg.classList.remove('open'); });
+  designationsGroupeBg.addEventListener('click', function(e){ if (e.target === designationsGroupeBg) designationsGroupeBg.classList.remove('open'); });
+  if (dgSaveBtn) dgSaveBtn.addEventListener('click', function(){
+    var aEnregistrer = dgCurrentInputs.filter(function(x){ return String(x.input.value || '').trim(); });
+    if (!aEnregistrer.length){ toast('Rien à enregistrer.'); return; }
+    dgSaveBtn.disabled = true; dgSaveBtn.textContent = '…';
+    var restant = aEnregistrer.length; var erreurs = 0;
+    aEnregistrer.forEach(function(x){
+      var valeur = String(x.input.value || '').trim();
+      postContrats({ type: 'designations-ecrire', cleNormalisee: x.cle, designationFacture: valeur }, function(){
+        contratsAppliquerDesignationPartout(x.cle, valeur);
+        restant--; if (restant === 0) designationsGroupeSaveFini(erreurs);
+      }, function(){
+        erreurs++; restant--; if (restant === 0) designationsGroupeSaveFini(erreurs);
+      });
+    });
+  });
+  function designationsGroupeSaveFini(erreurs){
+    dgSaveBtn.disabled = false; dgSaveBtn.textContent = '✅ Enregistrer tout';
+    if (erreurs) { toast(erreurs + ' désignation(s) non enregistrée(s), réessaie.'); }
+    else { toast('✅ Désignations confirmées.'); designationsGroupeBg.classList.remove('open'); }
+  }
+
   // Ecran de revue des factures de contrats (29/08/2026). Desormais base sur famille_prestation
   // (jamais la colonne "prestation" brute) : voir clients/mcs/INVENTAIRE-SOURCES-CONTRATS-29-08-2026.md.
   function contratsBuildMoisCard(f){
-    var bloque = !f.famille_prestation;
+    // 31/08/2026 (chantier A, vocabulaire des prestations) : "bloque" reflete desormais
+    // designation_confirmee (booleen ecrit par le serveur depuis mcs_designations, statut
+    // 'confirme' UNIQUEMENT) -- l'ancien famille_prestation etait une classification devinee par
+    // mots-cles, jamais une preuve que le texte imprime sur la facture est le bon.
+    var bloque = !(f.designation_confirmee === true || f.designation_confirmee === 'true');
     var card = document.createElement('div'); card.className = 'contrat-card';
     var head = document.createElement('div'); head.className = 'ct-head';
     var main = document.createElement('div'); main.className = 'ct-main';
@@ -6906,7 +7284,12 @@
     main.appendChild(nom);
     var badge = document.createElement('span');
     badge.className = 'ct-badge' + (bloque ? ' bloque' : (f.type_contrat === 'VMC' ? ' vmc' : ''));
-    badge.textContent = bloque ? '🚫 Désignation manquante' : (f.type_contrat === 'VMC' ? 'VMC · +3 % auto' : 'Dératisation / désinsectisation');
+    // Badge lisible : montre le libellé brut tel que Mickael l'a écrit dans son classeur (ex.
+    // "MS3D"), jamais un texte générique -- c'est lui qui doit reconnaître ce qu'il a tapé.
+    var libelleBrutBadge = (f.prestation_resolue || f.prestation || '').trim();
+    badge.textContent = bloque
+      ? ('🏷️ Désignation à confirmer' + (libelleBrutBadge ? (' : « ' + libelleBrutBadge + ' »') : ''))
+      : (f.type_contrat === 'VMC' ? 'VMC · +3 % auto' : 'Dératisation / désinsectisation');
     main.appendChild(badge);
     var meta = document.createElement('span'); meta.className = 'dv-meta';
     // 30/08/2026 : la valeur RESOLUE (celle qui sert reellement a la facture, apres cascade des
@@ -6981,6 +7364,27 @@
     var designationInput = contratField(detail,
       bloque ? 'Désignation (verbatim MEG) — à saisir avant tout envoi, aucune n\'a pu être vérifiée automatiquement' : 'Désignation (verbatim MEG)',
       'textarea', f.designation);
+    // 31/08/2026 (chantier A) : confirmer ICI ne corrige pas QUE cette facture -- ça écrit dans
+    // mcs_designations (statut 'confirme') et se propage IMMEDIATEMENT, sans rechargement, à
+    // toutes les factures "à traiter" qui partagent le même libellé brut (ex. toutes les "MS3D").
+    // Réutilise le mécanisme "Jarvis demande -> mémorise -> ne redemande jamais" déjà construit
+    // pour mcs_memoire_champs, adapté à la table dédiée mcs_designations demandée pour ce chantier.
+    if (f.famille_prestation){
+      var confirmBtn = document.createElement('button'); confirmBtn.type = 'button'; confirmBtn.className = 'ct-toggle ct-confirm-designation';
+      confirmBtn.textContent = bloque
+        ? ('✅ Confirmer « ' + (designationInput.value || '(à écrire ci-dessus)') + ' » pour toutes les factures de ce type')
+        : '✅ Reconfirmer cette désignation pour toutes les factures de ce type';
+      confirmBtn.addEventListener('click', function(){
+        var valeur = String(designationInput.value || '').trim();
+        if (!valeur){ toast('Écris la désignation avant de confirmer.'); designationInput.focus(); return; }
+        confirmBtn.disabled = true; confirmBtn.textContent = '…';
+        postContrats({ type: 'designations-ecrire', cleNormalisee: f.famille_prestation, designationFacture: valeur }, function(){
+          toast('✅ Désignation confirmée, appliquée à toutes les factures « ' + (f.prestation_resolue || f.prestation || '') + ' »');
+          contratsAppliquerDesignationPartout(f.famille_prestation, valeur);
+        }, function(err){ confirmBtn.disabled = false; confirmBtn.textContent = '✅ Confirmer'; toast(err); });
+      });
+      detail.appendChild(confirmBtn);
+    }
     var passagesInput = contratField(detail, 'Passages / an', 'input', f.passages_an != null ? f.passages_an : 1);
     passagesInput.type = 'number'; passagesInput.step = '1'; passagesInput.min = '1';
     var prixInput = contratField(detail, 'Montant HT (€) — réindexation ' + (f.type_contrat === 'VMC' ? 'automatique +3 % déjà appliquée' : 'libre, à toi de choisir'), 'input', f.prix_ht);
@@ -7144,6 +7548,64 @@
     return wrap;
   }
 
+  // Chantier 5 (31/08/2026, demande explicite : "qu'est-ce que je facture ce mois-ci", pas un
+  // ordre alphabetique de client) : le catalogue trie desormais par MOIS DE FACTURATION -- le
+  // meme champ passage_1 du catalogue sert de mois de reference pour les deux types de contrat
+  // (verifie sur les 232 lignes reelles au chantier 4 : passage_1 reproduit exactement le
+  // tableau d'acceptation des 12 mois, dérat comme VMC).
+  function contratsMoisIndexDepuisNom(nom){
+    var n = String(nom || '').normalize('NFD').replace(/[̀-ͯ]/g, '').toLowerCase().trim();
+    for (var i = 0; i < CONTRATS_MOIS_NOMS.length; i++){
+      if (CONTRATS_MOIS_NOMS[i].normalize('NFD').replace(/[̀-ͯ]/g, '').toLowerCase() === n) return i + 1;
+    }
+    return 0; // mois illisible/absent -- groupe a part, jamais silencieusement ignore
+  }
+
+  function contratsBuildCatalogueParMois(items){
+    var wrap = document.createElement('div'); wrap.id = 'contrats-catalogue-par-mois';
+    var groupes = {};
+    items.forEach(function(c){
+      var idx = contratsMoisIndexDepuisNom(c.passage_1);
+      if (!groupes[idx]) groupes[idx] = [];
+      groupes[idx].push(c);
+    });
+    // Le mois EN COURS en tete, puis les 11 suivants dans l'ordre cyclique -- jamais janvier en
+    // tete par defaut (demande explicite). Un groupe "mois illisible" (idx 0), s'il existe,
+    // toujours tout en bas, jamais melange aux vrais mois.
+    var ordre = [];
+    for (var k = 0; k < 12; k++){ ordre.push(((contratsMoisMois - 1 + k) % 12) + 1); }
+    if (groupes[0]) ordre.push(0);
+    ordre.forEach(function(idx){
+      var liste = groupes[idx];
+      if (!liste || !liste.length) return;
+      var estMoisEnCours = idx === contratsMoisMois;
+      // "Passe" = mois deja ecoule dans l'annee civile en cours (avant le mois en cours) --
+      // jamais le mois en cours lui-meme, meme s'il est deja bien avance.
+      var estPasse = idx !== 0 && idx < contratsMoisMois;
+      var totalTtc = liste.reduce(function(s, c){ return s + (Number(c.prix_ttc) || 0); }, 0);
+      var nomMois = idx === 0 ? 'Mois illisible' : CONTRATS_MOIS_NOMS[idx - 1];
+      var section = document.createElement('div'); section.className = 'ct-mois-section' + (estPasse ? ' replie' : '');
+      var head = document.createElement('button'); head.type = 'button'; head.className = 'ct-mois-head';
+      var titre = document.createElement('span'); titre.className = 'ct-mois-titre';
+      titre.textContent = nomMois + (estMoisEnCours ? ' (en cours)' : '');
+      var compte = document.createElement('span'); compte.className = 'ct-mois-compte';
+      compte.textContent = liste.length + ' contrat' + (liste.length > 1 ? 's' : '') + ' · ' + fmtEuro(totalTtc);
+      var chevron = document.createElement('span'); chevron.className = 'ct-mois-chevron'; chevron.textContent = estPasse ? '▸' : '▾';
+      head.appendChild(titre); head.appendChild(compte); head.appendChild(chevron);
+      var body = document.createElement('div'); body.className = 'ct-mois-body';
+      body.style.display = estPasse ? 'none' : '';
+      body.appendChild(contratsBuildCatalogueTable(liste));
+      head.addEventListener('click', function(){
+        var ouvert = body.style.display !== 'none';
+        body.style.display = ouvert ? 'none' : '';
+        chevron.textContent = ouvert ? '▸' : '▾';
+      });
+      section.appendChild(head); section.appendChild(body);
+      wrap.appendChild(section);
+    });
+    return wrap;
+  }
+
   var CONTRATS_STATUT_VIDE = {
     a_traiter: 'Aucun contrat à traiter pour ce mois.',
     envoyee: 'Aucune facture envoyée pour ce mois.',
@@ -7174,6 +7636,28 @@
   }
 
   function contratsApplyFilter(){
+    // Chantier 6 : le Calendrier a son propre rendu (calRender), pas base sur #contrats-list ni
+    // la recherche texte -- on masque tout le reste de ce panneau et on sort tot.
+    var calView = document.getElementById('cal-view');
+    if (contratsActiveTab === 'calendrier'){
+      calView.style.display = 'flex';
+      contratsList.style.display = 'none';
+      if (designationsGroupeBtn) designationsGroupeBtn.style.display = 'none';
+      contratsSearchInput.parentNode.style.display = 'none';
+      contratsAddBtn.style.display = 'none';
+      document.getElementById('contrats-cat-subtabs').style.display = 'none';
+      document.getElementById('contrats-mois-selector').style.display = 'none';
+      document.getElementById('contrats-mois-substatuts').style.display = 'none';
+      document.getElementById('contrats-previsionnel-banniere').style.display = 'none';
+      document.getElementById('contrats-generer-btn').style.display = 'none';
+      document.getElementById('contrats-tva-lot-btn').style.display = 'none';
+      document.getElementById('contrats-testmode-banniere').style.display = 'none';
+      return;
+    }
+    calView.style.display = 'none';
+    contratsList.style.display = '';
+    contratsSearchInput.parentNode.style.display = '';
+    if (designationsGroupeBtn) designationsGroupeBtn.style.display = '';
     var q = normDoc(contratsSearchInput.value.trim());
     contratsList.innerHTML = '';
     contratsAddBtn.style.display = contratsActiveTab === 'catalogue' ? 'flex' : 'none';
@@ -7208,18 +7692,22 @@
       // seulement le sous-onglet affiche) -- cf. contratsBuildCatalogueCA pour ce qui est
       // exactement additionne.
       contratsList.appendChild(contratsBuildCatalogueCA(contratsCatalogueData || []));
+      // Chantier 5.4 : "TOUT" = pas de filtre par type -- BRUNO/VMC restent le filtre strict
+      // d'avant (memes chips reutilisees, juste une 3e option ajoutee).
       var itemsC = (contratsCatalogueData || []).filter(function(c){
-        return c.type_contrat === contratsCatSubTab && (!q || normDoc(contratNomAffiche(c)).indexOf(q) !== -1);
+        return (contratsCatSubTab === 'TOUT' || c.type_contrat === contratsCatSubTab)
+          && (!q || normDoc(contratNomAffiche(c)).indexOf(q) !== -1);
       });
       if (!itemsC.length){
         var vide = document.createElement('p'); vide.id = 'contrats-empty'; vide.textContent = 'Aucun contrat dans cet onglet.';
         contratsList.appendChild(vide); return;
       }
-      contratsList.appendChild(contratsBuildCatalogueTable(itemsC));
+      contratsList.appendChild(contratsBuildCatalogueParMois(itemsC));
     }
   }
 
   function contratsLoadTab(){
+    if (contratsActiveTab === 'calendrier'){ contratsApplyFilter(); calOpen(); return; }
     contratsList.innerHTML = '<p id="contrats-loading">Chargement…</p>';
     if (contratsActiveTab === 'mois'){
       contratsMoisSelectorsInit();
@@ -7279,6 +7767,290 @@
   contratsSearchInput.addEventListener('input', contratsApplyFilter);
   document.getElementById('contrats-close').addEventListener('click', contratsClose);
   document.getElementById('sh-contrats').addEventListener('click', function(){ sheetOpen(false); contratsOpen(); });
+
+  // =====================================================================
+  // Chantier 6 -- Calendrier des interventions (distinct de la facturation,
+  // 6.1). Patron : #cal-view (onglet de Contrats). Bruno : #brunocalview
+  // (panneau separe, mois courant + derat seuls -- 6.6). Meme carte client
+  // (6.5) et memes formulaires de decalage (6.3) pour les deux flux.
+  // =====================================================================
+  var calMois = new Date().getMonth() + 1;
+  var calFiltre = 'TOUT';
+  var calResumeData = [];
+  var calCurrentItems = [];
+  var calSelectedItem = null;
+  var calIsBrunoFlow = false;
+
+  var CAL_PILL_LABEL = { facture: '✅ Facturé', a_facturer: '⏳ À facturer', passage_seul: '🔧 Passage seul' };
+
+  function calMoisEstPasse(m){
+    var moisCourant = new Date().getMonth() + 1;
+    return m !== moisCourant && m < moisCourant;
+  }
+
+  function calRenderBand(){
+    var band = document.getElementById('cal-mois-band');
+    band.innerHTML = '';
+    var moisCourant = new Date().getMonth() + 1;
+    // Chantier 5.2 (reutilise ici, 6.4) : le mois courant en premier, puis les suivants dans
+    // l'ordre, les mois passes relegues en fin de bandeau (pas Janvier en premier).
+    var ordre = [];
+    for (var i = 0; i < 12; i++) ordre.push(((moisCourant - 1 + i) % 12) + 1);
+    ordre.forEach(function(m){
+      var info = calResumeData.find(function(x){ return x.mois === m; }) || { total: 0 };
+      var pill = document.createElement('button'); pill.type = 'button';
+      pill.className = 'cal-mois-pill' + (m === calMois ? ' active' : '') + (calMoisEstPasse(m) ? ' passe' : '');
+      var b = document.createElement('b'); b.textContent = (CONTRATS_MOIS_NOMS[m - 1] || '').slice(0, 3);
+      var s = document.createElement('span'); s.textContent = info.total + ' interv.';
+      pill.appendChild(b); pill.appendChild(s);
+      pill.addEventListener('click', function(mm){ return function(){ calMois = mm; calRenderBand(); calLoadMois(); }; }(m));
+      band.appendChild(pill);
+    });
+  }
+
+  function calLoadResume(){
+    postContrats({ type: 'calendrier-resume' }, function(j){ calResumeData = j.moisCounts || []; calRenderBand(); }, function(){});
+  }
+
+  function calLigneNom(item){
+    // 6.4 : VMC = residence en gras + client en dessous (pas de residence en dератisation).
+    if (item.typeContrat === 'VMC') return item.residence || item.client || '(sans nom)';
+    return item.client || item.residence || '(sans nom)';
+  }
+  function calLigneSous(item){
+    if (item.typeContrat === 'VMC') return (item.client || '') + (item.adresse ? ' · ' + item.adresse : '');
+    return item.adresse || item.ville || '';
+  }
+
+  function calBuildLine(item, bruno){
+    var line = document.createElement('div'); line.className = 'cal-line';
+    var top = document.createElement('div'); top.className = 'cal-line-top';
+    var nom = document.createElement('span'); nom.className = 'cal-line-nom'; nom.textContent = calLigneNom(item);
+    top.appendChild(nom);
+    if (!bruno){
+      var pill = document.createElement('span'); pill.className = 'cal-line-pill ' + item.statutAffichage;
+      pill.textContent = CAL_PILL_LABEL[item.statutAffichage] || item.statutAffichage;
+      top.appendChild(pill);
+    }
+    line.appendChild(top);
+    var sous = document.createElement('span'); sous.className = 'cal-line-sous';
+    sous.textContent = calLigneSous(item) + ' · passage ' + item.quelPassage + '/4';
+    line.appendChild(sous);
+    if (item.decalageActif){
+      var dec = document.createElement('span'); dec.className = 'cal-line-dec';
+      dec.textContent = '↔️ Décalé depuis ' + (CONTRATS_MOIS_NOMS[(item.moisPrevu || 1) - 1] || '');
+      line.appendChild(dec);
+    }
+    line.addEventListener('click', function(){ calOpenClientCard(item, bruno); });
+    return line;
+  }
+
+  function calRenderList(){
+    var list = document.getElementById('cal-list');
+    list.innerHTML = '';
+    if (!calCurrentItems.length){
+      var vide = document.createElement('p'); vide.id = 'contrats-empty'; vide.className = 'cal-empty';
+      vide.textContent = 'Aucune intervention ce mois-ci pour ce filtre.';
+      list.appendChild(vide); return;
+    }
+    calCurrentItems.forEach(function(item){ list.appendChild(calBuildLine(item, false)); });
+  }
+
+  function calLoadMois(){
+    document.getElementById('cal-list').innerHTML = '<p id="contrats-loading">Chargement…</p>';
+    postContrats({ type: 'calendrier-mois', mois: calMois, filtre: calFiltre }, function(j){
+      calCurrentItems = j.items || [];
+      calRenderList();
+    }, function(err){ document.getElementById('cal-list').innerHTML = '<p id="contrats-empty">' + err + '</p>'; });
+  }
+
+  function calOpen(){ calIsBrunoFlow = false; calLoadResume(); calLoadMois(); }
+
+  document.querySelectorAll('#cal-filtre-chips .df-chip').forEach(function(chip){
+    chip.addEventListener('click', function(){
+      calFiltre = chip.dataset.filtre;
+      document.querySelectorAll('#cal-filtre-chips .df-chip').forEach(function(b){ b.classList.toggle('active', b === chip); });
+      calLoadMois();
+    });
+  });
+
+  // ---- Carte client (6.5) : tel / mail (Jarvis + secours app mail) / Waze, memoire commune ----
+  var calClientBg = document.getElementById('cal-client-bg');
+  var calClientCard = document.getElementById('cal-client-card');
+
+  function calCloseClientCard(){ calClientBg.classList.remove('show'); calClientCard.classList.remove('show'); }
+  calClientBg.addEventListener('click', calCloseClientCard);
+  document.getElementById('cal-client-close').addEventListener('click', calCloseClientCard);
+
+  function calOpenClientCard(item, bruno){
+    calSelectedItem = item; calIsBrunoFlow = !!bruno;
+    document.getElementById('cal-client-titre').textContent = calLigneNom(item);
+    document.getElementById('cal-client-sous').textContent = calLigneSous(item) + ' · N° ' + (item.numeroContrat || '—');
+    var telA = document.getElementById('cal-client-tel');
+    var telManque = document.getElementById('cal-client-tel-manque');
+    var mailBtn = document.getElementById('cal-client-mail');
+    var mailSecours = document.getElementById('cal-client-mail-secours');
+    var waze = document.getElementById('cal-client-waze');
+    telA.style.display = 'none'; telManque.style.display = 'none';
+    mailBtn.style.display = 'none'; mailSecours.style.display = 'none';
+    document.getElementById('cal-client-tel-inline').style.display = 'none';
+    document.getElementById('cal-client-tel-input').value = '';
+    document.getElementById('cal-signaler-inline').style.display = 'none';
+    document.getElementById('cal-signaler-motif').value = '';
+    waze.href = 'https://waze.com/ul?q=' + encodeURIComponent(calLigneSous(item)) + '&navigate=yes';
+    // Bouton "Décaler"/"Changer definitif" reserves au patron ; Bruno voit "Signaler un report".
+    var decZone = document.getElementById('cal-client-decalage-zone');
+    var signalerBtn = document.getElementById('cal-client-signaler');
+    var decalerBtn = document.getElementById('cal-client-decaler');
+    var changerBtn = document.getElementById('cal-client-changer-def');
+    var decalerFactureBtn = document.getElementById('cal-client-decaler-facture');
+    decZone.style.display = calIsBrunoFlow ? 'none' : 'flex';
+    signalerBtn.style.display = calIsBrunoFlow ? '' : 'none';
+    decalerFactureBtn.style.display = (!calIsBrunoFlow && item.quelPassage === 1 && item.decalageActif) ? '' : 'none';
+    // Chantier 6.5 : reutilise la memoire commune DEJA construite (MCS · Mémoire partagée),
+    // jamais une deuxieme intelligence de memorisation.
+    var identifiant = item.residence || item.client;
+    postMemoire({ type: 'lire', typeEntite: 'residence', identifiant: identifiant, ecranSource: 'calendrier' }, function(r){
+      var champs = (r && r.champs) || {};
+      var tel = champs.telephone && champs.telephone.valeur;
+      var mail = champs.email && champs.email.valeur;
+      if (tel){ telA.href = 'tel:' + tel.replace(/[\s.-]+/g, ''); telA.querySelector('span:last-child').textContent = tel; telA.style.display = ''; }
+      else { telManque.style.display = ''; }
+      if (mail){ mailSecours.href = 'mailto:' + mail; mailSecours.style.display = ''; mailBtn.style.display = ''; mailBtn.dataset.mail = mail; }
+    }, function(){ telManque.style.display = ''; });
+    calClientBg.classList.add('show'); calClientCard.classList.add('show');
+  }
+
+  document.getElementById('cal-client-tel-manque').addEventListener('click', function(){
+    var inline = document.getElementById('cal-client-tel-inline');
+    inline.style.display = inline.style.display === 'none' ? 'flex' : 'none';
+    document.getElementById('cal-client-tel-input').focus();
+  });
+  document.getElementById('cal-client-tel-go').addEventListener('click', function(){
+    var tel = document.getElementById('cal-client-tel-input').value.trim();
+    if (!tel) return;
+    var identifiant = calSelectedItem.residence || calSelectedItem.client;
+    postMemoire({ type: 'ecrire', typeEntite: 'residence', identifiant: identifiant, champ: 'telephone', valeur: tel, ecranSource: 'calendrier' },
+      function(){ toast('📞 Numéro enregistré'); calOpenClientCard(calSelectedItem, calIsBrunoFlow); },
+      function(err){ toast(err); });
+  });
+  document.getElementById('cal-client-mail').addEventListener('click', function(){
+    // "ouvre le composeur Jarvis, pre-rempli" (6.5) : le composeur existant de l'app (mail
+    // interne, trace) plutot qu'une fenetre a part -- reutilise messageInput/le flux d'envoi deja
+    // present (jamais un envoi automatique, jamais hors validation).
+    var mail = this.dataset.mail;
+    if (!mail) return;
+    calCloseClientCard();
+    if (typeof contratsClose === 'function') contratsClose();
+    if (typeof bcalClose === 'function') bcalClose();
+    if (textin){ textin.value = 'Écris à ' + mail + ' pour lui dire : '; textin.focus(); }
+    toast('✉️ Message pré-rempli pour ' + mail + ' -- complète et envoie à Jarvis.');
+  });
+
+  // ---- Formulaires de decalage (6.3), geste (a) vs geste (b) explicitement separes ----
+  var calDecalerBg = document.getElementById('cal-decaler-bg');
+  var calDecalerForm = document.getElementById('cal-decaler-form');
+  var calDecalerMode = null; // 'temp' | 'def'
+  function calDecalerClose(){ calDecalerBg.classList.remove('show'); calDecalerForm.classList.remove('show'); }
+  calDecalerBg.addEventListener('click', calDecalerClose);
+  document.getElementById('cal-decaler-annuler').addEventListener('click', calDecalerClose);
+
+  function calDecalerOpen(mode){
+    calDecalerMode = mode;
+    var sel = document.getElementById('cal-decaler-mois');
+    sel.innerHTML = '';
+    CONTRATS_MOIS_NOMS.forEach(function(nom, idx){ var o = document.createElement('option'); o.value = idx + 1; o.textContent = nom; sel.appendChild(o); });
+    document.getElementById('cal-decaler-motif').value = '';
+    var confWrap = document.getElementById('cal-decaler-confirm-def-wrap');
+    document.getElementById('cal-decaler-confirm-def').checked = false;
+    if (mode === 'temp'){
+      document.getElementById('cal-decaler-titre').textContent = '↔️ Décaler ce passage (2026 uniquement)';
+      document.getElementById('cal-decaler-explication').textContent = 'Provisoire, réversible. Ne touche NI le contrat NI la facture -- juste ce passage, cette année.';
+      confWrap.style.display = 'none';
+    } else {
+      document.getElementById('cal-decaler-titre').textContent = '✏️ Changer le mois du contrat (définitif)';
+      document.getElementById('cal-decaler-explication').textContent = 'Modifie le contrat de façon permanente, à partir de maintenant. Une trace datée est conservée.';
+      confWrap.style.display = '';
+    }
+    calClientBg.classList.remove('show'); calClientCard.classList.remove('show');
+    calDecalerBg.classList.add('show'); calDecalerForm.classList.add('show');
+  }
+  document.getElementById('cal-client-decaler').addEventListener('click', function(){ calDecalerOpen('temp'); });
+  document.getElementById('cal-client-changer-def').addEventListener('click', function(){ calDecalerOpen('def'); });
+
+  document.getElementById('cal-decaler-go').addEventListener('click', function(){
+    var item = calSelectedItem; if (!item) return;
+    var nouveauMois = Number(document.getElementById('cal-decaler-mois').value);
+    var motif = document.getElementById('cal-decaler-motif').value.trim();
+    if (!motif){ toast('Un motif est requis.'); return; }
+    var btn = this; btn.disabled = true;
+    if (calDecalerMode === 'temp'){
+      postContrats({ type: 'calendrier-decaler-passage', contratId: item.contratId, passageNum: item.quelPassage, moisRetenu: nouveauMois, motif: motif },
+        function(){ btn.disabled = false; toast('✅ Passage décalé'); calDecalerClose(); calLoadResume(); calLoadMois(); },
+        function(err){ btn.disabled = false; toast(err); });
+    } else {
+      if (!document.getElementById('cal-decaler-confirm-def').checked){ btn.disabled = false; toast('Coche la confirmation explicite avant de valider.'); return; }
+      postContrats({ type: 'calendrier-changer-mois-contrat', contratId: item.contratId, passageNum: item.quelPassage, nouveauMois: nouveauMois, motif: motif, confirmation: true },
+        function(){ btn.disabled = false; toast('✅ Contrat modifié définitivement'); calDecalerClose(); calLoadResume(); calLoadMois(); },
+        function(err){ btn.disabled = false; toast(err); });
+    }
+  });
+
+  document.getElementById('cal-client-decaler-facture').addEventListener('click', function(){
+    var item = calSelectedItem; if (!item || !item.decalageId) return;
+    postContrats({ type: 'calendrier-decaler-facture-aussi', decalageId: item.decalageId },
+      function(){ toast('🧾 Facture décalée aussi'); calCloseClientCard(); },
+      function(err){ toast(err); });
+  });
+
+  // Bruno (6.6) : "signaler un report" -- cree une PROPOSITION, Mickael valide, Bruno ne valide
+  // jamais rien (regle permanente du projet).
+  document.getElementById('cal-client-signaler').addEventListener('click', function(){
+    var inline = document.getElementById('cal-signaler-inline');
+    var sel = document.getElementById('cal-signaler-mois');
+    if (!sel.options.length) CONTRATS_MOIS_NOMS.forEach(function(nom, idx){ var o = document.createElement('option'); o.value = idx + 1; o.textContent = nom; sel.appendChild(o); });
+    inline.style.display = inline.style.display === 'none' ? 'flex' : 'none';
+  });
+  document.getElementById('cal-signaler-go').addEventListener('click', function(){
+    var item = calSelectedItem; if (!item) return;
+    var mois = Number(document.getElementById('cal-signaler-mois').value);
+    var motif = document.getElementById('cal-signaler-motif').value.trim();
+    if (!motif){ toast('Un motif est requis.'); return; }
+    postContrats({ type: 'calendrier-signaler-report', contratId: item.contratId, passageNum: item.quelPassage, moisRetenu: mois, motif: motif },
+      function(){ toast('📣 Report signalé -- Mickael doit le valider.'); calCloseClientCard(); },
+      function(err){ toast(err); });
+  });
+
+  // ---- Vue Bruno (6.6) : panneau separe, derat seul, mois courant seul, jamais d'argent ----
+  var brunocalview = document.getElementById('brunocalview');
+  function bcalClose(){ brunocalview.classList.remove('open'); }
+  document.getElementById('bcal-close').addEventListener('click', bcalClose);
+
+  function bcalRenderList(items){
+    var list = document.getElementById('bcal-list');
+    list.innerHTML = '';
+    if (!items.length){
+      var vide = document.createElement('p'); vide.id = 'contrats-empty'; vide.className = 'cal-empty';
+      vide.textContent = 'Aucune intervention ce mois-ci.';
+      list.appendChild(vide); return;
+    }
+    items.forEach(function(item){ list.appendChild(calBuildLine(item, true)); });
+  }
+
+  function bcalOpen(){
+    brunocalview.classList.add('open');
+    calIsBrunoFlow = true;
+    document.getElementById('bcal-mois-titre').textContent = 'Chargement…';
+    document.getElementById('bcal-list').innerHTML = '<p id="contrats-loading">Chargement…</p>';
+    // Le serveur force deja mois=courant + filtre=BRUNO pour un role salarie (Controle contrats
+    // + Prep mois (calendrier-mois)) -- les parametres envoyes ici ne sont qu'indicatifs.
+    postContrats({ type: 'calendrier-mois' }, function(j){
+      document.getElementById('bcal-mois-titre').textContent = (CONTRATS_MOIS_NOMS[(j.mois || 1) - 1] || '') + ' 2026 · ' + (j.items || []).length + ' intervention(s)';
+      bcalRenderList(j.items || []);
+    }, function(err){ document.getElementById('bcal-mois-titre').textContent = ''; document.getElementById('bcal-list').innerHTML = '<p id="contrats-empty">' + err + '</p>'; });
+  }
+  var bcalBtn = document.getElementById('sh-bcal');
+  if (bcalBtn) bcalBtn.addEventListener('click', function(){ sheetOpen(false); bcalOpen(); });
 
   // ---- Formulaire catalogue (ajouter/modifier/retirer un contrat) ----
   var contratFormBg = document.getElementById('contrat-catalogue-form-bg');
@@ -11322,8 +12094,16 @@
 
     body.appendChild(chips);
 
+    // Chantier B (31/08/2026) : residu du meme bug que le chip "Pour X" juste au-dessus (deja
+    // gated) -- cote MCS (mono-utilisateur), "par Mickael" est redondant ET n.auteur pouvait
+    // encore valoir litteralement "Mathéo" pour une note deja validee (defaut serveur corrige
+    // le 31/08/2026, mais defense en profondeur ici : ne jamais afficher l'auteur cote MCS).
     var prov = document.createElement('span'); prov.className = 'notes-provenance';
-    prov.textContent = n.pending ? 'Enregistrement…' : ('par ' + (n.auteur || '?') + (n.date ? ' · ' + notesFmtDate(n.date) : ''));
+    if (isMcsCode()){
+      prov.textContent = n.pending ? 'Enregistrement…' : (n.date ? notesFmtDate(n.date) : '');
+    } else {
+      prov.textContent = n.pending ? 'Enregistrement…' : ('par ' + (n.auteur || '?') + (n.date ? ' · ' + notesFmtDate(n.date) : ''));
+    }
     body.appendChild(prov);
 
     card.appendChild(body);
@@ -11431,7 +12211,17 @@
 
   function notesUpdateAutreLabel(){
     var btn = document.querySelector('.notes-tab[data-vue="taches_autre"]');
-    if (btn) btn.textContent = '✅ Tâches de ' + (NOTES_ASSIGNE_LABEL[notesAutreEnum] || notesAutreEnum);
+    if (!btn) return;
+    // Chantier B (31/08/2026) : cote MCS, notesAutreEnum='' (mono-utilisateur, pas de "l'autre")
+    // -- avant ce fix le libelle retombait sur "✅ Tâches de " (chaine vide), un onglet fantome
+    // sans nom. Masque entierement plutot que rafistole avec un libelle qui n'a pas de sens.
+    if (isMcsCode()){
+      btn.style.display = 'none';
+      if (btn.classList.contains('active')){ btn.classList.remove('active'); }
+    } else {
+      btn.style.display = '';
+      btn.textContent = '✅ Tâches de ' + (NOTES_ASSIGNE_LABEL[notesAutreEnum] || notesAutreEnum);
+    }
   }
 
   function notesRefresh(onDone){
@@ -13329,6 +14119,11 @@
   document.getElementById('hcallbtn').addEventListener('click', function(e){
     e.stopPropagation(); // sinon le clic remonte au header et ouvre le menu par-dessus
     if (!callbar.classList.contains('on')) startVocalCall();
+  });
+
+  document.getElementById('accueil-tuto-btn').addEventListener('click', function(e){
+    e.stopPropagation(); // sinon le clic remonte au header et ouvre le menu par-dessus
+    startAccueilTuto();
   });
 
   cbHang.addEventListener('click', function(){
