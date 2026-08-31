@@ -919,6 +919,41 @@
   }
   #cal-client-changer-def{border-color:rgba(255,69,58,.4); color:#FF453A}
   #cal-client-facture-note{font-size:12px; color:var(--muted); margin:2px 0 0; line-height:1.4}
+  #cal-client-proposition-zone{
+    display:flex; flex-direction:column; gap:8px; margin-top:6px; border-top:0.5px solid var(--hairline);
+    padding-top:10px; background:rgba(var(--gold-rgb),.08); border-radius:12px; padding:10px;
+  }
+  #cal-client-proposition-txt{font-size:13px; color:var(--ink); margin:0; line-height:1.4}
+  #cal-client-proposition-zone .cal-decaler-row button{
+    min-height:44px; border-radius:12px; border:0; font-size:13.5px; font-weight:700; cursor:pointer;
+    -webkit-tap-highlight-color:transparent;
+  }
+  #cal-client-proposition-refuser{background:var(--surface); color:#FF453A}
+  #cal-client-proposition-valider{background:linear-gradient(145deg,var(--gold-a),var(--gold-b)); color:var(--gold-ink)}
+  #cal-refuser-inline{display:flex; flex-direction:column; gap:6px}
+  #cal-refuser-inline label{font-size:12px; color:var(--muted)}
+  #cal-refuser-inline input{
+    box-sizing:border-box; border:0.5px solid rgba(255,255,255,.18); border-radius:12px;
+    background:var(--surface); color:var(--ink); font-size:15px; padding:9px 12px; font:inherit;
+  }
+  #cal-refuser-go{
+    min-height:44px; border-radius:12px; border:0; background:var(--surface); color:#FF453A;
+    font-size:13.5px; font-weight:700; cursor:pointer; -webkit-tap-highlight-color:transparent;
+  }
+  /* Badge distinct d'un decalage deja acte -- une proposition n'a pas encore d'effet (6.1) */
+  .cal-line-prop{font-size:11px; color:var(--gold-a); margin-top:2px; font-weight:600}
+  /* Retour vers Bruno (1.4) : ses propres reports, statut + motif */
+  #bcal-mes-props{margin:0 0 14px}
+  #bcal-mes-props h4{font-size:13px; color:var(--muted); margin:0 0 8px; font-weight:600}
+  .bcal-prop-line{
+    display:flex; flex-direction:column; gap:2px; padding:10px 12px; border-radius:12px;
+    background:var(--surface); margin-bottom:8px; font-size:12.5px;
+  }
+  .bcal-prop-statut{font-weight:700; font-size:12px}
+  .bcal-prop-statut.en_attente{color:var(--gold-a)}
+  .bcal-prop-statut.validee{color:#30D158}
+  .bcal-prop-statut.refusee{color:#FF453A}
+  .bcal-prop-detail{color:var(--muted); font-size:12px}
   #cal-client-tel-inline{display:flex; gap:8px}
   #cal-client-tel-inline input{
     flex:1; min-height:44px; box-sizing:border-box; border:0.5px solid rgba(255,255,255,.18); border-radius:12px;
@@ -3578,7 +3613,7 @@
          voir cal-client-facture-note ci-dessous et le commentaire sur decalerFactureBtn dans le
          script. Le nœud/la route serveur restent en place, inertes, tracés -- rien supprimé. -->
     <button id="cal-client-decaler-facture" type="button" style="display:none">🧾 Décaler aussi la facture</button>
-    <p id="cal-client-facture-note" style="display:none">Ce décalage ne change PAS le mois de facturation : la facture reste prévue comme avant. Pour la déplacer aussi, il faudra le faire à la main dans MEG.</p>
+    <p id="cal-client-facture-note" style="display:none">Ce décalage ne change PAS le mois de facturation : la facture reste prévue comme avant. Jarvis te la redemandera au moment de facturer.</p>
   </div>
   <button id="cal-client-signaler" type="button" style="display:none">📣 Signaler un report</button>
   <div id="cal-signaler-inline" style="display:none">
@@ -3587,6 +3622,20 @@
     <label>Motif</label>
     <input id="cal-signaler-motif" type="text" placeholder="ex : client absent">
     <button id="cal-signaler-go" type="button">Envoyer à Mickael</button>
+  </div>
+  <!-- Point 1.1 (01/09/2026) : une proposition de Bruno en attente sur CE passage -- patron
+       uniquement, jamais Bruno (qui a sa propre vue en lecture, voir bcalOpen). -->
+  <div id="cal-client-proposition-zone" style="display:none">
+    <p id="cal-client-proposition-txt"></p>
+    <div class="cal-decaler-row">
+      <button id="cal-client-proposition-refuser" type="button">✕ Refuser</button>
+      <button id="cal-client-proposition-valider" type="button">✅ Valider le report</button>
+    </div>
+    <div id="cal-refuser-inline" style="display:none">
+      <label>Motif du refus (optionnel)</label>
+      <input id="cal-refuser-motif" type="text" placeholder="ex : trop tard ce mois-ci">
+      <button id="cal-refuser-go" type="button">Confirmer le refus</button>
+    </div>
   </div>
 </div>
 
@@ -3615,6 +3664,12 @@
     <button id="bcal-close" type="button" aria-label="Fermer">✕</button>
   </div>
   <p id="bcal-mois-titre"></p>
+  <!-- Point 1.4 (01/09/2026) : retour vers Bruno -- il voit ce que sont devenus SES signalements
+       (valide/refuse + motif), jamais un statut qu'il pourrait changer lui-meme. -->
+  <div id="bcal-mes-props" style="display:none">
+    <h4>Mes reports signalés</h4>
+    <div id="bcal-mes-props-list"></div>
+  </div>
   <div id="bcal-list"></div>
 </div>
 
@@ -4153,7 +4208,7 @@
 
 <script>
 (function(){
-  var APPV = 'v4.06';
+  var APPV = 'v4.07';
 
   // Debug : ?debug_modal=1 force l'affichage du modal "nouvelle version" sans attendre un vrai
   // déploiement. Capturé ICI, tout au début, car plus bas (login mémorisé, connexion) le code
@@ -5852,6 +5907,8 @@
         return n + (n > 1 ? ' nouvelles observations' : ' nouvelle observation');
       case 'prospects':
         return n + (n > 1 ? ' nouveaux prospects' : ' nouveau prospect');
+      case 'propositions':
+        return n + (n > 1 ? ' propositions de report de Bruno à valider' : ' proposition de report de Bruno à valider');
       case 'nuit': {
         var parts = [];
         var mailsLus = Number(l.mailsLus) || 0;
@@ -5869,7 +5926,7 @@
 
   var ACCUEIL_ICONES = {
     devis: '📝', contrats: '📋', relances: '📨', rdv: '📅',
-    observations: '👥', prospects: '🏗️', nuit: '🌙'
+    observations: '👥', prospects: '🏗️', nuit: '🌙', propositions: '📣'
   };
 
   // Les 6 panneaux que la carte peut ouvrir. Point 1 (21/08/2026) : la carte ferme elle-meme le
@@ -5878,13 +5935,26 @@
   // fonctions xxxClose() de l'app (couplage sur le chemin chaud, la classe de bug de cette
   // semaine), on ajoute un SEUL nouvel ecouteur sur les boutons de fermeture des 6 panneaux
   // concernes -- le comportement de fermeture d'origine n'est jamais touche, juste complete.
+  // Point 1.2 (01/09/2026) : "elle mene droit au calendrier, sur le bon mois" -- bascule
+  // l'onglet AVANT d'ouvrir (contratsLoadTab lit contratsActiveTab), positionne calMois sur le
+  // mois de la proposition la plus ancienne (moisMin, calcule cote serveur -- mcs-accueil), puis
+  // reutilise calOpen() tel quel (aucune 2e logique de chargement du calendrier).
+  function accueilOuvrirPropositions(l){
+    contratsActiveTab = 'calendrier';
+    document.querySelectorAll('#contrats-tabs .devis-tab').forEach(function(b){
+      b.classList.toggle('active', b.dataset.tab === 'calendrier');
+    });
+    if (l && l.moisMin){ calMois = Number(l.moisMin); }
+    contratsOpen();
+  }
   var ACCUEIL_CIBLES = {
     devis: { open: devisAttenteOpen },
     contrats: { open: contratsOpen },
     relances: { open: relancesOpen },
     calendrier: { open: calendarOpen },
     relations: { open: relationsOpen },
-    opportunites: { open: oppOpen }
+    opportunites: { open: oppOpen },
+    propositions: { open: accueilOuvrirPropositions, avecLigne: true }
   };
   [
     'devis-close', 'contrats-close', 'relances-close',
@@ -5898,9 +5968,9 @@
   var __origDevisAttenteClose = devisAttenteClose;
   devisAttenteClose = function(){ __origDevisAttenteClose(); refreshAccueil(); };
 
-  function accueilNavigate(cible){
+  function accueilNavigate(cible, ligne){
     var c = ACCUEIL_CIBLES[cible];
-    if (c && typeof c.open === 'function'){ try { c.open(); } catch(e){} }
+    if (c && typeof c.open === 'function'){ try { c.avecLigne ? c.open(ligne) : c.open(); } catch(e){} }
   }
 
   function renderAccueilLigne(l){
@@ -5914,7 +5984,7 @@
     txt.textContent = accueilTexteCourt(l);
     row.appendChild(ic); row.appendChild(txt);
     if (l.cible && ACCUEIL_CIBLES[l.cible]){
-      row.addEventListener('click', function(){ accueilNavigate(l.cible); });
+      row.addEventListener('click', function(){ accueilNavigate(l.cible, l); });
     } else {
       row.style.cursor = 'default';
     }
@@ -5930,7 +6000,7 @@
     // (contrairement a une fiche enrichie ou un digicode detecte). C'est pour ca que la
     // decision validee mentionne "12 mails" DANS la phrase de repli elle-meme, jamais comme
     // une ligne active a part entiere quand les 6 lignes metier sont vides.
-    var ORDRE_METIER = ['devis', 'contrats', 'relances', 'rdv', 'observations', 'prospects'];
+    var ORDRE_METIER = ['devis', 'contrats', 'propositions', 'relances', 'rdv', 'observations', 'prospects'];
     var parType = {};
     j.lignes.forEach(function(l){ if (l && l.type) parType[l.type] = l; });
 
@@ -7846,6 +7916,13 @@
       dec.textContent = '↔️ Décalé depuis ' + (CONTRATS_MOIS_NOMS[(item.moisPrevu || 1) - 1] || '');
       line.appendChild(dec);
     }
+    // Point 1.1 (01/09/2026) : etat distinct d'un decalage deja acte -- une proposition n'a
+    // encore RIEN change (l'item reste sur son mois d'origine), c'est juste signale.
+    if (item.propositionEnAttente){
+      var prop = document.createElement('span'); prop.className = 'cal-line-prop';
+      prop.textContent = '📣 Report proposé par Bruno — ' + (CONTRATS_MOIS_NOMS[(item.propositionEnAttente.moisRetenu || 1) - 1] || '');
+      line.appendChild(prop);
+    }
     line.addEventListener('click', function(){ calOpenClientCard(item, bruno); });
     return line;
   }
@@ -7902,6 +7979,8 @@
     document.getElementById('cal-client-tel-input').value = '';
     document.getElementById('cal-signaler-inline').style.display = 'none';
     document.getElementById('cal-signaler-motif').value = '';
+    document.getElementById('cal-refuser-inline').style.display = 'none';
+    document.getElementById('cal-refuser-motif').value = '';
     waze.href = 'https://waze.com/ul?q=' + encodeURIComponent(calLigneSous(item)) + '&navigate=yes';
     // Bouton "Décaler"/"Changer definitif" reserves au patron ; Bruno voit "Signaler un report".
     var decZone = document.getElementById('cal-client-decalage-zone');
@@ -7910,8 +7989,20 @@
     var changerBtn = document.getElementById('cal-client-changer-def');
     var decalerFactureBtn = document.getElementById('cal-client-decaler-facture');
     var factureNote = document.getElementById('cal-client-facture-note');
-    decZone.style.display = calIsBrunoFlow ? 'none' : 'flex';
+    var propZone = document.getElementById('cal-client-proposition-zone');
+    var propTxt = document.getElementById('cal-client-proposition-txt');
+    // Point 1.1 (01/09/2026) : une proposition en attente prend le pas sur les gestes normaux de
+    // decalage -- un seul chemin d'action a la fois, jamais 2 mecanismes concurrents affiches en
+    // meme temps sur le meme passage.
+    var aUneProposition = !calIsBrunoFlow && !!item.propositionEnAttente;
+    decZone.style.display = (calIsBrunoFlow || aUneProposition) ? 'none' : 'flex';
     signalerBtn.style.display = calIsBrunoFlow ? '' : 'none';
+    propZone.style.display = aUneProposition ? 'flex' : 'none';
+    if (aUneProposition){
+      propTxt.textContent = 'Bruno propose de reporter ce passage en ' +
+        (CONTRATS_MOIS_NOMS[(item.propositionEnAttente.moisRetenu || 1) - 1] || '') +
+        (item.propositionEnAttente.motif ? ' — motif : ' + item.propositionEnAttente.motif : '') + '.';
+    }
     // Point 1 (31/08/2026 soir) : le bouton reste EN PERMANENCE cache -- il ecrivait bien le
     // flag affecte_facturation en base (route calendrier-decaler-facture-aussi, jamais retiree,
     // toujours testable a la main) mais AUCUN moteur de generation ne le lit -- le bouton
@@ -8016,6 +8107,30 @@
       function(err){ toast(err); });
   });
 
+  // Point 1.5 (01/09/2026) : valider une proposition = EXACTEMENT le meme mecanisme que "Decaler
+  // ce passage" (meme table, meme colonne actif, meme lecture cote calendrier-mois) -- pas un
+  // 2e chemin de decalage. Le serveur revalide deja le role (calendrier-valider-proposition n'est
+  // pas dans TYPES_LECTURE_SALARIE -- Bruno ne peut jamais l'appeler, meme directement).
+  document.getElementById('cal-client-proposition-valider').addEventListener('click', function(){
+    var item = calSelectedItem; if (!item || !item.propositionEnAttente) return;
+    var btn = this; btn.disabled = true;
+    postContrats({ type: 'calendrier-valider-proposition', decalageId: item.propositionEnAttente.id },
+      function(){ btn.disabled = false; toast('✅ Report validé'); calCloseClientCard(); calLoadResume(); calLoadMois(); },
+      function(err){ btn.disabled = false; toast(err); });
+  });
+  document.getElementById('cal-client-proposition-refuser').addEventListener('click', function(){
+    var inline = document.getElementById('cal-refuser-inline');
+    inline.style.display = inline.style.display === 'none' ? 'flex' : 'none';
+  });
+  document.getElementById('cal-refuser-go').addEventListener('click', function(){
+    var item = calSelectedItem; if (!item || !item.propositionEnAttente) return;
+    var motifRefus = document.getElementById('cal-refuser-motif').value.trim();
+    var btn = this; btn.disabled = true;
+    postContrats({ type: 'calendrier-rejeter-proposition', decalageId: item.propositionEnAttente.id, motifRefus: motifRefus },
+      function(){ btn.disabled = false; toast('✕ Report refusé'); calCloseClientCard(); calLoadResume(); calLoadMois(); },
+      function(err){ btn.disabled = false; toast(err); });
+  });
+
   // Bruno (6.6) : "signaler un report" -- cree une PROPOSITION, Mickael valide, Bruno ne valide
   // jamais rien (regle permanente du projet).
   document.getElementById('cal-client-signaler').addEventListener('click', function(){
@@ -8050,6 +8165,30 @@
     items.forEach(function(item){ list.appendChild(calBuildLine(item, true)); });
   }
 
+  // Point 1.4 (01/09/2026) : Bruno voit ce que sont devenus SES signalements -- lecture seule,
+  // il ne decide jamais rien ici (pas de bouton d'action sur cette liste).
+  var BCAL_STATUT_LABEL = { en_attente: '⏳ En attente de Mickael', validee: '✅ Validé', refusee: '✕ Refusé' };
+  function bcalRenderMesPropositions(propositions){
+    var zone = document.getElementById('bcal-mes-props');
+    var list = document.getElementById('bcal-mes-props-list');
+    list.innerHTML = '';
+    if (!propositions || !propositions.length){ zone.style.display = 'none'; return; }
+    zone.style.display = '';
+    propositions.forEach(function(p){
+      var line = document.createElement('div'); line.className = 'bcal-prop-line';
+      var statut = document.createElement('span'); statut.className = 'bcal-prop-statut ' + p.statut;
+      statut.textContent = BCAL_STATUT_LABEL[p.statut] || p.statut;
+      line.appendChild(statut);
+      var detail = document.createElement('span'); detail.className = 'bcal-prop-detail';
+      var nom = p.residence || p.client || '';
+      var txt = nom + ' — reporté vers ' + (p.moisRetenuLabel || '') + (p.motifOriginal ? ' (' + p.motifOriginal + ')' : '');
+      if (p.statut === 'refusee' && p.motifRefus) txt += ' · motif du refus : ' + p.motifRefus;
+      detail.textContent = txt;
+      line.appendChild(detail);
+      list.appendChild(line);
+    });
+  }
+
   function bcalOpen(){
     brunocalview.classList.add('open');
     calIsBrunoFlow = true;
@@ -8061,6 +8200,9 @@
       document.getElementById('bcal-mois-titre').textContent = (CONTRATS_MOIS_NOMS[(j.mois || 1) - 1] || '') + ' 2026 · ' + (j.items || []).length + ' intervention(s)';
       bcalRenderList(j.items || []);
     }, function(err){ document.getElementById('bcal-mois-titre').textContent = ''; document.getElementById('bcal-list').innerHTML = '<p id="contrats-empty">' + err + '</p>'; });
+    postContrats({ type: 'calendrier-mes-propositions' }, function(j){
+      bcalRenderMesPropositions(j.propositions || []);
+    }, function(){ document.getElementById('bcal-mes-props').style.display = 'none'; });
   }
   var bcalBtn = document.getElementById('sh-bcal');
   if (bcalBtn) bcalBtn.addEventListener('click', function(){ sheetOpen(false); bcalOpen(); });
