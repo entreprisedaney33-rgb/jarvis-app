@@ -3912,7 +3912,7 @@
 
 <script>
 (function(){
-  var APPV = 'v4.02';
+  var APPV = 'v4.03';
 
   // Debug : ?debug_modal=1 force l'affichage du modal "nouvelle version" sans attendre un vrai
   // déploiement. Capturé ICI, tout au début, car plus bas (login mémorisé, connexion) le code
@@ -11237,13 +11237,22 @@
     });
     chips.appendChild(catChip);
 
-    var assigneChip = notesChip('Pour ' + (NOTES_ASSIGNE_LABEL[n.assigne_a] || n.assigne_a), function(){
-      if (n.pending) return;
-      var next = NOTES_ASSIGNE_CYCLE[(NOTES_ASSIGNE_CYCLE.indexOf(n.assigne_a) + 1) % NOTES_ASSIGNE_CYCLE.length];
-      n.assigne_a = next; assigneChip.textContent = 'Pour ' + NOTES_ASSIGNE_LABEL[next];
-      postNotes({ type:'modifier', id:n.id, champ:'assigne_a', valeur:next }, function(){}, function(err){ toast(err); });
-    });
-    chips.appendChild(assigneChip);
+    // Point 5 (31/08/2026, gros chantier) : Notes est l'outil du labo (2 personnes, Mathéo/Dorian)
+    // transplanté tel quel chez MCS (1 seule personne, Mickael) -- "L'autre" n'existe pas cote MCS.
+    // Decouverte en testant : les notes capturees automatiquement affichaient litteralement
+    // "Pour Matheo" a Mickael (le defaut d'assignation cote capture serveur n'a jamais ete adapte
+    // au tenant MCS) -- retire entierement plutot que rafistole avec un libelle correct, decision
+    // explicite de Mathéo : l'assignation entre deux personnes n'a pas de sens pour un seul
+    // utilisateur, jamais affichee ni modifiable cote MCS.
+    if (!isMcsCode()){
+      var assigneChip = notesChip('Pour ' + (NOTES_ASSIGNE_LABEL[n.assigne_a] || n.assigne_a), function(){
+        if (n.pending) return;
+        var next = NOTES_ASSIGNE_CYCLE[(NOTES_ASSIGNE_CYCLE.indexOf(n.assigne_a) + 1) % NOTES_ASSIGNE_CYCLE.length];
+        n.assigne_a = next; assigneChip.textContent = 'Pour ' + NOTES_ASSIGNE_LABEL[next];
+        postNotes({ type:'modifier', id:n.id, champ:'assigne_a', valeur:next }, function(){}, function(err){ toast(err); });
+      });
+      chips.appendChild(assigneChip);
+    }
 
     var echChip = document.createElement('label'); echChip.className = 'notes-chip echeance';
     if (n.echeance && n.echeance < notesTodayISO() && n.statut !== 'fait') echChip.classList.add('retard');
@@ -11299,12 +11308,14 @@
       postNotes({ type:'modifier', id:n.id, champ:'categorie', valeur:next }, function(){}, function(err){ toast(err); });
     });
     chips.appendChild(catChip);
-    var assigneChip = notesChip('Pour ' + (NOTES_ASSIGNE_LABEL[n.assigne_a] || n.assigne_a), function(){
-      var next = NOTES_ASSIGNE_CYCLE[(NOTES_ASSIGNE_CYCLE.indexOf(n.assigne_a) + 1) % NOTES_ASSIGNE_CYCLE.length];
-      n.assigne_a = next; assigneChip.textContent = 'Pour ' + NOTES_ASSIGNE_LABEL[next];
-      postNotes({ type:'modifier', id:n.id, champ:'assigne_a', valeur:next }, function(){}, function(err){ toast(err); });
-    });
-    chips.appendChild(assigneChip);
+    if (!isMcsCode()){
+      var assigneChipP = notesChip('Pour ' + (NOTES_ASSIGNE_LABEL[n.assigne_a] || n.assigne_a), function(){
+        var next = NOTES_ASSIGNE_CYCLE[(NOTES_ASSIGNE_CYCLE.indexOf(n.assigne_a) + 1) % NOTES_ASSIGNE_CYCLE.length];
+        n.assigne_a = next; assigneChipP.textContent = 'Pour ' + NOTES_ASSIGNE_LABEL[next];
+        postNotes({ type:'modifier', id:n.id, champ:'assigne_a', valeur:next }, function(){}, function(err){ toast(err); });
+      });
+      chips.appendChild(assigneChipP);
+    }
     var lienChipP = notesLienChip(n);
     if (lienChipP) chips.appendChild(lienChipP);
     body.appendChild(chips);
