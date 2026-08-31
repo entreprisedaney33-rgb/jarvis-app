@@ -2700,6 +2700,10 @@
     -webkit-tap-highlight-color:transparent;
   }
   #fd-total{font-size:14px; font-weight:700; color:var(--ink); text-align:right}
+  /* Point 2b (31/08/2026) : meme styles que #fd-total, pour l'editeur de lignes reutilise dans
+     "Facturer ce devis" (facLignesWrap/facLignesTotal, classe car pas d'id unique possible sur
+     une carte repetee) -- meme grammaire visuelle, aucune nouvelle regle de mise en page. */
+  .fd-total-inline{font-size:14px; font-weight:700; color:var(--ink); text-align:right; margin-top:4px}
   /* V6 : liste des factures emises + bouton "annuler par un avoir" -- meme gabarit que #devis-form
      mais plus large/scrollable (une liste, pas un formulaire court). */
   #mf-view-bg{position:fixed; inset:0; background:rgba(0,0,0,.5); display:none; z-index:52}
@@ -3901,7 +3905,7 @@
 
 <script>
 (function(){
-  var APPV = 'v3.99';
+  var APPV = 'v4.00';
 
   // Debug : ?debug_modal=1 force l'affichage du modal "nouvelle version" sans attendre un vrai
   // déploiement. Capturé ICI, tout au début, car plus bas (login mémorisé, connexion) le code
@@ -6376,6 +6380,36 @@
   // Point 4a (30/08/2026) : "Accepté (MEG)" devenait trompeur -- un devis Jarvis peut desormais
   // etre marque accepte par un geste manuel, pas seulement lu depuis un import MEG.
   var DEVIS_STATUT_LABEL = { envoye: 'Envoyé', rejete: 'Rejeté', accepte: 'Accepté', brouillon: 'Devis MEG (en attente)', intervention_faite: 'Intervention faite' };
+  // Point 2c (31/08/2026) : import de PDF pour un devis (MEG en pratique -- un devis Jarvis a
+  // toujours son propre PDF genere a la creation) sans document. Un seul input fichier partage,
+  // reutilise le meme mecanisme base64 que "Documents de reference" (docreffFile, cf. plus haut
+  // dans ce fichier) -- jamais une deuxieme implementation de la lecture de fichier.
+  var dvPdfImportInput = document.createElement('input');
+  dvPdfImportInput.type = 'file'; dvPdfImportInput.accept = 'application/pdf'; dvPdfImportInput.style.display = 'none';
+  document.body.appendChild(dvPdfImportInput);
+  var dvPdfImportTarget = null;
+  var DV_PDF_MAX_BYTES = 15 * 1024 * 1024;
+  dvPdfImportInput.addEventListener('change', function(){
+    var f = dvPdfImportInput.files && dvPdfImportInput.files[0];
+    var dv = dvPdfImportTarget;
+    if (!f || !dv) return;
+    if (f.size > DV_PDF_MAX_BYTES){ toast('Fichier trop volumineux (15 Mo max)'); return; }
+    var fr = new FileReader();
+    fr.onload = function(){
+      var b64 = String(fr.result).split(',')[1] || '';
+      postDevisFacturer({
+        type: 'importer_pdf', source: 'meg', numero: dv.numero,
+        client_nom: dv.nom, objet: dv.objet, montant: dv.montant,
+        filename: f.name, mime: f.type || 'application/pdf', data: b64,
+      }, function(r){
+        if (r && r.ok){ dv.url = r.url; toast('✅ PDF importé'); devisApplyFilter(); }
+        else { toast('❌ ' + ((r && r.message) || 'Import impossible.')); }
+      }, function(err){ toast('❌ ' + err); });
+    };
+    fr.onerror = function(){ toast('Lecture du fichier impossible'); };
+    fr.readAsDataURL(f);
+  });
+
   function devisRenderRowDevis(dv){
     var row = document.createElement('div'); row.className = 'devis-card';
     var top = document.createElement('div'); top.className = 'df-row-top';
@@ -6388,10 +6422,18 @@
     var meta = document.createElement('span'); meta.className = 'dv-meta'; meta.textContent = fmtDevisDateSimple(dv.date);
     row.appendChild(meta);
     if (dv.montant){ var montant = document.createElement('span'); montant.className = 'dv-montant'; montant.textContent = dv.montant + ' € TTC'; row.appendChild(montant); }
-    if (dv.source === 'jarvis' && dv.url){
+    // Point 2b/2c (31/08/2026) : "Voir le PDF" existe desormais pour TOUTE origine (jarvis =
+    // toujours genere a la creation ; meg = des qu'un PDF a ete importe, cf. bouton d'import
+    // ci-dessous). L'origine est une INFORMATION, jamais une caste qui bloque le geste.
+    if (dv.url){
       var pdf = document.createElement('a'); pdf.className = 'dv-pdf'; pdf.textContent = '📄 Voir le PDF'; pdf.target = '_blank';
       pdf.href = 'https://n8n-self-hosted-t0pz.onrender.com' + dv.url + '&code=' + encodeURIComponent(String(read('jarvisCode') || '').trim());
       row.appendChild(pdf);
+    } else if (dv.source === 'meg'){
+      var importBtn = document.createElement('button'); importBtn.type = 'button'; importBtn.className = 'vc-no';
+      importBtn.textContent = '📎 Importer le PDF';
+      importBtn.addEventListener('click', function(){ dvPdfImportTarget = dv; dvPdfImportInput.value = ''; dvPdfImportInput.click(); });
+      row.appendChild(importBtn);
     }
     // Point 4a (30/08/2026, gros chantier) : sans ce geste, un devis Jarvis ("source":"jarvis")
     // ne pouvait JAMAIS devenir "accepte" -- seul un import MEG le pouvait, et a partir de
@@ -6410,43 +6452,109 @@
       });
       row.appendChild(accBtn);
     }
-    // Point 4 (30/08/2026, point 4c d'origine -- LE point sensible) : "Facturer ce devis".
-    // Ordre impose : accepte -> intervention faite -> facturable (dv.statut==='intervention_faite'
-    // ne peut structurellement etre atteint qu'apres 'accepte', cf. Point 3). Reprend TOUT du
-    // devis (client/lignes/prix/TVA) via mcs-devis-facturer -- si un champ manque, refus honnete
-    // et nomme, jamais de saisie ici. L'emission reelle (le vrai clic qui consomme un numero)
-    // passe par postFacturation, EXACTEMENT le meme chemin deja utilise par l'avoir et la facture
-    // directe (deja gate patron seul + deja protege par le garde-fou de reservation existant).
-    if (dv.source === 'jarvis' && dv.statut === 'intervention_faite' && dv.token){
+    // Point 2a (31/08/2026, gros chantier) : "Intervention faite" -- avant, SEUL Bruno pouvait
+    // le declarer, et uniquement sur les devis QU'IL avait dictes. Un devis dicte/envoye par
+    // Mickael lui-meme, accepte par le client, ne pouvait alors JAMAIS devenir facturable
+    // (personne n'avait le bouton). Mickael peut desormais le faire lui-meme, sur N'IMPORTE
+    // QUEL devis accepte (le sien ou celui de Bruno) -- le geste de Bruno reste inchange par
+    // ailleurs. Identifiant = token (jarvis) ou numero (meg, avec les champs deja connus du
+    // devis, evite un aller-retour supplementaire).
+    if (dv.statut === 'accepte' && (dv.token || dv.numero)){
+      var intBtn = document.createElement('button'); intBtn.type = 'button'; intBtn.className = 'vc-ok';
+      intBtn.style.marginTop = '8px'; intBtn.style.width = '100%'; intBtn.textContent = '✅ Intervention faite';
+      intBtn.addEventListener('click', function(){
+        intBtn.disabled = true; intBtn.textContent = 'Enregistrement…';
+        var payload = dv.source === 'meg'
+          ? { type: 'terminer', source: 'meg', numero: dv.numero, client_nom: dv.nom, objet: dv.objet, montant: dv.montant }
+          : { type: 'terminer', token: dv.token };
+        postDevisIntervention(payload, function(r){
+          if (r && r.ok){ dv.statut = 'intervention_faite'; toast('✅ Intervention déclarée terminée'); devisApplyFilter(); }
+          else { intBtn.disabled = false; intBtn.textContent = '✅ Intervention faite'; toast('❌ ' + ((r && r.message) || 'Impossible.')); }
+        }, function(err){ intBtn.disabled = false; intBtn.textContent = '✅ Intervention faite'; toast('❌ ' + err); });
+      });
+      row.appendChild(intBtn);
+    }
+    // Point 4/2b (30-31/08/2026, gros chantier) : "Facturer ce devis". Ordre impose : accepte ->
+    // intervention faite -> facturable. Reprend TOUT du devis (client/lignes/prix/TVA) via
+    // mcs-devis-facturer -- si un champ manque, refus honnete et nomme, jamais de saisie a
+    // l'aveugle. Fonctionne desormais sur JARVIS (token) ET MEG (numero) : un devis MEG n'a chez
+    // nous que son en-tete, pas ses lignes -- si "preparer" repond manque:'lignes', un petit
+    // editeur de lignes (reutilise l'editeur de "Facture directe", cf. lignesEditorRow) permet a
+    // Mickael de les saisir une fois ; elles sont memorisees sur le devis (mcs_devis_meg_etat),
+    // jamais un montant global invente dans une ligne sans designation. L'emission reelle (le
+    // vrai clic qui consomme un numero) passe par postFacturation, EXACTEMENT le meme chemin
+    // deja utilise par l'avoir et la facture directe.
+    if (dv.statut === 'intervention_faite' && (dv.token || dv.numero) && !dv.dejaFacturee){
       var facBtn = document.createElement('button'); facBtn.type = 'button'; facBtn.className = 'vc-ok';
       facBtn.style.marginTop = '8px'; facBtn.style.width = '100%'; facBtn.textContent = '🧾 Facturer ce devis';
       var facRecap = document.createElement('div'); facRecap.className = 'dv-fac-recap';
       var facTxt = document.createElement('span'); facTxt.className = 'dv-fac-recap-txt';
+      var facLignesWrap = document.createElement('div'); facLignesWrap.className = 'fd-lignes';
+      var facLignesAdd = document.createElement('button'); facLignesAdd.type = 'button'; facLignesAdd.className = 'fd-ligne-add-btn'; facLignesAdd.textContent = '+ Ajouter une ligne';
+      var facLignesTotal = document.createElement('div'); facLignesTotal.className = 'fd-total-inline';
+      var facLignesSave = document.createElement('button'); facLignesSave.type = 'button'; facLignesSave.className = 'vc-ok'; facLignesSave.style.width = '100%'; facLignesSave.textContent = 'Enregistrer les lignes';
       var facConfirm = document.createElement('button'); facConfirm.type = 'button'; facConfirm.className = 'vc-ok';
       facConfirm.style.width = '100%'; facConfirm.textContent = 'Confirmer la facturation';
-      facRecap.appendChild(facTxt); facRecap.appendChild(facConfirm);
+      facRecap.appendChild(facTxt);
+      facRecap.appendChild(facLignesWrap); facRecap.appendChild(facLignesAdd); facRecap.appendChild(facLignesTotal); facRecap.appendChild(facLignesSave);
+      facRecap.appendChild(facConfirm);
       var facPayload = null;
-      facBtn.addEventListener('click', function(){
+      var facIdentifiant = dv.source === 'meg' ? { source: 'meg', numero: dv.numero } : { token: dv.token };
+      function facLignesRecalc(){ lignesEditorRecalc(facLignesWrap, facLignesTotal); }
+      facLignesAdd.addEventListener('click', function(){ facLignesWrap.appendChild(lignesEditorRow(facLignesWrap, facLignesRecalc)); });
+      function facPreparer(){
         facBtn.disabled = true; facBtn.textContent = 'Vérification…';
-        postDevisFacturer({ type: 'preparer', token: dv.token }, function(r){
+        postDevisFacturer(Object.assign({ type: 'preparer' }, facIdentifiant), function(r){
           facBtn.disabled = false; facBtn.textContent = '🧾 Facturer ce devis';
+          if (r && r.manque === 'lignes'){
+            facTxt.textContent = r.message;
+            facLignesWrap.innerHTML = ''; facLignesWrap.appendChild(lignesEditorRow(facLignesWrap, facLignesRecalc)); facLignesRecalc();
+            facLignesWrap.style.display = ''; facLignesAdd.style.display = ''; facLignesTotal.style.display = ''; facLignesSave.style.display = '';
+            facConfirm.style.display = 'none';
+            facRecap.classList.add('open');
+            return;
+          }
           if (!r || !r.ok){ toast('❌ ' + ((r && r.message) || 'Impossible de préparer la facture.')); return; }
           facPayload = r.payload;
           facTxt.textContent = 'Facturer ' + r.recap.clientNom + ' — ' + r.recap.montantTtc + ' € TTC — série ' + r.recap.serie + '.';
+          facLignesWrap.style.display = 'none'; facLignesAdd.style.display = 'none'; facLignesTotal.style.display = 'none'; facLignesSave.style.display = 'none';
+          facConfirm.style.display = '';
           facRecap.classList.add('open');
         }, function(err){ facBtn.disabled = false; facBtn.textContent = '🧾 Facturer ce devis'; toast('❌ ' + err); });
+      }
+      facBtn.addEventListener('click', facPreparer);
+      facLignesSave.addEventListener('click', function(){
+        var lecture = lignesEditorRead(facLignesWrap);
+        if (lecture.invalide){ toast('Chaque ligne veut une désignation, une quantité et un prix HT.'); return; }
+        if (!lecture.lignes.length){ toast('Ajoute au moins une ligne.'); return; }
+        facLignesSave.disabled = true; facLignesSave.textContent = 'Enregistrement…';
+        postDevisFacturer(Object.assign({ type: 'lignes', lignes: lecture.lignes }, facIdentifiant), function(){
+          facLignesSave.disabled = false; facLignesSave.textContent = 'Enregistrer les lignes';
+          facPreparer(); // relance immediatement le recap avec les lignes desormais connues
+        }, function(err){ facLignesSave.disabled = false; facLignesSave.textContent = 'Enregistrer les lignes'; toast('❌ ' + err); });
       });
       facConfirm.addEventListener('click', function(){
         if (!facPayload) return;
         facConfirm.disabled = true; facConfirm.textContent = 'Émission…';
         postFacturation({ type: 'emettre', type_doc: 'facture', client: facPayload.client, objet: facPayload.objet, lignes: facPayload.lignes, devis_origine_token: facPayload.devis_origine_token }, function(r){
           facConfirm.disabled = false; facConfirm.textContent = 'Confirmer la facturation';
-          if (r && r.ok){ toast('✅ Facture émise pour ' + (facPayload.client && facPayload.client.nom)); devisAttenteOpen(); }
+          if (r && r.ok){
+            toast('✅ Facture émise pour ' + (facPayload.client && facPayload.client.nom));
+            if (dv.source === 'meg'){
+              postDevisFacturer({ type: 'facturee', source: 'meg', numero: dv.numero, facture_numero: r.numero_complet }, function(){ devisAttenteOpen(); }, function(){ devisAttenteOpen(); });
+            } else {
+              devisAttenteOpen();
+            }
+          }
           else { toast('❌ ' + ((r && r.message) || 'Émission impossible.')); }
         }, function(err){ facConfirm.disabled = false; facConfirm.textContent = 'Confirmer la facturation'; toast('❌ ' + err); });
       });
       row.appendChild(facBtn);
       row.appendChild(facRecap);
+    } else if (dv.dejaFacturee){
+      var facturee = document.createElement('span'); facturee.className = 'mf-card-annulee';
+      facturee.textContent = 'Déjà facturée (' + (dv.factureNumero || '') + ').';
+      row.appendChild(facturee);
     }
     return row;
   }
@@ -6481,6 +6589,13 @@
     // MEG importée n'a pas de numeroComplet exploitable par ce mécanisme.
     if (f.source === 'jarvis' && f.numeroComplet){
       mfAppendAvoir(row, f, function(){ devisAttenteOpen(); });
+    } else {
+      // Point 2d (31/08/2026) : le geste d'annulation existe, mais uniquement sur une facture
+      // EMISE PAR JARVIS -- sur une facture MEG, ne rien afficher serait un vide silencieux
+      // (propriete F : ce qui est impossible ici est DIT, jamais masque).
+      var megNote = document.createElement('span'); megNote.className = 'mf-card-annulee';
+      megNote.textContent = 'Facture MEG — son annulation se fait dans MEG.';
+      row.appendChild(megNote);
     }
     return row;
   }
@@ -6499,11 +6614,26 @@
       itemsA.forEach(function(dv){ devisList.appendChild(devisBuildCardAValider(dv)); });
     } else if (devisActiveTab === 'devis'){
       var itemsD = (devisData.devis || []).filter(function(dv){ return devisCatDevis(dv) === devisFilterDevisVal && (!q || normDoc(dv.nom).indexOf(q) !== -1); });
-      if (!itemsD.length){ devisList.innerHTML = '<p id="devis-empty">Aucun devis trouvé.</p>'; return; }
+      if (!itemsD.length){
+        // Point 2a (31/08/2026) : un etat vide montre le CHEMIN, pas une liste blanche muette --
+        // sans ça, la seule facon de decouvrir "Facturer ce devis" est d'avoir deja un devis
+        // accepte, ce qui ne peut jamais arriver la premiere fois qu'on regarde cet onglet.
+        var msgVide = devisFilterDevisVal === 'valides'
+          ? 'Aucun devis accepté pour l’instant — quand un client accepte, le devis apparaît ici avec le bouton 🧾 Facturer.'
+          : 'Aucun devis trouvé.';
+        devisList.innerHTML = '<p id="devis-empty">' + msgVide + '</p>';
+        return;
+      }
       itemsD.forEach(function(dv){ devisList.appendChild(devisRenderRowDevis(dv)); });
     } else {
       var itemsF = (devisData.factures || []).filter(function(f){ return devisFilterFactures[devisCatFacture(f)] && (!q || normDoc(f.nom).indexOf(q) !== -1); });
-      if (!itemsF.length){ devisList.innerHTML = '<p id="devis-empty">Aucune facture trouvée.</p>'; return; }
+      if (!itemsF.length){
+        var aucunFiltre = !devisFilterFactures.payees && !devisFilterFactures.impayees;
+        devisList.innerHTML = '<p id="devis-empty">' + (aucunFiltre
+          ? 'Aucun filtre actif — active « Payées » ou « Impayées » ci-dessus pour voir tes factures.'
+          : 'Aucune facture trouvée.') + '</p>';
+        return;
+      }
       itemsF.forEach(function(f){ devisList.appendChild(devisRenderRowFacture(f)); });
     }
   }
@@ -12531,30 +12661,49 @@
   var fdTotal = document.getElementById('fd-total');
   var fdErr = document.getElementById('fd-err');
   var fdSave = document.getElementById('fd-save');
-  function fdLigneRow(){
+  // Point 2b (31/08/2026, gros chantier) : editeur de lignes generalise -- reutilise par le
+  // formulaire "Facture directe" (fdLigneRow/fdRecalcTotal, ci-dessous, comportement inchange)
+  // ET par l'editeur de lignes d'un devis MEG sans lignes exploitables (devisRenderRowDevis,
+  // plus bas) -- jamais une deuxieme implementation du meme editeur.
+  function lignesEditorRow(wrap, onChange){
     var row = document.createElement('div'); row.className = 'fd-ligne';
     var desig = document.createElement('input'); desig.type = 'text'; desig.className = 'fd-ligne-desig'; desig.placeholder = 'Désignation';
     var qte = document.createElement('input'); qte.type = 'number'; qte.className = 'fd-ligne-qte'; qte.placeholder = 'Qté'; qte.min = '1'; qte.step = '1'; qte.value = '1';
     var prix = document.createElement('input'); prix.type = 'number'; prix.className = 'fd-ligne-prix'; prix.placeholder = 'Prix'; prix.min = '0'; prix.step = '0.01';
     var tva = document.createElement('input'); tva.type = 'number'; tva.className = 'fd-ligne-tva'; tva.placeholder = 'TVA %'; tva.min = '0'; tva.step = '0.1'; tva.value = '20';
     var del = document.createElement('button'); del.type = 'button'; del.className = 'fd-ligne-del'; del.textContent = '✕';
-    [desig, qte, prix, tva].forEach(function(el){ el.addEventListener('input', fdRecalcTotal); });
+    [desig, qte, prix, tva].forEach(function(el){ el.addEventListener('input', onChange); });
     del.addEventListener('click', function(){
-      if (fdLignesWrap.children.length <= 1) return; // toujours au moins 1 ligne
-      row.remove(); fdRecalcTotal();
+      if (wrap.children.length <= 1) return; // toujours au moins 1 ligne
+      row.remove(); onChange();
     });
     row.appendChild(desig); row.appendChild(qte); row.appendChild(prix); row.appendChild(tva); row.appendChild(del);
     return row;
   }
-  function fdRecalcTotal(){
+  function lignesEditorRecalc(wrap, totalEl){
     var total = 0;
-    fdLignesWrap.querySelectorAll('.fd-ligne').forEach(function(row){
+    wrap.querySelectorAll('.fd-ligne').forEach(function(row){
       var q = Number(row.querySelector('.fd-ligne-qte').value) || 0;
       var p = Number(row.querySelector('.fd-ligne-prix').value) || 0;
       total += q * p;
     });
-    fdTotal.textContent = 'Total HT : ' + fmtEuros(total);
+    totalEl.textContent = 'Total HT : ' + fmtEuros(total);
   }
+  function lignesEditorRead(wrap){
+    var lignes = [], ligneInvalide = false;
+    wrap.querySelectorAll('.fd-ligne').forEach(function(row){
+      var d = row.querySelector('.fd-ligne-desig').value.trim();
+      var q = Number(row.querySelector('.fd-ligne-qte').value) || 0;
+      var p = row.querySelector('.fd-ligne-prix').value;
+      var t = Number(row.querySelector('.fd-ligne-tva').value);
+      if (!d && !p) return; // ligne vide, ignorée
+      if (!d || !p || Number(p) <= 0 || q <= 0){ ligneInvalide = true; return; }
+      lignes.push({ designation: d, quantite: q, prix_ht: Number(p), tva: isNaN(t) ? 20 : t });
+    });
+    return { lignes: lignes, invalide: ligneInvalide };
+  }
+  function fdLigneRow(){ return lignesEditorRow(fdLignesWrap, fdRecalcTotal); }
+  function fdRecalcTotal(){ lignesEditorRecalc(fdLignesWrap, fdTotal); }
   document.getElementById('fd-ligne-add').addEventListener('click', function(){
     fdLignesWrap.appendChild(fdLigneRow());
   });
@@ -12596,18 +12745,9 @@
     if (!nom){ fdErr.textContent = 'Le nom du client est obligatoire.'; return; }
     if (!adresse){ fdErr.textContent = "L'adresse est obligatoire."; return; }
     if (email && email.indexOf('@') === -1){ fdErr.textContent = 'Adresse email invalide.'; return; }
-    var lignes = [];
-    var ligneInvalide = false;
-    fdLignesWrap.querySelectorAll('.fd-ligne').forEach(function(row){
-      var d = row.querySelector('.fd-ligne-desig').value.trim();
-      var q = Number(row.querySelector('.fd-ligne-qte').value) || 0;
-      var p = row.querySelector('.fd-ligne-prix').value;
-      var t = Number(row.querySelector('.fd-ligne-tva').value);
-      if (!d && !p) return; // ligne vide, ignorée
-      if (!d || !p || Number(p) <= 0 || q <= 0){ ligneInvalide = true; return; }
-      lignes.push({ designation: d, quantite: q, prix_ht: Number(p), tva: isNaN(t) ? 20 : t });
-    });
-    if (ligneInvalide){ fdErr.textContent = 'Chaque ligne veut une désignation, une quantité et un prix HT.'; return; }
+    var lecture = lignesEditorRead(fdLignesWrap);
+    var lignes = lecture.lignes;
+    if (lecture.invalide){ fdErr.textContent = 'Chaque ligne veut une désignation, une quantité et un prix HT.'; return; }
     if (!lignes.length){ fdErr.textContent = 'Ajoute au moins une ligne.'; return; }
     fdSave.disabled = true;
     fdSave.textContent = 'Émission…';
