@@ -1644,26 +1644,33 @@
   }
   #renta-list{flex:1; overflow-y:auto; -webkit-overflow-scrolling:touch; padding:14px 14px calc(20px + env(safe-area-inset-bottom))}
   #renta-empty, #renta-loading{color:var(--muted); text-align:center; padding:40px 20px; font-size:14px}
-  /* Vue mensuelle (coeur du panneau) */
+  /* Vue mensuelle (coeur du panneau) -- Point 4 (31/08/2026, gros chantier) : 3 problemes
+     corriges ensemble (les couleurs restaient bonnes, seule la structure changeait) --
+     (1) chaque mois = sa PROPRE carte distincte espacee (avant : un seul bloc #renta-months
+     avec de simples traits fins entre mois, les mois se confondaient en scrollant) ;
+     (2) montants alignes sur les UNITES via une vraie grille 3 colonnes + alignement a droite +
+     chiffres tabulaires (avant : centres, largeur variable selon le nombre de chiffres, aucun
+     alignement vertical possible d'un mois a l'autre) ;
+     (3) "Reste" (le total de la ligne) ressort visuellement (police plus grande) -- l'oeil doit
+     s'y poser en premier, Rentre/Sorti restent lisibles mais secondaires. */
   #renta-hero{
-    background:var(--surface); border-radius:16px; padding:16px; margin-bottom:14px;
-    text-align:center;
+    background:var(--surface); border-radius:16px; padding:16px; margin-bottom:10px;
   }
-  #renta-hero .rh-mois{font-size:13px; color:var(--muted); text-transform:uppercase; letter-spacing:.03em; margin-bottom:10px}
-  .rh-row{display:flex; justify-content:space-around; gap:8px}
-  .rh-stat{display:flex; flex-direction:column; gap:2px}
-  .rh-label{font-size:12px; color:var(--muted)}
-  .rh-val{font-size:22px; font-weight:800}
+  #renta-hero .rh-mois{font-size:13px; color:var(--muted); text-transform:uppercase; letter-spacing:.03em; margin-bottom:12px; text-align:center; font-weight:700}
+  .rh-row{display:grid; grid-template-columns:1fr 1fr 1fr; gap:6px}
+  .rh-stat{display:flex; flex-direction:column; gap:3px; min-width:0}
+  .rh-label{font-size:11.5px; color:var(--muted); text-align:center}
+  .rh-val{font-size:18px; font-weight:800; font-variant-numeric:tabular-nums; text-align:right; white-space:nowrap; overflow:hidden; text-overflow:ellipsis}
   .rh-val.ca{color:var(--blue)}
   .rh-val.dep{color:var(--no)}
+  .rh-val.benef{font-size:21px}
   .rh-val.benef.pos{color:var(--ok)}
   .rh-val.benef.neg{color:var(--no)}
-  .rh-row.rh-small .rh-label{font-size:11px}
-  .rh-row.rh-small .rh-val{font-size:15px}
-  #renta-months{background:var(--surface); border-radius:16px; padding:12px 14px; margin-bottom:6px}
-  .renta-month-row{padding:10px 0; border-top:0.5px solid var(--hairline)}
-  .renta-month-row:first-child{border-top:none; padding-top:0}
-  .renta-month-row .rm-mois{font-size:12.5px; color:var(--muted); text-transform:uppercase; letter-spacing:.03em; margin-bottom:6px}
+  .rh-row.rh-small .rh-val{font-size:14.5px}
+  .rh-row.rh-small .rh-val.benef{font-size:17px}
+  #renta-months{display:flex; flex-direction:column; gap:8px; margin-bottom:6px}
+  .renta-month-row{background:var(--surface); border-radius:14px; padding:12px 14px}
+  .renta-month-row .rm-mois{font-size:11.5px; color:var(--muted); text-transform:uppercase; letter-spacing:.03em; margin-bottom:8px; text-align:center; font-weight:600}
   #renta-maj{font-size:11.5px; color:var(--muted); text-align:center; margin:4px 0 18px; line-height:1.4}
   #renta-overview{margin-bottom:18px}
   #renta-overview .ro-title{font-size:12.5px; font-weight:700; color:var(--gold-a); text-transform:uppercase; letter-spacing:.03em; margin-bottom:8px}
@@ -3905,7 +3912,7 @@
 
 <script>
 (function(){
-  var APPV = 'v4.01';
+  var APPV = 'v4.02';
 
   // Debug : ?debug_modal=1 force l'affichage du modal "nouvelle version" sans attendre un vrai
   // déploiement. Capturé ICI, tout au début, car plus bas (login mémorisé, connexion) le code
