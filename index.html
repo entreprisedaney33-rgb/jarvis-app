@@ -4327,7 +4327,7 @@
 
 <script>
 (function(){
-  var APPV = 'v4.13';
+  var APPV = 'v4.14';
 
   // Debug : ?debug_modal=1 force l'affichage du modal "nouvelle version" sans attendre un vrai
   // déploiement. Capturé ICI, tout au début, car plus bas (login mémorisé, connexion) le code
@@ -4726,11 +4726,11 @@
     var check = document.getElementById('sw-tuto');
     if (check) check.classList.toggle('on', tutoOn());
   }
-  var tutoState = { key: null, i: 0 };
+  var tutoState = { key: null, i: 0, openAttempts: 0 };
   function tutoStart(key){
     var cfg = TUTO_CONFIGS[key];
     if (!cfg || !cfg.steps.length) return;
-    tutoState = { key: key, i: 0 };
+    tutoState = { key: key, i: 0, openAttempts: 0 };
     tutoRenderStep();
   }
   // Un élément display:none (ou dans un parent display:none, ex. un -form-bg pas encore
@@ -4752,14 +4752,25 @@
     // ouvert (cas où le patron l'avait ouvert à la main avant de cliquer ❓, ne pas le rouvrir).
     // Le clic ne touche jamais Enregistrer/Valider/Supprimer, seulement l'ouverture (voir
     // TUTO_CONFIGS : `open` ne référence que des boutons "Ajouter"/"Nouveau", jamais un envoi).
+    //
+    // Etape 6.1 (02/09/2026) : VRAI BUG trouve en testant -- pour un `open` qui bascule un ONGLET
+    // (ex. Contrats -> Calendrier), l'ouverture declenche un VRAI appel reseau (liste des
+    // interventions) qui prend souvent 1 a 2 s -- bien plus que les "2 frames" prevues pour un
+    // simple formulaire qui se depile en CSS pur. Avant ce fix, l'ancien code re-cliquait
+    // l'ouvreur et re-attendait 2 frames A CHAQUE passage, SANS COMPTEUR -- verifie par relecture :
+    // si le reseau ne repond jamais (coupure), la boucle continue indefiniment au lieu de finir
+    // par sauter l'etape ("jamais bloquant" casse dans ce seul cas). Fix : compteur borne
+    // (`tutoState.openAttempts`, remis a 0 a chaque VRAIE nouvelle etape dans tutoNext ci-dessous)
+    // + attente par `setTimeout` (cadence previsible ~150 ms, contrairement a 2x
+    // requestAnimationFrame qui ne mesure que la peinture, pas un vrai delai) -- jusqu'a 20
+    // tentatives (~3 s, largement au-dessus du temps reel observe pour ce calendrier) avant de se
+    // rabattre sur le comportement "jamais bloquant" existant (etape suivante).
     if (step.open && !tutoIsVisible(target)){
       var opener = document.querySelector(step.open);
-      if (opener){
+      if (opener && tutoState.openAttempts < 20){
+        tutoState.openAttempts++;
         opener.click();
-        // Le formulaire s'ouvre en synchrone (toggle de classe .open) mais le layout a besoin
-        // d'un cycle de peinture pour se stabiliser avant qu'on mesure sa position -- 2 frames
-        // suffisent (déjà le repli utilisé ailleurs dans ce fichier pour ce genre de mesure).
-        requestAnimationFrame(function(){ requestAnimationFrame(tutoRenderStep); });
+        setTimeout(tutoRenderStep, 150);
         return;
       }
     }
@@ -4824,6 +4835,7 @@
     var toStep = cfg.steps[tutoState.i + 1];
     tutoLeaveChapterIfNeeded(fromStep, toStep);
     tutoState.i++;
+    tutoState.openAttempts = 0; // sujet 6.1 (02/09/2026) : nouveau budget de tentatives par etape
     tutoRenderStep();
   }
   // "Passer"/Échap/clic-fond peuvent survenir EN PLEIN MILIEU d'un sous-écran ouvert par le
@@ -9515,15 +9527,36 @@
   // ouvertures rapprochees du panneau), on accroche son callback au meme resultat au lieu de
   // relancer un 2e appel identique au calcul lourd.
   var relancesCalcEnVol = null;
-  function relancesChargerCalcul(onOk, onErr){
-    if (relancesCalcEnVol){ relancesCalcEnVol.push({ onOk: onOk, onErr: onErr }); return; }
+  // Sujet 6.2 (02/09/2026) : `forceFrais` -- VRAI risque trouve en relisant le code (pas suppose) :
+  // apres un envoi/une action, l'app rappelle relancesChargerCalcul() pour rafraichir l'ecran --
+  // sans ce drapeau, cet appel aurait pu retomber sur l'instantane du matin (sujet 2 du meme jour),
+  // qui ne sait RIEN de l'action qui vient d'avoir lieu -- la relance envoyee reapparaitrait comme
+  // "a relancer". `forceFrais:true` dit au serveur d'ignorer l'instantane pour CET appel precis et
+  // de toujours recalculer en direct (repli deja existant, jamais touche). Un appel forceFrais
+  // n'est JAMAIS fusionne avec un calcul deja en vol qui ne l'etait pas (et inversement) -- il
+  // attend la fin du calcul en cours puis relance le sien, pour ne jamais risquer de recevoir un
+  // resultat potentiellement issu de l'instantane alors qu'un frais etait demande.
+  function relancesChargerCalcul(onOk, onErr, forceFrais){
+    if (relancesCalcEnVol){
+      if (forceFrais && !relancesCalcEnVol.forceFrais){
+        var enCours = relancesCalcEnVol;
+        enCours.apresCoup = enCours.apresCoup || [];
+        enCours.apresCoup.push({ onOk: onOk, onErr: onErr });
+        return;
+      }
+      relancesCalcEnVol.push({ onOk: onOk, onErr: onErr });
+      return;
+    }
     relancesCalcEnVol = [{ onOk: onOk, onErr: onErr }];
-    postRelances({}, function(j){
+    relancesCalcEnVol.forceFrais = !!forceFrais;
+    postRelances(forceFrais ? { forceFrais: true } : {}, function(j){
       var attente = relancesCalcEnVol; relancesCalcEnVol = null;
       attente.forEach(function(cb){ cb.onOk(j); });
+      if (attente.apresCoup) attente.apresCoup.forEach(function(cb){ relancesChargerCalcul(cb.onOk, cb.onErr, true); });
     }, function(err){
       var attente = relancesCalcEnVol; relancesCalcEnVol = null;
       attente.forEach(function(cb){ cb.onErr(err); });
+      if (attente.apresCoup) attente.apresCoup.forEach(function(cb){ relancesChargerCalcul(cb.onOk, cb.onErr, true); });
     });
   }
   // A (26/08/2026) : cartes "Relancées 2×" -- une par destinataire/client, chacune listant les
@@ -10347,7 +10380,7 @@
         banner.textContent = '⚡ Calcul du matin (' + heure + ') — pas un recalcul en direct. Envoyer une relance déclenche toujours un calcul frais.';
         relancesList.insertBefore(banner, relancesList.firstChild);
       }
-    }, function(err){ if (!cached) relancesList.innerHTML = '<p id="relances-empty">' + err + '</p>'; });
+    }, function(err){ if (!cached) relancesList.innerHTML = '<p id="relances-empty">' + err + '</p>'; }, !!keepOpen);
   }
   function relancesSnapshotHeureLabel(iso){
     try { return new Date(iso).toLocaleTimeString('fr-FR', { hour:'2-digit', minute:'2-digit', timeZone:'Europe/Paris' }); }
