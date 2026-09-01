@@ -2484,6 +2484,29 @@
   .notes-chip.echeance.retard{background:rgba(255,59,48,.18); color:#FF6961}
   .notes-chip.lien{background:rgba(10,132,255,.18); color:var(--blue)}
   .notes-provenance{font-size:11px; color:var(--muted); display:block; margin-top:6px}
+  /* Sujet 4 (01/09/2026) : age/source/client/urgence -- memes gabarits que .notes-chip pour la
+     coherence visuelle, couleurs dediees pour rester lisibles sans confusion avec categorie/echeance. */
+  .notes-source-chip{cursor:default; pointer-events:none}
+  .notes-source-chip.suppose{background:rgba(232,178,92,.18); color:var(--gold-a)}
+  .notes-source-chip.humain{background:rgba(52,199,89,.16); color:#34C759}
+  .notes-client-chip{background:rgba(10,132,255,.18); color:var(--blue)}
+  .notes-urgence-badge{
+    font-size:11px; font-weight:700; padding:4px 10px; border-radius:99px; display:inline-block;
+    margin-top:7px;
+  }
+  .notes-urgence-badge.haute{background:rgba(255,59,48,.18); color:#FF6961}
+  .notes-urgence-badge.moyenne{background:rgba(255,159,10,.18); color:#FFB340}
+  #notes-age-tabs{display:flex; gap:8px; padding:0 14px 8px; overflow-x:auto; -webkit-overflow-scrolling:touch}
+  .notes-age-tab{
+    flex:0 0 auto; padding:6px 12px; border-radius:99px; border:0; font-size:12px; font-weight:700;
+    background:transparent; color:var(--muted); cursor:pointer; -webkit-tap-highlight-color:transparent;
+    white-space:nowrap; border:1px solid rgba(255,255,255,.14);
+  }
+  .notes-age-tab.active{background:rgba(255,255,255,.14); color:var(--ink); border-color:transparent}
+  #notes-client-filter{
+    margin:0 14px 10px; padding:8px 12px; border-radius:10px; border:0.5px solid rgba(255,255,255,.18);
+    background:#2E2E32; color:var(--ink); font-size:13px; -webkit-appearance:none; max-width:calc(100% - 28px);
+  }
   .notes-del{
     width:26px; height:26px; border-radius:50%; border:0; flex:0 0 auto; background:transparent;
     color:var(--muted); font-size:14px; cursor:pointer; -webkit-tap-highlight-color:transparent;
@@ -4048,6 +4071,13 @@
     <button class="notes-tab" data-vue="idee" type="button">💡 Idées</button>
     <button class="notes-tab" data-vue="fait" type="button">☑️ Fait</button>
   </div>
+  <div id="notes-age-tabs">
+    <button class="notes-age-tab active" data-age="tout" type="button">Tout</button>
+    <button class="notes-age-tab" data-age="recent" type="button">🟢 Récent</button>
+    <button class="notes-age-tab" data-age="mois" type="button">🟡 Ce mois</button>
+    <button class="notes-age-tab" data-age="ancien" type="button">⚪ Plus ancien</button>
+  </div>
+  <select id="notes-client-filter" style="display:none"><option value="">Tous les clients</option></select>
   <div id="notes-search-wrap">
     <input id="notes-search" type="search" inputmode="search" placeholder="🔍 Rechercher dans les notes…" autocomplete="off" autocapitalize="off" autocorrect="off">
   </div>
@@ -4276,7 +4306,7 @@
 
 <script>
 (function(){
-  var APPV = 'v4.10';
+  var APPV = 'v4.11';
 
   // Debug : ?debug_modal=1 force l'affichage du modal "nouvelle version" sans attendre un vrai
   // déploiement. Capturé ICI, tout au début, car plus bas (login mémorisé, connexion) le code
@@ -12614,6 +12644,122 @@
     return String(s || '').toLowerCase().normalize('NFD').replace(/[̀-ͯ]/g, '');
   }
 
+  // Sujet 4 (01/09/2026) : age et urgence des notes -- audit prealable (4.6) sur les 18 notes
+  // MCS reelles en base : 0/18 ont une "date du fait" distincte de la date d'ecriture (aucune
+  // colonne dediee n'existe, seul `date`=createdAt est disponible) -- honnete des le depart,
+  // jamais fabriquee : la ligne d'age ci-dessous utilise `date` (capture/ecriture), jamais
+  // presentee comme une date de fait certaine.
+  var notesAgeFiltre = 'tout'; // tout | recent | mois | ancien
+  var notesClientFiltre = '';
+  function notesAgeJours(iso){
+    if (!iso) return null;
+    var t = new Date(iso).getTime();
+    if (isNaN(t)) return null;
+    return Math.floor((Date.now() - t) / 86400000);
+  }
+  function notesAgeLabel(iso){
+    var j = notesAgeJours(iso);
+    if (j == null) return '';
+    if (j <= 0) return 'aujourd\'hui';
+    if (j === 1) return 'hier';
+    if (j < 7) return 'il y a ' + j + ' jours';
+    if (j < 31){ var s = Math.round(j / 7); return 'il y a ' + s + ' semaine' + (s > 1 ? 's' : ''); }
+    var m = Math.round(j / 30.44);
+    return 'il y a ' + m + ' mois';
+  }
+  function notesAgeLine(n){
+    if (!n.date) return '';
+    return notesFmtDate(n.date) + ' · ' + notesAgeLabel(n.date);
+  }
+  function notesAgeBucket(iso){
+    var j = notesAgeJours(iso);
+    if (j == null) return 'ancien';
+    if (j <= 7) return 'recent';
+    var d = new Date(iso), now = new Date();
+    if (d.getFullYear() === now.getFullYear() && d.getMonth() === now.getMonth()) return 'mois';
+    return 'ancien';
+  }
+  // 4.2 -- vocabulaire "3 niveaux" du projet, applique honnetement aux 2 seuls etats reels que
+  // mcs_notes peut produire (source=manuel ecrit par un humain ; source=auto+valide capte par
+  // Jarvis puis confirme). "Fait par Jarvis" (une action que Jarvis a lui-meme executee, ex un
+  // envoi) ne s'applique a AUCUNE note aujourd'hui -- mcs_notes ne journalise pas d'actions Jarvis,
+  // seulement des rappels/idees -- jamais force pour faire le compte.
+  function notesSourceInfo(n){
+    if (n.source === 'manuel') return { label:'✍️ Déclaré par ' + (notesMoi || 'vous'), cls:'humain' };
+    if (n.source === 'auto' && n.valide === 'oui') return { label:'✅ Confirmé par ' + (notesMoi || 'vous'), cls:'humain' };
+    return { label:'🔮 Supposé — capté par Jarvis, pas confirmé', cls:'suppose' };
+  }
+  // 4.3 -- rapprochement best-effort avec "Mes contacts" (relationsData, deja charge par ce
+  // panneau si ouvert au moins une fois) : jamais invente, seuil >=4 caracteres (meme garde-fou
+  // que les autres rapprochements de ce projet, contre les faux positifs sur des mots courts).
+  function notesFindClientMatch(contenu){
+    if (!contenu || !relationsData || !relationsData.length) return null;
+    var norm = notesNorm(contenu);
+    var best = null, bestLen = 0;
+    relationsData.forEach(function(r){
+      [r.nom, r.societe].forEach(function(cand){
+        if (!cand) return;
+        var c = notesNorm(cand);
+        if (c.length < 4) return;
+        if (norm.indexOf(c) !== -1 && c.length > bestLen){ best = r; bestLen = c.length; }
+      });
+    });
+    return best;
+  }
+  function notesEnsureRelationsLoaded(){
+    if (relationsData && relationsData.length) return;
+    var cached = panelCacheLoad('relations');
+    if (cached && cached.data && cached.data.relations && cached.data.relations.length){
+      relationsData = cached.data.relations;
+      notesBuildClientFilterOptions(); notesRender();
+    }
+    relationsChargerListe(function(j){
+      panelCacheSave('relations', j);
+      relationsData = j.relations || [];
+      notesBuildClientFilterOptions(); notesRender();
+    }, function(){ /* best-effort, silencieux -- pas de client detecte tant que non charge */ });
+  }
+  function notesOpenClientMatch(r){
+    notesClose();
+    var nom = r.nom || r.societe || '';
+    relationsQuery = nom; relationsSearchInput.value = nom;
+    if (relationsData && relationsData.length){ relationsview.classList.add('open'); relationsApplyFilter(); }
+    else relationsOpen();
+  }
+  function notesBuildClientFilterOptions(){
+    var sel = document.getElementById('notes-client-filter');
+    if (!sel) return;
+    var seen = {}, noms = [];
+    notesAll.forEach(function(n){
+      var m = notesFindClientMatch(n.contenu);
+      if (m){ var key = m.nom || m.societe; if (key && !seen[key]){ seen[key] = true; noms.push(key); } }
+    });
+    noms.sort(function(a, b){ return notesNorm(a) < notesNorm(b) ? -1 : 1; });
+    var prevVal = sel.value;
+    sel.innerHTML = '<option value="">Tous les clients</option>' + noms.map(function(nom){
+      return '<option value="' + nom.replace(/"/g, '&quot;') + '">' + nom + '</option>';
+    }).join('');
+    sel.value = noms.indexOf(prevVal) !== -1 ? prevVal : '';
+    sel.style.display = noms.length ? '' : 'none';
+  }
+  // 4.4 -- l'urgence n'est JAMAIS devinee depuis le texte libre (les notes auto-capturees sont
+  // la paraphrase de Jarvis, pas une citation fiable) : seul `echeance` (une vraie date ecrite,
+  // deja fournie par les donnees) sert de signal. Pas d'echeance -> pas de badge d'urgence, un
+  // age suffit (regle explicite du sujet 4.4).
+  function notesUrgenceInfo(n){
+    if (n.statut === 'fait' || !n.echeance) return null;
+    var today = notesTodayISO();
+    if (n.echeance < today){
+      var jr = Math.round((new Date(today) - new Date(n.echeance)) / 86400000);
+      return { label:'🔴 Échéance dépassée depuis ' + jr + ' jour' + (jr > 1 ? 's' : ''), cls:'haute' };
+    }
+    var reste = Math.round((new Date(n.echeance) - new Date(today)) / 86400000);
+    if (reste <= 3){
+      return { label:'🟠 Échéance ' + (reste === 0 ? 'aujourd\'hui' : ('dans ' + reste + ' jour' + (reste > 1 ? 's' : ''))), cls:'moyenne' };
+    }
+    return null;
+  }
+
   function notesChip(label, onClick){
     var b = document.createElement('button'); b.className = 'notes-chip'; b.type = 'button'; b.textContent = label;
     b.addEventListener('click', onClick);
@@ -12726,17 +12872,44 @@
     var lienChip = notesLienChip(n);
     if (lienChip) chips.appendChild(lienChip);
 
+    // Sujet 4.2 -- source (3 niveaux), toujours affichee, jamais melangee au chip categorie.
+    var src = notesSourceInfo(n);
+    var srcChip = document.createElement('span'); srcChip.className = 'notes-chip notes-source-chip ' + src.cls;
+    srcChip.textContent = src.label;
+    chips.appendChild(srcChip);
+
+    // Sujet 4.3 -- client concerne, uniquement si identifie avec confiance (best-effort contre
+    // Mes contacts deja charges) ; sinon rien, jamais un lien vers une fiche devinee.
+    var clientMatch = notesFindClientMatch(n.contenu);
+    if (clientMatch && !n.pending){
+      var clientChip = notesChip('🔗 ' + (clientMatch.nom || clientMatch.societe), function(){ notesOpenClientMatch(clientMatch); });
+      clientChip.classList.add('notes-client-chip');
+      chips.appendChild(clientChip);
+    }
+
     body.appendChild(chips);
+
+    // Sujet 4.4 -- urgence deduite UNIQUEMENT d'un signal reel (echeance ecrite) ; pas de signal,
+    // pas de badge -- l'age (juste en dessous) suffit alors.
+    var urg = notesUrgenceInfo(n);
+    if (urg){
+      var urgBadge = document.createElement('span'); urgBadge.className = 'notes-urgence-badge ' + urg.cls;
+      urgBadge.textContent = urg.label;
+      body.appendChild(urgBadge);
+    }
 
     // Chantier B (31/08/2026) : residu du meme bug que le chip "Pour X" juste au-dessus (deja
     // gated) -- cote MCS (mono-utilisateur), "par Mickael" est redondant ET n.auteur pouvait
     // encore valoir litteralement "Mathéo" pour une note deja validee (defaut serveur corrige
     // le 31/08/2026, mais defense en profondeur ici : ne jamais afficher l'auteur cote MCS).
+    // Sujet 4.1 (01/09/2026) : la ligne de provenance devient la ligne AGE -- toujours visible,
+    // jamais juste une date seche (voir notesAgeLine, honnete sur le fait que c'est la date de
+    // capture/ecriture, aucune "date du fait" distincte n'existant dans les donnees -- cf. 4.6).
     var prov = document.createElement('span'); prov.className = 'notes-provenance';
     if (isMcsCode()){
-      prov.textContent = n.pending ? 'Enregistrement…' : (n.date ? notesFmtDate(n.date) : '');
+      prov.textContent = n.pending ? 'Enregistrement…' : notesAgeLine(n);
     } else {
-      prov.textContent = n.pending ? 'Enregistrement…' : ('par ' + (n.auteur || '?') + (n.date ? ' · ' + notesFmtDate(n.date) : ''));
+      prov.textContent = n.pending ? 'Enregistrement…' : ('par ' + (n.auteur || '?') + (n.date ? ' · ' + notesAgeLine(n) : ''));
     }
     body.appendChild(prov);
 
@@ -12781,10 +12954,37 @@
     }
     var lienChipP = notesLienChip(n);
     if (lienChipP) chips.appendChild(lienChipP);
+    // Sujet 4.3 -- meme rapprochement client que les notes validees (notesCard) : une note encore
+    // "a valider" concerne tout autant un client identifiable, ne pas l'attendre pour l'afficher.
+    var clientMatchP = notesFindClientMatch(n.contenu);
+    if (clientMatchP){
+      var clientChipP = notesChip('🔗 ' + (clientMatchP.nom || clientMatchP.societe), function(){ notesOpenClientMatch(clientMatchP); });
+      clientChipP.classList.add('notes-client-chip');
+      chips.appendChild(clientChipP);
+    }
     body.appendChild(chips);
 
-    var badge = document.createElement('span'); badge.className = 'notes-auto-badge'; badge.textContent = '🤖 Capturé automatiquement';
+    // Sujet 4.2 -- une note en attente de validation N'A structurellement que l'etat "Supposé"
+    // (source=auto, valide!=oui par definition de cette carte) : badge reformule pour reprendre
+    // exactement le meme vocabulaire que notesSourceInfo(), plutot qu'un libelle different qui
+    // dirait implicitement la meme chose autrement.
+    var badge = document.createElement('span'); badge.className = 'notes-auto-badge'; badge.textContent = '🔮 Supposé — capté par Jarvis, à confirmer';
     body.appendChild(badge);
+
+    // Sujet 4.1 -- age, meme regle que les notes validees (voir notesCard) : une note en attente
+    // n'est pas moins "vieille" pour autant, c'est justement le probleme signale (Denis Chicard/
+    // Aquitaine Liège recapturees plusieurs fois sans qu'on sache depuis quand).
+    if (n.date){
+      var provP = document.createElement('span'); provP.className = 'notes-provenance';
+      provP.textContent = notesAgeLine(n);
+      body.appendChild(provP);
+    }
+    var urgP = notesUrgenceInfo(n);
+    if (urgP){
+      var urgBadgeP = document.createElement('span'); urgBadgeP.className = 'notes-urgence-badge ' + urgP.cls;
+      urgBadgeP.textContent = urgP.label;
+      body.appendChild(urgBadgeP);
+    }
 
     var actions = document.createElement('div'); actions.className = 'notes-pending-actions';
     var garder = document.createElement('button'); garder.className = 'notes-garder'; garder.type = 'button'; garder.textContent = '✅ Garder';
@@ -12821,13 +13021,31 @@
   function notesRender(){
     notesList.innerHTML = '';
     var q = notesNorm(notesQuery);
+    // Sujet 4.5 -- tri par defaut du plus recent au plus ancien, applique AVANT tout filtre
+    // (donc garanti quel que soit l'ordre renvoye par le serveur, jamais suppose implicite).
+    var notesTriees = notesAll.slice().sort(function(a, b){
+      var ta = a.date ? new Date(a.date).getTime() : 0, tb = b.date ? new Date(b.date).getTime() : 0;
+      return tb - ta;
+    });
     var isPending = function(n){ return n.source === 'auto' && n.valide !== 'oui'; };
-    var pending = notesAll.filter(isPending);
-    var reste = notesAll.filter(function(n){ return !isPending(n); });
+    var pending = notesTriees.filter(isPending);
+    var reste = notesTriees.filter(function(n){ return !isPending(n); });
     var filtered = q
       ? reste.filter(function(n){ return notesNorm(n.contenu).indexOf(q) !== -1; })
       : reste.filter(function(n){ return notesMatchVue(n, notesVue); });
     var pendingFiltered = q ? pending.filter(function(n){ return notesNorm(n.contenu).indexOf(q) !== -1; }) : pending;
+
+    // Sujet 4.5 -- filtre age + filtre client, combinables (ET) avec la vue/recherche ci-dessus,
+    // appliques aux 2 listes (une note "a valider" vieille de 3 semaines est justement le
+    // probleme signale -- elle doit rester filtrable par age comme une note normale).
+    if (notesAgeFiltre !== 'tout'){
+      filtered = filtered.filter(function(n){ return notesAgeBucket(n.date) === notesAgeFiltre; });
+      pendingFiltered = pendingFiltered.filter(function(n){ return notesAgeBucket(n.date) === notesAgeFiltre; });
+    }
+    if (notesClientFiltre){
+      filtered = filtered.filter(function(n){ var m = notesFindClientMatch(n.contenu); return m && (m.nom === notesClientFiltre || m.societe === notesClientFiltre); });
+      pendingFiltered = pendingFiltered.filter(function(n){ var m = notesFindClientMatch(n.contenu); return m && (m.nom === notesClientFiltre || m.societe === notesClientFiltre); });
+    }
 
     if (pendingFiltered.length){
       var head = document.createElement('div'); head.id = 'notes-pending-head';
@@ -12875,6 +13093,7 @@
       NOTES_ASSIGNE_CYCLE = ['Matheo', 'Dorian', 'Les deux'];
     }
     notesUpdateAutreLabel();
+    notesBuildClientFilterOptions();
     notesRender();
   }
   function notesRefresh(onDone, useCache){
@@ -12902,6 +13121,10 @@
     }
     notesList.innerHTML = '<p id="notes-loading">Chargement…</p>';
     notesRefresh(null, true);
+    // Sujet 4.3 -- charge "Mes contacts" en silence si pas deja fait, pour que le rapprochement
+    // client puisse fonctionner des la premiere ouverture des Notes (jamais bloquant : le rendu
+    // ci-dessus se fait sans attendre, les puces client apparaissent des que charge).
+    notesEnsureRelationsLoaded();
   }
   function notesClose(){ notesview.classList.remove('open'); }
   document.getElementById('sh-notes').addEventListener('click', function(){ sheetOpen(false); notesOpen(); });
@@ -12915,6 +13138,24 @@
       notesRender();
     });
   });
+
+  // Sujet 4.5 -- filtre age (Recent / Ce mois / Plus ancien), independant de la vue thematique
+  // ci-dessus (les 2 se combinent).
+  Array.prototype.forEach.call(document.querySelectorAll('.notes-age-tab'), function(btn){
+    btn.addEventListener('click', function(){
+      Array.prototype.forEach.call(document.querySelectorAll('.notes-age-tab'), function(b){ b.classList.remove('active'); });
+      btn.classList.add('active');
+      notesAgeFiltre = btn.getAttribute('data-age');
+      notesRender();
+    });
+  });
+  var notesClientFilterSel = document.getElementById('notes-client-filter');
+  if (notesClientFilterSel){
+    notesClientFilterSel.addEventListener('change', function(){
+      notesClientFiltre = notesClientFilterSel.value;
+      notesRender();
+    });
+  }
 
   notesSearchInput.addEventListener('input', function(){
     notesQuery = notesSearchInput.value;
