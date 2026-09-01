@@ -841,6 +841,13 @@
     background:rgba(var(--gold-rgb),.12); color:var(--gold-a); font-size:12.5px; line-height:1.4;
     font-weight:600;
   }
+  /* Sujet 1 (01/09/2026, audit vitesse) : bandeau cache-first, discret (jamais confondu avec le
+     bandeau TEST_MODE ci-dessus, couleur neutre pas dorée) -- retiré dès que la donnée fraîche
+     remplace le cache. */
+  .panel-cache-banner{
+    margin:10px 14px 0; padding:8px 12px; border-radius:10px;
+    background:rgba(255,255,255,.06); color:var(--muted); font-size:12px; line-height:1.4;
+  }
   .contrat-card.previsionnel{opacity:.85}
   /* Ecran de revue des factures de contrats (29/08/2026) : bouton generation a la demande +
      bouton lot TVA -- meme gabarit que les autres boutons pleine largeur de ce panneau. */
@@ -892,6 +899,19 @@
   .cal-line-pill.passage_seul{background:rgba(255,255,255,.1); color:var(--muted)}
   .cal-line-dec{font-size:11px; color:var(--blue); margin-top:2px}
   #contrats-empty.cal-empty{padding:30px 14px}
+  /* Sujet 2 (01/09/2026) : intervention marquee faite -- distinction nette (atténuation + case
+     cochee), jamais lie a statutAffichage (la facturation, pill ci-dessus, reste inchangee). */
+  .cal-line.fait{opacity:.6}
+  .cal-line.fait .cal-line-nom{text-decoration:line-through}
+  .cal-line-fait-row{display:flex; align-items:center; justify-content:space-between; gap:8px; margin-top:4px}
+  .cal-line-fait-btn{
+    flex:0 0 auto; font:inherit; font-size:20px; line-height:1; border:0; background:none;
+    cursor:pointer; -webkit-tap-highlight-color:transparent; padding:4px;
+  }
+  .cal-line-fait-par{font-size:11px; color:#30D158; font-weight:600}
+  #cal-compteur-fait{
+    flex:0 0 auto; padding:6px 14px 0; font-size:12.5px; color:var(--muted); text-align:center;
+  }
 
   /* Carte client (6.5) */
   #cal-client-bg{position:fixed; inset:0; z-index:64; background:rgba(0,0,0,.5); display:none}
@@ -3607,6 +3627,8 @@
       <button class="df-chip" data-filtre="BRUNO" type="button">🐜 Dérat</button>
       <button class="df-chip" data-filtre="VMC" type="button">🌬️ VMC</button>
     </div>
+    <!-- Sujet 2.5 (01/09/2026) : compteur "N faits sur M" -- visible d'un coup d'oeil pour ce mois. -->
+    <div id="cal-compteur-fait" style="display:none"></div>
     <div id="cal-list"></div>
   </div>
 </div>
@@ -4245,7 +4267,7 @@
 
 <script>
 (function(){
-  var APPV = 'v4.08';
+  var APPV = 'v4.09';
 
   // Debug : ?debug_modal=1 force l'affichage du modal "nouvelle version" sans attendre un vrai
   // déploiement. Capturé ICI, tout au début, car plus bas (login mémorisé, connexion) le code
@@ -5032,6 +5054,62 @@
     return null;
   }
 
+  // Sujet 1 (01/09/2026, audit vitesse) : cache-first generique, FRONTEND SEUL (aucun workflow
+  // n8n touche -- rien ici ne peut compromettre la bascule des interrupteurs de demain). Chaque
+  // panneau garde sa derniere reponse serveur (par nom de panneau + code d'acces, jamais partagee
+  // entre 2 comptes) et l'affiche INSTANTANEMENT a l'ouverture pendant qu'un appel frais part en
+  // arriere-plan. REGLE ABSOLUE (demande explicite) : une donnee en cache est TOUJOURS marquee
+  // avec son age ("a jour il y a 3 min"), jamais confondue avec une donnee fraiche ; et un ecran
+  // qui declenche une ACTION (envoi/validation/emission) doit operer sur la donnee FRAICHE une
+  // fois arrivee, jamais rester bloque sur le cache -- garanti ici par construction : le meme
+  // xxxApplyData(j) qui peuple l'ecran est rappele au retour du reseau et REMPLACE entierement
+  // ce qui etait affiche (jamais une simple fusion), donc les boutons d'action sont toujours
+  // re-crees sur les donnees les plus recentes des qu'elles arrivent.
+  function panelCacheKey(nom){ return 'jarvisPanelCache:' + nom + ':' + (read('jarvisCode') || ''); }
+  function panelCacheLoad(nom){
+    try {
+      var raw = read(panelCacheKey(nom));
+      if (!raw) return null;
+      var obj = JSON.parse(raw);
+      if (!obj || obj.data === undefined || !obj.savedAt) return null;
+      return obj;
+    } catch(e){ return null; }
+  }
+  function panelCacheSave(nom, data){
+    try { store(panelCacheKey(nom), JSON.stringify({ data: data, savedAt: Date.now() })); } catch(e){}
+  }
+  function panelCacheAgeLabel(savedAt){
+    var mins = Math.round((Date.now() - savedAt) / 60000);
+    if (mins < 1) return 'à l\'instant';
+    if (mins === 1) return 'il y a 1 min';
+    if (mins < 60) return 'il y a ' + mins + ' min';
+    var h = Math.round(mins / 60);
+    return 'il y a ' + h + 'h' + (h > 1 ? '' : '');
+  }
+  // Bandeau discret "a jour il y a Xmin" pose en tete d'une liste -- retire des que la donnee
+  // fraiche remplace le cache. `container` = l'element qui va recevoir le contenu (deja vide ou
+  // sur le point d'etre reconstruit), on prepend juste avant le premier enfant reel.
+  function panelCacheBanner(savedAt){
+    var b = document.createElement('div');
+    b.className = 'panel-cache-banner';
+    b.textContent = '🕓 Affiché depuis le cache — à jour ' + panelCacheAgeLabel(savedAt) + ', actualisation en cours…';
+    return b;
+  }
+  // Sujet 1 (01/09/2026, levier 1.3b) : precharge en arriere-plan les 3 panneaux les plus lourds
+  // (appelee une seule fois, depuis enterApp(), jamais depuis un simple retour au premier plan --
+  // sinon ce serait 3 appels serveur a chaque fois que l'app repasse au premier plan). Ecrit dans
+  // les MEMES cles de cache que les vrais panneaux -- aucune 2e logique de rendu, juste des
+  // donnees pretes a l'emploi. Toutes les callbacks d'erreur sont volontairement silencieuses
+  // (un echec de precharge ne doit jamais se voir : le panneau retentera normalement a l'ouverture).
+  function precacherPanneauxLourds(){
+    relancesChargerCalcul(function(j){ panelCacheSave('relances', j); }, function(){});
+    var now = new Date();
+    postContrats({ type: 'mois-liste', annee: now.getFullYear(), mois: now.getMonth() + 1 }, function(j){
+      panelCacheSave('contrats-mois-' + now.getFullYear() + '-' + (now.getMonth() + 1), j);
+    }, function(){});
+    devisChargerListe(function(j){ panelCacheSave('devis', j); }, function(){});
+  }
+
   // Identifiant d'APPAREIL (pas de personne) : généré une fois, gardé en localStorage
   // (même granularité que jarvisCode — un profil de navigateur = un appareil). Sert
   // uniquement à distinguer, côté tenant secondaire, un usage réel client d'un test
@@ -5794,6 +5872,13 @@
     // ci-dessus. refreshAccueil() est lui-meme non bloquant et ne leve jamais d'exception
     // (cf. sa definition) -- rien ici ne peut casser le reste de enterApp().
     if (mcs && role === 'patron') refreshAccueil(); else hideAccueil();
+    // Sujet 1 (01/09/2026, levier 1.3b) : precharge silencieuse des 3 panneaux les plus lourds
+    // (Relances ~2-10s, Contrats ~1,5s/46 Ko, Devis et factures ~1,3s/62 Ko) pendant que Mickael
+    // lit l'accueil -- alimente EXACTEMENT le meme cache (memes cles) que celui lu par
+    // relancesOpen/contratsLoadTab/devisAttenteOpen, donc un onglet ouvert juste apres profite
+    // d'un cache deja tiede SANS code duplique. Uniquement pour le patron MCS (les seuls tenants
+    // qui voient ces 3 panneaux) ; purement en arriere-plan, aucun effet visible si ca echoue.
+    if (mcs && role === 'patron') precacherPanneauxLourds();
     // Refonte accueil MCS (29/08/2026) : deplace .sh-grid de #sheet vers #homeGrid -- reserve
     // strictement a MCS patron (jamais pour le tenant labo, jamais pour Bruno). Un appendChild
     // deplace le noeud EXISTANT (pas une copie) : les 11 boutons gardent leurs ids, leurs
@@ -7148,14 +7233,24 @@
   var devisChargeEnVol = {};
   var devisChargerListe = dedupeAppel(devisChargeEnVol, postDevisFactures, {});
   function devisCheckBadge(){ devisChargerListe(function(j){ devisData = j; devisUpdateBadge(); }, function(){}); }
+  function devisApplyData(j){
+    devisData = j;
+    devisApplyFilter();
+    devisUpdateBadge();
+  }
   function devisAttenteOpen(){
     devisview.classList.add('open');
-    devisList.innerHTML = '<p id="devis-loading">Chargement…</p>';
+    var cached = panelCacheLoad('devis');
+    if (cached){
+      devisApplyData(cached.data);
+      devisList.insertBefore(panelCacheBanner(cached.savedAt), devisList.firstChild);
+    } else {
+      devisList.innerHTML = '<p id="devis-loading">Chargement…</p>';
+    }
     devisChargerListe(function(j){
-      devisData = j;
-      devisApplyFilter();
-      devisUpdateBadge();
-    }, function(err){ devisList.innerHTML = '<p id="devis-empty">' + err + '</p>'; });
+      panelCacheSave('devis', j);
+      devisApplyData(j);
+    }, function(err){ if (!cached) devisList.innerHTML = '<p id="devis-empty">' + err + '</p>'; });
   }
   document.querySelectorAll('.devis-tab').forEach(function(btn){
     btn.addEventListener('click', function(){
@@ -7237,8 +7332,8 @@
       if (y === contratsMoisAnnee) optY.selected = true;
       anneeSel.appendChild(optY);
     }
-    moisSel.addEventListener('change', function(){ contratsMoisMois = Number(moisSel.value); contratsFiltreDeduites = false; contratsLoadTab(); });
-    anneeSel.addEventListener('change', function(){ contratsMoisAnnee = Number(anneeSel.value); contratsFiltreDeduites = false; contratsLoadTab(); });
+    moisSel.addEventListener('change', function(){ contratsMoisMois = Number(moisSel.value); contratsFiltreDeduites = false; contratsLoadTab(true); });
+    anneeSel.addEventListener('change', function(){ contratsMoisAnnee = Number(anneeSel.value); contratsFiltreDeduites = false; contratsLoadTab(true); });
   }
   document.querySelectorAll('#contrats-mois-substatuts .df-chip').forEach(function(chip){
     chip.addEventListener('click', function(){
@@ -7973,26 +8068,53 @@
     }
   }
 
-  function contratsLoadTab(){
+  // Sujet 1 (01/09/2026, audit vitesse) : cache-first, FRONTEND SEUL -- jamais sur un rechargement
+  // qui suit une action (generer/tva-lot/catalogue-ajouter/modifier/supprimer, cf. les appels nus
+  // "contratsLoadTab()" plus bas, sans le 2e argument -- exigence explicite "jamais d'action sur
+  // du cache"). Clef de cache DATEE par mois/annee affiches : changer de mois n'ecrase jamais le
+  // cache d'un autre mois.
+  function contratsApplyMoisData(j){
+    contratsMoisData = j.factures || [];
+    contratsMoisPrevisionnel = j.previsionnel || [];
+    contratsTestMode = !!j.testMode;
+    contratsApplyFilter();
+  }
+  function contratsLoadTab(useCache){
     if (contratsActiveTab === 'calendrier'){ contratsApplyFilter(); calOpen(); return; }
-    contratsList.innerHTML = '<p id="contrats-loading">Chargement…</p>';
     if (contratsActiveTab === 'mois'){
       contratsMoisSelectorsInit();
+      var cleMois = 'contrats-mois-' + contratsMoisAnnee + '-' + contratsMoisMois;
+      var cachedMois = useCache ? panelCacheLoad(cleMois) : null;
+      if (cachedMois){
+        contratsApplyMoisData(cachedMois.data);
+        contratsList.insertBefore(panelCacheBanner(cachedMois.savedAt), contratsList.firstChild);
+      } else {
+        contratsList.innerHTML = '<p id="contrats-loading">Chargement…</p>';
+      }
       postContrats({ type: 'mois-liste', annee: contratsMoisAnnee, mois: contratsMoisMois },
         function(j){
-          contratsMoisData = j.factures || [];
-          contratsMoisPrevisionnel = j.previsionnel || [];
-          contratsTestMode = !!j.testMode;
-          contratsApplyFilter();
+          panelCacheSave(cleMois, j);
+          contratsApplyMoisData(j);
         },
-        function(err){ contratsList.innerHTML = '<p id="contrats-empty">' + err + '</p>'; });
+        function(err){ if (!cachedMois) contratsList.innerHTML = '<p id="contrats-empty">' + err + '</p>'; });
     } else {
-      postContrats({ type: 'catalogue-liste' }, function(j){ contratsCatalogueData = j.contrats || []; contratsApplyFilter(); },
-        function(err){ contratsList.innerHTML = '<p id="contrats-empty">' + err + '</p>'; });
+      var cachedCat = useCache ? panelCacheLoad('contrats-catalogue') : null;
+      if (cachedCat){
+        contratsCatalogueData = cachedCat.data.contrats || [];
+        contratsApplyFilter();
+        contratsList.insertBefore(panelCacheBanner(cachedCat.savedAt), contratsList.firstChild);
+      } else {
+        contratsList.innerHTML = '<p id="contrats-loading">Chargement…</p>';
+      }
+      postContrats({ type: 'catalogue-liste' }, function(j){
+        panelCacheSave('contrats-catalogue', j);
+        contratsCatalogueData = j.contrats || [];
+        contratsApplyFilter();
+      }, function(err){ if (!cachedCat) contratsList.innerHTML = '<p id="contrats-empty">' + err + '</p>'; });
     }
   }
 
-  function contratsOpen(){ contratsview.classList.add('open'); contratsLoadTab(); }
+  function contratsOpen(){ contratsview.classList.add('open'); contratsLoadTab(true); }
 
   // Generer les brouillons du mois actuellement affiche (le mois n'a encore aucune facture,
   // seulement un apercu previsionnel) -- meme route que le cron mensuel, appelee a la demande.
@@ -8021,7 +8143,7 @@
     btn.addEventListener('click', function(){
       document.querySelectorAll('#contrats-tabs .devis-tab').forEach(function(b){ b.classList.toggle('active', b === btn); });
       contratsActiveTab = btn.dataset.tab;
-      contratsLoadTab();
+      contratsLoadTab(true);
     });
   });
   document.querySelectorAll('#contrats-cat-subtabs .df-chip').forEach(function(chip){
@@ -8045,6 +8167,7 @@
   var calFiltre = 'TOUT';
   var calResumeData = [];
   var calCurrentItems = [];
+  var bcalCurrentItems = [];
   var calSelectedItem = null;
   var calIsBrunoFlow = false;
 
@@ -8089,8 +8212,23 @@
     return item.adresse || item.ville || '';
   }
 
+  // Sujet 2 (01/09/2026) : "Intervention faite" -- un FAIT que celui qui l'a realise possede
+  // (Bruno ET Mickael, cf. TYPES_LECTURE_SALARIE cote serveur), pas une validation. Jamais lie a
+  // statutAffichage (la facturation) : ce toggle n'ecrit que dans mcs_contrats_interventions_faites,
+  // une table dediee et separee, jamais dans le catalogue mcs_contrats_entretien.
+  function calToggleFait(item, bruno, e){
+    e.stopPropagation();
+    var nouveauFait = !item.fait;
+    postContrats({ type: 'calendrier-marquer-fait', contratId: item.contratId, passageNum: item.quelPassage, fait: nouveauFait }, function(){
+      item.fait = nouveauFait;
+      item.faitLe = nouveauFait ? new Date().toISOString() : '';
+      item.faitPar = nouveauFait ? (read('jarvisNom') || '') : '';
+      if (bruno) bcalRenderList(bcalCurrentItems); else calRenderList();
+    }, function(err){ toast(err); });
+  }
+
   function calBuildLine(item, bruno){
-    var line = document.createElement('div'); line.className = 'cal-line';
+    var line = document.createElement('div'); line.className = 'cal-line' + (item.fait ? ' fait' : '');
     var top = document.createElement('div'); top.className = 'cal-line-top';
     var nom = document.createElement('span'); nom.className = 'cal-line-nom'; nom.textContent = calLigneNom(item);
     top.appendChild(nom);
@@ -8115,19 +8253,43 @@
       prop.textContent = '📣 Report proposé par Bruno — ' + (CONTRATS_MOIS_NOMS[(item.propositionEnAttente.moisRetenu || 1) - 1] || '');
       line.appendChild(prop);
     }
+    var faitRow = document.createElement('div'); faitRow.className = 'cal-line-fait-row';
+    var faitPar = document.createElement('span'); faitPar.className = 'cal-line-fait-par';
+    faitPar.textContent = (item.fait && item.faitPar) ? ('✅ Fait par ' + item.faitPar) : '';
+    var faitBtn = document.createElement('button'); faitBtn.type = 'button'; faitBtn.className = 'cal-line-fait-btn';
+    faitBtn.textContent = item.fait ? '✅' : '⬜️';
+    faitBtn.setAttribute('aria-label', item.fait ? 'Marquer non fait' : 'Marquer fait');
+    faitBtn.addEventListener('click', function(e){ calToggleFait(item, bruno, e); });
+    faitRow.appendChild(faitPar); faitRow.appendChild(faitBtn);
+    line.appendChild(faitRow);
     line.addEventListener('click', function(){ calOpenClientCard(item, bruno); });
     return line;
+  }
+
+  // Sujet 2.4 : les interventions faites descendent en bas -- ce qui reste a faire est toujours
+  // en haut. Tri STABLE (pas de re-tri par nom quand aucun fait ne change) -- l'ordre alphabetique
+  // deja fourni par le serveur est preserve a l'interieur de chaque groupe fait/pas-fait.
+  function calTrierFaitEnBas(items){
+    return items.slice().sort(function(a, b){ return (!!a.fait) - (!!b.fait); });
+  }
+  function calRenderCompteurFait(items){
+    var el = document.getElementById('cal-compteur-fait');
+    if (!items.length){ el.style.display = 'none'; return; }
+    var n = items.filter(function(it){ return it.fait; }).length;
+    el.textContent = n + ' fait' + (n > 1 ? 's' : '') + ' sur ' + items.length;
+    el.style.display = '';
   }
 
   function calRenderList(){
     var list = document.getElementById('cal-list');
     list.innerHTML = '';
+    calRenderCompteurFait(calCurrentItems);
     if (!calCurrentItems.length){
       var vide = document.createElement('p'); vide.id = 'contrats-empty'; vide.className = 'cal-empty';
       vide.textContent = 'Aucune intervention ce mois-ci pour ce filtre.';
       list.appendChild(vide); return;
     }
-    calCurrentItems.forEach(function(item){ list.appendChild(calBuildLine(item, false)); });
+    calTrierFaitEnBas(calCurrentItems).forEach(function(item){ list.appendChild(calBuildLine(item, false)); });
   }
 
   function calLoadMois(){
@@ -8346,7 +8508,13 @@
   function bcalClose(){ brunocalview.classList.remove('open'); }
   document.getElementById('bcal-close').addEventListener('click', bcalClose);
 
+  var bcalMoisLabel = '';
+  // Sujet 2.5 : recalcule a CHAQUE rendu (pas seulement a l'ouverture) -- sinon le compteur du
+  // titre reste fige apres un toggle Fait, alors que la liste en dessous, elle, se met a jour.
   function bcalRenderList(items){
+    bcalCurrentItems = items;
+    var nFaits = items.filter(function(it){ return it.fait; }).length;
+    document.getElementById('bcal-mois-titre').textContent = bcalMoisLabel + (items.length ? (' · ' + items.length + ' intervention(s) · ' + nFaits + ' fait' + (nFaits > 1 ? 's' : '')) : ' · 0 intervention');
     var list = document.getElementById('bcal-list');
     list.innerHTML = '';
     if (!items.length){
@@ -8354,7 +8522,7 @@
       vide.textContent = 'Aucune intervention ce mois-ci.';
       list.appendChild(vide); return;
     }
-    items.forEach(function(item){ list.appendChild(calBuildLine(item, true)); });
+    calTrierFaitEnBas(items).forEach(function(item){ list.appendChild(calBuildLine(item, true)); });
   }
 
   // Point 1.4 (01/09/2026) : Bruno voit ce que sont devenus SES signalements -- lecture seule,
@@ -8389,7 +8557,10 @@
     // Le serveur force deja mois=courant + filtre=BRUNO pour un role salarie (Controle contrats
     // + Prep mois (calendrier-mois)) -- les parametres envoyes ici ne sont qu'indicatifs.
     postContrats({ type: 'calendrier-mois' }, function(j){
-      document.getElementById('bcal-mois-titre').textContent = (CONTRATS_MOIS_NOMS[(j.mois || 1) - 1] || '') + ' 2026 · ' + (j.items || []).length + ' intervention(s)';
+      // Sujet 2.5 : meme compteur "N faits sur M" que le patron, integre au titre deja existant
+      // (pas de nouvel element -- Bruno a une seule ligne de titre pour ce mois). bcalMoisLabel
+      // mis en cache pour que bcalRenderList puisse recalculer le compteur apres chaque toggle.
+      bcalMoisLabel = (CONTRATS_MOIS_NOMS[(j.mois || 1) - 1] || '') + ' 2026';
       bcalRenderList(j.items || []);
     }, function(err){ document.getElementById('bcal-mois-titre').textContent = ''; document.getElementById('bcal-list').innerHTML = '<p id="contrats-empty">' + err + '</p>'; });
     postContrats({ type: 'calendrier-mes-propositions' }, function(j){
@@ -8698,21 +8869,31 @@
     ikList.appendChild(ikBuildTable(items));
   }
 
-  function ikLoad(){
-    ikList.innerHTML = '<p id="ik-loading">Chargement…</p>';
+  function ikApplyData(j){
+    ikData = j.trajets || [];
+    ikResume = j.resume || null;
+    ikComputeTripFraisMap();
+    ikRenderMonthTabs();
+    ikApplyFilter();
+  }
+  function ikLoad(useCache){
+    var cached = useCache ? panelCacheLoad('ik') : null;
+    if (cached){
+      ikApplyData(cached.data);
+      ikList.insertBefore(panelCacheBanner(cached.savedAt), ikList.firstChild);
+    } else {
+      ikList.innerHTML = '<p id="ik-loading">Chargement…</p>';
+    }
     postIk({ type: 'liste' }, function(j){
-      ikData = j.trajets || [];
-      ikResume = j.resume || null;
-      ikComputeTripFraisMap();
-      ikRenderMonthTabs();
-      ikApplyFilter();
-    }, function(err){ ikList.innerHTML = '<p id="ik-empty">' + err + '</p>'; });
+      panelCacheSave('ik', j);
+      ikApplyData(j);
+    }, function(err){ if (!cached) ikList.innerHTML = '<p id="ik-empty">' + err + '</p>'; });
   }
 
   function ikOpen(){
     ikview.classList.add('open');
     document.getElementById('ik-export').href = API_IK_EXPORT + '?code=' + encodeURIComponent(String(read('jarvisCode') || '').trim());
-    ikLoad();
+    ikLoad(true);
   }
   function ikClose(){ ikview.classList.remove('open'); }
   document.getElementById('ik-close').addEventListener('click', ikClose);
@@ -9128,23 +9309,33 @@
     });
   }
 
+  function rentaApplyData(j, banner){
+    var d = j.donnees;
+    if (!d){ rentaList.innerHTML = '<p id="renta-empty">Pas encore de données de rentabilité — relance le script de calcul.</p>'; return; }
+    rentaData = d;
+    rentaList.innerHTML = '';
+    if (banner) rentaList.appendChild(banner);
+    rentaList.appendChild(rentaBuildHero(d));
+    rentaList.appendChild(rentaBuildOverview(d));
+    var rcSection = rentaBuildResultatComptable(d);
+    if (rcSection) rentaList.appendChild(rcSection);
+    // Point 5 (audit UX 29/08/2026) : les 2 cartes du bas ("impayés en retard" / "devis
+    // dormants") et leur toggle "Personnaliser mon tableau" retires de l'affichage (demande
+    // explicite). rentaBuildPerso/rentaRenderWidgets/RENTA_LEVERS/rentaBuildCard laisses
+    // intacts mais non appeles -- reversible en une ligne si redemande un jour.
+  }
   function rentabiliteOpen(){
     rentaview.classList.add('open');
-    rentaList.innerHTML = '<p id="renta-loading">Chargement…</p>';
+    var cached = panelCacheLoad('rentabilite');
+    if (cached){
+      rentaApplyData(cached.data, panelCacheBanner(cached.savedAt));
+    } else {
+      rentaList.innerHTML = '<p id="renta-loading">Chargement…</p>';
+    }
     postRentabilite({}, function(j){
-      var d = j.donnees;
-      if (!d){ rentaList.innerHTML = '<p id="renta-empty">Pas encore de données de rentabilité — relance le script de calcul.</p>'; return; }
-      rentaData = d;
-      rentaList.innerHTML = '';
-      rentaList.appendChild(rentaBuildHero(d));
-      rentaList.appendChild(rentaBuildOverview(d));
-      var rcSection = rentaBuildResultatComptable(d);
-      if (rcSection) rentaList.appendChild(rcSection);
-      // Point 5 (audit UX 29/08/2026) : les 2 cartes du bas ("impayés en retard" / "devis
-      // dormants") et leur toggle "Personnaliser mon tableau" retires de l'affichage (demande
-      // explicite). rentaBuildPerso/rentaRenderWidgets/RENTA_LEVERS/rentaBuildCard laisses
-      // intacts mais non appeles -- reversible en une ligne si redemande un jour.
-    }, function(err){ rentaList.innerHTML = '<p id="renta-empty">' + err + '</p>'; });
+      panelCacheSave('rentabilite', j);
+      rentaApplyData(j, null);
+    }, function(err){ if (!cached) rentaList.innerHTML = '<p id="renta-empty">' + err + '</p>'; });
   }
   document.getElementById('renta-close').addEventListener('click', rentaAttenteClose);
   document.getElementById('sh-rentabilite').addEventListener('click', function(){ sheetOpen(false); rentabiliteOpen(); });
@@ -9987,23 +10178,40 @@
     // ce qui est deja en memoire. Rien a faire si aucune vraie ouverture n'a encore eu lieu.
     if (relancesChargeUneFois) relancesUpdateBadge();
   }
+  // Sujet 1 (01/09/2026) : extrait de relancesOpen pour etre rappelable a l'identique sur le
+  // chemin cache ET sur le chemin frais -- jamais 2 implementations de rendu qui pourraient
+  // diverger.
+  function relancesApplyData(j){
+    relancesChargeUneFois = true;
+    relancesData = j.lignes || [];
+    relancesLignesParNumero = {};
+    relancesData.forEach(function(l){ relancesLignesParNumero[l.numero] = l; });
+    relancesBrouillons = j.brouillons || [];
+    relancesTermines = j.termines || [];
+    relancesAppliquerFraicheur(j.exportDonneesDu, j.joursEcoulesExport, j.fraicheurEtat);
+    relancesApplyFilter();
+    relancesUpdateBadge();
+  }
   function relancesOpen(keepOpen){
     if (!keepOpen) relancesview.classList.add('open');
-    // Audit perf 28/08 : "Chargement..." nu remplace par un mot qui decrit ce qui se passe
-    // reellement (le calcul serveur, ~3s) -- pas une promesse de sous-etapes qu'on ne peut
-    // pas garantir dans l'ordre reel, juste un texte honnete sur ce qui prend le temps.
-    relancesList.innerHTML = '<p id="relances-loading">Calcul des relances en cours…</p>';
+    // Sujet 1 (01/09/2026, audit vitesse) : c'est LE panneau le plus lourd (calcul serveur
+    // mesure entre ~2 s a cache chaud et ~10 s a cache froid, cf. rapport) -- affichage immediat
+    // du dernier etat connu pendant que le calcul frais tourne en arriere-plan. Le calcul reste
+    // TOUJOURS lance (jamais d'action -- envoyer une relance -- sur une donnee de cache).
+    var cached = panelCacheLoad('relances');
+    if (cached){
+      relancesApplyData(cached.data);
+      relancesList.insertBefore(panelCacheBanner(cached.savedAt), relancesList.firstChild);
+    } else {
+      // Audit perf 28/08 : "Chargement..." nu remplace par un mot qui decrit ce qui se passe
+      // reellement (le calcul serveur, ~3s) -- pas une promesse de sous-etapes qu'on ne peut
+      // pas garantir dans l'ordre reel, juste un texte honnete sur ce qui prend le temps.
+      relancesList.innerHTML = '<p id="relances-loading">Calcul des relances en cours…</p>';
+    }
     relancesChargerCalcul(function(j){
-      relancesChargeUneFois = true;
-      relancesData = j.lignes || [];
-      relancesLignesParNumero = {};
-      relancesData.forEach(function(l){ relancesLignesParNumero[l.numero] = l; });
-      relancesBrouillons = j.brouillons || [];
-      relancesTermines = j.termines || [];
-      relancesAppliquerFraicheur(j.exportDonneesDu, j.joursEcoulesExport, j.fraicheurEtat);
-      relancesApplyFilter();
-      relancesUpdateBadge();
-    }, function(err){ relancesList.innerHTML = '<p id="relances-empty">' + err + '</p>'; });
+      panelCacheSave('relances', j);
+      relancesApplyData(j);
+    }, function(err){ if (!cached) relancesList.innerHTML = '<p id="relances-empty">' + err + '</p>'; });
   }
   // Point 6b (30/08/2026) : "Voir le brouillon de relance" depuis Mes contacts -- REUTILISE le
   // panneau Relances existant (recherche pre-remplie), aucune 2e logique d'affichage du
@@ -10177,11 +10385,19 @@
 
   function carnetOpen(){
     carnetview.classList.add('open');
-    carnetList.innerHTML = '<p id="carnet-loading">Chargement…</p>';
+    var cached = panelCacheLoad('carnet');
+    if (cached){
+      carnetAll = cached.data.residences || [];
+      carnetRender();
+      carnetList.insertBefore(panelCacheBanner(cached.savedAt), carnetList.firstChild);
+    } else {
+      carnetList.innerHTML = '<p id="carnet-loading">Chargement…</p>';
+    }
     postCarnet({ type:'lister' }, function(j){
+      panelCacheSave('carnet', j);
       carnetAll = j.residences || [];
       carnetRender();
-    }, function(err){ carnetList.innerHTML = '<p id="carnet-empty">' + err + '</p>'; });
+    }, function(err){ if (!cached) carnetList.innerHTML = '<p id="carnet-empty">' + err + '</p>'; });
   }
   function carnetClose(){ carnetview.classList.remove('open'); }
   document.getElementById('carnet-close').addEventListener('click', carnetClose);
@@ -10472,17 +10688,27 @@
 
   var relationsChargeEnVol = {};
   var relationsChargerListe = dedupeAppel(relationsChargeEnVol, postRelations, {});
+  function relationsApplyData(j){
+    relationsData = j.relations || [];
+    relationsSummary.textContent = relationsData.length
+      ? relationsData.length + ' contact' + (relationsData.length > 1 ? 's' : '') + ' connus, construits automatiquement à partir des mails échangés.'
+      : '';
+    relationsApplyFilter();
+    relationsUpdateBadge(j.observationsCount);
+  }
   function relationsOpen(){
     relationsview.classList.add('open');
-    relationsList.innerHTML = '<p id="relations-loading">Chargement…</p>';
+    var cached = panelCacheLoad('relations');
+    if (cached){
+      relationsApplyData(cached.data);
+      relationsList.insertBefore(panelCacheBanner(cached.savedAt), relationsList.firstChild);
+    } else {
+      relationsList.innerHTML = '<p id="relations-loading">Chargement…</p>';
+    }
     relationsChargerListe(function(j){
-      relationsData = j.relations || [];
-      relationsSummary.textContent = relationsData.length
-        ? relationsData.length + ' contact' + (relationsData.length > 1 ? 's' : '') + ' connus, construits automatiquement à partir des mails échangés.'
-        : '';
-      relationsApplyFilter();
-      relationsUpdateBadge(j.observationsCount);
-    }, function(err){ relationsList.innerHTML = '<p id="relations-empty">' + err + '</p>'; });
+      panelCacheSave('relations', j);
+      relationsApplyData(j);
+    }, function(err){ if (!cached) relationsList.innerHTML = '<p id="relations-empty">' + err + '</p>'; });
   }
   function relationsClose(){ relationsview.classList.remove('open'); }
   // Badge "N observations" (2026-08-11) : même famille visuelle/mécanisme que le badge Relances
@@ -10624,16 +10850,26 @@
     }, function(err){ toast(err); });
   }
 
-  function docrefLoad(){
-    docrefList.innerHTML = '<p id="docref-empty">Chargement…</p>';
-    postDocref({ type:'liste' }, function(j){
-      var docs = j.documents || [];
-      docrefList.innerHTML = '';
-      if (!docs.length){ docrefList.innerHTML = '<p id="docref-empty">Aucun document pour l’instant — touche + pour en ajouter un.</p>'; return; }
-      docs.forEach(function(d){ docrefList.appendChild(docrefCard(d)); });
-    }, function(err){ docrefList.innerHTML = '<p id="docref-empty">' + err + '</p>'; });
+  function docrefApplyData(j, banner){
+    var docs = j.documents || [];
+    docrefList.innerHTML = '';
+    if (banner) docrefList.appendChild(banner);
+    if (!docs.length){ if (!banner) docrefList.innerHTML = '<p id="docref-empty">Aucun document pour l’instant — touche + pour en ajouter un.</p>'; return; }
+    docs.forEach(function(d){ docrefList.appendChild(docrefCard(d)); });
   }
-  function docrefOpen(){ docrefview.classList.add('open'); docrefLoad(); }
+  function docrefLoad(useCache){
+    var cached = useCache ? panelCacheLoad('docref') : null;
+    if (cached){
+      docrefApplyData(cached.data, panelCacheBanner(cached.savedAt));
+    } else {
+      docrefList.innerHTML = '<p id="docref-empty">Chargement…</p>';
+    }
+    postDocref({ type:'liste' }, function(j){
+      panelCacheSave('docref', j);
+      docrefApplyData(j, null);
+    }, function(err){ if (!cached) docrefList.innerHTML = '<p id="docref-empty">' + err + '</p>'; });
+  }
+  function docrefOpen(){ docrefview.classList.add('open'); docrefLoad(true); }
   function docrefClose(){ docrefview.classList.remove('open'); }
   document.getElementById('docref-close').addEventListener('click', docrefClose);
   document.getElementById('sh-docref').addEventListener('click', function(){ sheetOpen(false); docrefOpen(); });
@@ -11522,16 +11758,26 @@
 
   var oppChargeEnVol = {};
   var oppChargerListe = dedupeAppel(oppChargeEnVol, postOpportunites, { type: 'list' });
+  function oppApplyData(j){
+    oppAll = oppFiltrerExclus(j.prospects);
+    oppRender(); oppUpdateBadge();
+  }
   function oppRefresh(){
     oppChargerListe(function(j){
-      oppAll = oppFiltrerExclus(j.prospects);
-      oppRender(); oppUpdateBadge();
-    }, function(err){ oppList.innerHTML = '<p id="opp-empty">' + err + '</p>'; });
+      panelCacheSave('opportunites', j);
+      oppApplyData(j);
+    }, function(err){ if (!oppAll.length) oppList.innerHTML = '<p id="opp-empty">' + err + '</p>'; else toast(err); });
   }
 
   function oppOpen(){
     opportunitesview.classList.add('open');
-    oppList.innerHTML = '<p id="opp-loading">Chargement…</p>';
+    var cached = panelCacheLoad('opportunites');
+    if (cached){
+      oppApplyData(cached.data);
+      oppList.insertBefore(panelCacheBanner(cached.savedAt), oppList.firstChild);
+    } else {
+      oppList.innerHTML = '<p id="opp-loading">Chargement…</p>';
+    }
     oppRefresh();
   }
   function oppClose(){ opportunitesview.classList.remove('open'); }
@@ -12571,27 +12817,36 @@
     }
   }
 
-  function notesRefresh(onDone){
+  function notesApplyData(j){
+    notesAll = j.notes || [];
+    notesMoi = j.moi || '';
+    if (isMcsCode()){
+      // Tenant secondaire (MCS) : un seul utilisateur a accès aux Notes (garde patron côté
+      // serveur) -- pas d'axe "assigné à l'autre", le cycle/libellé n'a qu'une seule valeur.
+      notesMoiEnum = notesMoi || 'Patron';
+      notesAutreEnum = '';
+      NOTES_ASSIGNE_LABEL = {}; NOTES_ASSIGNE_LABEL[notesMoiEnum] = notesMoiEnum;
+      NOTES_ASSIGNE_CYCLE = [notesMoiEnum];
+    } else {
+      notesMoiEnum = notesMoi === 'Dorian' ? 'Dorian' : 'Matheo';
+      notesAutreEnum = notesMoiEnum === 'Dorian' ? 'Matheo' : 'Dorian';
+      NOTES_ASSIGNE_LABEL = { Matheo:'Mathéo', Dorian:'Dorian', 'Les deux':'Les deux' };
+      NOTES_ASSIGNE_CYCLE = ['Matheo', 'Dorian', 'Les deux'];
+    }
+    notesUpdateAutreLabel();
+    notesRender();
+  }
+  function notesRefresh(onDone, useCache){
+    var cached = useCache ? panelCacheLoad('notes') : null;
+    if (cached){
+      notesApplyData(cached.data);
+      notesList.insertBefore(panelCacheBanner(cached.savedAt), notesList.firstChild);
+    }
     postNotes({ type:'list' }, function(j){
-      notesAll = j.notes || [];
-      notesMoi = j.moi || '';
-      if (isMcsCode()){
-        // Tenant secondaire (MCS) : un seul utilisateur a accès aux Notes (garde patron côté
-        // serveur) -- pas d'axe "assigné à l'autre", le cycle/libellé n'a qu'une seule valeur.
-        notesMoiEnum = notesMoi || 'Patron';
-        notesAutreEnum = '';
-        NOTES_ASSIGNE_LABEL = {}; NOTES_ASSIGNE_LABEL[notesMoiEnum] = notesMoiEnum;
-        NOTES_ASSIGNE_CYCLE = [notesMoiEnum];
-      } else {
-        notesMoiEnum = notesMoi === 'Dorian' ? 'Dorian' : 'Matheo';
-        notesAutreEnum = notesMoiEnum === 'Dorian' ? 'Matheo' : 'Dorian';
-        NOTES_ASSIGNE_LABEL = { Matheo:'Mathéo', Dorian:'Dorian', 'Les deux':'Les deux' };
-        NOTES_ASSIGNE_CYCLE = ['Matheo', 'Dorian', 'Les deux'];
-      }
-      notesUpdateAutreLabel();
-      notesRender();
+      panelCacheSave('notes', j);
+      notesApplyData(j);
       if (onDone) onDone();
-    }, function(err){ notesList.innerHTML = '<p id="notes-empty">' + err + '</p>'; if (onDone) onDone(); });
+    }, function(err){ if (!cached) notesList.innerHTML = '<p id="notes-empty">' + err + '</p>'; if (onDone) onDone(); });
   }
 
   function notesOpen(){
@@ -12605,7 +12860,7 @@
       Array.prototype.forEach.call(document.querySelectorAll('.notes-tab'), function(b){ b.classList.toggle('active', b.dataset.vue === 'tout'); });
     }
     notesList.innerHTML = '<p id="notes-loading">Chargement…</p>';
-    notesRefresh();
+    notesRefresh(null, true);
   }
   function notesClose(){ notesview.classList.remove('open'); }
   document.getElementById('sh-notes').addEventListener('click', function(){ sheetOpen(false); notesOpen(); });
@@ -13441,15 +13696,25 @@
     else { calRenderAgenda(); }
   }
 
-  function calLoadData(){
-    // Point 3 (31/08/2026, audit vitesse) : deja present a la toute premiere ouverture
-    // (calendarOpen), mais PAS sur un changement de mois (cal-prev/cal-next) -- la grille
-    // restait figee sur l'ancien mois pendant le chargement (~1s, plus en cas de contention),
-    // lisible comme "le clic n'a rien fait". Meme texte que l'ouverture initiale, vue mois
-    // seulement (l'agenda affiche sa propre grille horaire, hors perimetre de ce fix ponctuel).
-    if (calView === 'month') calDayEl.innerHTML = '<p id="cal-day-empty">Chargement…</p>';
+  function calLoadData(useCache){
     var range = calVisibleRange();
     var months = calMonthsTouching(range);
+    // Sujet 1 (01/09/2026, audit vitesse) : cle de cache par mois REELLEMENT touches -- change de
+    // mois change de cle, jamais un melange entre 2 periodes differentes.
+    var cleCache = 'calendar-' + months.join(',');
+    var cached = useCache ? panelCacheLoad(cleCache) : null;
+    if (cached){
+      calEvents = cached.data;
+      calRenderCurrentView();
+      if (calView === 'month') calDayEl.insertBefore(panelCacheBanner(cached.savedAt), calDayEl.firstChild);
+    } else if (calView === 'month'){
+      // Point 3 (31/08/2026, audit vitesse) : deja present a la toute premiere ouverture
+      // (calendarOpen), mais PAS sur un changement de mois (cal-prev/cal-next) -- la grille
+      // restait figee sur l'ancien mois pendant le chargement (~1s, plus en cas de contention),
+      // lisible comme "le clic n'a rien fait". Meme texte que l'ouverture initiale, vue mois
+      // seulement (l'agenda affiche sa propre grille horaire, hors perimetre de ce fix ponctuel).
+      calDayEl.innerHTML = '<p id="cal-day-empty">Chargement…</p>';
+    }
     var results = [];
     var pending = months.length, failed = false;
     months.forEach(function(mo){
@@ -13457,10 +13722,10 @@
         if (failed) return;
         results = results.concat(j.events || []);
         pending--;
-        if (pending === 0){ calEvents = results; calRenderCurrentView(); }
+        if (pending === 0){ calEvents = results; panelCacheSave(cleCache, results); calRenderCurrentView(); }
       }, function(err){
         failed = true;
-        calDayEl.innerHTML = '<p id="cal-day-empty">' + (err || 'Impossible de charger le calendrier.') + '</p>';
+        if (!cached) calDayEl.innerHTML = '<p id="cal-day-empty">' + (err || 'Impossible de charger le calendrier.') + '</p>';
       });
     });
   }
@@ -13478,7 +13743,7 @@
     calGrid.style.display = v === 'month' ? '' : 'none';
     calDayEl.style.display = v === 'month' ? '' : 'none';
     document.getElementById('cal-agenda').style.display = v === 'month' ? 'none' : 'flex';
-    calLoadData();
+    calLoadData(true);
   }
   document.querySelectorAll('#cal-viewswitch button').forEach(function(btn){
     btn.addEventListener('click', function(){ calSwitchView(btn.dataset.view); });
@@ -13495,7 +13760,7 @@
       calRangeStart = new Date(calRangeStart.getFullYear(), calRangeStart.getMonth(), calRangeStart.getDate() - calRangeDays());
       calSelectedKey = calDateKey(calRangeStart);
     }
-    calLoadData();
+    calLoadData(true);
   });
   document.getElementById('cal-next').addEventListener('click', function(){
     if (calView === 'month'){
@@ -13505,7 +13770,7 @@
       calRangeStart = new Date(calRangeStart.getFullYear(), calRangeStart.getMonth(), calRangeStart.getDate() + calRangeDays());
       calSelectedKey = calDateKey(calRangeStart);
     }
-    calLoadData();
+    calLoadData(true);
   });
 
   // Point 6b (30/08/2026) : presetLieu optionnel -- Mes contacts -> "Planifier" pre-remplit le
@@ -13605,7 +13870,7 @@
     calGrid.style.display = ''; calDayEl.style.display = ''; document.getElementById('cal-agenda').style.display = 'none';
     calGrid.innerHTML = '';
     calDayEl.innerHTML = '<p id="cal-day-empty">Chargement…</p>';
-    calLoadData();
+    calLoadData(true);
   }
   document.getElementById('sh-calendar').addEventListener('click', function(){ sheetOpen(false); calendarOpen(); });
   document.getElementById('cal-close').addEventListener('click', calendarClose);
