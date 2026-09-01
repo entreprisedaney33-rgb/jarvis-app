@@ -1370,6 +1370,25 @@
   .couts-svc-bar{height:100%; border-radius:3px; background:var(--gold-a); opacity:.85}
   .couts-svc-pct{font-size:11px; color:var(--muted)}
   #couts-abo-head{font-size:12.5px; font-weight:700; color:var(--gold-a); text-transform:uppercase; letter-spacing:.03em; padding:10px 4px 6px; border-top:0.5px solid rgba(84,84,88,.4)}
+  /* Panneau plein ecran "Crypto x402" (lecture seule, appelle directement
+     GET https://x402-seller-0ay3.onrender.com/stats depuis le navigateur —
+     endpoint public, sans cle, aucun secret cote client) */
+  #cryptoview{
+    position:fixed; inset:0; z-index:50; background:var(--bg);
+    display:none; flex-direction:column;
+    transform:translateY(100%); transition:transform .28s cubic-bezier(.2,.9,.25,1);
+  }
+  #cryptoview.open{display:flex; transform:translateY(0)}
+  @media (prefers-reduced-motion: reduce){#cryptoview{transition:none}}
+  #crypto-head{
+    flex:0 0 auto; display:flex; align-items:center; gap:10px;
+    padding:calc(10px + env(safe-area-inset-top)) 14px 12px;
+    border-bottom:0.5px solid var(--hairline);
+  }
+  #crypto-list{flex:1 1 auto; overflow-y:auto; padding:10px 14px 24px}
+  #crypto-loading, #crypto-error{padding:16px 4px; color:var(--muted); font-size:13.5px}
+  #crypto-error{color:#ff6d5a}
+  #crypto-generated{font-size:11px; color:var(--muted); padding:2px 4px 14px}
   /* Panneau plein ecran "Relances clients" (chantier 3 audit MCS, patron uniquement) */
   #relancesview{
     position:fixed; inset:0; z-index:50; background:var(--bg);
@@ -3521,6 +3540,7 @@
     <button class="sh-tile" id="sh-calendar" type="button"><span class="sh-tile-ic">📅</span><span class="sh-tile-label">Agenda</span></button>
     <button class="sh-tile" id="sh-docs" type="button"><span class="sh-tile-ic">📄</span><span class="sh-tile-label">Mes documents</span></button>
     <button class="sh-tile" id="sh-couts" type="button"><span class="sh-tile-ic">💰</span><span class="sh-tile-label">Coûts</span></button>
+    <button class="sh-tile" id="sh-crypto" type="button"><span class="sh-tile-ic">💰</span><span class="sh-tile-label">Crypto x402</span></button>
     <button class="sh-tile" id="sh-meute" type="button"><span class="sh-tile-ic">🐺</span><span class="sh-tile-label">Meute</span><span class="badge-count" id="menu-meute-badge" style="display:none"></span></button>
     <button class="sh-tile" id="sh-site" type="button"><span class="sh-tile-ic">🏗️</span><span class="sh-tile-label">Site</span></button>
     <button class="sh-tile" id="sh-notes" type="button"><span class="sh-tile-ic">🧠</span><span class="sh-tile-label">Notes</span></button>
@@ -3598,6 +3618,29 @@
     </div>
     <div id="couts-abo-head">Abonnements (gérés ici)</div>
     <div id="couts-abo-rows"></div>
+  </div>
+</div>
+
+<div id="cryptoview">
+  <div id="crypto-head">
+    <b>💰 Crypto x402</b>
+    <button id="crypto-close" type="button" aria-label="Fermer" style="margin-left:auto">✕</button>
+  </div>
+  <div id="crypto-list">
+    <div id="crypto-loading">Chargement…</div>
+    <div id="crypto-error" style="display:none"></div>
+    <div id="crypto-body" style="display:none">
+      <div class="couts-stats">
+        <div class="couts-stat"><span class="cs-label">Paiements 24h</span><span class="cs-value" id="cx-pay24">—</span><span class="cs-sub">appels payés</span></div>
+        <div class="couts-stat"><span class="cs-label">Paiements 7j</span><span class="cs-value" id="cx-pay7">—</span><span class="cs-sub">appels payés</span></div>
+        <div class="couts-stat"><span class="cs-label">402 servis 24h</span><span class="cs-value" id="cx-402-24">—</span><span class="cs-sub">sondages non payés</span></div>
+        <div class="couts-stat"><span class="cs-label">402 servis 7j</span><span class="cs-value" id="cx-402-7">—</span><span class="cs-sub">sondages non payés</span></div>
+        <div class="couts-stat" style="grid-column:1 / -1"><span class="cs-label">Montant encaissé</span><span class="cs-value" style="font-size:13.5px; color:var(--muted)">Non disponible sur cette vue publique</span><span class="cs-sub">GET /stats est volontairement anonymisé (pas de montants ni d'adresses) — le détail du revenu vit derrière une clé privée, jamais exposée ici</span></div>
+      </div>
+      <div id="couts-svc-head" style="margin-top:6px"><span>🏆 Top 5 endpoints (7 jours)</span></div>
+      <div id="crypto-top-list"></div>
+      <div id="crypto-generated"></div>
+    </div>
   </div>
 </div>
 
@@ -4382,7 +4425,7 @@
 
 <script>
 (function(){
-  var APPV = 'v4.18';
+  var APPV = 'v4.19';
 
   // Debug : ?debug_modal=1 force l'affichage du modal "nouvelle version" sans attendre un vrai
   // déploiement. Capturé ICI, tout au début, car plus bas (login mémorisé, connexion) le code
@@ -5983,7 +6026,7 @@
     // confort visuel, pas la garantie — voir la doc privée du dépôt.
     // sh-couts (gestion des coûts labo-ia) masqué côté tenant secondaire : données internes
     // à Mathéo/Dorian, sans aucun rapport avec un client — même logique que sh-clients.
-    ['sh-meute', 'sh-site', 'sh-vitrine', 'sh-plume', 'hcallbtn', 'sh-clients', 'sh-couts'].forEach(function(id){
+    ['sh-meute', 'sh-site', 'sh-vitrine', 'sh-plume', 'hcallbtn', 'sh-clients', 'sh-couts', 'sh-crypto'].forEach(function(id){
       var el = document.getElementById(id);
       if (el) el.style.display = mcs ? 'none' : '';
     });
@@ -7039,6 +7082,84 @@
   function coutsOpen(){ coutsview.classList.add('open'); coutsDashLoad(); coutsLoad(); }
   document.getElementById('sh-couts').addEventListener('click', function(){ sheetOpen(false); coutsOpen(); });
   document.getElementById('couts-close').addEventListener('click', coutsClose);
+
+  // Panneau "Crypto x402" — 100% independant du reste de l'app : pas de
+  // passage par le webhook n8n/jarvis-msg (pas de code d'acces necessaire),
+  // fetch direct de l'endpoint public GET /stats du serveur x402-seller.
+  // Aucun secret cote client (jamais STATS_KEY ici, volontairement).
+  var cryptoview = document.getElementById('cryptoview');
+  var CRYPTO_STATS_URL = 'https://x402-seller-0ay3.onrender.com/stats';
+  function cryptoClose(){ cryptoview.classList.remove('open'); }
+  function cryptoOpen(){ cryptoview.classList.add('open'); cryptoLoad(); }
+  document.getElementById('sh-crypto').addEventListener('click', function(){ sheetOpen(false); cryptoOpen(); });
+  document.getElementById('crypto-close').addEventListener('click', cryptoClose);
+
+  function cryptoRenderTop(dataByEndpoint){
+    var list = document.getElementById('crypto-top-list');
+    list.innerHTML = '';
+    var names = Object.keys(dataByEndpoint || {});
+    names.sort(function(a, b){
+      var pb = (dataByEndpoint[b].payments && dataByEndpoint[b].payments.last_7d) || 0;
+      var pa = (dataByEndpoint[a].payments && dataByEndpoint[a].payments.last_7d) || 0;
+      return pb - pa;
+    });
+    var top5 = names.slice(0, 5);
+    if (!top5.length){
+      var empty = document.createElement('div');
+      empty.className = 'couts-svc-row';
+      empty.textContent = 'Aucune donnée pour le moment.';
+      list.appendChild(empty);
+      return;
+    }
+    top5.forEach(function(name){
+      var e = dataByEndpoint[name] || {};
+      var pay = e.payments || {}; var p402 = e.http_402 || {};
+      var row = document.createElement('div');
+      row.className = 'couts-svc-row';
+      var top = document.createElement('div');
+      top.className = 'couts-svc-top';
+      var nom = document.createElement('span');
+      nom.className = 'couts-svc-nom';
+      nom.textContent = name;
+      var montant = document.createElement('span');
+      montant.className = 'couts-svc-montant';
+      montant.textContent = (pay.last_7d || 0) + ' paiements';
+      top.appendChild(nom); top.appendChild(montant);
+      var sub = document.createElement('span');
+      sub.className = 'couts-svc-pct';
+      sub.textContent = '24h: ' + (pay.last_24h || 0) + ' payés / ' + (p402.last_24h || 0) + ' sondés — 7j: ' + (pay.last_7d || 0) + ' payés / ' + (p402.last_7d || 0) + ' sondés';
+      row.appendChild(top); row.appendChild(sub);
+      list.appendChild(row);
+    });
+  }
+
+  function cryptoLoad(){
+    var loading = document.getElementById('crypto-loading');
+    var errorEl = document.getElementById('crypto-error');
+    var body = document.getElementById('crypto-body');
+    loading.style.display = ''; loading.textContent = 'Chargement…';
+    errorEl.style.display = 'none';
+    body.style.display = 'none';
+    fetch(CRYPTO_STATS_URL)
+      .then(function(r){ if (!r.ok) throw new Error('HTTP ' + r.status); return r.json(); })
+      .then(function(data){
+        loading.style.display = 'none';
+        body.style.display = '';
+        var t = data.totals || {};
+        document.getElementById('cx-pay24').textContent = (t.payments && t.payments.last_24h) || 0;
+        document.getElementById('cx-pay7').textContent = (t.payments && t.payments.last_7d) || 0;
+        document.getElementById('cx-402-24').textContent = (t.http_402 && t.http_402.last_24h) || 0;
+        document.getElementById('cx-402-7').textContent = (t.http_402 && t.http_402.last_7d) || 0;
+        cryptoRenderTop(data.endpoints);
+        var genEl = document.getElementById('crypto-generated');
+        genEl.textContent = data.generated_at ? ('Généré le ' + new Date(data.generated_at).toLocaleString('fr-FR')) : '';
+      })
+      .catch(function(err){
+        loading.style.display = 'none';
+        errorEl.style.display = '';
+        errorEl.textContent = '⚠️ Impossible de charger les statistiques (' + (err && err.message ? err.message : 'erreur réseau') + '). Le serveur se met en veille après inactivité et peut mettre un instant à répondre — réessaie dans quelques secondes.';
+      });
+  }
 
   var coutsFormBg = document.getElementById('coutsFormBg');
   function coutsFormOpen(){
