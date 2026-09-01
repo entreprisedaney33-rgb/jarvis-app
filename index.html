@@ -4327,7 +4327,7 @@
 
 <script>
 (function(){
-  var APPV = 'v4.14';
+  var APPV = 'v4.15';
 
   // Debug : ?debug_modal=1 force l'affichage du modal "nouvelle version" sans attendre un vrai
   // déploiement. Capturé ICI, tout au début, car plus bas (login mémorisé, connexion) le code
@@ -9758,6 +9758,9 @@
             toast(r.testMode
               ? ('🧪 Test envoyé à ' + (r.destinataireReel || b.destinataire) + ' — redirigé, n’a pas atteint le client, niveau inchangé.')
               : ('✅ Envoyé à ' + (r.destinataireReel || b.destinataire)));
+            // Sujet 1.2 (02/09/2026) : 2e chemin d'envoi reel (le signal "prochaine echeance"),
+            // meme action serveur 'envoyer' que le bouton principal -- meme traitement.
+            relancesApplyerEnvoiLocal(b);
             relancesOpen(true);
           } else {
             arme = false; envBtn2.disabled = false; if (attBtn) attBtn.disabled = false; envBtn2.textContent = 'Envoyer maintenant';
@@ -9930,6 +9933,11 @@
             toast(r.testMode
               ? ('🧪 Test envoyé à ' + (r.destinataireReel || b.destinataire) + ' — redirigé, n’a pas atteint le client, niveau inchangé.')
               : ('✅ Envoyé à ' + (r.destinataireReel || b.destinataire)));
+            // Sujet 1.2 (02/09/2026) : ecran a jour tout de suite (retire localement CE
+            // brouillon/ces factures), PUIS un recalcul frais est quand meme lance en tache de
+            // fond pour re-synchroniser (relancesOpen(true) -- jamais de "Calcul en cours…"
+            // affiche puisque le cache vient d'etre repatche juste au-dessus).
+            relancesApplyerEnvoiLocal(b);
             relancesOpen(true);
           } else {
             envConfirmBtn.disabled = false; envBtn.disabled = false; envConfirmBtn.textContent = 'Confirmer l’envoi';
@@ -10341,7 +10349,13 @@
   // Sujet 1 (01/09/2026) : extrait de relancesOpen pour etre rappelable a l'identique sur le
   // chemin cache ET sur le chemin frais -- jamais 2 implementations de rendu qui pourraient
   // diverger.
+  // Sujet 1.2 (02/09/2026) : conserve le dernier j complet applique -- c'est ce qui permet a
+  // relancesApplyerEnvoiLocal de fabriquer un etat "patche" localement (sans appel reseau) en
+  // repartant de donnees reelles, plutot que de reconstruire un objet a la main depuis les
+  // seuls tableaux deja eclates (relancesData/relancesBrouillons/relancesTermines).
+  var relancesLastJ = null;
   function relancesApplyData(j){
+    relancesLastJ = j;
     relancesChargeUneFois = true;
     relancesData = j.lignes || [];
     relancesLignesParNumero = {};
@@ -10351,6 +10365,25 @@
     relancesAppliquerFraicheur(j.exportDonneesDu, j.joursEcoulesExport, j.fraicheurEtat);
     relancesApplyFilter();
     relancesUpdateBadge();
+  }
+  // Sujet 1.2 (02/09/2026) : applique le resultat d'un envoi CONFIRME par le serveur
+  // IMMEDIATEMENT a l'ecran, sans attendre le rechargement complet (relancesOpen, qui reste
+  // lance ensuite EN ARRIERE-PLAN pour re-synchroniser avec le serveur -- jamais affiche comme
+  // un blocage puisque le cache local vient d'etre mis a jour). Ne decide RIEN : le serveur a
+  // deja confirme l'envoi (r.ok) avant cet appel, cf. le calcul frais de "Calculer relances
+  // (envoi)" cote n8n, jamais touche -- ceci ne fait qu'accelerer l'AFFICHAGE du resultat deja
+  // acquis (sujet 1.4). Repli silencieux si relancesLastJ est absent (jamais vu en pratique
+  // puisqu'un envoi ne peut avoir lieu qu'apres un premier relancesOpen reussi).
+  function relancesApplyerEnvoiLocal(b){
+    if (!relancesLastJ) return;
+    var numerosEnvoyes = {};
+    (b.factures || []).forEach(function(f){ if (f && f.numero != null) numerosEnvoyes[f.numero] = true; });
+    var patched = Object.assign({}, relancesLastJ);
+    patched.lignes = (relancesLastJ.lignes || []).filter(function(l){ return !numerosEnvoyes[l.numero]; });
+    patched.brouillons = (relancesLastJ.brouillons || []).filter(function(x){ return x.cle !== b.cle; });
+    // termines/fraicheur inchanges par un envoi -- seules lignes/brouillons bougent.
+    panelCacheSave('relances', patched);
+    relancesApplyData(patched);
   }
   function relancesOpen(keepOpen){
     if (!keepOpen) relancesview.classList.add('open');
