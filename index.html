@@ -2470,6 +2470,18 @@
   #notes-bar-send.busy svg{animation:meute-spin .8s linear infinite}
   #notes-list{flex:1; overflow-y:auto; -webkit-overflow-scrolling:touch; padding:0 14px calc(20px + env(safe-area-inset-bottom))}
   .notes-card{background:var(--surface); border-radius:14px; padding:12px 14px; margin-bottom:10px; display:flex; gap:10px; align-items:flex-start}
+  /* Sujet 4.1 (02/09/2026) : carte groupee -- repliee par defaut, jamais un simple decompte
+     silencieux (le texte le plus recent + la periode restent visibles sans deplier). */
+  .notes-group-card{display:block; padding:0; overflow:hidden}
+  .notes-group-head{
+    width:100%; text-align:left; background:none; border:0; padding:12px 14px; cursor:pointer;
+    -webkit-tap-highlight-color:transparent; display:flex; align-items:center; gap:8px; font-family:inherit;
+  }
+  .notes-group-contenu{flex:1; min-width:0; font-size:14.5px; line-height:1.4; color:var(--ink); white-space:nowrap; overflow:hidden; text-overflow:ellipsis}
+  .notes-group-meta{flex:0 0 auto; font-size:12px; font-weight:700; color:var(--gold-a)}
+  .notes-group-chevron{flex:0 0 auto; color:var(--muted); font-size:13px}
+  .notes-group-detail{padding:0 8px 8px; display:flex; flex-direction:column; gap:8px}
+  .notes-group-detail .notes-card{margin-bottom:0}
   .notes-card.fait{opacity:.55}
   .notes-check{
     width:24px; height:24px; border-radius:50%; border:1.5px solid var(--muted); flex:0 0 auto;
@@ -4315,7 +4327,7 @@
 
 <script>
 (function(){
-  var APPV = 'v4.12';
+  var APPV = 'v4.13';
 
   // Debug : ?debug_modal=1 force l'affichage du modal "nouvelle version" sans attendre un vrai
   // déploiement. Capturé ICI, tout au début, car plus bas (login mémorisé, connexion) le code
@@ -4417,9 +4429,22 @@
         // vous n'avez pas ecrit la vraie formule a faire apparaitre sur la facture. Sauté
         // silencieusement si aucune facture du mois n'est dans ce cas (étape conditionnelle,
         // comme les autres de ce fichier).
+        // Sujet 7.4 (02/09/2026) : le resume "N designations deduites par Jarvis" (sujet 5 du
+        // 01/09) n'avait aucune etape -- pourtant c'est la ligne qui rend visible ce que Jarvis a
+        // deduit sans bloquer, exactement l'esprit "jamais cache" de ce chantier. Conditionnelle
+        // (sautee silencieusement si 0 designation deduite ce mois-ci).
+        { selector: '#contrats-resume-deduites', title: 'Ce que Jarvis a déduit tout seul',
+          text: 'Certains libellés, Jarvis les reconnaît avec assez de certitude pour ne jamais bloquer l’envoi -- mais il vous le dit quand même ici, pour que vous puissiez vérifier quand vous avez un moment.' },
         { selector: '.ct-badge.bloque', title: 'Désignation à confirmer',
           text: 'Ce libellé (repris tel quel du registre) n’est pas encore reconnu par Jarvis -- il ne peut pas deviner la formule exacte à écrire sur la facture. Aucun envoi n’est possible tant que ce n’est pas confirmé.' },
-        { selector: '.ct-confirm-designation', title: 'Confirmer une bonne fois pour toutes',
+        // Sujet 7.3 (02/09/2026) : cette etape etait sautee silencieusement -- le bouton existe
+        // bien en DOM mais reste cache tant que la fiche (.ct-detail) n'est pas depliee (clic sur
+        // .ct-toggle). Meme mecanisme "open" deja utilise ailleurs dans ce fichier pour les sous-
+        // ecrans caches (ex. "Nouveau contrat" plus bas) -- ici .ct-toggle est un simple toggle de
+        // classe CSS synchrone (verifie : toggleBtn.addEventListener bascule detail.classList.toggle
+        // ('open'), aucun appel reseau), donc le meme delai de 2 frames deja utilise par le moteur
+        // suffit, pas besoin d'un delai special.
+        { selector: '.ct-confirm-designation', open: '.ct-toggle', title: 'Confirmer une bonne fois pour toutes',
           text: 'Écrivez la désignation exacte puis validez ici : Jarvis s’en souvient et l’applique immédiatement à TOUTES les factures qui portent ce même libellé brut, sans qu’il faille le refaire une par une.' },
         { selector: '#contrats-tva-lot-btn', title: 'TVA du lot VMC',
           text: 'S’il y a plusieurs contrats VMC ce mois-ci, ce bouton permet de choisir le taux de TVA (10% ou 20%) pour tout le lot en un coup, plutôt qu’un par un.' },
@@ -4469,12 +4494,21 @@
           text: 'Tout, dératisation/désinsectisation seule, ou VMC seule.' },
         { selector: '.cal-line', title: 'Une intervention', open: '[data-tab="calendrier"]',
           text: 'Résidence et client (ou client et adresse en dératisation). La pastille dit si c’est déjà facturé, à facturer, ou juste un passage sans facture.' },
+        // Sujet 7.4 (02/09/2026) : le geste "Fait" (sujet 2 du 01/09) n'avait aucune etape --
+        // c'est pourtant la seule facon de savoir, sur ce calendrier, si le technicien y est
+        // vraiment alle (independant de la facturation, qui reste inchangee).
+        { selector: '.cal-line-fait-btn', title: 'Marquer une intervention faite', open: '[data-tab="calendrier"]',
+          text: 'Cochez ici une fois le technicien passé sur place. Ça ne change RIEN à la facturation -- c’est juste pour savoir, vous et Bruno, ce qui a déjà été fait.' },
         { selector: '#cal-client-actions', open: '.cal-line', close: '#cal-client-close', title: 'La fiche client',
           text: 'Un tap sur une ligne ouvre cette fiche : appelez en un tap, écrivez un mail (le composeur de Jarvis s’ouvre déjà rempli), ou lancez l’itinéraire.' },
         { selector: '#cal-client-decaler', open: '.cal-line', close: '#cal-client-close', title: 'Décaler ce passage',
           text: 'Un imprévu cette année ? Ce bouton décale UNIQUEMENT ce passage, pour 2026 seulement -- le contrat et la facture ne bougent pas.' },
         { selector: '#cal-client-changer-def', open: '.cal-line', close: '#cal-client-close', title: 'Changer le mois du contrat',
-          text: 'Celui-ci est définitif : il modifie le contrat pour de bon, à partir de maintenant, avec confirmation demandée à chaque fois.' }
+          text: 'Celui-ci est définitif : il modifie le contrat pour de bon, à partir de maintenant, avec confirmation demandée à chaque fois.' },
+        // Sujet 7.4 : les propositions de report que BRUNO fait depuis son propre écran --
+        // conditionnelle (sautee silencieusement si Bruno n'a rien propose sur cette fiche).
+        { selector: '#cal-client-proposition-valider', open: '.cal-line', close: '#cal-client-close', title: 'Une proposition de Bruno',
+          text: 'Quand Bruno décale un passage depuis son écran, ça apparaît ici en attente -- vous décidez si vous validez ou non, rien ne bouge tout seul.' }
       ]
     },
     ik: {
@@ -4507,8 +4541,15 @@
       steps: [
         { selector: '#renta-title', title: 'Rentabilité',
           text: 'Le chiffre d’affaires, les dépenses et le bénéfice, mois par mois.' },
-        { selector: '#renta-list', title: 'Plus de détails',
-          text: 'Le bouton « Personnaliser mon tableau » permet aussi d’afficher les impayés en retard et les devis restés sans suite.' }
+        { selector: '#renta-hero', title: 'Le mois en cours',
+          text: 'Toujours affiché en premier, même sans chiffre d’affaires exporté pour l’instant -- ça veut dire « pas encore exporté », jamais « rien vendu ce mois-ci ».' },
+        // Sujet 7.4 (02/09/2026) : le tableau mensuel refait le 01/09 (sujet 3) n'avait aucune
+        // etape. Conditionnelle : #renta-months n'existe que s'il y a au moins un mois cloture
+        // en plus du mois en cours.
+        { selector: '#renta-months', title: 'Les mois précédents',
+          text: 'Quand les dépenses ne sont pas encore connues pour un mois (le comptable n’a pas encore transmis son relevé), c’est écrit « en attente » -- jamais un zéro ou un tiret qui pourrait faire croire à une vraie absence de charges.' },
+        { selector: '#renta-total-row', title: 'Le total',
+          text: 'La somme sur les mois affichés. Si les dépenses ne sont pas connues sur tous ces mois, le total le dit explicitement plutôt que de compter les manquants comme zéro.' }
       ]
     },
     relances: {
@@ -12788,6 +12829,47 @@
     return null;
   }
 
+  // Sujet 4 (02/09/2026) : regroupement des notes quasi identiques DU MEME CLIENT -- "9 fois
+  // Rappeler Denis Chicard" affichees separement ressemblait a un bug, pas a une capture
+  // perfectible. Cle de rapprochement en 2 temps : (1) meme client identifie (notesFindClientMatch,
+  // deja construit au sujet 4.3 -- jamais de regroupement sans un client reconnu, sinon 2 notes
+  // sans rapport pourraient fusionner par coincidence de vocabulaire) ; (2) chevauchement fort du
+  // TEXTE (indice de Jaccard sur les tokens >=3 caracteres, seuil 0.4 -- calibre pour capter les
+  // variantes reelles "Allo Vetement"/"Allô Vêtement"/"La Halle aux Vêtements" sans fusionner 2
+  // vraies demandes differentes pour le meme client).
+  function notesTokens(s){
+    return notesNorm(s).replace(/[^a-z0-9\s]/g, ' ').split(/\s+/).filter(function(t){ return t.length >= 3; });
+  }
+  function notesJaccard(a, b){
+    var sa = {}, sb = {}, union = {}, inter = 0;
+    a.forEach(function(t){ sa[t] = 1; });
+    b.forEach(function(t){ sb[t] = 1; });
+    Object.keys(sa).forEach(function(t){ union[t] = 1; if (sb[t]) inter++; });
+    Object.keys(sb).forEach(function(t){ union[t] = 1; });
+    var u = Object.keys(union).length;
+    return u ? inter / u : 0;
+  }
+  function notesGrouperQuasiIdentiques(liste){
+    var groupes = [], utilise = {};
+    liste.forEach(function(n, i){
+      if (utilise[i]) return;
+      var m = notesFindClientMatch(n.contenu);
+      utilise[i] = true;
+      if (!m){ groupes.push({ membres: [n], client: null }); return; }
+      var cleClient = m.nom || m.societe;
+      var toks = notesTokens(n.contenu);
+      var membres = [n];
+      liste.forEach(function(n2, j){
+        if (j <= i || utilise[j]) return;
+        var m2 = notesFindClientMatch(n2.contenu);
+        if (!m2 || (m2.nom || m2.societe) !== cleClient) return;
+        if (notesJaccard(toks, notesTokens(n2.contenu)) >= 0.4){ membres.push(n2); utilise[j] = true; }
+      });
+      groupes.push({ membres: membres, client: m });
+    });
+    return groupes;
+  }
+
   function notesChip(label, onClick){
     var b = document.createElement('button'); b.className = 'notes-chip'; b.type = 'button'; b.textContent = label;
     b.addEventListener('click', onClick);
@@ -13046,6 +13128,39 @@
     return true;
   }
 
+  function notesFmtJJMM(iso){
+    if (!iso) return '';
+    try { return new Date(iso).toLocaleDateString('fr-FR', { day:'2-digit', month:'2-digit' }); } catch(e){ return ''; }
+  }
+  // Carte groupee (sujet 4.1) : une ligne "vu N fois, du JJ/MM au JJ/MM" -- repliee par defaut,
+  // le detail (les N cartes individuelles, normales ou en attente selon leur statut) s'affiche
+  // au tap. cardBuilder = notesCard ou notesPendingCard (meme groupe peut ne contenir QUE des
+  // notes en attente en pratique, mais la fonction reste generique).
+  function notesGroupCard(groupe, cardBuilder){
+    var membres = groupe.membres.slice().sort(function(a, b){
+      var ta = a.date ? new Date(a.date).getTime() : 0, tb = b.date ? new Date(b.date).getTime() : 0;
+      return tb - ta;
+    });
+    var card = document.createElement('div'); card.className = 'notes-card notes-group-card';
+    var head = document.createElement('button'); head.type = 'button'; head.className = 'notes-group-head';
+    var plusRecent = membres[0], plusAncien = membres[membres.length - 1];
+    var periode = notesFmtJJMM(plusAncien.date) === notesFmtJJMM(plusRecent.date)
+      ? ('le ' + notesFmtJJMM(plusRecent.date))
+      : ('du ' + notesFmtJJMM(plusAncien.date) + ' au ' + notesFmtJJMM(plusRecent.date));
+    head.innerHTML = '<span class="notes-group-contenu"></span><span class="notes-group-meta"></span><span class="notes-group-chevron">▾</span>';
+    head.querySelector('.notes-group-contenu').textContent = plusRecent.contenu || '';
+    head.querySelector('.notes-group-meta').textContent = '🔁 vu ' + membres.length + ' fois, ' + periode;
+    var detail = document.createElement('div'); detail.className = 'notes-group-detail'; detail.style.display = 'none';
+    membres.forEach(function(n){ detail.appendChild(cardBuilder(n)); });
+    head.addEventListener('click', function(){
+      var ouvert = detail.style.display !== 'none';
+      detail.style.display = ouvert ? 'none' : 'block';
+      head.querySelector('.notes-group-chevron').textContent = ouvert ? '▾' : '▴';
+    });
+    card.appendChild(head); card.appendChild(detail);
+    return card;
+  }
+
   function notesRender(){
     notesList.innerHTML = '';
     var q = notesNorm(notesQuery);
@@ -13079,14 +13194,20 @@
       var head = document.createElement('div'); head.id = 'notes-pending-head';
       head.textContent = '🤖 Capturé automatiquement — à valider (' + pendingFiltered.length + ')';
       notesList.appendChild(head);
-      pendingFiltered.forEach(function(n){ notesList.appendChild(notesPendingCard(n)); });
+      // Sujet 4.1 -- regroupe les quasi-identiques du meme client (c'est ICI, dans la file "a
+      // valider", que le vrai cas "9x Denis Chicard" se trouve) avant de les rendre.
+      notesGrouperQuasiIdentiques(pendingFiltered).forEach(function(g){
+        notesList.appendChild(g.membres.length > 1 ? notesGroupCard(g, notesPendingCard) : notesPendingCard(g.membres[0]));
+      });
     }
 
     if (!filtered.length && !pendingFiltered.length){
       notesList.innerHTML = '<p id="notes-empty">' + (q ? 'Aucune note ne correspond.' : 'Aucune note ici pour l’instant.') + '</p>';
       return;
     }
-    filtered.forEach(function(n){ notesList.appendChild(notesCard(n)); });
+    notesGrouperQuasiIdentiques(filtered).forEach(function(g){
+      notesList.appendChild(g.membres.length > 1 ? notesGroupCard(g, notesCard) : notesCard(g.membres[0]));
+    });
   }
 
   function notesUpdateAutreLabel(){
