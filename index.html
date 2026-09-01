@@ -1870,13 +1870,22 @@
      alignement vertical possible d'un mois a l'autre) ;
      (3) "Reste" (le total de la ligne) ressort visuellement (police plus grande) -- l'oeil doit
      s'y poser en premier, Rentre/Sorti restent lisibles mais secondaires. */
+  #renta-total-row{
+    background:rgba(var(--gold-rgb),.1);
+    border-radius:14px; padding:12px 14px; margin-bottom:10px; border:1px solid rgba(var(--gold-rgb),.3);
+  }
+  #renta-total-label{font-size:12.5px; color:var(--gold-a); font-weight:700; text-align:center; margin-bottom:8px}
+  .renta-month-row.rm-courant{border:1.5px solid var(--gold-a)}
+  .renta-month-row.rm-courant .rm-mois{color:var(--gold-a)}
+  .rh-val.rh-attente{font-size:13px !important; color:var(--muted) !important; font-weight:600}
   #renta-hero{
     background:var(--surface); border-radius:16px; padding:16px; margin-bottom:10px;
   }
   #renta-hero .rh-mois{font-size:13px; color:var(--muted); text-transform:uppercase; letter-spacing:.03em; margin-bottom:12px; text-align:center; font-weight:700}
+  #renta-mois-courant-vide{font-size:13px; color:var(--muted); text-align:center; line-height:1.4; margin:0}
   .rh-row{display:grid; grid-template-columns:1fr 1fr 1fr; gap:6px}
   .rh-stat{display:flex; flex-direction:column; gap:3px; min-width:0}
-  .rh-label{font-size:11.5px; color:var(--muted); text-align:center}
+  .rh-label{font-size:13px; color:var(--muted); text-align:center}
   .rh-val{font-size:18px; font-weight:800; font-variant-numeric:tabular-nums; text-align:right; white-space:nowrap; overflow:hidden; text-overflow:ellipsis}
   .rh-val.ca{color:var(--blue)}
   .rh-val.dep{color:var(--no)}
@@ -1887,8 +1896,8 @@
   .rh-row.rh-small .rh-val.benef{font-size:17px}
   #renta-months{display:flex; flex-direction:column; gap:8px; margin-bottom:6px}
   .renta-month-row{background:var(--surface); border-radius:14px; padding:12px 14px}
-  .renta-month-row .rm-mois{font-size:11.5px; color:var(--muted); text-transform:uppercase; letter-spacing:.03em; margin-bottom:8px; text-align:center; font-weight:600}
-  #renta-maj{font-size:11.5px; color:var(--muted); text-align:center; margin:4px 0 18px; line-height:1.4}
+  .renta-month-row .rm-mois{font-size:13px; color:var(--muted); text-transform:uppercase; letter-spacing:.03em; margin-bottom:8px; text-align:center; font-weight:600}
+  #renta-maj{font-size:13px; color:var(--muted); text-align:center; margin:4px 0 18px; line-height:1.4}
   #renta-overview{margin-bottom:18px}
   #renta-overview .ro-title{font-size:12.5px; font-weight:700; color:var(--gold-a); text-transform:uppercase; letter-spacing:.03em; margin-bottom:8px}
   .ro-grid{display:grid; grid-template-columns:1fr 1fr; gap:10px}
@@ -4267,7 +4276,7 @@
 
 <script>
 (function(){
-  var APPV = 'v4.09';
+  var APPV = 'v4.10';
 
   // Debug : ?debug_modal=1 force l'affichage du modal "nouvelle version" sans attendre un vrai
   // déploiement. Capturé ICI, tout au début, car plus bas (login mémorisé, connexion) le code
@@ -9230,41 +9239,73 @@
     s.appendChild(l); s.appendChild(v);
     return s;
   }
+  // Sujet 3.3 (01/09/2026) : "en attente du comptable" explicite -- jamais un tiret ambigu ni un
+  // zero qu'on prendrait pour une vraie absence de charges (aucune donnee du tout != zero charge).
   function rentaStatRow(m, tag){
     var row = document.createElement('div'); row.className = 'rh-row ' + tag;
     row.appendChild(rentaStatTile('Rentré', fmtEuro(m.ca), 'ca', false));
-    row.appendChild(rentaStatTile('Sorti', m.depenses == null ? '—' : fmtEuro(m.depenses), 'dep', m.estime));
-    var benefTxt = m.benefice == null ? '—' : fmtEuro(m.benefice);
-    var benefCls = 'benef ' + (m.benefice == null ? '' : (m.benefice >= 0 ? 'pos' : 'neg'));
+    var depCls = m.depenses == null ? 'dep rh-attente' : 'dep';
+    row.appendChild(rentaStatTile('Sorti', m.depenses == null ? 'en attente' : fmtEuro(m.depenses), depCls, m.estime));
+    var benefTxt = m.benefice == null ? 'en attente' : fmtEuro(m.benefice);
+    var benefCls = m.benefice == null ? 'benef rh-attente' : ('benef ' + (m.benefice >= 0 ? 'pos' : 'neg'));
     row.appendChild(rentaStatTile('Reste', benefTxt, benefCls, m.estime));
     return row;
   }
+  function rentaMoisCourantCle(){
+    var n = new Date();
+    return n.getFullYear() + '-' + String(n.getMonth() + 1).padStart(2, '0');
+  }
   function rentaBuildHero(d){
     var wrap = document.createElement('div');
-    var mois = d.moisRentabilite || [];
+    var mois = (d.moisRentabilite || []).slice();
     if (!mois.length){
       wrap.innerHTML = '<p id="renta-empty">Pas encore de chiffre d\'affaires mensuel à afficher.</p>';
       return wrap;
     }
-    var courant = mois[0];
+    // Sujet 3.1 (01/09/2026) : le mois CALENDAIRE en cours doit toujours apparaitre en tete, meme
+    // sans aucune donnee exportee pour lui -- jamais invente a 0€ (qui laisserait croire "verifie,
+    // rien vendu"), un vrai etat "pas encore exporte" a la place.
+    var cleCourante = rentaMoisCourantCle();
+    var courant = mois.length && mois[0].mois === cleCourante ? mois.shift() : null;
     var hero = document.createElement('div'); hero.id = 'renta-hero';
-    var moisLbl = document.createElement('div'); moisLbl.className = 'rh-mois'; moisLbl.textContent = moisLabel(courant.mois);
-    hero.appendChild(moisLbl);
-    hero.appendChild(rentaStatRow(courant, 'rh-big'));
+    if (courant){
+      var moisLbl = document.createElement('div'); moisLbl.className = 'rh-mois'; moisLbl.textContent = moisLabel(courant.mois) + ' · en cours';
+      hero.appendChild(moisLbl);
+      hero.appendChild(rentaStatRow(courant, 'rh-big'));
+    } else {
+      var moisLbl2 = document.createElement('div'); moisLbl2.className = 'rh-mois'; moisLbl2.textContent = moisLabel(cleCourante) + ' · en cours';
+      hero.appendChild(moisLbl2);
+      var vide = document.createElement('p'); vide.id = 'renta-mois-courant-vide';
+      vide.textContent = 'Pas encore de chiffre d\'affaires exporté pour ce mois' + (d.sourceLabel ? (' (dernier export : ' + d.sourceLabel.replace('export MEG du ', '') + ')') : '') + '.';
+      hero.appendChild(vide);
+    }
     wrap.appendChild(hero);
 
-    if (mois.length > 1){
+    if (mois.length){
       var list = document.createElement('div'); list.id = 'renta-months';
-      mois.slice(1).forEach(function(m){
-        var r = document.createElement('div'); r.className = 'renta-month-row';
-        var lbl = document.createElement('div'); lbl.className = 'rm-mois'; lbl.textContent = moisLabel(m.mois);
+      mois.forEach(function(m, idx){
+        var r = document.createElement('div'); r.className = 'renta-month-row' + (idx === 0 && !courant ? ' rm-courant' : '');
+        var lbl = document.createElement('div'); lbl.className = 'rm-mois'; lbl.textContent = moisLabel(m.mois) + (idx === 0 && !courant ? ' · dernier mois clôturé' : '');
         r.appendChild(lbl);
         r.appendChild(rentaStatRow(m, 'rh-small'));
         list.appendChild(r);
       });
       wrap.appendChild(list);
+
+      // Sujet 3.2 : ligne de TOTAL toujours visible -- sur les mois AFFICHES avec une vraie
+      // charge connue (jamais un total qui inclurait silencieusement des "en attente" comme 0).
+      var moisAvecDepense = mois.filter(function(m){ return m.depenses != null; });
+      var totalCa = mois.reduce(function(s, m){ return s + m.ca; }, 0);
+      var totalDep = moisAvecDepense.reduce(function(s, m){ return s + m.depenses; }, 0);
+      var totalBenef = moisAvecDepense.length === mois.length ? (totalCa - totalDep) : null;
+      var totalRow = document.createElement('div'); totalRow.id = 'renta-total-row';
+      var totLabel = document.createElement('div'); totLabel.id = 'renta-total-label';
+      totLabel.textContent = 'Total sur ' + mois.length + ' mois' + (moisAvecDepense.length < mois.length ? (' (dépenses connues sur ' + moisAvecDepense.length + ' d\'entre eux seulement)') : '');
+      totalRow.appendChild(totLabel);
+      totalRow.appendChild(rentaStatRow({ ca: totalCa, depenses: moisAvecDepense.length ? totalDep : null, benefice: totalBenef, estime: mois.some(function(m){ return m.estime; }) }, 'rh-small'));
+      wrap.appendChild(totalRow);
     }
-    if (mois.some(function(m){ return m.estime; })){
+    if (mois.some(function(m){ return m.estime; }) || (courant && courant.estime)){
       var maj = document.createElement('p'); maj.id = 'renta-maj';
       var majTxt = '* dépenses estimées (réparties sur la période connue) — deviendront exactes dès qu\'un 2e relevé de la comptable arrivera';
       if (d.achats && d.achats.misAJourLe) majTxt += '. Dernier relevé reçu le ' + fmtDevisDateSimple(d.achats.misAJourLe) + '.';
