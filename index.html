@@ -1879,33 +1879,45 @@
      alignement vertical possible d'un mois a l'autre) ;
      (3) "Reste" (le total de la ligne) ressort visuellement (police plus grande) -- l'oeil doit
      s'y poser en premier, Rentre/Sorti restent lisibles mais secondaires. */
-  #renta-total-row{
-    background:rgba(var(--gold-rgb),.1);
-    border-radius:14px; padding:12px 14px; margin-bottom:10px; border:1px solid rgba(var(--gold-rgb),.3);
+  /* Sujet 3 (02/09/2026) : REFONTE en vrai TABLEAU -- l'empilement de cartes precedent
+     (chaque mois = sa propre carte, aucun alignement de colonnes d'un mois a l'autre) est
+     remplace par une grille CSS UNIQUE partagee par l'en-tete, chaque ligne de mois et la
+     ligne de total -- meme grid-template-columns partout = colonnes garanties alignees, quel
+     que soit le nombre de mois. 4 colonnes : Mois (compacte) + Rentrees/Sorties/Reste (egales).
+     En-tete et total en position:sticky DANS #renta-list (le seul ancetre scrollable, deja
+     overflow-y:auto) -- restent visibles pendant le defilement des mois intermediaires. */
+  #renta-table{
+    display:grid; grid-template-columns:minmax(46px,auto) 1fr 1fr 1fr;
+    border:0.5px solid var(--hairline); border-radius:12px; overflow:hidden; margin-bottom:10px;
+    background:var(--surface);
   }
-  #renta-total-label{font-size:12.5px; color:var(--gold-a); font-weight:700; text-align:center; margin-bottom:8px}
-  .renta-month-row.rm-courant{border:1.5px solid var(--gold-a)}
-  .renta-month-row.rm-courant .rm-mois{color:var(--gold-a)}
-  .rh-val.rh-attente{font-size:13px !important; color:var(--muted) !important; font-weight:600}
-  #renta-hero{
-    background:var(--surface); border-radius:16px; padding:16px; margin-bottom:10px;
+  .rt-cell{
+    padding:9px 6px; min-width:0; font-size:12.5px;
+    border-right:0.5px solid var(--hairline); border-bottom:0.5px solid var(--hairline);
+    display:flex; align-items:center; justify-content:flex-end; overflow:hidden;
   }
-  #renta-hero .rh-mois{font-size:13px; color:var(--muted); text-transform:uppercase; letter-spacing:.03em; margin-bottom:12px; text-align:center; font-weight:700}
-  #renta-mois-courant-vide{font-size:13px; color:var(--muted); text-align:center; line-height:1.4; margin:0}
-  .rh-row{display:grid; grid-template-columns:1fr 1fr 1fr; gap:6px}
-  .rh-stat{display:flex; flex-direction:column; gap:3px; min-width:0}
-  .rh-label{font-size:13px; color:var(--muted); text-align:center}
-  .rh-val{font-size:18px; font-weight:800; font-variant-numeric:tabular-nums; text-align:right; white-space:nowrap; overflow:hidden; text-overflow:ellipsis}
-  .rh-val.ca{color:var(--blue)}
-  .rh-val.dep{color:var(--no)}
-  .rh-val.benef{font-size:21px}
-  .rh-val.benef.pos{color:var(--ok)}
-  .rh-val.benef.neg{color:var(--no)}
-  .rh-row.rh-small .rh-val{font-size:14.5px}
-  .rh-row.rh-small .rh-val.benef{font-size:17px}
-  #renta-months{display:flex; flex-direction:column; gap:8px; margin-bottom:6px}
-  .renta-month-row{background:var(--surface); border-radius:14px; padding:12px 14px}
-  .renta-month-row .rm-mois{font-size:13px; color:var(--muted); text-transform:uppercase; letter-spacing:.03em; margin-bottom:8px; text-align:center; font-weight:600}
+  .rt-cell:nth-child(4n+1){justify-content:flex-start}
+  .rt-cell:nth-child(4n){border-right:0}
+  #renta-table > .rt-row:last-of-type .rt-cell, #renta-table > .rt-total .rt-cell{border-bottom:0}
+  .rt-head{position:sticky; top:0; z-index:2; background:var(--surface)}
+  .rt-head .rt-cell{
+    font-size:11px; color:var(--muted); text-transform:uppercase; letter-spacing:.02em;
+    font-weight:700; justify-content:flex-end; padding-top:10px; padding-bottom:10px;
+  }
+  .rt-head .rt-cell:first-child{justify-content:flex-start}
+  .rt-mois{font-size:12px; font-weight:700; white-space:nowrap}
+  .rt-row.rt-courant .rt-mois{color:var(--gold-a)}
+  .rt-row.rt-courant{background:rgba(var(--gold-rgb),.08)}
+  .rt-val{font-weight:700; font-variant-numeric:tabular-nums; white-space:nowrap; overflow:hidden; text-overflow:ellipsis}
+  .rt-val.ca{color:var(--blue)}
+  .rt-val.dep{color:var(--no)}
+  .rt-val.benef.pos{color:var(--ok)}
+  .rt-val.benef.neg{color:var(--no)}
+  .rt-val.rt-attente{color:var(--muted); font-weight:600; font-size:11.5px}
+  .rt-total{position:sticky; bottom:0; z-index:2; background:rgba(var(--gold-rgb),.14)}
+  .rt-total .rt-cell{font-weight:800}
+  .rt-total .rt-mois{color:var(--gold-a); font-size:11.5px}
+  #renta-mois-courant-vide{font-size:12px; color:var(--muted); line-height:1.3}
   #renta-maj{font-size:13px; color:var(--muted); text-align:center; margin:4px 0 18px; line-height:1.4}
   #renta-overview{margin-bottom:18px}
   #renta-overview .ro-title{font-size:12.5px; font-weight:700; color:var(--gold-a); text-transform:uppercase; letter-spacing:.03em; margin-bottom:8px}
@@ -4327,7 +4339,7 @@
 
 <script>
 (function(){
-  var APPV = 'v4.15';
+  var APPV = 'v4.16';
 
   // Debug : ?debug_modal=1 force l'affichage du modal "nouvelle version" sans attendre un vrai
   // déploiement. Capturé ICI, tout au début, car plus bas (login mémorisé, connexion) le code
@@ -4541,15 +4553,16 @@
       steps: [
         { selector: '#renta-title', title: 'Rentabilité',
           text: 'Le chiffre d’affaires, les dépenses et le bénéfice, mois par mois.' },
-        { selector: '#renta-hero', title: 'Le mois en cours',
-          text: 'Toujours affiché en premier, même sans chiffre d’affaires exporté pour l’instant -- ça veut dire « pas encore exporté », jamais « rien vendu ce mois-ci ».' },
-        // Sujet 7.4 (02/09/2026) : le tableau mensuel refait le 01/09 (sujet 3) n'avait aucune
-        // etape. Conditionnelle : #renta-months n'existe que s'il y a au moins un mois cloture
-        // en plus du mois en cours.
-        { selector: '#renta-months', title: 'Les mois précédents',
-          text: 'Quand les dépenses ne sont pas encore connues pour un mois (le comptable n’a pas encore transmis son relevé), c’est écrit « en attente » -- jamais un zéro ou un tiret qui pourrait faire croire à une vraie absence de charges.' },
-        { selector: '#renta-total-row', title: 'Le total',
-          text: 'La somme sur les mois affichés. Si les dépenses ne sont pas connues sur tous ces mois, le total le dit explicitement plutôt que de compter les manquants comme zéro.' }
+        // Sujet 3+7.4 (02/09/2026) : le panneau est desormais un VRAI TABLEAU (#renta-table,
+        // colonnes Mois/Rentrees/Sorties/Reste alignees d'une ligne a l'autre) -- remplace les 3
+        // anciennes etapes separees (#renta-hero/#renta-months/#renta-total-row, qui n'existent
+        // plus comme conteneurs distincts).
+        { selector: '#renta-table', title: 'Le tableau mensuel',
+          text: 'Le mois en cours est toujours en tête (ligne dorée), même sans chiffre d’affaires exporté pour l’instant -- ça veut dire « pas encore exporté », jamais « rien vendu ce mois-ci ». Quand les dépenses ne sont pas encore connues (le comptable n’a pas transmis son relevé), c’est écrit « en attente » -- jamais un zéro ou un tiret ambigu.' },
+        // Conditionnelle : la ligne .rt-total n'existe que s'il y a au moins un mois cloture en
+        // plus du mois en cours (meme condition qu'avant pour #renta-total-row).
+        { selector: '.rt-total', title: 'Le total',
+          text: 'La somme sur les mois affichés, en bas du tableau. Si les dépenses ne sont pas connues sur tous ces mois, le total le dit explicitement plutôt que de compter les manquants comme zéro.' }
       ]
     },
     relances: {
@@ -5202,6 +5215,35 @@
   // les MEMES cles de cache que les vrais panneaux -- aucune 2e logique de rendu, juste des
   // donnees pretes a l'emploi. Toutes les callbacks d'erreur sont volontairement silencieuses
   // (un echec de precharge ne doit jamais se voir : le panneau retentera normalement a l'ouverture).
+  // Sujet 1 (02/09/2026) : VRAI BUG trouvé sur observation terrain (Dorian, 2 fois) -- les 3
+  // préchargements partaient TOUS EN MÊME TEMPS, en parallèle, dès l'accueil affiché. n8n tourne
+  // en processus Node.js unique (N8N_RUNNERS_ENABLED=false depuis l'incident du 16/07 -- les
+  // nœuds Code s'exécutent IN-PROCESS, pas dans un pool de workers séparés) : un calcul lourd et
+  // synchrone (le pire, "Formater relances (ok)", encore ~5,5 s même après le fix sujet 2) BLOQUE
+  // le thread JS unique pour toute autre requête arrivant pendant ce temps -- y COMPRIS une
+  // requête totalement étrangère (Calendrier, Rentabilité), pas seulement celle du même panneau.
+  // C'est ce qui explique l'asymétrie observée (PC : Rentabilité lente ; mobile : Calendrier lent
+  // -- ni l'un ni l'autre n'est dans la liste préchargée, les deux attendaient juste LEUR TOUR
+  // derrière les 3 calculs lourds démarrés en même temps que le clic de l'utilisateur).
+  var _precacheQueue = [];
+  var _precacheAnnulee = false;
+  var _precacheTimer = null;
+  function _precacheEtapeSuivante(){
+    if (_precacheAnnulee || !_precacheQueue.length) return;
+    var etape = _precacheQueue.shift();
+    etape(function(){ _precacheEtapeSuivante(); });
+  }
+  // Appelé au premier clic RÉEL de l'utilisateur sur un onglet (voir le hook global plus bas,
+  // sur #homeGrid et #sheet) -- son clic passe devant : toute étape de préchargement pas encore
+  // DÉMARRÉE est purement annulée (celle éventuellement déjà en vol côté serveur ne peut pas être
+  // rappelée -- n8n a déjà commencé à la traiter -- mais elle ne sera plus jamais suivie d'une
+  // 2e ni d'une 3e qui viendrait s'ajouter derrière).
+  function precacheAnnulerRestant(){
+    if (_precacheAnnulee) return;
+    _precacheAnnulee = true;
+    _precacheQueue.length = 0;
+    if (_precacheTimer){ clearTimeout(_precacheTimer); _precacheTimer = null; }
+  }
   function precacherPanneauxLourds(){
     // Sujet 2.2 (02/09/2026) : garde anti double-appel -- cette fonction peut maintenant être
     // appelée dès la détection du code (avant même enterApp(), voir plus bas) ET depuis
@@ -5209,13 +5251,33 @@
     // sinon 2-3 appels serveur redondants au lieu d'un seul.
     if (window._precacheDejaLancee) return;
     window._precacheDejaLancee = true;
-    relancesChargerCalcul(function(j){ panelCacheSave('relances', j); }, function(){});
-    var now = new Date();
-    postContrats({ type: 'mois-liste', annee: now.getFullYear(), mois: now.getMonth() + 1 }, function(j){
-      panelCacheSave('contrats-mois-' + now.getFullYear() + '-' + (now.getMonth() + 1), j);
-    }, function(){});
-    devisChargerListe(function(j){ panelCacheSave('devis', j); }, function(){});
+    _precacheQueue = [
+      function(suite){ relancesChargerCalcul(function(j){ panelCacheSave('relances', j); suite(); }, function(){ suite(); }); },
+      function(suite){
+        var now = new Date();
+        postContrats({ type: 'mois-liste', annee: now.getFullYear(), mois: now.getMonth() + 1 }, function(j){
+          panelCacheSave('contrats-mois-' + now.getFullYear() + '-' + (now.getMonth() + 1), j);
+          suite();
+        }, function(){ suite(); });
+      },
+      function(suite){ devisChargerListe(function(j){ panelCacheSave('devis', j); suite(); }, function(){ suite(); }); },
+    ];
+    // Sujet 1.4 : court délai avant la toute première étape -- laisse le temps à un clic
+    // immédiat de l'utilisateur d'annuler la file AVANT qu'elle ne démarre, plutôt que de
+    // lancer un calcul lourd à l'instant même où l'écran d'accueil apparaît.
+    _precacheTimer = setTimeout(function(){ _precacheTimer = null; _precacheEtapeSuivante(); }, 600);
   }
+  // Hook GLOBAL (délégation, phase de capture) : tout clic sur une tuile de navigation (id
+  // commençant par "sh-", que ce soit dans #homeGrid ou dans le menu #sheet) annule le reste de
+  // la file de préchargement -- couvre TOUS les onglets actuels et futurs sans avoir à modifier
+  // un par un leurs gestionnaires de clic.
+  document.addEventListener('click', function(e){
+    var t = e.target;
+    while (t && t !== document.body){
+      if (t.id && t.id.indexOf('sh-') === 0){ precacheAnnulerRestant(); return; }
+      t = t.parentElement;
+    }
+  }, true);
 
   // Identifiant d'APPAREIL (pas de personne) : généré une fois, gardé en localStorage
   // (même granularité que jarvisCode — un profil de navigateur = un appareil). Sert
@@ -9177,6 +9239,13 @@
     var p = mm.split('-');
     return MOIS_NOMS[parseInt(p[1], 10) - 1] + ' ' + p[0];
   }
+  // Sujet 3.7 (02/09/2026) : format court pour la colonne "Mois" du tableau -- "sept. 26" au lieu
+  // de "Septembre 2026", indispensable pour tenir a 375px sans debordement horizontal a 4 colonnes.
+  var MOIS_COURTS = ['janv.','févr.','mars','avr.','mai','juin','juil.','août','sept.','oct.','nov.','déc.'];
+  function moisLabelCourt(mm){
+    var p = mm.split('-');
+    return MOIS_COURTS[parseInt(p[1], 10) - 1] + ' ' + p[0].slice(2);
+  }
   // Widgets optionnels ("Personnaliser mon tableau") -- persistes sur l'appareil, decochés par
   // défaut au tout premier lancement pour que la vue par défaut reste simple.
   function rentaWidgetsGet(){
@@ -9330,28 +9399,27 @@
     return wrap;
   }
 
-  function rentaStatTile(label, val, cls, estime){
-    var s = document.createElement('div'); s.className = 'rh-stat';
-    var l = document.createElement('span'); l.className = 'rh-label'; l.textContent = label + (estime ? ' *' : '');
-    var v = document.createElement('span'); v.className = 'rh-val ' + cls; v.textContent = val;
-    s.appendChild(l); s.appendChild(v);
-    return s;
-  }
-  // Sujet 3.3 (01/09/2026) : "en attente du comptable" explicite -- jamais un tiret ambigu ni un
-  // zero qu'on prendrait pour une vraie absence de charges (aucune donnee du tout != zero charge).
-  function rentaStatRow(m, tag){
-    var row = document.createElement('div'); row.className = 'rh-row ' + tag;
-    row.appendChild(rentaStatTile('Rentré', fmtEuro(m.ca), 'ca', false));
-    var depCls = m.depenses == null ? 'dep rh-attente' : 'dep';
-    row.appendChild(rentaStatTile('Sorti', m.depenses == null ? 'en attente' : fmtEuro(m.depenses), depCls, m.estime));
-    var benefTxt = m.benefice == null ? 'en attente' : fmtEuro(m.benefice);
-    var benefCls = m.benefice == null ? 'benef rh-attente' : ('benef ' + (m.benefice >= 0 ? 'pos' : 'neg'));
-    row.appendChild(rentaStatTile('Reste', benefTxt, benefCls, m.estime));
-    return row;
-  }
   function rentaMoisCourantCle(){
     var n = new Date();
     return n.getFullYear() + '-' + String(n.getMonth() + 1).padStart(2, '0');
+  }
+  // Sujet 3 (02/09/2026) : une LIGNE de tableau (4 cellules dans le grid partage #renta-table) --
+  // remplace l'ancien rentaStatRow qui construisait une carte isolee par mois. "en attente du
+  // comptable" reste explicite (sujet 3.3 deja acquis, jamais un tiret ni un zero ambigu).
+  function rentaCell(cls, txt){
+    var c = document.createElement('div'); c.className = 'rt-cell ' + (cls || '');
+    if (txt != null) c.textContent = txt;
+    return c;
+  }
+  function rentaTableRow(rowCls, moisTxt, m, estime){
+    var row = document.createElement('div'); row.className = 'rt-row ' + (rowCls || '');
+    row.appendChild(rentaCell('rt-mois', moisTxt));
+    row.appendChild(rentaCell('rt-val ca', fmtEuro(m.ca)));
+    row.appendChild(rentaCell('rt-val dep' + (m.depenses == null ? ' rt-attente' : ''), m.depenses == null ? 'en attente' : fmtEuro(m.depenses)));
+    var beneficeTxt = m.benefice == null ? 'en attente' : fmtEuro(m.benefice);
+    var beneficeCls = 'rt-val benef' + (m.benefice == null ? ' rt-attente' : (m.benefice >= 0 ? ' pos' : ' neg'));
+    row.appendChild(rentaCell(beneficeCls, beneficeTxt));
+    return row;
   }
   function rentaBuildHero(d){
     var wrap = document.createElement('div');
@@ -9365,43 +9433,44 @@
     // rien vendu"), un vrai etat "pas encore exporte" a la place.
     var cleCourante = rentaMoisCourantCle();
     var courant = mois.length && mois[0].mois === cleCourante ? mois.shift() : null;
-    var hero = document.createElement('div'); hero.id = 'renta-hero';
+
+    var table = document.createElement('div'); table.id = 'renta-table';
+    var head = document.createElement('div'); head.className = 'rt-head';
+    head.appendChild(rentaCell(null, 'Mois'));
+    head.appendChild(rentaCell(null, 'Rentrées'));
+    head.appendChild(rentaCell(null, 'Sorties'));
+    head.appendChild(rentaCell(null, 'Reste'));
+    table.appendChild(head);
+
     if (courant){
-      var moisLbl = document.createElement('div'); moisLbl.className = 'rh-mois'; moisLbl.textContent = moisLabel(courant.mois) + ' · en cours';
-      hero.appendChild(moisLbl);
-      hero.appendChild(rentaStatRow(courant, 'rh-big'));
+      table.appendChild(rentaTableRow('rt-courant', moisLabelCourt(courant.mois) + ' ·', courant));
     } else {
-      var moisLbl2 = document.createElement('div'); moisLbl2.className = 'rh-mois'; moisLbl2.textContent = moisLabel(cleCourante) + ' · en cours';
-      hero.appendChild(moisLbl2);
+      var rowVide = document.createElement('div'); rowVide.className = 'rt-row rt-courant';
+      var cMois = document.createElement('div'); cMois.className = 'rt-cell rt-mois'; cMois.style.color = 'var(--gold-a)'; cMois.textContent = moisLabelCourt(cleCourante) + ' ·';
+      var cVide = document.createElement('div'); cVide.className = 'rt-cell'; cVide.style.gridColumn = 'span 3'; cVide.style.justifyContent = 'flex-start';
       var vide = document.createElement('p'); vide.id = 'renta-mois-courant-vide';
-      vide.textContent = 'Pas encore de chiffre d\'affaires exporté pour ce mois' + (d.sourceLabel ? (' (dernier export : ' + d.sourceLabel.replace('export MEG du ', '') + ')') : '') + '.';
-      hero.appendChild(vide);
+      vide.textContent = 'Pas encore exporté' + (d.sourceLabel ? (' (dernier : ' + d.sourceLabel.replace('export MEG du ', '') + ')') : '') + '.';
+      cVide.appendChild(vide);
+      rowVide.appendChild(cMois); rowVide.appendChild(cVide);
+      table.appendChild(rowVide);
     }
-    wrap.appendChild(hero);
 
+    var moisAvecDepense = mois.filter(function(m){ return m.depenses != null; });
     if (mois.length){
-      var list = document.createElement('div'); list.id = 'renta-months';
-      mois.forEach(function(m, idx){
-        var r = document.createElement('div'); r.className = 'renta-month-row' + (idx === 0 && !courant ? ' rm-courant' : '');
-        var lbl = document.createElement('div'); lbl.className = 'rm-mois'; lbl.textContent = moisLabel(m.mois) + (idx === 0 && !courant ? ' · dernier mois clôturé' : '');
-        r.appendChild(lbl);
-        r.appendChild(rentaStatRow(m, 'rh-small'));
-        list.appendChild(r);
-      });
-      wrap.appendChild(list);
-
-      // Sujet 3.2 : ligne de TOTAL toujours visible -- sur les mois AFFICHES avec une vraie
-      // charge connue (jamais un total qui inclurait silencieusement des "en attente" comme 0).
-      var moisAvecDepense = mois.filter(function(m){ return m.depenses != null; });
+      mois.forEach(function(m){ table.appendChild(rentaTableRow('', moisLabelCourt(m.mois), m)); });
+      // Sujet 3.2/3.5 : ligne de TOTAL toujours visible (sticky en bas du tableau) -- sur les mois
+      // AFFICHES avec une vraie charge connue (jamais un total qui inclurait silencieusement des
+      // "en attente" comme 0).
       var totalCa = mois.reduce(function(s, m){ return s + m.ca; }, 0);
       var totalDep = moisAvecDepense.reduce(function(s, m){ return s + m.depenses; }, 0);
       var totalBenef = moisAvecDepense.length === mois.length ? (totalCa - totalDep) : null;
-      var totalRow = document.createElement('div'); totalRow.id = 'renta-total-row';
-      var totLabel = document.createElement('div'); totLabel.id = 'renta-total-label';
-      totLabel.textContent = 'Total sur ' + mois.length + ' mois' + (moisAvecDepense.length < mois.length ? (' (dépenses connues sur ' + moisAvecDepense.length + ' d\'entre eux seulement)') : '');
-      totalRow.appendChild(totLabel);
-      totalRow.appendChild(rentaStatRow({ ca: totalCa, depenses: moisAvecDepense.length ? totalDep : null, benefice: totalBenef, estime: mois.some(function(m){ return m.estime; }) }, 'rh-small'));
-      wrap.appendChild(totalRow);
+      table.appendChild(rentaTableRow('rt-total', 'Total', { ca: totalCa, depenses: moisAvecDepense.length ? totalDep : null, benefice: totalBenef }));
+    }
+    wrap.appendChild(table);
+    if (mois.length && moisAvecDepense.length < mois.length){
+      var noteTot = document.createElement('p'); noteTot.id = 'renta-maj';
+      noteTot.textContent = 'Total : dépenses connues sur ' + moisAvecDepense.length + ' mois sur ' + mois.length + '.';
+      wrap.appendChild(noteTot);
     }
     if (mois.some(function(m){ return m.estime; }) || (courant && courant.estime)){
       var maj = document.createElement('p'); maj.id = 'renta-maj';
