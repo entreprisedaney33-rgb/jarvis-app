@@ -1937,12 +1937,16 @@
   .rt-cell:first-child{justify-content:center}
   .rt-cell:last-child{border-right:0}
   .rt-row:last-of-type .rt-cell, .rt-total .rt-cell{border-bottom:0}
+  /* Sujet 6 (01/09/2026 soir) : les MOTS d'en-tete (RENTREES/SORTIES/RESTE) etaient encore
+     alignes a droite (justify-content:flex-end, herite de .rt-cell) comme les chiffres du corps
+     -- Dorian les veut centres sur leur colonne, alors que les chiffres EUX restent a droite
+     (regle .rt-cell generale, inchangee). Les 4 en-tetes (Mois compris) sont desormais tous
+     centres par une seule regle, la specificite pour :first-child devient inutile. */
   .rt-head .rt-cell{
     position:sticky; top:0; z-index:2;
     font-size:11px; color:var(--muted); text-transform:uppercase; letter-spacing:.02em;
-    font-weight:700; justify-content:flex-end; padding-top:10px; padding-bottom:10px;
+    font-weight:700; justify-content:center; padding-top:10px; padding-bottom:10px;
   }
-  .rt-head .rt-cell:first-child{justify-content:center}
   .rt-mois{font-size:12px; font-weight:700; white-space:nowrap}
   .rt-row.rt-courant .rt-cell{background:rgba(var(--gold-rgb),.12)}
   .rt-row.rt-courant .rt-mois{color:var(--gold-a)}
@@ -3052,6 +3056,8 @@
   #mf-list{flex:1; overflow-y:auto; -webkit-overflow-scrolling:touch; display:flex; flex-direction:column; gap:10px}
   #mf-empty{color:var(--muted); font-size:13px; text-align:center; margin-top:20px}
   .mf-card{background:#1D1D20; border-radius:12px; padding:12px; display:flex; flex-direction:column; gap:6px}
+  .mf-card-avoir{border:0.5px solid rgba(255,69,58,.35)}
+  .mf-card-avoir .mf-card-montant{color:#FF453A}
   .mf-card-head{display:flex; justify-content:space-between; gap:8px; align-items:baseline}
   .mf-card-client{font-size:14px; font-weight:700; color:var(--ink)}
   .mf-card-montant{font-size:14px; font-weight:700; color:var(--gold-a); white-space:nowrap}
@@ -4376,7 +4382,7 @@
 
 <script>
 (function(){
-  var APPV = 'v4.17';
+  var APPV = 'v4.18';
 
   // Debug : ?debug_modal=1 force l'affichage du modal "nouvelle version" sans attendre un vrai
   // déploiement. Capturé ICI, tout au début, car plus bas (login mémorisé, connexion) le code
@@ -4453,8 +4459,8 @@
         // QUE sur un devis dans le bon etat (onglet Devis -> Valides), pas toujours presents a
         // l'ecran -- comme les autres etapes "conditionnelles" deja dans ce fichier, le moteur
         // saute silencieusement l'etape si le bouton n'est pas visible (jamais bloquant).
-        { selector: '.dv-intervention-btn', title: 'Intervention faite',
-          text: 'Sur un devis accepté par le client (onglet « Devis » → « Validés ») : appuyez ici une fois le travail terminé chez le client. Vous pouvez le faire vous-même, pas seulement Bruno.' },
+        { selector: '.dv-intervention-btn', title: 'Intervention faite — facturer le client',
+          text: 'Sur un devis accepté par le client (onglet « Devis » → « Validés ») : appuyez ici une fois le travail terminé chez le client. Le bouton « 🧾 Facturer ce devis » apparaît alors juste en dessous, sur la même fiche. Vous pouvez le faire vous-même, pas seulement Bruno.' },
         { selector: '.dv-facturer-btn', title: 'Facturer ce devis',
           text: 'Une fois l’intervention déclarée terminée, ce bouton reprend tout le devis (client, lignes, prix) pour préparer la facture — vous n’avez rien à ressaisir. Un récapitulatif s’affiche avant l’émission réelle.' }
       ]
@@ -7262,7 +7268,7 @@
     // devis, evite un aller-retour supplementaire).
     if (dv.statut === 'accepte' && (dv.token || dv.numero)){
       var intBtn = document.createElement('button'); intBtn.type = 'button'; intBtn.className = 'vc-ok dv-intervention-btn';
-      intBtn.style.marginTop = '8px'; intBtn.style.width = '100%'; intBtn.textContent = '✅ Intervention faite';
+      intBtn.style.marginTop = '8px'; intBtn.style.width = '100%'; intBtn.textContent = '✅ Intervention faite — facturer le client';
       intBtn.addEventListener('click', function(){
         intBtn.disabled = true; intBtn.textContent = 'Enregistrement…';
         var payload = dv.source === 'meg'
@@ -7270,8 +7276,8 @@
           : { type: 'terminer', token: dv.token };
         postDevisIntervention(payload, function(r){
           if (r && r.ok){ dv.statut = 'intervention_faite'; toast('✅ Intervention déclarée terminée'); devisApplyFilter(); }
-          else { intBtn.disabled = false; intBtn.textContent = '✅ Intervention faite'; toast('❌ ' + ((r && r.message) || 'Impossible.')); }
-        }, function(err){ intBtn.disabled = false; intBtn.textContent = '✅ Intervention faite'; toast('❌ ' + err); });
+          else { intBtn.disabled = false; intBtn.textContent = '✅ Intervention faite — facturer le client'; toast('❌ ' + ((r && r.message) || 'Impossible.')); }
+        }, function(err){ intBtn.disabled = false; intBtn.textContent = '✅ Intervention faite — facturer le client'; toast('❌ ' + err); });
       });
       row.appendChild(intBtn);
     }
@@ -7360,15 +7366,26 @@
     return row;
   }
   function devisRenderRowFacture(f){
-    var row = document.createElement('div'); row.className = 'devis-card';
+    // Sujet 2.5 (01/09/2026 soir) : un avoir (f.typeDoc==='avoir') s'affiche désormais comme sa
+    // propre carte dans cette même liste (au lieu de rester invisible) — badge dédié, référence
+    // à la facture qu'il annule, jamais de badge Payée/Impayée (un avoir n'est ni l'un ni
+    // l'autre) et jamais de bouton "annuler par un avoir" sur un avoir lui-même.
+    var estAvoir = f.typeDoc === 'avoir';
+    var row = document.createElement('div'); row.className = 'devis-card' + (estAvoir ? ' mf-card-avoir' : '');
     var top = document.createElement('div'); top.className = 'df-row-top';
-    var nom = document.createElement('span'); nom.className = 'dv-nom'; nom.textContent = f.nom || '(client non précisé)';
-    var badge = document.createElement('span'); badge.className = 'df-badge ' + (f.paye ? 'paye' : 'impaye');
-    badge.textContent = f.paye ? 'Payée' : 'Impayée';
+    var nom = document.createElement('span'); nom.className = 'dv-nom'; nom.textContent = (estAvoir ? '↩️ ' : '') + (f.nom || '(client non précisé)');
+    var badge = document.createElement('span');
+    if (estAvoir){ badge.className = 'df-badge'; badge.textContent = 'Avoir'; }
+    else { badge.className = 'df-badge ' + (f.paye ? 'paye' : 'impaye'); badge.textContent = f.paye ? 'Payée' : 'Impayée'; }
     top.appendChild(nom); top.appendChild(badge);
     row.appendChild(top);
-    var meta = document.createElement('span'); meta.className = 'dv-meta'; meta.textContent = (f.numero || '') + ' · ' + fmtDevisDateSimple(f.date);
+    var meta = document.createElement('span'); meta.className = 'dv-meta';
+    meta.textContent = (f.numero || '') + ' · ' + fmtDevisDateSimple(f.date) + (estAvoir ? ' · annule ' + (f.avoirDe || '?') : '');
     row.appendChild(meta);
+    if (estAvoir && f.motifAvoir){
+      var motifRow = document.createElement('span'); motifRow.className = 'dv-meta'; motifRow.textContent = 'Motif : ' + f.motifAvoir;
+      row.appendChild(motifRow);
+    }
     var montant = document.createElement('span'); montant.className = 'dv-montant'; montant.textContent = f.montantTtc + ' € TTC';
     row.appendChild(montant);
     // Point 3 (28/08/2026) : les 50 factures impayées archivées deviennent consultables (même
@@ -7386,17 +7403,13 @@
     // Point 1 (30/08/2026) : le geste "annuler par un avoir" existait déjà (#mf-view / mfCard),
     // mais fallait aller le chercher dans "+" -> "Nouveau document" -> "Voir mes factures émises".
     // Remonté ici, sur la facture elle-même -- réutilise mfAppendAvoir telle quelle (aucune
-    // duplication). Réservé aux vraies factures Jarvis (source==='jarvis', série MCS) : une ligne
-    // MEG importée n'a pas de numeroComplet exploitable par ce mécanisme.
-    if (f.source === 'jarvis' && f.numeroComplet){
+    // duplication). Sujet 2 (01/09/2026 soir) : ouvert aux factures MEG aussi (avant : réservé à
+    // source==='jarvis' -- Dorian l'a redemandé pour la dixième fois, à raison). Une facture MEG a
+    // désormais son propre numeroComplet (= son numéro MEG, ex "FA000226") posé par le backend ;
+    // mfAppendAvoir transmet les données MEG déjà affichées à l'écran (jamais inventées) pour que
+    // le serveur construise une référence même sans ligne dans mcs_factures_emises.
+    if (!estAvoir && f.numeroComplet){
       mfAppendAvoir(row, f, function(){ devisAttenteOpen(); });
-    } else {
-      // Point 2d (31/08/2026) : le geste d'annulation existe, mais uniquement sur une facture
-      // EMISE PAR JARVIS -- sur une facture MEG, ne rien afficher serait un vide silencieux
-      // (propriete F : ce qui est impossible ici est DIT, jamais masque).
-      var megNote = document.createElement('span'); megNote.className = 'mf-card-annulee';
-      megNote.textContent = 'Facture MEG — son annulation se fait dans MEG.';
-      row.appendChild(megNote);
     }
     return row;
   }
@@ -7427,7 +7440,9 @@
       }
       itemsD.forEach(function(dv){ devisList.appendChild(devisRenderRowDevis(dv)); });
     } else {
-      var itemsF = (devisData.factures || []).filter(function(f){ return devisFilterFactures[devisCatFacture(f)] && (!q || normDoc(f.nom).indexOf(q) !== -1); });
+      // Sujet 2.5 (01/09/2026 soir) : un avoir n'est ni payé ni impayé -- toujours affiché, quel
+      // que soit l'état des 2 filtres (sinon décocher "Impayées" le ferait disparaître à tort).
+      var itemsF = (devisData.factures || []).filter(function(f){ return (f.typeDoc === 'avoir' || devisFilterFactures[devisCatFacture(f)]) && (!q || normDoc(f.nom).indexOf(q) !== -1); });
       if (!itemsF.length){
         var aucunFiltre = !devisFilterFactures.payees && !devisFilterFactures.impayees;
         devisList.innerHTML = '<p id="devis-empty">' + (aucunFiltre
@@ -14958,9 +14973,18 @@
     confirm.addEventListener('click', function(){
       if (!motif.value.trim()){ toast('Précise le motif de l\'avoir.'); return; }
       confirm.disabled = true;
-      postFacturation({
-        type: 'emettre', type_doc: 'avoir', avoir_de: f.numeroComplet, motif: motif.value.trim(),
-      }, function(r){
+      // Sujet 2 (01/09/2026 soir) : pour une facture MEG (f.source==='meg'), le serveur n'a AUCUNE
+      // ligne dans mcs_factures_emises à relire -- on lui transmet ce que MEG a déjà rapporté et
+      // que l'app affiche déjà à l'écran (jamais inventé ici), il construit une référence
+      // synthétique et résout l'email du client dans Mes contacts.
+      var payload = { type: 'emettre', type_doc: 'avoir', avoir_de: f.numeroComplet, motif: motif.value.trim() };
+      if (f.source === 'meg'){
+        payload.avoir_source = 'meg';
+        payload.meg_client_nom = f.nom || '';
+        payload.meg_montant_ht = f.montantHt;
+        payload.meg_montant_ttc = f.montantTtc;
+      }
+      postFacturation(payload, function(r){
         confirm.disabled = false;
         if (r && r.ok){ toast('✅ Avoir émis pour ' + f.numeroComplet); if (onEmitted) onEmitted(); }
         else { toast('❌ ' + ((r && r.message) || 'Émission impossible.')); }
@@ -14982,13 +15006,36 @@
     mfAppendAvoir(card, f, function(){ mfViewOpen(true); });
     return card;
   }
+  // Sujet 2.5 (01/09/2026 soir) : un avoir émis n'apparaissait dans AUCUNE liste — trouvé en
+  // creusant le sujet 8. `r.avoirs` était déjà calculé côté serveur (Formater liste
+  // (facturation)) mais jamais lu ici. Carte distincte (pas de bouton "annuler" sur un avoir
+  // lui-même), montant affiché négatif (déjà le cas côté serveur), référence claire vers la
+  // facture annulée.
+  function mfCardAvoir(a){
+    var card = document.createElement('div'); card.className = 'mf-card mf-card-avoir';
+    var head = document.createElement('div'); head.className = 'mf-card-head';
+    var client = document.createElement('span'); client.className = 'mf-card-client'; client.textContent = '↩️ ' + (a.clientNom || '(client inconnu)');
+    var montant = document.createElement('span'); montant.className = 'mf-card-montant'; montant.textContent = fmtEuros(a.montantTtc) + ' TTC';
+    head.appendChild(client); head.appendChild(montant);
+    card.appendChild(head);
+    var sub = document.createElement('span'); sub.className = 'mf-card-sub';
+    sub.textContent = a.numeroComplet + ' — ' + fmtRelanceDateFr(a.dateEmission) + ' — annule ' + (a.avoirDe || '?');
+    card.appendChild(sub);
+    if (a.motif){
+      var motifEl = document.createElement('span'); motifEl.className = 'mf-card-sub'; motifEl.textContent = 'Motif : ' + a.motif;
+      card.appendChild(motifEl);
+    }
+    return card;
+  }
   function mfViewOpen(keepOpen){
     if (!keepOpen){ mfViewBg.classList.add('open'); mfView.classList.add('open'); }
     mfList.innerHTML = '<p id="mf-empty">Chargement…</p>';
     postFacturation({ type: 'liste' }, function(r){
       if (!r || !r.ok){ mfList.innerHTML = '<p id="mf-empty">Impossible de charger les factures.</p>'; return; }
       mfList.innerHTML = '';
-      if (!r.factures || !r.factures.length){ mfList.innerHTML = '<p id="mf-empty">Aucune facture émise pour l’instant.</p>'; return; }
+      if ((!r.factures || !r.factures.length) && (!r.avoirs || !r.avoirs.length)){ mfList.innerHTML = '<p id="mf-empty">Aucune facture émise pour l’instant.</p>'; return; }
+      if (r.avoirs && r.avoirs.length){ r.avoirs.forEach(function(a){ mfList.appendChild(mfCardAvoir(a)); }); }
+      if (!r.factures || !r.factures.length){ return; }
       r.factures.forEach(function(f){ mfList.appendChild(mfCard(f)); });
     }, function(err){ mfList.innerHTML = '<p id="mf-empty">' + err + '</p>'; });
   }
