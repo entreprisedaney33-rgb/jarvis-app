@@ -1389,6 +1389,13 @@
   #crypto-loading, #crypto-error{padding:16px 4px; color:var(--muted); font-size:13.5px}
   #crypto-error{color:#ff6d5a}
   #crypto-generated{font-size:11px; color:var(--muted); padding:2px 4px 14px}
+  #cx-hero{
+    background:var(--surface); border-radius:16px; padding:16px 18px; margin-bottom:10px;
+    display:flex; flex-direction:column; gap:4px;
+  }
+  #cx-hero .cx-hero-label{font-size:11.5px; color:var(--muted); text-transform:uppercase; letter-spacing:.02em}
+  #cx-hero .cx-hero-value{font-size:34px; font-weight:800; color:var(--gold-a); line-height:1.1}
+  #cx-hero .cx-hero-unit{font-size:15px; font-weight:600; color:var(--muted)}
   /* Panneau plein ecran "Relances clients" (chantier 3 audit MCS, patron uniquement) */
   #relancesview{
     position:fixed; inset:0; z-index:50; background:var(--bg);
@@ -3630,12 +3637,17 @@
     <div id="crypto-loading">Chargement…</div>
     <div id="crypto-error" style="display:none"></div>
     <div id="crypto-body" style="display:none">
+      <div id="cx-hero">
+        <span class="cx-hero-label">Encaissé aujourd'hui (24h)</span>
+        <span class="cx-hero-value"><span id="cx-usdc-24">—</span> <span class="cx-hero-unit">USDC</span></span>
+      </div>
       <div class="couts-stats">
         <div class="couts-stat"><span class="cs-label">Paiements 24h</span><span class="cs-value" id="cx-pay24">—</span><span class="cs-sub">appels payés</span></div>
         <div class="couts-stat"><span class="cs-label">Paiements 7j</span><span class="cs-value" id="cx-pay7">—</span><span class="cs-sub">appels payés</span></div>
         <div class="couts-stat"><span class="cs-label">402 servis 24h</span><span class="cs-value" id="cx-402-24">—</span><span class="cs-sub">sondages non payés</span></div>
         <div class="couts-stat"><span class="cs-label">402 servis 7j</span><span class="cs-value" id="cx-402-7">—</span><span class="cs-sub">sondages non payés</span></div>
-        <div class="couts-stat" style="grid-column:1 / -1"><span class="cs-label">Montant encaissé</span><span class="cs-value" style="font-size:13.5px; color:var(--muted)">Non disponible sur cette vue publique</span><span class="cs-sub">GET /stats est volontairement anonymisé (pas de montants ni d'adresses) — le détail du revenu vit derrière une clé privée, jamais exposée ici</span></div>
+        <div class="couts-stat"><span class="cs-label">Encaissé 7j</span><span class="cs-value" id="cx-usdc-7">—</span><span class="cs-sub">USDC</span></div>
+        <div class="couts-stat"><span class="cs-label">Encaissé au total</span><span class="cs-value" id="cx-usdc-total">—</span><span class="cs-sub">USDC, depuis le début</span></div>
       </div>
       <div id="couts-svc-head" style="margin-top:6px"><span>🏆 Top 5 endpoints (7 jours)</span></div>
       <div id="crypto-top-list"></div>
@@ -4425,7 +4437,7 @@
 
 <script>
 (function(){
-  var APPV = 'v4.19';
+  var APPV = 'v4.20';
 
   // Debug : ?debug_modal=1 force l'affichage du modal "nouvelle version" sans attendre un vrai
   // déploiement. Capturé ICI, tout au début, car plus bas (login mémorisé, connexion) le code
@@ -7113,7 +7125,7 @@
     }
     top5.forEach(function(name){
       var e = dataByEndpoint[name] || {};
-      var pay = e.payments || {}; var p402 = e.http_402 || {};
+      var pay = e.payments || {}; var p402 = e.http_402 || {}; var usdc = e.montant_usdc || {};
       var row = document.createElement('div');
       row.className = 'couts-svc-row';
       var top = document.createElement('div');
@@ -7123,11 +7135,11 @@
       nom.textContent = name;
       var montant = document.createElement('span');
       montant.className = 'couts-svc-montant';
-      montant.textContent = (pay.last_7d || 0) + ' paiements';
+      montant.textContent = (usdc.last_7d || 0).toFixed(3) + ' USDC';
       top.appendChild(nom); top.appendChild(montant);
       var sub = document.createElement('span');
       sub.className = 'couts-svc-pct';
-      sub.textContent = '24h: ' + (pay.last_24h || 0) + ' payés / ' + (p402.last_24h || 0) + ' sondés — 7j: ' + (pay.last_7d || 0) + ' payés / ' + (p402.last_7d || 0) + ' sondés';
+      sub.textContent = (pay.last_7d || 0) + ' paiements (7j) — 24h: ' + (pay.last_24h || 0) + ' payés / ' + (p402.last_24h || 0) + ' sondés — total: ' + (usdc.all_time || 0).toFixed(3) + ' USDC';
       row.appendChild(top); row.appendChild(sub);
       list.appendChild(row);
     });
@@ -7146,8 +7158,12 @@
         loading.style.display = 'none';
         body.style.display = '';
         var t = data.totals || {};
+        var usdcT = t.montant_usdc || {};
         document.getElementById('cx-pay24').textContent = (t.payments && t.payments.last_24h) || 0;
         document.getElementById('cx-pay7').textContent = (t.payments && t.payments.last_7d) || 0;
+        document.getElementById('cx-usdc-24').textContent = (usdcT.last_24h || 0).toFixed(3);
+        document.getElementById('cx-usdc-7').textContent = (usdcT.last_7d || 0).toFixed(3) + ' USDC';
+        document.getElementById('cx-usdc-total').textContent = (usdcT.all_time || 0).toFixed(3) + ' USDC';
         document.getElementById('cx-402-24').textContent = (t.http_402 && t.http_402.last_24h) || 0;
         document.getElementById('cx-402-7').textContent = (t.http_402 && t.http_402.last_7d) || 0;
         cryptoRenderTop(data.endpoints);
