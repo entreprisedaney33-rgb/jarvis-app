@@ -1065,6 +1065,17 @@
     background:rgba(255,255,255,.1); color:var(--muted); width:fit-content;
   }
   .contrat-card .ct-badge.vmc{background:rgba(10,132,255,.15); color:var(--blue)}
+  .contrat-card .ct-badge-deduit{background:rgba(255,255,255,.08); color:var(--muted); font-weight:600}
+  .contrat-card .ct-badge-tva-info{background:rgba(255,255,255,.06); color:var(--muted); font-weight:500}
+  .ct-famille-head{display:flex; justify-content:space-between; align-items:center; padding:14px 4px 6px; margin-top:4px}
+  .ct-famille-head:first-child{margin-top:0}
+  .ct-famille-label{font-size:13px; font-weight:800; color:var(--gold-a); text-transform:uppercase; letter-spacing:.3px}
+  .ct-famille-total{font-size:13px; font-weight:700; color:var(--muted)}
+  #contrats-resume-deduites{
+    display:block; width:100%; text-align:left; background:rgba(255,255,255,.05); border:0;
+    border-radius:12px; padding:10px 14px; color:var(--muted); font-size:13px; margin-bottom:8px;
+  }
+  #contrats-resume-deduites:active{background:rgba(255,255,255,.09)}
   .contrat-card .ct-toggle{
     align-self:flex-start; background:none; border:0; color:var(--blue); font-size:13px;
     padding:4px 0; cursor:pointer; -webkit-tap-highlight-color:transparent;
@@ -1119,6 +1130,16 @@
   .dg-row .dg-libelle{font-weight:700; color:var(--ink)}
   .dg-row input{width:100%; box-sizing:border-box; background:var(--surface); border:1px solid rgba(255,255,255,.12); border-radius:10px; padding:9px 11px; color:var(--ink); font-size:14px}
   #contrats-designations-groupe-btn{margin:8px 14px 0; align-self:flex-start; background:rgba(255,159,10,.15); color:#FF9F0A; border:0; border-radius:10px; padding:7px 12px; font-size:13px; font-weight:700; cursor:pointer}
+  #contrats-tva-vmc-revue-btn{margin:8px 14px 0; align-self:flex-start; background:rgba(255,255,255,.08); color:var(--muted); border:0; border-radius:10px; padding:7px 12px; font-size:13px; font-weight:700; cursor:pointer}
+  #tva-vmc-revue-bg{position:fixed; inset:0; z-index:55; background:rgba(0,0,0,.55); display:none}
+  #tva-vmc-revue-bg.open{display:block}
+  .tvr-row{display:flex; align-items:center; justify-content:space-between; gap:10px; margin-bottom:10px; padding-bottom:10px; border-bottom:0.5px solid var(--hairline)}
+  .tvr-row .tvr-info{display:flex; flex-direction:column; gap:2px}
+  .tvr-row .tvr-nom{font-weight:700; color:var(--ink); font-size:14px}
+  .tvr-row .tvr-meta{font-size:12px; color:var(--muted)}
+  .tvr-row .tvr-toggle{background:rgba(255,255,255,.08); border:0; border-radius:99px; padding:6px 12px; font-size:13px; font-weight:800; color:var(--muted); cursor:pointer; white-space:nowrap}
+  .tvr-row .tvr-toggle.tvr-20{background:rgba(255,69,58,.15); color:#FF453A}
+  .tvr-row .tvr-toggle.tvr-10{background:rgba(52,199,89,.15); color:#34C759}
   #bug-form-bg{position:fixed; inset:0; z-index:55; background:rgba(0,0,0,.55); display:none}
   #bug-form-bg.open{display:block}
   .contrat-form{
@@ -3378,7 +3399,7 @@
     <button class="sh-tile" id="sh-clients" type="button"><span class="sh-tile-ic">🏢</span><span class="sh-tile-label">Clients</span></button>
     <button class="sh-tile" id="sh-devis-attente" type="button" style="display:none"><span class="sh-tile-ic">📝</span><span class="sh-tile-label">Devis et factures</span><span class="badge-count" id="menu-devis-badge" style="display:none"></span></button>
     <button class="sh-tile" id="sh-rentabilite" type="button" style="display:none"><span class="sh-tile-ic">💹</span><span class="sh-tile-label">Rentabilité</span></button>
-    <button class="sh-tile" id="sh-contrats" type="button" style="display:none"><span class="sh-tile-ic">📋</span><span class="sh-tile-label">Contrats</span></button>
+    <button class="sh-tile" id="sh-contrats" type="button" style="display:none"><span class="sh-tile-ic">📋</span><span class="sh-tile-label">Contrats</span><span class="badge-count" id="menu-contrats-badge" style="display:none"></span></button>
     <button class="sh-tile" id="sh-ik" type="button" style="display:none"><span class="sh-tile-ic">🚗</span><span class="sh-tile-label">Frais kilométriques</span></button>
     <button class="sh-tile" id="sh-relances" type="button" style="display:none"><span class="sh-tile-ic">📨</span><span class="sh-tile-label">Relances clients</span><span class="badge-count" id="menu-relances-badge" style="display:none"></span></button>
     <button class="sh-tile" id="sh-opportunites" type="button" style="display:none"><span class="sh-tile-ic">🏗️</span><span class="sh-tile-label">Opportunités</span><span class="badge-count" id="menu-opp-badge" style="display:none"></span></button>
@@ -3554,6 +3575,7 @@
   </div>
   <p id="contrats-testmode-banniere" class="testmode-banniere" style="display:none">🧪 Mode test : les factures de contrat partent chez Altaestima, jamais chez le client.</p>
   <button id="contrats-designations-groupe-btn" type="button">🏷️ Désignations à confirmer</button>
+  <button id="contrats-tva-vmc-revue-btn" type="button">💶 TVA VMC — contrats à 20 %</button>
   <div id="contrats-mois-selector" style="display:none">
     <select id="contrats-mois-select" aria-label="Mois"></select>
     <select id="contrats-annee-select" aria-label="Année"></select>
@@ -3712,6 +3734,21 @@
     <div class="cf-actions">
       <button class="vc-ok" id="dg-save" type="button">✅ Enregistrer tout</button>
       <button class="vc-no" id="dg-cancel" type="button">Fermer</button>
+    </div>
+  </div>
+</div>
+
+<!-- Sujet 2.5 (01/09/2026) : ecran de revue groupe des contrats VMC dont le registre dit 20% --
+     rien n'est tranche automatiquement (10% par defaut ailleurs, mais ici le registre gagne),
+     Mickael bascule ligne par ligne OU d'un coup avec confirmation explicite. -->
+<div id="tva-vmc-revue-bg">
+  <div class="contrat-form" id="tva-vmc-revue-form">
+    <h3>💶 TVA des contrats VMC — ton classeur dit 20 %</h3>
+    <p style="font-size:13px;color:var(--muted);margin:0 0 10px">Rappel légal : le taux réduit (10 %) dépend du LOCAL (habitation de plus de 2 ans + attestation du client), jamais de la prestation elle-même. Ces contrats sont à 20 % parce que ton classeur le dit — bascule ceux qui devraient être à 10 %, ou tout d'un coup.</p>
+    <div id="tva-vmc-revue-list"></div>
+    <div class="cf-actions">
+      <button class="vc-no" id="tva-vmc-revue-tout10" type="button">⬇️ Tout passer à 10 %</button>
+      <button class="vc-no" id="tva-vmc-revue-fermer" type="button">Fermer</button>
     </div>
   </div>
 </div>
@@ -4208,7 +4245,7 @@
 
 <script>
 (function(){
-  var APPV = 'v4.07';
+  var APPV = 'v4.08';
 
   // Debug : ?debug_modal=1 force l'affichage du modal "nouvelle version" sans attendre un vrai
   // déploiement. Capturé ICI, tout au début, car plus bas (login mémorisé, connexion) le code
@@ -5716,6 +5753,7 @@
     // "Contrats" (chantier 5 audit MCS) : même garde — patron d'un tenant secondaire uniquement.
     var contratsBtn = document.getElementById('sh-contrats');
     if (contratsBtn) contratsBtn.style.display = (mcs && role === 'patron') ? '' : 'none';
+    if (mcs && role === 'patron') contratsCheckBadge(); else if (contratsMenuBadge) contratsMenuBadge.style.display = 'none';
     // "Frais kilométriques (IK)" (chantier 6 réaffecté 11/08/2026) : même garde — patron d'un
     // tenant secondaire uniquement, jamais Bruno, jamais le compte principal.
     var ikBtn = document.getElementById('sh-ik');
@@ -5888,8 +5926,16 @@
     switch (l.type){
       case 'devis':
         return n + ' devis à valider';
-      case 'contrats':
-        return n + (n > 1 ? ' contrats à facturer' : ' contrat à facturer');
+      case 'contrats': {
+        // Sujet 3.1 (01/09/2026) : meme format que la ligne relances -- nombre + montant TTC,
+        // repli sur l'ancien texte sans montant si le serveur n'a pas encore ce champ (montee de
+        // version partielle, jamais de ligne cassee).
+        var t3 = n + (n > 1 ? ' contrats à facturer' : ' contrat à facturer');
+        if (l.montantEur != null){
+          t3 += ' — ' + Math.round(Number(l.montantEur) || 0).toLocaleString('fr-FR') + ' €';
+        }
+        return t3;
+      }
       case 'relances': {
         var montant = Math.round(Number(l.montantEur) || 0).toLocaleString('fr-FR');
         var t = n + (n > 1 ? ' relances — ' : ' relance — ') + montant + ' €';
@@ -6282,6 +6328,7 @@
     relancesCheckBadge();
     oppCheckBadge();
     relationsCheckBadge();
+    contratsCheckBadge();
   }
   headerEl.addEventListener('click', function(){
     var opening = !sheet.classList.contains('open');
@@ -7150,6 +7197,23 @@
   var contratsMoisPrevisionnel = null;
   var contratsCatalogueData = null;
   var contratsTestMode = false;
+  // Sujet 1 (01/09/2026) : filtre "voir seulement les designations deduites par Jarvis", active
+  // par le resume discret au-dessus de la liste -- remis a false a chaque changement d'onglet/mois.
+  var contratsFiltreDeduites = false;
+  // Sujet 3.2 (01/09/2026) : pastille sur la tuile "Contrats", meme pattern que Mes contacts /
+  // Opportunites (oppUpdateBadge). Sujet 3.3 : pour garantir la CONCORDANCE avec la ligne "N
+  // contrats a facturer" de l'accueil (cumul depuis le debut de mission, pas juste le mois
+  // courant -- voir Construire accueil (web)), on relit LA MEME ROUTE (mcs-accueil) au lieu de
+  // recalculer une 2e fois cote client -- meme nombre garanti par construction, jamais 2 sources.
+  var contratsMenuBadge = document.getElementById('menu-contrats-badge');
+  function contratsCheckBadge(){
+    postAccueil({}, function(j){
+      var ligne = (j.lignes || []).find(function(l){ return l.type === 'contrats'; });
+      var n = ligne ? Number(ligne.n) || 0 : 0;
+      if (n > 0){ contratsMenuBadge.textContent = n; contratsMenuBadge.style.display = ''; } else { contratsMenuBadge.style.display = 'none'; }
+      updateAppBadgeTotal();
+    }, function(){});
+  }
   // Sélecteur de mois/année + sous-catégories (demande explicite : pouvoir consulter un autre
   // mois que le mois courant, et voir aussi ce qui a déjà été envoyé ou marqué "pas cette année").
   var CONTRATS_MOIS_NOMS = ['Janvier','Février','Mars','Avril','Mai','Juin','Juillet','Août','Septembre','Octobre','Novembre','Décembre'];
@@ -7173,12 +7237,13 @@
       if (y === contratsMoisAnnee) optY.selected = true;
       anneeSel.appendChild(optY);
     }
-    moisSel.addEventListener('change', function(){ contratsMoisMois = Number(moisSel.value); contratsLoadTab(); });
-    anneeSel.addEventListener('change', function(){ contratsMoisAnnee = Number(anneeSel.value); contratsLoadTab(); });
+    moisSel.addEventListener('change', function(){ contratsMoisMois = Number(moisSel.value); contratsFiltreDeduites = false; contratsLoadTab(); });
+    anneeSel.addEventListener('change', function(){ contratsMoisAnnee = Number(anneeSel.value); contratsFiltreDeduites = false; contratsLoadTab(); });
   }
   document.querySelectorAll('#contrats-mois-substatuts .df-chip').forEach(function(chip){
     chip.addEventListener('click', function(){
       contratsMoisStatutFiltre = chip.dataset.statut;
+      contratsFiltreDeduites = false;
       document.querySelectorAll('#contrats-mois-substatuts .df-chip').forEach(function(b){ b.classList.toggle('active', b === chip); });
       contratsApplyFilter();
     });
@@ -7344,6 +7409,67 @@
     else { toast('✅ Désignations confirmées.'); designationsGroupeBg.classList.remove('open'); }
   }
 
+  // Sujet 2.5 (01/09/2026) : ecran de revue groupe des 29 contrats VMC ou le registre dit 20% --
+  // toggle par ligne (route catalogue-tva-vmc-basculer, meme mecanisme trace teste ligne par ligne)
+  // + bouton "tout passer a 10%" qui exige une confirmation explicite (route catalogue-tva-vmc-tout-10).
+  // Rien de tranche par defaut : cet ecran ne s'ouvre QUE sur demande, jamais automatiquement.
+  var tvaVmcRevueBg = document.getElementById('tva-vmc-revue-bg');
+  var tvaVmcRevueList = document.getElementById('tva-vmc-revue-list');
+  var tvaVmcRevueBtn = document.getElementById('contrats-tva-vmc-revue-btn');
+  var tvaVmcRevueFermerBtn = document.getElementById('tva-vmc-revue-fermer');
+  var tvaVmcRevueTout10Btn = document.getElementById('tva-vmc-revue-tout10');
+  function tvaVmcRevueOuvrir(){
+    tvaVmcRevueList.innerHTML = '<p style="color:var(--muted);font-size:13px">Chargement…</p>';
+    tvaVmcRevueBg.classList.add('open');
+    postContrats({ type: 'catalogue-tva-vmc-liste' }, function(j){
+      var items = j.items || [];
+      tvaVmcRevueList.innerHTML = '';
+      if (!items.length){
+        tvaVmcRevueList.innerHTML = '<p style="color:var(--muted);font-size:13px">Aucun contrat VMC à 20 % dans le registre.</p>';
+        return;
+      }
+      items.forEach(function(c){ tvaVmcRevueList.appendChild(tvaVmcRevueBuildRow(c)); });
+    }, function(err){ tvaVmcRevueList.innerHTML = ''; toast(err); });
+  }
+  function tvaVmcRevueBuildRow(c){
+    var row = document.createElement('div'); row.className = 'tvr-row';
+    var info = document.createElement('div'); info.className = 'tvr-info';
+    var nom = document.createElement('span'); nom.className = 'tvr-nom';
+    nom.textContent = (c.client || c.residence || ('Contrat #' + c.contratId));
+    var meta = document.createElement('span'); meta.className = 'tvr-meta';
+    meta.textContent = (c.numeroContrat ? ('№ ' + c.numeroContrat + ' · ') : '') + (c.residence && c.residence !== c.client ? (c.residence + ' · ') : '') + Number(c.prixHt).toFixed(2) + ' € HT';
+    info.appendChild(nom); info.appendChild(meta);
+    row.appendChild(info);
+    var toggle = document.createElement('button'); toggle.type = 'button'; toggle.className = 'tvr-toggle tvr-20';
+    toggle.textContent = '20 % → 10 %';
+    toggle.addEventListener('click', function(){
+      toggle.disabled = true;
+      postContrats({ type: 'catalogue-tva-vmc-basculer', contratId: c.contratId, nouveauTaux: 0.10 }, function(){
+        toggle.className = 'tvr-toggle tvr-10'; toggle.textContent = '10 % → 20 %'; toggle.disabled = false;
+        toggle.onclick = function(){
+          toggle.disabled = true;
+          postContrats({ type: 'catalogue-tva-vmc-basculer', contratId: c.contratId, nouveauTaux: 0.20 }, function(){
+            toggle.className = 'tvr-toggle tvr-20'; toggle.textContent = '20 % → 10 %'; toggle.disabled = false;
+          }, function(err){ toggle.disabled = false; toast(err); });
+        };
+      }, function(err){ toggle.disabled = false; toast(err); });
+    });
+    row.appendChild(toggle);
+    return row;
+  }
+  if (tvaVmcRevueBtn) tvaVmcRevueBtn.addEventListener('click', tvaVmcRevueOuvrir);
+  if (tvaVmcRevueFermerBtn) tvaVmcRevueFermerBtn.addEventListener('click', function(){ tvaVmcRevueBg.classList.remove('open'); });
+  tvaVmcRevueBg.addEventListener('click', function(e){ if (e.target === tvaVmcRevueBg) tvaVmcRevueBg.classList.remove('open'); });
+  if (tvaVmcRevueTout10Btn) tvaVmcRevueTout10Btn.addEventListener('click', function(){
+    if (!confirm('Passer TOUS les contrats VMC de 20 % à 10 % ? Cette action est tracée et réversible ligne par ligne, mais touche tous les contrats affichés d\'un coup.')) return;
+    tvaVmcRevueTout10Btn.disabled = true; tvaVmcRevueTout10Btn.textContent = '…';
+    postContrats({ type: 'catalogue-tva-vmc-tout-10' }, function(j){
+      toast('✅ ' + (j.nb != null ? j.nb : '') + ' contrat(s) passé(s) à 10 %');
+      tvaVmcRevueTout10Btn.disabled = false; tvaVmcRevueTout10Btn.textContent = '⬇️ Tout passer à 10 %';
+      tvaVmcRevueOuvrir();
+    }, function(err){ tvaVmcRevueTout10Btn.disabled = false; tvaVmcRevueTout10Btn.textContent = '⬇️ Tout passer à 10 %'; toast(err); });
+  });
+
   // Ecran de revue des factures de contrats (29/08/2026). Desormais base sur famille_prestation
   // (jamais la colonne "prestation" brute) : voir clients/mcs/INVENTAIRE-SOURCES-CONTRATS-29-08-2026.md.
   function contratsBuildMoisCard(f){
@@ -7366,6 +7492,23 @@
       ? ('🏷️ Désignation à confirmer' + (libelleBrutBadge ? (' : « ' + libelleBrutBadge + ' »') : ''))
       : (f.type_contrat === 'VMC' ? 'VMC · +3 % auto' : 'Dératisation / désinsectisation');
     main.appendChild(badge);
+    // Sujet 1 (01/09/2026) : la designation n'est pas confirmee par Mickael lui-meme mais deduite
+    // par Jarvis sans risque serieux (statut 'deduit_fiable' cote mcs_designations) -- pas de badge
+    // bloquant (deja garanti par "bloque" ci-dessus qui inclut ce statut dans les emissibles), mais
+    // un signal discret pour que Mickael sache qu'il peut la relire quand il aura le temps.
+    if (!bloque && (f.designation_deduite === true || f.designation_deduite === 'true')){
+      var badgeDeduit = document.createElement('span'); badgeDeduit.className = 'ct-badge ct-badge-deduit';
+      badgeDeduit.textContent = '🔖 Déduit par Jarvis';
+      main.appendChild(badgeDeduit);
+    }
+    // Sujet 2.4 (01/09/2026) : mention discrete (pas une alerte) quand le taux applique vient du
+    // registre a 20% -- pour que Mickael se souvienne que son classeur dit 20% sans que ca bloque
+    // ni n'alarme (voir aussi l'ecran de revue groupe, contratsOuvrirRevueTvaVmc).
+    if (f.type_contrat === 'VMC' && Number(f.tva) === 0.2 && String(f.tva_provenance) === 'registre'){
+      var mentionTva = document.createElement('span'); mentionTva.className = 'ct-badge ct-badge-tva-info';
+      mentionTva.textContent = 'ℹ️ ton classeur dit 20 %';
+      main.appendChild(mentionTva);
+    }
     var meta = document.createElement('span'); meta.className = 'dv-meta';
     // 30/08/2026 : la valeur RESOLUE (celle qui sert reellement a la facture, apres cascade des
     // "idem"), jamais le texte brut du tableur -- avant ce fix, "idem" ou "derat/desin" (une
@@ -7710,6 +7853,35 @@
     return card;
   }
 
+  // Sujet 5 (01/09/2026) : sous-categorise les cartes du mois par famille_affichage (meme notion
+  // que le Calendrier/Catalogue -- type_contrat, avec l'exception ramonage deja geree cote serveur
+  // dans Prep generation contrats). Un en-tete par famille (nombre + total TTC), ordre fixe pour
+  // ne pas sauter d'une famille a l'autre a chaque rechargement.
+  var CONTRATS_FAMILLE_ORDRE = ['VMC', 'Deratisation', 'Autres prestations'];
+  var CONTRATS_FAMILLE_LABEL = { 'VMC': 'VMC', 'Deratisation': 'Dératisation / désinsectisation', 'Autres prestations': 'Autres prestations' };
+  function contratsBuildFamilleGroupes(items){
+    var groupes = {};
+    items.forEach(function(f){
+      var fam = f.famille_affichage || 'Autres prestations';
+      if (!groupes[fam]) groupes[fam] = [];
+      groupes[fam].push(f);
+    });
+    var ordre = CONTRATS_FAMILLE_ORDRE.concat(Object.keys(groupes).filter(function(k){ return CONTRATS_FAMILLE_ORDRE.indexOf(k) === -1; }));
+    var out = [];
+    ordre.forEach(function(fam){
+      var liste = groupes[fam];
+      if (!liste || !liste.length) return;
+      var total = liste.reduce(function(s, f){ return s + (Number(f.prix_ttc) || 0); }, 0);
+      var head = document.createElement('div'); head.className = 'ct-famille-head';
+      var lab = document.createElement('span'); lab.className = 'ct-famille-label'; lab.textContent = (CONTRATS_FAMILLE_LABEL[fam] || fam) + ' (' + liste.length + ')';
+      var tot = document.createElement('span'); tot.className = 'ct-famille-total'; tot.textContent = fmtEuro(total);
+      head.appendChild(lab); head.appendChild(tot);
+      out.push(head);
+      liste.forEach(function(f){ out.push(contratsBuildMoisCard(f)); });
+    });
+    return out;
+  }
+
   function contratsApplyFilter(){
     // Chantier 6 : le Calendrier a son propre rendu (calRender), pas base sur #contrats-list ni
     // la recherche texte -- on masque tout le reste de ce panneau et on sort tot.
@@ -7761,7 +7933,27 @@
         return f.statut === contratsMoisStatutFiltre && (!q || normDoc(contratNomAffiche(f)).indexOf(q) !== -1);
       });
       if (!items.length){ contratsList.innerHTML = '<p id="contrats-empty">' + CONTRATS_STATUT_VIDE[contratsMoisStatutFiltre] + '</p>'; return; }
-      items.forEach(function(f){ contratsList.appendChild(contratsBuildMoisCard(f)); });
+      // Sujet 1 (01/09/2026) : resume discret des designations deduites par Jarvis (statut
+      // 'deduit_fiable'), uniquement utile sur l'onglet "a traiter" -- cliquable, ouvre/ferme un
+      // filtre qui ne montre que ces contrats-la (contratsFiltreDeduites).
+      if (contratsMoisStatutFiltre === 'a_traiter'){
+        var nbDeduites = items.filter(function(f){ return f.designation_deduite === true || f.designation_deduite === 'true'; }).length;
+        if (nbDeduites > 0){
+          var resumeDeduites = document.createElement('button'); resumeDeduites.type = 'button';
+          resumeDeduites.id = 'contrats-resume-deduites';
+          resumeDeduites.textContent = (contratsFiltreDeduites ? '👁️ ' : '🔖 ') + nbDeduites + ' désignation' + (nbDeduites > 1 ? 's' : '') + ' déduite' + (nbDeduites > 1 ? 's' : '') + ' par Jarvis, à confirmer quand tu as le temps' + (contratsFiltreDeduites ? ' (afficher tout)' : ' (voir la liste)');
+          resumeDeduites.addEventListener('click', function(){ contratsFiltreDeduites = !contratsFiltreDeduites; contratsApplyFilter(); });
+          contratsList.appendChild(resumeDeduites);
+        } else if (contratsFiltreDeduites){
+          contratsFiltreDeduites = false;
+        }
+      } else if (contratsFiltreDeduites){
+        contratsFiltreDeduites = false;
+      }
+      if (contratsFiltreDeduites){
+        items = items.filter(function(f){ return f.designation_deduite === true || f.designation_deduite === 'true'; });
+      }
+      contratsBuildFamilleGroupes(items).forEach(function(node){ contratsList.appendChild(node); });
     } else {
       // Point 6 (audit UX 29/08/2026) : bandeau CA par secteur, sur TOUT le catalogue (pas
       // seulement le sous-onglet affiche) -- cf. contratsBuildCatalogueCA pour ce qui est
