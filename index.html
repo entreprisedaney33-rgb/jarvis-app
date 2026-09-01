@@ -848,6 +848,15 @@
     margin:10px 14px 0; padding:8px 12px; border-radius:10px;
     background:rgba(255,255,255,.06); color:var(--muted); font-size:12px; line-height:1.4;
   }
+  /* Sujet 2 (02/09/2026) : bandeau DISTINCT du cache navigateur ci-dessus -- celui-ci decrit
+     l'instantane calcule par le SERVEUR (ecrit par le digest du matin), jamais confondu avec
+     "affiche depuis le cache local". Les 2 peuvent cohabiter (cache local d'un instantane du
+     matin, par exemple) -- toujours honnete sur la source exacte de ce qui est affiche. */
+  .relances-snapshot-banner{
+    margin:10px 14px 0; padding:8px 12px; border-radius:10px;
+    background:rgba(var(--gold-rgb),.1); color:var(--gold-a); font-size:12px; line-height:1.4;
+    border:1px solid rgba(var(--gold-rgb),.25);
+  }
   .contrat-card.previsionnel{opacity:.85}
   /* Ecran de revue des factures de contrats (29/08/2026) : bouton generation a la demande +
      bouton lot TVA -- meme gabarit que les autres boutons pleine largeur de ce panneau. */
@@ -4306,7 +4315,7 @@
 
 <script>
 (function(){
-  var APPV = 'v4.11';
+  var APPV = 'v4.12';
 
   // Debug : ?debug_modal=1 force l'affichage du modal "nouvelle version" sans attendre un vrai
   // déploiement. Capturé ICI, tout au début, car plus bas (login mémorisé, connexion) le code
@@ -5141,6 +5150,12 @@
   // donnees pretes a l'emploi. Toutes les callbacks d'erreur sont volontairement silencieuses
   // (un echec de precharge ne doit jamais se voir : le panneau retentera normalement a l'ouverture).
   function precacherPanneauxLourds(){
+    // Sujet 2.2 (02/09/2026) : garde anti double-appel -- cette fonction peut maintenant être
+    // appelée dès la détection du code (avant même enterApp(), voir plus bas) ET depuis
+    // enterApp() lui-même (qui tourne 2x par ouverture) ; un seul déclenchement réel par ouverture,
+    // sinon 2-3 appels serveur redondants au lieu d'un seul.
+    if (window._precacheDejaLancee) return;
+    window._precacheDejaLancee = true;
     relancesChargerCalcul(function(j){ panelCacheSave('relances', j); }, function(){});
     var now = new Date();
     postContrats({ type: 'mois-liste', annee: now.getFullYear(), mois: now.getMonth() + 1 }, function(j){
@@ -10282,7 +10297,20 @@
     relancesChargerCalcul(function(j){
       panelCacheSave('relances', j);
       relancesApplyData(j);
+      // Sujet 2 (02/09/2026) : instantane du matin, servi tel quel par le serveur sans recalcul --
+      // affiche EXPLICITEMENT (jamais silencieux, meme s'il rend le panneau quasi instantane) avec
+      // son horodatage. Insere APRES relancesApplyData/relancesApplyFilter (qui vide la liste).
+      if (j.depuisSnapshot && j.snapshotDu){
+        var heure = relancesSnapshotHeureLabel(j.snapshotDu);
+        var banner = document.createElement('div'); banner.className = 'relances-snapshot-banner';
+        banner.textContent = '⚡ Calcul du matin (' + heure + ') — pas un recalcul en direct. Envoyer une relance déclenche toujours un calcul frais.';
+        relancesList.insertBefore(banner, relancesList.firstChild);
+      }
     }, function(err){ if (!cached) relancesList.innerHTML = '<p id="relances-empty">' + err + '</p>'; });
+  }
+  function relancesSnapshotHeureLabel(iso){
+    try { return new Date(iso).toLocaleTimeString('fr-FR', { hour:'2-digit', minute:'2-digit', timeZone:'Europe/Paris' }); }
+    catch(e){ return ''; }
   }
   // Point 6b (30/08/2026) : "Voir le brouillon de relance" depuis Mes contacts -- REUTILISE le
   // panneau Relances existant (recherche pre-remplie), aucune 2e logique d'affichage du
@@ -15338,6 +15366,12 @@
       enterApp(cached.nom || read('jarvisNom'), cached.messages);
       splashOff();
     } else {
+      // Sujet 2.2 (02/09/2026) : jarvisHist absent (jamais connecté sur cet appareil, ou cache
+      // navigateur/PWA évincé) -- enterApp() n'arrivera qu'après la réponse du serveur
+      // (attemptHistory ci-dessous), ce qui retardait le préchargement de Relances jusque-là.
+      // jarvisRole, LUI, peut avoir survécu même si jarvisHist a disparu (2 clés séparées) --
+      // s'il est déjà connu, on lance le préchargement TOUT DE SUITE, sans attendre le réseau.
+      if (isMcsCode() && read('jarvisRole') === 'patron') precacherPanneauxLourds();
       splash.classList.add('on');
     }
     // Bug reel corrige le 11/08/2026 : "ca me deconnecte a chaque deploiement" -- une panne
