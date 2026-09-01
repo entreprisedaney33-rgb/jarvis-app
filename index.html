@@ -870,10 +870,23 @@
      "lisible, pas une note grise en 12px" -- taille/poids releves par rapport au badge par defaut. */
   .contrat-card .ct-badge.bloque{background:rgba(255,69,58,.18); color:#FF453A; font-size:13px; font-weight:800; padding:4px 11px}
   .ct-motif-blocage{font-size:14px; color:#FF453A; line-height:1.4; background:rgba(255,69,58,.08); border-radius:10px; padding:8px 10px; margin:2px 0}
-  .ct-tva-choix{display:flex; flex-direction:column; gap:6px; font-size:13px}
-  .ct-tva-choix label{display:flex; align-items:center; gap:8px; color:var(--ink); font-size:13px}
-  .ct-tva-choix input[type=radio]{margin:0}
-  .ct-tva-source{color:var(--muted); font-size:11.5px}
+  /* Sujet 3 (02/09/2026), refonte complete -- vu par Dorian comme inutilisable sur telephone ET
+     ordinateur : point coche indecochable (radio seul dans son groupe, cf. le JS), legendes tres
+     loin du controle. Cible tactile >=44px (zone ENTIERE du label cliquable, pas juste le petit
+     rond du radio), les deux choix visibles cote a cote, libelle COLLE au controle (gap 8px). */
+  .ct-tva-choix{display:flex; flex-direction:column; gap:6px; font-size:13px; margin:10px 0}
+  .ct-tva-titre{color:var(--muted); font-size:12px}
+  .ct-tva-radios{display:flex; gap:10px}
+  .ct-tva-opt{
+    display:flex; align-items:center; gap:8px; color:var(--ink); font-size:15px; font-weight:700;
+    flex:1 1 0; min-height:44px; padding:0 14px; border-radius:10px; background:var(--surface);
+    border:1px solid var(--hairline); cursor:pointer; -webkit-tap-highlight-color:transparent;
+  }
+  .ct-tva-opt:has(input:checked){border-color:var(--blue); background:rgba(10,132,255,.12)}
+  .ct-tva-opt.ct-tva-opt-selected{border-color:var(--blue); background:rgba(10,132,255,.12)}
+  .ct-tva-choix input[type=radio]{margin:0; width:20px; height:20px; flex:0 0 auto; accent-color:var(--blue)}
+  .ct-tva-pct{white-space:nowrap}
+  .ct-tva-source-txt{color:var(--muted); font-size:12px; margin:0}
   .ct-numero{font-size:11.5px; color:var(--muted); font-weight:600; letter-spacing:.3px}
   /* Chantier 6 -- Calendrier des interventions (6.4). Mobile first, 375px, un mois a la fois. */
   #cal-view{display:flex; flex-direction:column; flex:1; min-height:0}
@@ -1917,7 +1930,11 @@
     display:flex; align-items:center; justify-content:flex-end; overflow:hidden;
     background:var(--surface);
   }
-  .rt-cell:first-child{justify-content:flex-start}
+  /* Sujet 5.1 (02/09/2026) : les TEXTES sont centres dans leur cellule (colonne Mois), les
+     CHIFFRES restent alignes a droite comme dans un tableur (comparaison d'un coup d'oeil,
+     police tabulaire deja en place sur .rt-val) -- avant, la colonne Mois etait alignee a
+     GAUCHE, pas centree. */
+  .rt-cell:first-child{justify-content:center}
   .rt-cell:last-child{border-right:0}
   .rt-row:last-of-type .rt-cell, .rt-total .rt-cell{border-bottom:0}
   .rt-head .rt-cell{
@@ -1925,7 +1942,7 @@
     font-size:11px; color:var(--muted); text-transform:uppercase; letter-spacing:.02em;
     font-weight:700; justify-content:flex-end; padding-top:10px; padding-bottom:10px;
   }
-  .rt-head .rt-cell:first-child{justify-content:flex-start}
+  .rt-head .rt-cell:first-child{justify-content:center}
   .rt-mois{font-size:12px; font-weight:700; white-space:nowrap}
   .rt-row.rt-courant .rt-cell{background:rgba(var(--gold-rgb),.12)}
   .rt-row.rt-courant .rt-mois{color:var(--gold-a)}
@@ -3495,7 +3512,7 @@
   <div class="sh-handle"></div>
   <div class="sh-grid">
     <button class="sh-tile" id="sh-emails" type="button" style="display:none"><span class="sh-tile-ic">✉️</span><span class="sh-tile-label">Emails</span><span class="badge-count" id="menu-email-badge" style="display:none"></span></button>
-    <button class="sh-tile" id="sh-calendar" type="button"><span class="sh-tile-ic">📅</span><span class="sh-tile-label">Calendrier</span></button>
+    <button class="sh-tile" id="sh-calendar" type="button"><span class="sh-tile-ic">📅</span><span class="sh-tile-label">Agenda</span></button>
     <button class="sh-tile" id="sh-docs" type="button"><span class="sh-tile-ic">📄</span><span class="sh-tile-label">Mes documents</span></button>
     <button class="sh-tile" id="sh-couts" type="button"><span class="sh-tile-ic">💰</span><span class="sh-tile-label">Coûts</span></button>
     <button class="sh-tile" id="sh-meute" type="button"><span class="sh-tile-ic">🐺</span><span class="sh-tile-label">Meute</span><span class="badge-count" id="menu-meute-badge" style="display:none"></span></button>
@@ -4170,7 +4187,7 @@
 
 <div id="calendarview">
   <div id="cal-head">
-    <b id="cal-title">📅 Calendrier</b>
+    <b id="cal-title">📅 Agenda</b>
     <button id="cal-close" type="button" aria-label="Fermer">✕</button>
   </div>
   <div id="cal-nav">
@@ -4359,7 +4376,7 @@
 
 <script>
 (function(){
-  var APPV = 'v4.16';
+  var APPV = 'v4.17';
 
   // Debug : ?debug_modal=1 force l'affichage du modal "nouvelle version" sans attendre un vrai
   // déploiement. Capturé ICI, tout au début, car plus bas (login mémorisé, connexion) le code
@@ -4478,8 +4495,10 @@
         // suffit, pas besoin d'un delai special.
         { selector: '.ct-confirm-designation', open: '.ct-toggle', title: 'Confirmer une bonne fois pour toutes',
           text: 'Écrivez la désignation exacte puis validez ici : Jarvis s’en souvient et l’applique immédiatement à TOUTES les factures qui portent ce même libellé brut, sans qu’il faille le refaire une par une.' },
-        { selector: '#contrats-tva-lot-btn', title: 'TVA du lot VMC',
-          text: 'S’il y a plusieurs contrats VMC ce mois-ci, ce bouton permet de choisir le taux de TVA (10% ou 20%) pour tout le lot en un coup, plutôt qu’un par un.' },
+        // Sujet 2 (02/09/2026) : etape retiree -- #contrats-tva-lot-btn est desormais
+        // display:none en permanence (bouton retire de l'ecran, cf. le commentaire a l'endroit
+        // ou son affichage etait bascule). Une etape de tutoriel sur un element qui ne devient
+        // plus jamais visible ferait echouer/timeout le moteur de tutoriel.
         { selector: '#contrats-search-wrap', title: 'Rechercher',
           text: 'Tapez le nom d’un client ou d’une résidence pour retrouver son contrat.' },
         // Pas d'étape de surface sur #contrats-add-btn : ce bouton n'est visible QUE sur
@@ -4676,7 +4695,7 @@
         { selector: '#cf-lieu', open: '#cal-add', close: '#cf-cancel', title: 'Le lieu',
           text: 'Renseignez l’adresse : un lien Waze se génère automatiquement pour vous y rendre en un clic.' },
         { selector: '#cf-couleurs', open: '#cal-add', close: '#cf-cancel', title: 'La couleur',
-          text: 'Repérez ce rendez-vous d’un coup d’œil dans le calendrier.' },
+          text: 'Repérez ce rendez-vous d’un coup d’œil dans l’agenda.' },
         { selector: '#cf-description', open: '#cal-add', close: '#cf-cancel', title: 'Description',
           text: 'Des détails utiles sur le passage (optionnel).' },
         { selector: '#cf-telephone', open: '#cal-add', close: '#cf-cancel', title: 'Téléphone du client',
@@ -7212,12 +7231,21 @@
     // ne pouvait JAMAIS devenir "accepte" -- seul un import MEG le pouvait, et a partir de
     // mardi Mickael ne fait plus ses devis dans MEG. dv.token n'existe que pour les devis
     // Jarvis (les devis MEG n'ont pas de jeton exploitable ici) -- geste reserve a ce cas.
-    if (dv.source === 'jarvis' && dv.statut === 'envoye' && dv.token){
+    // Sujet 1 (02/09/2026) : OUVERT AUX DEVIS MEG -- cas reel signale par Dorian, la Mairie de
+    // Fargues appelle Mickael et dit "c'est accepte" avant meme qu'il ait mis a jour MEG. Un
+    // devis MEG "brouillon" (pas encore Accepte dans MEG) doit pouvoir etre marque accepte ICI,
+    // sans attendre MEG -- backend deja etendu (mcs-devis-valider, source:'meg', memes garde-fous
+    // patron-seul et anti-double-facturation que le reste de la chaine MEG).
+    if ((dv.source === 'jarvis' && dv.statut === 'envoye' && dv.token) || (dv.source === 'meg' && dv.statut === 'brouillon')){
       var accBtn = document.createElement('button'); accBtn.type = 'button'; accBtn.className = 'vc-ok'; accBtn.style.marginTop = '8px'; accBtn.style.width = '100%';
       accBtn.textContent = '✅ Le client a accepté';
       accBtn.addEventListener('click', function(){
         accBtn.disabled = true;
-        postDevisValider({ token: dv.token, choix: 'accepter' }, function(){
+        var payload = dv.source === 'meg'
+          ? { source: 'meg', numero: dv.numero, client_nom: dv.nom, objet: dv.objet, montant: dv.montant, choix: 'accepter' }
+          : { token: dv.token, choix: 'accepter' };
+        postDevisValider(payload, function(r){
+          if (!r || !r.ok){ accBtn.disabled = false; toast('❌ ' + ((r && r.message) || 'Impossible.')); return; }
           dv.statut = 'accepte';
           toast('✅ Devis marqué accepté');
           devisApplyFilter();
@@ -7892,27 +7920,45 @@
     var prixInput = contratField(detail, 'Montant HT (€) — réindexation ' + (f.type_contrat === 'VMC' ? 'automatique +3 % déjà appliquée' : 'libre, à toi de choisir'), 'input', f.prix_ht);
     prixInput.type = 'number'; prixInput.step = '0.01';
 
-    // ---- TVA : les deux sources affichées cote a cote, jamais tranchees par Jarvis (demande
-    // explicite du 29/08/2026 -- "afficher le desaccord, ne rien trancher"). Par defaut le taux
-    // des vraies factures MEG est retenu pour la VMC (un fait constate), mais Mickael choisit. ----
+    // ---- TVA : Sujet 3 (02/09/2026), refonte complete -- VRAI BUG signale par Dorian (tel et
+    // PC) : quand une seule des deux sources (tva_meg_reel/tva_tableur) etait connue,
+    // tvaOptions.length===1 -> UN SEUL radio affiche -- un radio HTML seul dans son groupe ne
+    // peut JAMAIS etre decoche par un clic (comportement natif du navigateur, pas un bug CSS) :
+    // "un point coche qui ne se decoche pas" exactement comme decrit. Fix : TOUJOURS 2 choix
+    // fixes 10% et 20%, jamais conditionnes a la presence des deux sources. Coche par defaut =
+    // celui du REGISTRE (f.tva_tableur, le classeur que Mickael tient a jour -- la source de
+    // verite, deja etablie dans ce projet), jamais tva_meg_reel qui n'est qu'une information.
     var tvaWrap = document.createElement('div'); tvaWrap.className = 'ct-tva-choix';
-    var tvaLabel = document.createElement('label'); tvaLabel.style.color = 'var(--muted)'; tvaLabel.style.fontSize = '12px'; tvaLabel.textContent = 'Taux de TVA';
+    var tvaLabel = document.createElement('label'); tvaLabel.className = 'ct-tva-titre'; tvaLabel.textContent = 'Taux de TVA';
     tvaWrap.appendChild(tvaLabel);
     var radioName = 'ct-tva-' + f.id;
-    var tvaOptions = [];
-    if (f.tva_meg_reel != null) tvaOptions.push({ valeur: f.tva_meg_reel, provenance: 'meg_reel', libelle: (f.tva_meg_reel*100).toFixed(0) + ' % — taux de vos factures réelles' });
-    if (f.tva_tableur != null) tvaOptions.push({ valeur: f.tva_tableur, provenance: 'tableur', libelle: (f.tva_tableur*100).toFixed(0) + ' % — taux du tableur' });
-    if (!tvaOptions.length) tvaOptions.push({ valeur: f.tva, provenance: f.tva_provenance || 'tableur', libelle: (Number(f.tva)*100).toFixed(0) + ' % — taux enregistré' });
-    var tvaRadios = tvaOptions.map(function(opt){
-      var lab = document.createElement('label');
-      var radio = document.createElement('input'); radio.type = 'radio'; radio.name = radioName; radio.value = String(opt.valeur);
-      radio.dataset.provenance = opt.provenance;
-      if (String(f.tva_provenance) === opt.provenance || (tvaOptions.length === 1)) radio.checked = true;
-      var span = document.createElement('span'); span.className = 'ct-tva-source'; span.textContent = opt.libelle;
+    var registreVal = (f.tva_tableur != null) ? f.tva_tableur : Number(f.tva);
+    var TVA_FIXES = [0.10, 0.20];
+    var radiosRow = document.createElement('div'); radiosRow.className = 'ct-tva-radios';
+    // Sujet 3.3 : fallback JS pour la mise en evidence visuelle (independant de :has(), au cas ou
+    // un navigateur plus ancien ne le supporterait pas -- le CHOIX lui-meme reste un vrai radio
+    // HTML natif, toujours fonctionnel, ce fallback n'est que cosmetique).
+    var tvaLabels = [];
+    function tvaSyncSelected(){ tvaLabels.forEach(function(l){ l.classList.toggle('ct-tva-opt-selected', l.querySelector('input').checked); }); }
+    var tvaRadios = TVA_FIXES.map(function(valeur){
+      var lab = document.createElement('label'); lab.className = 'ct-tva-opt';
+      var radio = document.createElement('input'); radio.type = 'radio'; radio.name = radioName; radio.value = String(valeur);
+      // Sujet 3.2 : le taux du registre est coche par defaut -- comparaison a 1 centieme pres
+      // (les valeurs viennent parfois de calculs flottants, jamais une egalite stricte fragile).
+      if (Math.abs(registreVal - valeur) < 0.005) radio.checked = true;
+      var span = document.createElement('span'); span.className = 'ct-tva-pct'; span.textContent = (valeur*100).toFixed(0) + ' %';
       lab.appendChild(radio); lab.appendChild(span);
-      tvaWrap.appendChild(lab);
+      radio.addEventListener('change', tvaSyncSelected);
+      radiosRow.appendChild(lab);
+      tvaLabels.push(lab);
       return radio;
     });
+    tvaSyncSelected();
+    tvaWrap.appendChild(radiosRow);
+    // Sujet 3.6 : d'ou vient la valeur par defaut, toujours affiche, jamais silencieux.
+    var tvaSource = document.createElement('p'); tvaSource.className = 'ct-tva-source-txt';
+    tvaSource.textContent = 'Ton classeur dit ' + (registreVal*100).toFixed(0) + ' %.' + (f.tva_meg_reel != null ? (' (Tes factures réelles : ' + (f.tva_meg_reel*100).toFixed(0) + ' %.)') : '');
+    tvaWrap.appendChild(tvaSource);
     detail.appendChild(tvaWrap);
 
     var ttcPreview = document.createElement('span'); ttcPreview.className = 'dv-meta';
@@ -7935,6 +7981,18 @@
     var skipBtn = document.createElement('button'); skipBtn.className = 'vc-no'; skipBtn.type = 'button'; skipBtn.textContent = '⏭️ Pas cette année';
     okBtn.addEventListener('click', function(){
       var checked = tvaRadios.find(function(r){ return r.checked; });
+      // Sujet 3 (02/09/2026) : provenance deduite de la valeur choisie (les 2 radios sont
+      // desormais fixes 10%/20%, plus de dataset.provenance dedie) -- 'meg_reel'/'tableur' si ca
+      // correspond a une source connue, 'manuel' sinon (Mickael a choisi un taux qui ne
+      // correspond a aucune des 2 sources affichees). Le tracage (mcs_tva_vmc_historique,
+      // sujet 3.7) continue de recevoir exactement le meme genre de valeur qu'avant.
+      var tvaChoisie = checked ? parseFloat(checked.value) : undefined;
+      var tvaProvenance;
+      if (tvaChoisie != null){
+        if (f.tva_meg_reel != null && Math.abs(tvaChoisie - f.tva_meg_reel) < 0.005) tvaProvenance = 'meg_reel';
+        else if (f.tva_tableur != null && Math.abs(tvaChoisie - f.tva_tableur) < 0.005) tvaProvenance = 'tableur';
+        else tvaProvenance = 'manuel';
+      }
       if (bloque && !designationInput.value.trim()){ toast('Saisis une désignation avant d\'envoyer.'); return; }
       okBtn.disabled = true; skipBtn.disabled = true;
       postContrats({
@@ -7943,8 +8001,8 @@
         prix_ht: parseFloat(prixInput.value) || 0,
         designation: designationInput.value.trim(),
         passages_an: parseInt(passagesInput.value, 10) || 1,
-        tva: checked ? parseFloat(checked.value) : undefined,
-        tva_provenance: checked ? checked.dataset.provenance : undefined,
+        tva: tvaChoisie,
+        tva_provenance: tvaProvenance,
       }, function(j){
         toast(j.testMode ? '✅ Facture envoyée (mode test → Altaestima)' : '✅ Facture envoyée');
         f.statut = 'envoyee'; f.destinataire_email = destInput.value.trim(); f.date_envoi = new Date().toISOString();
@@ -8198,12 +8256,16 @@
     document.getElementById('contrats-mois-substatuts').style.display = (contratsActiveTab === 'mois' && !enModePrevisionnel) ? '' : 'none';
     document.getElementById('contrats-previsionnel-banniere').style.display = enModePrevisionnel ? '' : 'none';
     document.getElementById('contrats-generer-btn').style.display = enModePrevisionnel ? '' : 'none';
-    // Le bouton "lot TVA" n'a de sens que sur l'onglet "à traiter" (brouillons pas encore
-    // envoyes) et seulement s'il y a au moins un contrat VMC dans cette liste -- inutile
-    // ailleurs (rien de deja envoye ne se recalcule).
-    var aDesVmcATraiter = contratsActiveTab === 'mois' && !enModePrevisionnel && contratsMoisStatutFiltre === 'a_traiter'
-      && (contratsMoisData || []).some(function(f){ return f.type_contrat === 'VMC' && f.statut === 'a_traiter'; });
-    document.getElementById('contrats-tva-lot-btn').style.display = aDesVmcATraiter ? '' : 'none';
+    // Sujet 2 (02/09/2026) : bouton "lot TVA" DEFINITIVEMENT retire de l'ecran -- c'est le
+    // mecanisme qui a ecrase a tort le taux du registre sur Favols et Les Lumieres d'Ornano
+    // (correction en lot de Mickael, decouverte 3 jours plus tard en recroisant le registre).
+    // Remplace par le taux par contrat (sujet 3, radios explicites) + l'ecran de revue des 29
+    // contrats a 20% (catalogue-tva-vmc-tout-10, mecanisme DIFFERENT et volontairement conserve,
+    // cf. tvaVmcRevueOuvrir) ou Mickael tranche en connaissance de cause, contrat par contrat.
+    // Route serveur mois-tva-lot laissee en place mais debranchee et jamais appelee (meme
+    // principe que calendrier-decaler-facture-aussi) -- toujours display:none, plus jamais
+    // togglee a visible.
+    document.getElementById('contrats-tva-lot-btn').style.display = 'none';
     // C4 (21/08/2026) : bandeau permanent, visible uniquement sur l'onglet Facturation (le
     // Catalogue n'envoie rien) -- meme donnee testMode que le panneau Devis, cf. Formater
     // factures du mois (contrats) et Calculer previsionnel (mois-liste).
@@ -8318,6 +8380,11 @@
 
   // Choix du taux de TVA pour TOUT le lot VMC "à traiter" du mois affiché, en un geste (demande
   // explicite du 29/08/2026 : "une décision unique de Mickael, pas dix-neuf").
+  // ⚠️ Sujet 2 (02/09/2026) : CODE MORT VOLONTAIRE -- le bouton lui-même est désormais
+  // display:none en permanence (voir contratsApplyFilter), ce handler ne peut donc plus jamais
+  // se déclencher. Gardé tel quel (rien n'est supprimé), jamais rebranché sans décision explicite
+  // — c'est ce mécanisme qui a écrasé à tort le taux de TVA du registre sur Favols et Les
+  // Lumières d'Ornano (correction en lot, découverte 3 jours plus tard).
   document.getElementById('contrats-tva-lot-btn').addEventListener('click', function(){
     if (!confirm('Choisir un taux de TVA pour TOUS les contrats VMC en attente de ce mois, en une seule fois ?\n\nRien n\'est envoyé — seuls les brouillons sont recalculés, tu pourras encore corriger une facture précise ensuite.')) return;
     var choix = confirm('OK = 10 % (le taux de vos vraies factures MEG)\nAnnuler = 20 % (le taux du tableur)');
@@ -14311,7 +14378,7 @@
         if (pending === 0){ calEvents = results; panelCacheSave(cleCache, results); calRenderCurrentView(); }
       }, function(err){
         failed = true;
-        if (!cached) calDayEl.innerHTML = '<p id="cal-day-empty">' + (err || 'Impossible de charger le calendrier.') + '</p>';
+        if (!cached) calDayEl.innerHTML = '<p id="cal-day-empty">' + (err || 'Impossible de charger l’agenda.') + '</p>';
       });
     });
   }
