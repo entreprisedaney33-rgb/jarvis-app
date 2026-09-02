@@ -1996,6 +1996,20 @@
   .ro-stat .ro-val.ro-pos{color:var(--ok)}
   .ro-stat .ro-val.ro-neg{color:var(--no)}
   #ro-note{font-size:11.5px; color:var(--muted); line-height:1.45; margin:10px 2px 18px}
+  /* Sujet 1.4 (02/09/2026) : le redressement doit etre LA PREMIERE chose vue -- bandeau avant
+     meme le tableau mensuel, pas une carte parmi d'autres. */
+  #renta-redressement{background:var(--surface); border-radius:14px; padding:16px 16px; margin-bottom:18px; border:1px solid rgba(224,166,79,.35)}
+  #renta-redressement .rr-label{font-size:11.5px; color:var(--muted); margin-bottom:6px; line-height:1.35}
+  #renta-redressement .rr-compare{font-size:15px; color:var(--ink); font-variant-numeric:tabular-nums}
+  #renta-redressement .rr-compare b{color:var(--ok)}
+  #renta-redressement .rr-delta{font-size:21px; font-weight:800; color:var(--gold-a); margin-top:6px; font-variant-numeric:tabular-nums}
+  #renta-exercice-clos{font-size:11.5px; color:var(--muted); line-height:1.5; background:var(--surface); border-radius:12px; padding:11px 12px; margin:10px 0 18px}
+  #renta-exercice-clos b{color:var(--ink)}
+  #renta-mois-manquants{font-size:11.5px; color:var(--muted); line-height:1.4; margin:8px 2px 4px; font-style:italic}
+  #renta-reserve{font-size:11px; color:var(--muted); line-height:1.5; margin:14px 2px 4px; padding-top:10px; border-top:0.5px solid var(--hairline)}
+  #renta-recon-jarvis{font-size:11px; color:var(--muted); line-height:1.5; margin:10px 2px 4px}
+  .renta-subtable{margin-top:10px}
+  .renta-subtable .rst-title{font-size:12px; font-weight:700; color:var(--ink); margin-bottom:8px}
   #renta-resultat-comptable{margin-bottom:18px}
   #renta-resultat-comptable .ro-title{font-size:12.5px; font-weight:700; color:var(--gold-a); text-transform:uppercase; letter-spacing:.03em; margin-bottom:8px}
   #renta-resultat-comptable .ro-grid{grid-template-columns:1fr 1fr 1fr}
@@ -3056,6 +3070,14 @@
     -webkit-tap-highlight-color:transparent;
   }
   #fd-total{font-size:14px; font-weight:700; color:var(--ink); text-align:right}
+  /* Sujet 4 (02/09/2026) : récapitulatif complet avant émission -- toutes les lignes, TVA,
+     destinataire, montant TTC -- affiché avant le 2e clic qui émet vraiment. */
+  #fd-recap{display:none; background:var(--surface); border-radius:12px; padding:11px 12px; margin:8px 0; font-size:12.5px; color:var(--ink); line-height:1.5}
+  #fd-recap.open{display:block}
+  #fd-recap b{display:block; margin-bottom:6px; color:var(--gold-a); font-size:11.5px; text-transform:uppercase; letter-spacing:.03em}
+  #fd-recap .fdr-ligne{display:flex; justify-content:space-between; gap:8px; padding:3px 0; border-top:0.5px solid var(--hairline)}
+  #fd-recap .fdr-ligne:first-of-type{border-top:none}
+  #fd-recap .fdr-total{font-weight:700; margin-top:6px; padding-top:6px; border-top:0.5px solid var(--hairline); display:flex; justify-content:space-between}
   /* Point 2b (31/08/2026) : meme styles que #fd-total, pour l'editeur de lignes reutilise dans
      "Facturer ce devis" (facLignesWrap/facLignesTotal, classe car pas d'id unique possible sur
      une carte repetee) -- meme grammaire visuelle, aucune nouvelle regle de mise en page. */
@@ -4390,6 +4412,7 @@
   <div id="fd-lignes"></div>
   <button id="fd-ligne-add" type="button" class="fd-ligne-add-btn">+ Ajouter une ligne</button>
   <div id="fd-total">Total HT : 0,00 €</div>
+  <div id="fd-recap"></div>
   <div id="fd-err"></div>
   <div id="df-row">
     <button id="fd-cancel" type="button" class="vc-no">Annuler</button>
@@ -4437,7 +4460,7 @@
 
 <script>
 (function(){
-  var APPV = 'v4.20';
+  var APPV = 'v4.21';
 
   // Debug : ?debug_modal=1 force l'affichage du modal "nouvelle version" sans attendre un vrai
   // déploiement. Capturé ICI, tout au début, car plus bas (login mémorisé, connexion) le code
@@ -7460,7 +7483,20 @@
           }
           if (!r || !r.ok){ toast('❌ ' + ((r && r.message) || 'Impossible de préparer la facture.')); return; }
           facPayload = r.payload;
-          facTxt.textContent = 'Facturer ' + r.recap.clientNom + ' — ' + r.recap.montantTtc + ' € TTC — série ' + r.recap.serie + '.';
+          facTxt.textContent = 'Facturer ' + r.recap.clientNom + ' — série ' + r.recap.serie + '.';
+          // Sujet 4 (02/09/2026) : detail ligne par ligne avant confirmation, plus seulement le
+          // total -- meme gabarit que le recap "facture directe" (classes .fdr-*).
+          facRecap.querySelectorAll('.fdr-ligne, .fdr-total').forEach(function(n){ n.remove(); });
+          (facPayload.lignes || []).forEach(function(l){
+            var row = document.createElement('div'); row.className = 'fdr-ligne';
+            var g = document.createElement('span'); g.textContent = l.designation + ' (' + l.quantite + ' × ' + Number(l.prix_ht).toFixed(2) + ' € HT, TVA ' + l.tva + '%)';
+            var d = document.createElement('span'); d.textContent = (l.quantite * l.prix_ht * (1 + l.tva / 100)).toFixed(2) + ' €';
+            row.appendChild(g); row.appendChild(d); facRecap.insertBefore(row, facLignesWrap);
+          });
+          var facTot = document.createElement('div'); facTot.className = 'fdr-total';
+          var ftl = document.createElement('span'); ftl.textContent = 'Total TTC';
+          var ftv = document.createElement('span'); ftv.textContent = r.recap.montantTtc + ' €';
+          facTot.appendChild(ftl); facTot.appendChild(ftv); facRecap.insertBefore(facTot, facLignesWrap);
           facLignesWrap.style.display = 'none'; facLignesAdd.style.display = 'none'; facLignesTotal.style.display = 'none'; facLignesSave.style.display = 'none';
           facConfirm.style.display = '';
           facRecap.classList.add('open');
@@ -9635,6 +9671,73 @@
 
     if (rc.chargesParPoste) wrap.appendChild(rentaBuildRepartitionList('Répartition des charges par poste', rc.chargesParPoste, rc.chargesNet));
     if (rc.caParPrestation) wrap.appendChild(rentaBuildRepartitionList('CA par type de prestation', rc.caParPrestation, rc.caNet));
+    if (rc.fournisseursCles){
+      var fdict = {};
+      Object.keys(rc.fournisseursCles).forEach(function(k){ fdict[k] = rc.fournisseursCles[k].montant; });
+      wrap.appendChild(rentaBuildRepartitionList('Dépenses par fournisseur clé', fdict, null));
+    }
+
+    // Sujet 1.3 (02/09/2026) : meme annee, un an plus tot -- meme structure de tableau que le
+    // tableau mensuel principal (Mois | Rentrées | Sorties | Reste), pour comparer d'un coup d'oeil.
+    if (rc.exercicePrecedent && rc.exercicePrecedent.mois && rc.exercicePrecedent.mois.length){
+      var sub = document.createElement('div'); sub.className = 'renta-subtable';
+      var subTitre = document.createElement('div'); subTitre.className = 'rst-title';
+      subTitre.textContent = 'L’année précédente, mois par mois (' + rc.exercicePrecedent.periode + ')';
+      sub.appendChild(subTitre);
+      var subTable = document.createElement('div'); subTable.id = 'renta-table';
+      var subHead = document.createElement('div'); subHead.className = 'rt-head';
+      subHead.appendChild(rentaCell(null, 'Mois'));
+      subHead.appendChild(rentaCell(null, 'Rentrées'));
+      subHead.appendChild(rentaCell(null, 'Sorties'));
+      subHead.appendChild(rentaCell(null, 'Reste'));
+      subTable.appendChild(subHead);
+      rc.exercicePrecedent.mois.forEach(function(m){
+        subTable.appendChild(rentaTableRow('', m.label, { ca: m.entrees, depenses: m.sorties, benefice: m.resultat }));
+      });
+      sub.appendChild(subTable);
+      wrap.appendChild(sub);
+
+      if (rc.exercicePrecedent.cloture){
+        var clo = rc.exercicePrecedent.cloture;
+        var closDiv = document.createElement('div'); closDiv.id = 'renta-exercice-clos';
+        closDiv.innerHTML = 'Cet exercice (01/10/2024 → 30/09/2025) s’est clôturé avec un CA de <b>' + fmtEuro(clo.ca) + '</b> et un résultat de <b>' + fmtEuro(clo.resultat) + '</b> (contre ' + fmtEuro(clo.resultatExerciceAvant) + ' l’exercice d’avant) — attestation signée de l’expert-comptable, donnée ici comme référence de comparaison.';
+        wrap.appendChild(closDiv);
+      }
+    }
+
+    if (rc.moisManquants && rc.moisManquants.length){
+      var mmDiv = document.createElement('p'); mmDiv.id = 'renta-mois-manquants';
+      mmDiv.textContent = rc.moisManquants.map(function(m){ return m.label; }).join(', ') + ' : en attente du comptable (pas encore reçus — jamais compté à zéro).';
+      wrap.appendChild(mmDiv);
+    }
+
+    if (rc.reconciliationJarvis){
+      var rjDiv = document.createElement('p'); rjDiv.id = 'renta-recon-jarvis';
+      rjDiv.textContent = rc.reconciliationJarvis.note;
+      wrap.appendChild(rjDiv);
+    }
+
+    if (rc.reserveComptable){
+      var resDiv = document.createElement('p'); resDiv.id = 'renta-reserve';
+      resDiv.textContent = rc.reserveComptable;
+      wrap.appendChild(resDiv);
+    }
+    return wrap;
+  }
+
+  // Sujet 1.4 (02/09/2026) : le fait le plus important en tete d'ecran, avant le tableau mensuel.
+  function rentaBuildRedressement(d){
+    var rc = d.resultatComptable;
+    if (!rc || !rc.redressement) return null;
+    var r = rc.redressement;
+    var wrap = document.createElement('div'); wrap.id = 'renta-redressement';
+    var label = document.createElement('div'); label.className = 'rr-label';
+    label.textContent = "Sur les 8 memes mois (oct. -> mai), un an plus tot vs cette annee :";
+    var compare = document.createElement('div'); compare.className = 'rr-compare';
+    compare.innerHTML = fmtEuro(r.resultat8MoisAnneePrecedente) + ' → <b>' + fmtEuro(r.resultat8MoisAnneeCourante) + '</b>';
+    var delta = document.createElement('div'); delta.className = 'rr-delta';
+    delta.textContent = 'Redressement de ' + (r.delta >= 0 ? '+' : '') + fmtEuro(r.delta);
+    wrap.appendChild(label); wrap.appendChild(compare); wrap.appendChild(delta);
     return wrap;
   }
 
@@ -9762,6 +9865,8 @@
     rentaData = d;
     rentaList.innerHTML = '';
     if (banner) rentaList.appendChild(banner);
+    var redressement = rentaBuildRedressement(d);
+    if (redressement) rentaList.appendChild(redressement);
     rentaList.appendChild(rentaBuildHero(d));
     rentaList.appendChild(rentaBuildOverview(d));
     var rcSection = rentaBuildResultatComptable(d);
@@ -15013,6 +15118,14 @@
   document.getElementById('fd-ligne-add').addEventListener('click', function(){
     fdLignesWrap.appendChild(fdLigneRow());
   });
+  var fdRecap = document.getElementById('fd-recap');
+  var fdRecapArme = false;
+  function fdRecapDesarmer(){
+    fdRecapArme = false;
+    fdRecap.classList.remove('open');
+    fdRecap.innerHTML = '';
+    fdSave.textContent = 'Émettre la facture';
+  }
   function fdFormOpen(){
     fdNom.value = ''; fdAdresse.value = ''; fdEmail.value = ''; fdObjet.value = '';
     delete fdNom.dataset.memValeur; delete fdAdresse.dataset.memValeur; delete fdEmail.dataset.memValeur;
@@ -15023,11 +15136,17 @@
     fdRecalcTotal();
     fdErr.textContent = '';
     fdSave.disabled = false;
-    fdSave.textContent = 'Émettre la facture';
+    fdRecapDesarmer();
     fdFormBg.classList.add('open');
     fdForm.classList.add('open');
     setTimeout(function(){ fdNom.focus(); }, 50);
   }
+  // Sujet 4 (02/09/2026) : toute modification d'un champ apres avoir vu le recap desarme la
+  // confirmation -- jamais emettre sur des donnees que Mickael n'a pas relues.
+  [fdNom, fdAdresse, fdEmail, fdObjet, fdDateDebut, fdDateFin].forEach(function(el){
+    el.addEventListener('input', fdRecapDesarmer);
+  });
+  fdLignesWrap.addEventListener('input', fdRecapDesarmer);
   // Point 2 (session suite, 29/08/2026) : mémoire commune -- une fois le nom du client tapé,
   // propose adresse/email déjà connus (jamais écrase un champ déjà rempli). Éditer ces champs
   // ensuite (blur) enregistre la correction, historique gardé côté serveur.
@@ -15055,6 +15174,32 @@
     var lignes = lecture.lignes;
     if (lecture.invalide){ fdErr.textContent = 'Chaque ligne veut une désignation, une quantité et un prix HT.'; return; }
     if (!lignes.length){ fdErr.textContent = 'Ajoute au moins une ligne.'; return; }
+
+    // Sujet 4 (02/09/2026) : 1er clic = recap complet (jamais un simple "X€ TTC"), 2e clic =
+    // emission reelle. Le recap montre EXACTEMENT ce que le PDF va porter : destinataire, objet,
+    // chaque ligne (designation/qte/prix HT/TVA/total ligne) et le TTC final.
+    if (!fdRecapArme){
+      var totalTtc = lignes.reduce(function(s, l){ return s + l.quantite * l.prix_ht * (1 + l.tva / 100); }, 0);
+      fdRecap.innerHTML = '';
+      var titre = document.createElement('b'); titre.textContent = 'Vérifie avant d’émettre — ' + nom + (email ? ' (' + email + ')' : ' — aucun email, à envoyer à la main') + ' — ' + adresse;
+      fdRecap.appendChild(titre);
+      if (objet){ var o = document.createElement('div'); o.className = 'fdr-ligne'; o.textContent = objet; fdRecap.appendChild(o); }
+      lignes.forEach(function(l){
+        var row = document.createElement('div'); row.className = 'fdr-ligne';
+        var g = document.createElement('span'); g.textContent = l.designation + ' (' + l.quantite + ' × ' + l.prix_ht.toFixed(2) + ' € HT, TVA ' + l.tva + '%)';
+        var d = document.createElement('span'); d.textContent = (l.quantite * l.prix_ht * (1 + l.tva / 100)).toFixed(2) + ' €';
+        row.appendChild(g); row.appendChild(d); fdRecap.appendChild(row);
+      });
+      var tot = document.createElement('div'); tot.className = 'fdr-total';
+      var tl = document.createElement('span'); tl.textContent = 'Total TTC';
+      var tv = document.createElement('span'); tv.textContent = totalTtc.toFixed(2) + ' €';
+      tot.appendChild(tl); tot.appendChild(tv); fdRecap.appendChild(tot);
+      fdRecap.classList.add('open');
+      fdRecapArme = true;
+      fdSave.textContent = 'Confirmer l’émission';
+      return;
+    }
+
     fdSave.disabled = true;
     fdSave.textContent = 'Émission…';
     postFacturation({
@@ -15064,15 +15209,16 @@
       date_prestation: fdDateDebut.value || '', date_prestation_fin: fdDateFin.value || '',
     }, function(r){
       fdSave.disabled = false;
-      fdSave.textContent = 'Émettre la facture';
       if (r && r.ok){
         fdFormClose();
         toast('✅ Facture émise pour ' + nom);
       } else {
+        fdRecapDesarmer();
         fdErr.textContent = (r && r.message) || 'Émission impossible.';
       }
     }, function(err){
       fdSave.disabled = false;
+      fdRecapDesarmer();
       fdSave.textContent = 'Émettre la facture';
       fdErr.textContent = err || "Impossible d'émettre la facture.";
     });
@@ -15100,11 +15246,17 @@
     avoirBtn.textContent = '↩️ Annuler par un avoir';
     var form = document.createElement('div'); form.className = 'mf-avoir-form';
     var motif = document.createElement('textarea'); motif.placeholder = 'Motif (ex : erreur de facturation, double émission)…'; motif.rows = 2;
+    // Sujet 4 (02/09/2026) : rappel explicite juste avant le clic -- quelle facture est annulée
+    // et pour quel montant (le destinataire exact est résolu côté serveur via Mes contacts,
+    // jamais deviné ici).
+    var recap = document.createElement('div'); recap.className = 'fdr-ligne'; recap.style.marginTop = '6px';
+    var montantTxt = (f.montantTtc != null ? Number(f.montantTtc).toFixed(2) + ' € TTC' : (f.montant || ''));
+    recap.textContent = 'Cet avoir annulera intégralement la facture ' + f.numeroComplet + ' (' + montantTxt + ') — destinataire résolu automatiquement via Mes contacts.';
     var actions = document.createElement('div'); actions.className = 'rl-form-actions';
     var confirm = document.createElement('button'); confirm.type = 'button'; confirm.className = 'rl-confirm'; confirm.textContent = "Confirmer l'avoir";
     var cancel = document.createElement('button'); cancel.type = 'button'; cancel.className = 'rl-cancel'; cancel.textContent = 'Annuler';
     actions.appendChild(confirm); actions.appendChild(cancel);
-    form.appendChild(motif); form.appendChild(actions);
+    form.appendChild(recap); form.appendChild(motif); form.appendChild(actions);
     avoirBtn.addEventListener('click', function(){ form.classList.toggle('open'); });
     cancel.addEventListener('click', function(){ form.classList.remove('open'); motif.value = ''; });
     confirm.addEventListener('click', function(){
