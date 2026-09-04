@@ -1386,17 +1386,50 @@
     border-bottom:0.5px solid var(--hairline);
   }
   #crypto-list{flex:1 1 auto; overflow-y:auto; padding:10px 14px 24px}
-  #crypto-loading, #crypto-error{padding:16px 4px; color:var(--muted); font-size:13.5px}
-  #crypto-error{color:#ff6d5a}
-  #crypto-generated{font-size:11px; color:var(--muted); padding:2px 4px 14px}
+  #crypto-loading, #crypto-error, #cxa-loading, #cxa-error{padding:16px 4px; color:var(--muted); font-size:13.5px}
+  #crypto-error, #cxa-error{color:#ff6d5a}
+  #crypto-generated, #cxa-generated{font-size:11px; color:var(--muted); padding:2px 4px 14px}
   #cx-total-note{font-size:11.5px; color:var(--muted); padding:2px 4px 12px; line-height:1.5}
-  #cx-hero{
+  #cx-hero, #cxa-hero{
     background:var(--surface); border-radius:16px; padding:16px 18px; margin-bottom:10px;
     display:flex; flex-direction:column; gap:4px;
   }
-  #cx-hero .cx-hero-label{font-size:11.5px; color:var(--muted); text-transform:uppercase; letter-spacing:.02em}
-  #cx-hero .cx-hero-value{font-size:34px; font-weight:800; color:var(--gold-a); line-height:1.1}
-  #cx-hero .cx-hero-unit{font-size:15px; font-weight:600; color:var(--muted)}
+  #cx-hero .cx-hero-label, #cxa-hero .cx-hero-label{font-size:11.5px; color:var(--muted); text-transform:uppercase; letter-spacing:.02em}
+  #cx-hero .cx-hero-value, #cxa-hero .cx-hero-value{font-size:34px; font-weight:800; color:var(--gold-a); line-height:1.1}
+  #cx-hero .cx-hero-unit, #cxa-hero .cx-hero-unit{font-size:15px; font-weight:600; color:var(--muted)}
+  /* Selecteur x402 / Apify (2026-09-04) — meme famille visuelle que #emails-boxtabs mais
+     en jetons du theme sombre de ce panneau (celui-la est en theme clair local). */
+  #cx-tabs{
+    flex:0 0 auto; display:flex; gap:2px; margin:2px 0 12px; padding:2px;
+    background:var(--surface); border-radius:9px;
+  }
+  .cx-tab{
+    flex:1; font:inherit; font-size:13px; font-weight:600; color:var(--muted);
+    background:transparent; border:none; border-radius:7px; padding:8px 6px; cursor:pointer;
+    -webkit-tap-highlight-color:transparent;
+  }
+  .cx-tab.active{background:var(--bubble); color:var(--ink)}
+  /* Mention d'estimation Apify — permanente tant que la vue est ouverte, jamais masquable
+     (point non negociable de la demande : courte mais impossible a manquer). */
+  #cx-apify-note{
+    display:flex; align-items:flex-start; gap:8px; font-size:12px; line-height:1.4; color:var(--ink);
+    background:rgba(255,159,10,.12); border:0.5px solid rgba(255,159,10,.35); border-radius:12px;
+    padding:10px 12px; margin-bottom:12px;
+  }
+  #cx-apify-note b{color:#FF9F0A}
+  #cxa-freshness{
+    display:inline-flex; align-items:center; gap:6px; font-size:11.5px; font-weight:700;
+    padding:4px 10px; border-radius:20px; margin-bottom:10px;
+  }
+  #cxa-freshness .cxa-dot{width:7px; height:7px; border-radius:50%; display:inline-block}
+  #cxa-freshness.cxa-fresh-live{background:rgba(48,209,88,.14); color:var(--ok)}
+  #cxa-freshness.cxa-fresh-live .cxa-dot{background:var(--ok)}
+  #cxa-freshness.cxa-fresh-cached{background:rgba(152,152,158,.14); color:var(--muted)}
+  #cxa-freshness.cxa-fresh-cached .cxa-dot{background:var(--muted)}
+  #cxa-freshness.cxa-fresh-stale{background:rgba(255,159,10,.14); color:#FF9F0A}
+  #cxa-freshness.cxa-fresh-stale .cxa-dot{background:#FF9F0A}
+  #cxa-freshness.cxa-fresh-unavailable{background:rgba(255,69,58,.14); color:var(--no)}
+  #cxa-freshness.cxa-fresh-unavailable .cxa-dot{background:var(--no)}
   /* Panneau plein ecran "Relances clients" (chantier 3 audit MCS, patron uniquement) */
   #relancesview{
     position:fixed; inset:0; z-index:50; background:var(--bg);
@@ -3657,27 +3690,54 @@
     <button id="crypto-close" type="button" aria-label="Fermer" style="margin-left:auto">✕</button>
   </div>
   <div id="crypto-list">
-    <div id="crypto-loading">Chargement…</div>
-    <div id="crypto-error" style="display:none"></div>
-    <div id="crypto-body" style="display:none">
-      <div id="cx-hero">
-        <span class="cx-hero-label">Encaissé auprès de tiers (24h)</span>
-        <span class="cx-hero-value"><span id="cx-usdc-24-tiers">—</span> <span class="cx-hero-unit">USDC</span></span>
+    <div id="cx-tabs">
+      <button class="cx-tab active" data-cxsrc="x402" type="button">x402</button>
+      <button class="cx-tab" data-cxsrc="apify" type="button">Apify</button>
+    </div>
+    <div id="cx-view-x402">
+      <div id="crypto-loading">Chargement…</div>
+      <div id="crypto-error" style="display:none"></div>
+      <div id="crypto-body" style="display:none">
+        <div id="cx-hero">
+          <span class="cx-hero-label">Encaissé auprès de tiers (24h)</span>
+          <span class="cx-hero-value"><span id="cx-usdc-24-tiers">—</span> <span class="cx-hero-unit">USDC</span></span>
+        </div>
+        <div class="couts-stats">
+          <div class="couts-stat"><span class="cs-label">Paiements tiers 24h</span><span class="cs-value" id="cx-pay24-tiers">—</span><span class="cs-sub">hors wallet de test</span></div>
+          <div class="couts-stat"><span class="cs-label">Paiements tiers 7j</span><span class="cs-value" id="cx-pay7-tiers">—</span><span class="cs-sub">hors wallet de test</span></div>
+          <div class="couts-stat"><span class="cs-label">Payeurs inconnus 24h</span><span class="cs-value" id="cx-payers24">—</span><span class="cs-sub">adresses distinctes</span></div>
+          <div class="couts-stat"><span class="cs-label">Payeurs inconnus 7j</span><span class="cs-value" id="cx-payers7">—</span><span class="cs-sub">adresses distinctes</span></div>
+          <div class="couts-stat"><span class="cs-label">402 servis 24h</span><span class="cs-value" id="cx-402-24">—</span><span class="cs-sub">sondages non payés</span></div>
+          <div class="couts-stat"><span class="cs-label">402 servis 7j</span><span class="cs-value" id="cx-402-7">—</span><span class="cs-sub">sondages non payés</span></div>
+          <div class="couts-stat"><span class="cs-label">Encaissé tiers 7j</span><span class="cs-value" id="cx-usdc-7-tiers">—</span><span class="cs-sub">USDC</span></div>
+          <div class="couts-stat"><span class="cs-label">Encaissé tiers au total</span><span class="cs-value" id="cx-usdc-total-tiers">—</span><span class="cs-sub">USDC, depuis le début</span></div>
+        </div>
+        <div id="cx-total-note">Total tous payeurs confondus (test + seed hebdo inclus) — 24h : <span id="cx-usdc-24-total">—</span> USDC · 7j : <span id="cx-usdc-7-total">—</span> USDC · depuis le début : <span id="cx-usdc-total-total">—</span> USDC</div>
+        <div id="couts-svc-head" style="margin-top:6px"><span>🏆 Top endpoints — paiements tiers uniquement (7 jours)</span></div>
+        <div id="crypto-top-list"></div>
+        <div id="crypto-generated"></div>
       </div>
-      <div class="couts-stats">
-        <div class="couts-stat"><span class="cs-label">Paiements tiers 24h</span><span class="cs-value" id="cx-pay24-tiers">—</span><span class="cs-sub">hors wallet de test</span></div>
-        <div class="couts-stat"><span class="cs-label">Paiements tiers 7j</span><span class="cs-value" id="cx-pay7-tiers">—</span><span class="cs-sub">hors wallet de test</span></div>
-        <div class="couts-stat"><span class="cs-label">Payeurs inconnus 24h</span><span class="cs-value" id="cx-payers24">—</span><span class="cs-sub">adresses distinctes</span></div>
-        <div class="couts-stat"><span class="cs-label">Payeurs inconnus 7j</span><span class="cs-value" id="cx-payers7">—</span><span class="cs-sub">adresses distinctes</span></div>
-        <div class="couts-stat"><span class="cs-label">402 servis 24h</span><span class="cs-value" id="cx-402-24">—</span><span class="cs-sub">sondages non payés</span></div>
-        <div class="couts-stat"><span class="cs-label">402 servis 7j</span><span class="cs-value" id="cx-402-7">—</span><span class="cs-sub">sondages non payés</span></div>
-        <div class="couts-stat"><span class="cs-label">Encaissé tiers 7j</span><span class="cs-value" id="cx-usdc-7-tiers">—</span><span class="cs-sub">USDC</span></div>
-        <div class="couts-stat"><span class="cs-label">Encaissé tiers au total</span><span class="cs-value" id="cx-usdc-total-tiers">—</span><span class="cs-sub">USDC, depuis le début</span></div>
+    </div>
+    <div id="cx-view-apify" style="display:none">
+      <div id="cx-apify-note"><span>🧮</span><span><b>Estimation</b>, pas un montant audité — calculée à partir du nombre de runs × prix, sous-estime tout run ayant facturé plusieurs enregistrements. Ne pas utiliser pour la comptabilité.</span></div>
+      <div id="cxa-loading">Chargement…</div>
+      <div id="cxa-error" style="display:none"></div>
+      <div id="cxa-body" style="display:none">
+        <div id="cxa-freshness"></div>
+        <div id="cxa-hero">
+          <span class="cx-hero-label">Revenu net estimé (mois en cours)</span>
+          <span class="cx-hero-value"><span id="cxa-net-mtd">—</span> <span class="cx-hero-unit">$</span></span>
+        </div>
+        <div class="couts-stats">
+          <div class="couts-stat"><span class="cs-label">Net total estimé</span><span class="cs-value" id="cxa-net-total">—</span><span class="cs-sub">$, depuis le début</span></div>
+          <div class="couts-stat"><span class="cs-label">Brut total estimé</span><span class="cs-value" id="cxa-gross-total">—</span><span class="cs-sub">$, avant commission Apify</span></div>
+          <div class="couts-stat"><span class="cs-label">Runs réussis (30j)</span><span class="cs-value" id="cxa-runs-30d">—</span><span class="cs-sub">tous Actors</span></div>
+          <div class="couts-stat"><span class="cs-label">Runs (total)</span><span class="cs-value" id="cxa-runs-total">—</span><span class="cs-sub">depuis le début</span></div>
+        </div>
+        <div id="couts-svc-head" style="margin-top:6px"><span>🤖 Actors monétisés</span></div>
+        <div id="cxa-actor-list"></div>
+        <div id="cxa-generated"></div>
       </div>
-      <div id="cx-total-note">Total tous payeurs confondus (test + seed hebdo inclus) — 24h : <span id="cx-usdc-24-total">—</span> USDC · 7j : <span id="cx-usdc-7-total">—</span> USDC · depuis le début : <span id="cx-usdc-total-total">—</span> USDC</div>
-      <div id="couts-svc-head" style="margin-top:6px"><span>🏆 Top endpoints — paiements tiers uniquement (7 jours)</span></div>
-      <div id="crypto-top-list"></div>
-      <div id="crypto-generated"></div>
     </div>
   </div>
 </div>
@@ -7128,8 +7188,33 @@
   // Aucun secret cote client (jamais STATS_KEY ici, volontairement).
   var cryptoview = document.getElementById('cryptoview');
   var CRYPTO_STATS_URL = 'https://x402-seller-0ay3.onrender.com/stats';
+  // Onglet "Apify" (2026-09-04) — meme principe que CRYPTO_STATS_URL ci-dessus : endpoint
+  // PUBLIC dedie, sans cle, appele directement depuis le navigateur. /stats/apify (le vrai
+  // endpoint de revenu) exige STATS_KEY -- inappelable depuis une PWA statique sans exposer
+  // la cle a quiconque ouvre les outils reseau du navigateur. Decision prise avec Mathéo :
+  // plutot que de faire transiter la cle par un relais, /stats/apify/public est un 2e
+  // endpoint cote serveur x402-seller, expurge des details sensibles, sur le meme modele
+  // que /stats -- a construire separement (hors perimetre jarvis-app). Tant qu'il n'existe
+  // pas encore, cette vue affiche proprement une erreur de chargement, jamais une cle.
+  var CRYPTO_APIFY_STATS_URL = 'https://x402-seller-0ay3.onrender.com/stats/apify/public';
   function cryptoClose(){ cryptoview.classList.remove('open'); }
-  function cryptoOpen(){ cryptoview.classList.add('open'); cryptoLoad(); }
+  function cryptoTabSet(src){
+    document.querySelectorAll('.cx-tab').forEach(function(b){ b.classList.toggle('active', b.dataset.cxsrc === src); });
+    document.getElementById('cx-view-x402').style.display = (src === 'apify') ? 'none' : '';
+    document.getElementById('cx-view-apify').style.display = (src === 'apify') ? '' : 'none';
+    store('cryptoTab', src);
+    if (src === 'apify') cryptoLoadApify();
+  }
+  document.querySelectorAll('.cx-tab').forEach(function(b){
+    b.addEventListener('click', function(){ cryptoTabSet(b.dataset.cxsrc); });
+  });
+  function cryptoOpen(){
+    cryptoview.classList.add('open');
+    // x402 reste l'affichage par defaut : seul un choix Apify explicitement memorise lors
+    // d'une ouverture precedente (localStorage) le fait revenir directement sur cet onglet.
+    cryptoTabSet(read('cryptoTab') === 'apify' ? 'apify' : 'x402');
+    cryptoLoad();
+  }
   document.getElementById('sh-crypto').addEventListener('click', function(){ sheetOpen(false); cryptoOpen(); });
   document.getElementById('crypto-close').addEventListener('click', cryptoClose);
 
@@ -7227,6 +7312,87 @@
         loading.style.display = 'none';
         errorEl.style.display = '';
         errorEl.textContent = '⚠️ Impossible de charger les statistiques (' + (err && err.message ? err.message : 'erreur réseau') + '). Le serveur se met en veille après inactivité et peut mettre un instant à répondre — réessaie dans quelques secondes.';
+      });
+  }
+
+  // Vue "Apify" du panneau Crypto — fetch direct de CRYPTO_APIFY_STATS_URL (public, sans
+  // cle, voir commentaire plus haut). Format attendu = celui de /stats/apify expurge des
+  // details sensibles (memes noms de champs, voir doc x402-seller) : freshness,
+  // revenue_estimated_net_usd/gross_usd {today,last_7d,month_to_date,all_time},
+  // succeeded_runs_30d, runs_all_time, monetized_actors_count, by_actor[].
+  function cryptoLoadApify(){
+    var loading = document.getElementById('cxa-loading');
+    var errorEl = document.getElementById('cxa-error');
+    var body = document.getElementById('cxa-body');
+    loading.style.display = ''; loading.textContent = 'Chargement…';
+    errorEl.style.display = 'none';
+    body.style.display = 'none';
+    fetch(CRYPTO_APIFY_STATS_URL)
+      .then(function(r){ if (!r.ok) throw new Error('HTTP ' + r.status); return r.json(); })
+      .then(function(data){
+        loading.style.display = 'none';
+        var fresh = String(data.freshness || 'unavailable').toLowerCase();
+        // "unavailable" = aucun chiffre exploitable cote serveur (ex : Apify pas configure) —
+        // traite comme une erreur plutot que d'afficher des zeros trompeurs comme a jour.
+        if (fresh === 'unavailable'){
+          body.style.display = 'none';
+          errorEl.style.display = '';
+          errorEl.textContent = '⚠️ Données Apify indisponibles pour le moment (non configuré côté serveur, ou en panne). Réessaie plus tard.';
+          return;
+        }
+        body.style.display = '';
+        var fb = document.getElementById('cxa-freshness');
+        fb.className = ({live:'cxa-fresh-live', cached:'cxa-fresh-cached', stale:'cxa-fresh-stale'})[fresh] || 'cxa-fresh-stale';
+        var freshLabel = ({live:'En direct', cached:'En cache', stale:'Pas à jour (stale)'})[fresh] || ('État : ' + fresh);
+        fb.innerHTML = '<span class="cxa-dot"></span>' + freshLabel;
+        var net = data.revenue_estimated_net_usd || {};
+        var gross = data.revenue_estimated_gross_usd || {};
+        document.getElementById('cxa-net-mtd').textContent = (net.month_to_date || 0).toFixed(3);
+        document.getElementById('cxa-net-total').textContent = (net.all_time || 0).toFixed(3) + ' $';
+        document.getElementById('cxa-gross-total').textContent = (gross.all_time || 0).toFixed(3) + ' $';
+        document.getElementById('cxa-runs-30d').textContent = (data.succeeded_runs_30d != null) ? data.succeeded_runs_30d : '—';
+        document.getElementById('cxa-runs-total').textContent = (data.runs_all_time != null) ? data.runs_all_time : '—';
+        var list = document.getElementById('cxa-actor-list');
+        list.innerHTML = '';
+        var actors = data.by_actor || [];
+        if (!actors.length){
+          var empty = document.createElement('div');
+          empty.className = 'couts-svc-row';
+          empty.textContent = (data.monetized_actors_count ? (data.monetized_actors_count + ' Actor(s) monétisé(s), ') : '') + 'aucun run pour l\'instant.';
+          list.appendChild(empty);
+        } else {
+          actors.forEach(function(a){
+            var grossAllTime = a.estimated_gross_revenue_all_time_usd || 0;
+            var margin = (a.apify_margin_percentage != null) ? a.apify_margin_percentage : null;
+            var netAllTime = (margin != null) ? grossAllTime * (1 - margin) : null;
+            var row = document.createElement('div');
+            row.className = 'couts-svc-row';
+            var topRow = document.createElement('div');
+            topRow.className = 'couts-svc-top';
+            var nom = document.createElement('span');
+            nom.className = 'couts-svc-nom';
+            nom.textContent = a.name || a.id || '(actor)';
+            var montant = document.createElement('span');
+            montant.className = 'couts-svc-montant';
+            montant.textContent = (netAllTime != null ? netAllTime : grossAllTime).toFixed(3) + ' $';
+            topRow.appendChild(nom); topRow.appendChild(montant);
+            var sub = document.createElement('span');
+            sub.className = 'couts-svc-pct';
+            sub.textContent = (a.runs_all_time || 0) + ' runs au total — ' + (a.succeeded_runs_30d || 0) + ' réussis (30j) — ' + (netAllTime != null ? 'net estimé' : 'brut estimé (marge inconnue)');
+            row.appendChild(topRow); row.appendChild(sub);
+            list.appendChild(row);
+          });
+        }
+        var genEl = document.getElementById('cxa-generated');
+        var genParts = [];
+        if (data.generated_at) genParts.push('Généré le ' + new Date(data.generated_at).toLocaleString('fr-FR'));
+        if (data.apify_last_fetched_at) genParts.push('donnée Apify relevée le ' + new Date(data.apify_last_fetched_at).toLocaleString('fr-FR'));
+        genEl.textContent = genParts.join(' · ');
+      })
+      .catch(function(err){
+        loading.style.display = 'none';
+        errorEl.style.display = '';
+        errorEl.textContent = '⚠️ Impossible de charger les statistiques Apify (' + (err && err.message ? err.message : 'erreur réseau') + ').';
       });
   }
 
