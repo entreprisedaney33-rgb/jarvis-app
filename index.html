@@ -1520,6 +1520,32 @@
   #cxa-freshness.cxa-fresh-stale .cxa-dot{background:#FF9F0A}
   #cxa-freshness.cxa-fresh-unavailable{background:rgba(255,69,58,.14); color:var(--no)}
   #cxa-freshness.cxa-fresh-unavailable .cxa-dot{background:var(--no)}
+  /* Section "Adoption des outils MCP" (telechargements npm, 2026-09-05) — placee SOUS le
+     bloc revenus existant (hero + .couts-stats + total-note + top endpoints, tous en
+     var(--gold-a)/var(--ok)), et DELIBEREMENT dans une famille visuelle differente : accent
+     var(--blue) partout ici, jamais gold/ok/no — pour qu'un telechargement npm ne puisse
+     jamais se confondre avec un paiement encaisse au premier coup d'oeil. Alimentee par le
+     champ npm_downloads de GET /stats (voir lib/npm-downloads.js cote serveur x402-seller),
+     jamais mele aux chiffres totals/endpoints ci-dessus. */
+  #cx-npm-head{
+    display:flex; align-items:baseline; gap:8px; font-size:12.5px; font-weight:700;
+    color:var(--blue); text-transform:uppercase; letter-spacing:.03em;
+    padding:4px 4px 6px; margin-top:8px; border-top:0.5px solid rgba(84,84,88,.4);
+  }
+  #cx-npm-note{font-size:11.5px; color:var(--muted); padding:0 4px 10px; line-height:1.4}
+  #crypto-npm-list{display:flex; gap:8px; margin-bottom:14px}
+  .cx-npm-card{
+    flex:1 1 0; min-width:0; background:rgba(10,132,255,.10);
+    border:0.5px solid rgba(10,132,255,.30); border-radius:12px; padding:12px 12px 10px;
+  }
+  .cx-npm-name{
+    font-size:12px; font-weight:700; color:var(--blue); margin-bottom:8px;
+    white-space:nowrap; overflow:hidden; text-overflow:ellipsis;
+  }
+  .cx-npm-row{display:flex; align-items:baseline; justify-content:space-between; gap:6px; padding:3px 0}
+  .cx-npm-lab{font-size:11.5px; color:var(--muted)}
+  .cx-npm-val{font-size:15px; font-weight:700; color:var(--blue); flex:0 0 auto}
+  .cx-npm-status-note{font-size:11.5px; color:var(--muted); line-height:1.4}
   /* Panneau plein ecran "Relances clients" (chantier 3 audit MCS, patron uniquement) */
   #relancesview{
     position:fixed; inset:0; z-index:50; background:var(--bg);
@@ -3810,6 +3836,9 @@
         <div id="cx-total-note">Total tous payeurs confondus (test + seed hebdo inclus) — 24h : <span id="cx-usdc-24-total">—</span> USDC · 7j : <span id="cx-usdc-7-total">—</span> USDC · depuis le début : <span id="cx-usdc-total-total">—</span> USDC</div>
         <div id="couts-svc-head" style="margin-top:6px"><span>🏆 Top endpoints — paiements tiers uniquement (7 jours)</span></div>
         <div id="crypto-top-list"></div>
+        <div id="cx-npm-head"><span>📦 Adoption des outils MCP (téléchargements npm, pas des revenus)</span></div>
+        <div id="cx-npm-note">Nombre d'installations npm des 2 paquets MCP publiés par ce projet — un indicateur d'usage, jamais un montant encaissé.</div>
+        <div id="crypto-npm-list"></div>
         <div id="crypto-generated"></div>
       </div>
     </div>
@@ -4619,7 +4648,7 @@
 
 <script>
 (function(){
-  var APPV = 'v4.24';
+  var APPV = 'v4.25';
 
   // Debug : ?debug_modal=1 force l'affichage du modal "nouvelle version" sans attendre un vrai
   // déploiement. Capturé ICI, tout au début, car plus bas (login mémorisé, connexion) le code
@@ -7361,6 +7390,51 @@
     });
   }
 
+  // Rend les cartes "Adoption des outils MCP" (2026-09-05) depuis data.npm_downloads.packages
+  // de GET /stats (voir lib/npm-downloads.js) — un objet {nomPaquet: {status, last_24h,
+  // last_7d, since_publish, publish_date}}, jamais lu depuis totals/endpoints (chiffres de
+  // paiement). status "not_indexed_yet" = paquet trop recent, pas encore compte par npm —
+  // affiche honnetement une note plutot qu'un faux zero.
+  function cryptoRenderNpmDownloads(dataByPackage){
+    var list = document.getElementById('crypto-npm-list');
+    list.innerHTML = '';
+    var names = Object.keys(dataByPackage || {});
+    if (!names.length){
+      var empty = document.createElement('div');
+      empty.className = 'cx-npm-status-note';
+      empty.textContent = 'Aucune donnée de téléchargement disponible pour l\'instant.';
+      list.appendChild(empty);
+      return;
+    }
+    names.forEach(function(name){
+      var p = dataByPackage[name] || {};
+      var card = document.createElement('div');
+      card.className = 'cx-npm-card';
+      var nameEl = document.createElement('div');
+      nameEl.className = 'cx-npm-name';
+      nameEl.textContent = name;
+      card.appendChild(nameEl);
+      if (p.status === 'ok'){
+        [['24h', p.last_24h], ['7j', p.last_7d], ['Total (depuis publication)', p.since_publish]].forEach(function(pair){
+          var row = document.createElement('div');
+          row.className = 'cx-npm-row';
+          var lab = document.createElement('span'); lab.className = 'cx-npm-lab'; lab.textContent = pair[0];
+          var val = document.createElement('span'); val.className = 'cx-npm-val'; val.textContent = (pair[1] != null ? pair[1] : 0);
+          row.appendChild(lab); row.appendChild(val);
+          card.appendChild(row);
+        });
+      } else {
+        var note = document.createElement('div');
+        note.className = 'cx-npm-status-note';
+        note.textContent = (p.status === 'not_indexed_yet')
+          ? 'Publié récemment — pas encore de statistiques npm (délai habituel de quelques jours, pas une erreur).'
+          : 'Statistiques temporairement indisponibles.';
+        card.appendChild(note);
+      }
+      list.appendChild(card);
+    });
+  }
+
   function cryptoLoad(){
     var loading = document.getElementById('crypto-loading');
     var errorEl = document.getElementById('crypto-error');
@@ -7392,6 +7466,7 @@
         document.getElementById('cx-usdc-7-total').textContent = (usdcTotal.last_7d || 0).toFixed(3);
         document.getElementById('cx-usdc-total-total').textContent = (usdcTotal.all_time || 0).toFixed(3);
         cryptoRenderTop(data.endpoints);
+        cryptoRenderNpmDownloads((data.npm_downloads && data.npm_downloads.packages) || {});
         var genEl = document.getElementById('crypto-generated');
         genEl.textContent = data.generated_at ? ('Généré le ' + new Date(data.generated_at).toLocaleString('fr-FR')) : '';
       })
