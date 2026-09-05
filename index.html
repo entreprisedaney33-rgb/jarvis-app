@@ -58,28 +58,74 @@
     --gold-note-bg:#F5D67A;       /* fond "post-it" apercu note, Sites Vitrine (labo) */
     --gold-splash-light:#F5D9A0;  /* stop clair du degrade de l'anneau du splash */
     --ok:#30D158; --no:#FF453A;
+    /* Session theme blanc MCS (05/09/2026) : 4 nouveaux tokens qui remplacent des couleurs
+       ecrites en dur (audit prealable : 448 couleurs en dur dans le CSS, dont ~190 hors
+       cosmetique). Valeurs identiques aux litteraux qu'ils remplacent -- ZERO changement visuel
+       pour le labo tant que html.mcs-theme n'est pas pose. Seul html.mcs-theme les redefinit
+       plus bas. */
+    --field-bg:#2E2E32;   /* fond des champs de saisie/dropdowns actifs (etait #2E2E32 en dur) */
+    --dropdown-bg:#333336; /* fond des listes d'autocompletion (etait #333336 en dur) */
+    --card-bg-2:#1D1D20;  /* fond des cartes secondaires .mf-card/.bc-int-card (etait #1D1D20) */
+    --bg2:#151517;        /* fond des conteneurs calendrier (etait le repli var(--bg2,#151517)) */
+    --chip-border:rgba(255,255,255,.18);        /* bordure .df-chip inactif */
+    --chip-active-border:rgba(255,255,255,.3);  /* bordure .df-chip actif */
+    --soft-fill:rgba(255,255,255,.14);          /* bordure + fond actif .notes-age-tab */
   }
   /* Etape 2 theme MCS (25/08/2026) : classe posee sur <html> (jamais <body> -- document.body
      est encore null au moment ou la classe est decidee, cf. le script <head> juste au-dessus ;
      :root et html sont le MEME element, mais html.mcs-theme a une specificite plus forte donc
-     gagne sur :root pour les 4 variables qu'il redefinit ici, sans jamais toucher :root
-     lui-meme). Redefinit UNIQUEMENT la famille accent (gold-a/gold-b/gold-rgb/gold-splash-
-     light) -- ni --ok/--blue/--no, ni aucune surface/texte. Decisions deliberees de NE PAS
-     redefinir ici (par choix, pas par oubli) :
-       --gold-ink/--gold-ink-2 : l'encre sombre passe le contraste sur turquoise (mesure,
-         cf. session) -- les 40 usages restent identiques, c'est ce qui rend ce theme
-         faisable en quelques lignes.
-       --gold-anomalie : marqueur d'AVERTISSEMENT (ligne IK), pas un accent de marque --
-         reste ambre dans les deux themes.
-       --gold-note-bg : Sites Vitrine, labo uniquement, MCS ne le voit jamais.
-     S'applique a Mickael ET Bruno (l'outil de MCS, pas d'un role) -- la classe est posee des
-     que le code commence par "mcs-", sans distinction de role. */
+     gagne sur :root pour les variables qu'il redefinit ici, sans jamais toucher :root
+     lui-meme). S'applique a Mickael ET Bruno (l'outil de MCS, pas d'un role) -- la classe est
+     posee des que le code commence par "mcs-", sans distinction de role.
+     Session theme BLANC (05/09/2026, RDV du 04/09 : "l'ecran, il est trop noir en fait" /
+     "je m'imagine pas bosser dessus pendant quatre heures") : bascule COMPLETE fond
+     noir->blanc + accent turquoise->bleu (le bleu deja utilise pour --blue/l'agenda partout
+     ailleurs dans ce fichier), demandee explicitement a la place du theme turquoise-sur-noir
+     du 25/08 (qui ne resolvait PAS le vrai probleme signale : le fond restait noir).
+     Palette reprise TELLE QUELLE des 2 thèmes clairs deja existants et deja approuves dans ce
+     meme fichier (#emailsview, body.cal-mcs-light) -- memes valeurs Apple system-gray, pas
+     inventees : #FFFFFF/#F2F2F7/#1D1D1F/#6E6E73, pour rester coherent avec ce que Mickael voit
+     deja dans Emails/Agenda sans creer une 3e palette. */
   html.mcs-theme{
-    --gold-a:#00AABB; --gold-b:#00909C; --gold-rgb:0,170,187;
-    --gold-splash-light:#8CD9E0; /* propose : melange 45% turquoise-a / 55% blanc -- meme role
-      que gold-splash-light (stop clair du degrade du splash), lisible comme un "glow" turquoise
-      pale sans sortir de la famille de teinte (meme H/S, L remontee) */
+    --bg:#F2F2F7; --surface:#FFFFFF; --bubble:#E9E9EB;
+    --hairline:#D8D8DE; --ink:#1D1D1F; --muted:#6E6E73;
+    --field-bg:#F2F2F7; --dropdown-bg:#FFFFFF; --card-bg-2:#F7F7F9; --bg2:#F2F2F7;
+    --chip-border:rgba(0,0,0,.16); --chip-active-border:var(--blue); --soft-fill:rgba(10,132,255,.12);
+    /* Accent = bleu (au lieu du turquoise du 25/08, remplace par ce chantier -- cf. commentaire
+       ci-dessus). --gold-ink-2 DOIT etre reecrit en blanc ici (contrairement au choix du 25/08
+       qui gardait l'encre sombre pour le turquoise) : un texte sombre sur fond bleu #0A84FF
+       echouerait le contraste, la ou il passait sur le turquoise plus clair. */
+    --gold-a:#0A84FF; --gold-b:#0060DF; --gold-rgb:10,132,255;
+    --gold-splash-light:#BFE0FF;
+    --gold-ink:#FFFFFF; --gold-ink-2:#FFFFFF;
   }
+  /* Listes alternees blanc / gris tres clair, une ligne sur deux (demande explicite du RDV,
+     "il y a un truc en gris, un truc en blanc, du coup tu arrives quand meme a differencier") --
+     scope html.mcs-theme uniquement, le labo n'a jamais demande cet effet. :nth-of-type marche
+     ici car chaque carte est ajoutee comme enfant direct de son conteneur de liste (verifie sur
+     les 3 classes ci-dessous avant d'ecrire cette regle). */
+  html.mcs-theme .devis-card:nth-of-type(even),
+  html.mcs-theme .contrat-card:nth-of-type(even),
+  html.mcs-theme .rl-card:nth-of-type(even){
+    background:#F7F7F9;
+  }
+  /* Feuille menu (#sheet/#siteSheet, ses tuiles .sh-tile et sa liste .sh-item/.sh-group) --
+     ces regles utilisent des blancs translucides (rgba(255,255,255,x)) pour se detacher d'un
+     FOND NOIR : sur fond blanc MCS elles deviennent blanc-sur-blanc, invisibles -- exactement
+     le "ils n'existent pas, je ne peux pas cliquer dessus" du RDV du 04/09, applique aux 9
+     (11 avant ce meme chantier) tuiles de l'accueil. Selecteurs ecrits pour battre la
+     specificite des regles de base (meme etats :active inclus, cf. calcul explicite en
+     commentaire de session) -- le labo garde les regles de base au pixel pres, jamais touchees
+     ici. */
+  html.mcs-theme #sheet, html.mcs-theme #siteSheet{
+    background:#FFFFFF; border-color:rgba(0,0,0,.08);
+  }
+  html.mcs-theme .sh-handle{background:rgba(0,0,0,.18)}
+  html.mcs-theme .sh-group{background:rgba(0,0,0,.035)}
+  html.mcs-theme .sh-item{border-top-color:rgba(0,0,0,.08)}
+  html.mcs-theme .sh-item:active{background:rgba(0,0,0,.05)}
+  html.mcs-theme .sh-tile{background:var(--field-bg); border-color:rgba(0,0,0,.1)}
+  html.mcs-theme .sh-tile:active{background:#E5E5EA}
   *{box-sizing:border-box; -webkit-tap-highlight-color:transparent}
   html{-webkit-text-size-adjust:100%; height:100%}
   body{
@@ -136,13 +182,18 @@
     position:relative;
     display:flex; flex-direction:row; justify-content:center; align-items:center; gap:8px;
     padding:calc(6px + env(safe-area-inset-top)) 16px 7px; flex:0 0 auto;
-    background:rgba(22,22,24,.85);
+    background:var(--header-bg,rgba(22,22,24,.85));
     -webkit-backdrop-filter:saturate(180%) blur(20px);
     backdrop-filter:saturate(180%) blur(20px);
     border-bottom:0.5px solid var(--hairline);
     cursor:pointer; user-select:none; -webkit-user-select:none;
     transition:opacity .12s ease, transform .12s ease;
   }
+  /* Session theme blanc MCS (05/09/2026) : l'en-tete restait NOIR (litteral rgba(22,22,24,.85))
+     alors que tout le reste bascule en blanc -- bug visible des le tout premier ecran, trouve en
+     testant. --header-bg est un token DEDIE (pas --surface) car son alpha .85 + le blur de fond
+     lui donnent un role optique distinct (bandeau vitre au-dessus du contenu qui defile). */
+  html.mcs-theme{--header-bg:rgba(255,255,255,.85)}
   header:active{opacity:.72; transform:scale(.992)}
   #hchev{
     flex:0 0 auto; color:var(--gold-a); opacity:.85; margin-left:1px;
@@ -394,9 +445,14 @@
   #composer{
     display:flex; align-items:flex-end; gap:9px; flex:0 0 auto;
     padding:8px 12px max(8px, calc(env(safe-area-inset-bottom) - 6px));
-    background:#17171B;
+    background:var(--composer-bg,#17171B);
     border-top:0.5px solid var(--hairline);
   }
+  /* Theme blanc MCS (05/09/2026) : le composer restait noir (litteral #17171B, choisi le
+     16/07/2026 pour se distinguer du fond noir de la page -- meme raison d'etre ici, un ton
+     legerement different de --bg pour lire "barre" plutot que "vide", mais en clair). Trouve en
+     testant a 360px : la home MCS blanche gardait une bande noire tout en bas. */
+  html.mcs-theme{--composer-bg:#F7F7F9}
   #micbtn{
     width:40px; height:40px; border-radius:50%; flex:0 0 auto; cursor:pointer;
     border:none; background:var(--surface); color:var(--muted);
@@ -753,7 +809,7 @@
   }
   .devis-tab{
     flex:0 0 auto; padding:8px 13px; border-radius:99px; border:0.5px solid rgba(255,255,255,.18);
-    background:#2E2E32; color:var(--muted); font-size:13px; font-weight:600; cursor:pointer;
+    background:var(--field-bg); color:var(--muted); font-size:13px; font-weight:600; cursor:pointer;
     -webkit-tap-highlight-color:transparent; white-space:nowrap;
   }
   .devis-tab.active{background:var(--gold-a); color:var(--gold-ink); border-color:var(--gold-a)}
@@ -766,11 +822,18 @@
   #devis-search::placeholder{color:var(--muted)}
   .df-filter-group{flex:0 0 auto; display:flex; gap:8px; padding:10px 14px 2px; overflow-x:auto; -webkit-overflow-scrolling:touch}
   .df-chip{
-    flex:0 0 auto; padding:7px 12px; border-radius:99px; border:0.5px solid rgba(255,255,255,.18);
+    flex:0 0 auto; padding:7px 12px; border-radius:99px; border:0.5px solid var(--chip-border);
     background:transparent; color:var(--muted); font-size:12.5px; font-weight:600; cursor:pointer;
     -webkit-tap-highlight-color:transparent; white-space:nowrap; opacity:.5;
   }
-  .df-chip.active{opacity:1; background:#2E2E32; color:var(--ink); border-color:rgba(255,255,255,.3)}
+  .df-chip.active{opacity:1; background:var(--field-bg); color:var(--ink); border-color:var(--chip-active-border)}
+  /* Sous-onglets "franc" sur fond blanc (RDV 04/09 : "on voit pas, meme moi j'ai pas vu") --
+     l'opacite:.5 + bordure blanc-translucide de la regle ci-dessus disparaissent sur fond
+     clair (blanc sur blanc). Etat inactif visible (fond + bordure), etat actif = plein bleu
+     MCS + texte blanc, sans ambiguite possible sur ce qui est cliquable. Scope html.mcs-theme
+     uniquement -- le labo garde l'apparence ci-dessus au pixel pres. */
+  html.mcs-theme .df-chip{opacity:1; background:var(--field-bg); border-color:var(--hairline); color:var(--muted)}
+  html.mcs-theme .df-chip.active{background:var(--blue); color:#fff; border-color:var(--blue)}
   .df-badge{font-size:11px; font-weight:700; border-radius:99px; padding:2px 9px; flex:0 0 auto}
   .df-badge.attente{background:rgba(var(--gold-rgb),.15); color:var(--gold-a)}
   .df-badge.envoye{background:rgba(10,132,255,.15); color:var(--blue)}
@@ -1127,7 +1190,7 @@
   .ct-detail label{font-size:12px; color:var(--muted)}
   .ct-detail input, .ct-detail textarea{
     width:100%; box-sizing:border-box; border:0.5px solid rgba(255,255,255,.18); border-radius:10px;
-    background:#2E2E32; color:var(--ink); font-size:14px; padding:9px 10px; font:inherit;
+    background:var(--field-bg); color:var(--ink); font-size:14px; padding:9px 10px; font:inherit;
   }
   /* 180px et pas 70 : depuis le 17/08/2026 le corps du mail de facture porte aussi la demande
      d'avis Google + la mise en relation (~12 lignes). Tout le principe est que Mickael RELISE et
@@ -1149,6 +1212,11 @@
   table.contrat-table tbody tr:active{background:rgba(255,255,255,.06)}
   table.contrat-table td.ct-td-nom{font-weight:700; white-space:normal; min-width:140px}
   table.contrat-table td.ct-td-montant{color:var(--gold-a); font-weight:700; text-align:right}
+  /* Theme blanc MCS (05/09/2026) : table Catalogue -- meme "lignes alternees" que les listes de
+     cartes (cf. regle html.mcs-theme .devis-card:nth-of-type(even) plus haut), + le tap-state
+     rgba(255,255,255,.06) etait blanc-sur-blanc, invisible. */
+  html.mcs-theme table.contrat-table tbody tr:nth-child(even){background:#F7F7F9}
+  html.mcs-theme table.contrat-table tbody tr:active{background:#E5E5EA}
   /* Chantier 5 (31/08/2026) : catalogue regroupe par mois de facturation -- en-tete cliquable
      (nombre de contrats + total TTC du mois), replie par defaut pour les mois deja ecoules. */
   #contrats-catalogue-par-mois{display:flex; flex-direction:column; gap:10px}
@@ -1193,7 +1261,7 @@
   .contrat-form label{display:block; font-size:12px; color:var(--muted); margin:10px 0 4px}
   .contrat-form input, .contrat-form select, .contrat-form textarea{
     width:100%; box-sizing:border-box; border:0.5px solid rgba(255,255,255,.18); border-radius:10px;
-    background:#2E2E32; color:var(--ink); font-size:14px; padding:9px 10px; font:inherit;
+    background:var(--field-bg); color:var(--ink); font-size:14px; padding:9px 10px; font:inherit;
   }
   .contrat-form textarea{resize:vertical}
   .contrat-form .cf-row{display:flex; gap:8px}
@@ -1272,7 +1340,7 @@
   #ik-month-tabs{flex-wrap:nowrap}
   .ik-sug{
     list-style:none; margin:2px 0 0; padding:0; border:0.5px solid rgba(255,255,255,.18); border-radius:10px;
-    overflow:hidden; position:absolute; left:0; right:0; top:100%; background:#333336; z-index:5;
+    overflow:hidden; position:absolute; left:0; right:0; top:100%; background:var(--dropdown-bg); z-index:5;
     max-height:180px; overflow-y:auto; display:none;
   }
   .ik-sug.open{display:block}
@@ -1336,7 +1404,7 @@
   .couts-form label{display:block; font-size:12px; color:var(--muted); margin:10px 0 4px}
   .couts-form input, .couts-form select, .couts-form textarea{
     width:100%; box-sizing:border-box; border:0.5px solid rgba(255,255,255,.18); border-radius:10px;
-    background:#2E2E32; color:var(--ink); font-size:14px; padding:9px 10px; font:inherit;
+    background:var(--field-bg); color:var(--ink); font-size:14px; padding:9px 10px; font:inherit;
   }
   .couts-form .cx-row{display:flex; gap:8px}
   .couts-form .cx-row > *{flex:1}
@@ -1485,7 +1553,7 @@
   .rl-card .dv-actions{flex-wrap:wrap}
   .rl-card .dv-actions button{padding:9px 12px; font-size:13px; border-radius:99px; border:0; cursor:pointer; -webkit-tap-highlight-color:transparent}
   .rl-card .rl-marquer{background:var(--gold-a); color:var(--gold-ink); font-weight:700}
-  .rl-card .rl-suspendre{background:#2E2E32; color:var(--ink)}
+  .rl-card .rl-suspendre{background:var(--field-bg); color:var(--ink)}
   .rl-card .rl-reprendre{background:var(--ok); color:#04210c; font-weight:700}
   .rl-suspend-note{font-size:12px; color:var(--muted); margin-top:2px}
   .rl-promesse-note{font-size:12px; color:var(--gold-a); margin-top:2px}
@@ -1500,7 +1568,7 @@
   .rl-form .rl-form-actions{display:flex; gap:8px}
   .rl-form .rl-form-actions button{flex:1; padding:9px; font-size:13.5px; border-radius:10px; border:0; cursor:pointer}
   .rl-form .rl-confirm{background:var(--gold-a); color:var(--gold-ink); font-weight:700}
-  .rl-form .rl-cancel{background:#2E2E32; color:var(--muted)}
+  .rl-form .rl-cancel{background:var(--field-bg); color:var(--muted)}
   /* R2 (25/08/2026) : refonte du panneau Relances -- une carte par DESTINATAIRE (brouillons),
      plus par facture. Ajouts uniquement, les classes .devis-card/.dv-nom/.dv-meta/.dv-montant/
      .df-badge/.rl-form existantes restent utilisees telles quelles. */
@@ -1604,11 +1672,11 @@
   .rl-btn-row2{display:flex; gap:8px}
   /* "Je l'ai relance moi-meme" -- desormais discret, au meme niveau que Suspendre (meme style,
      jamais le vert "c'est acquis" pour une donnee qu'on ne peut pas verifier). */
-  .rl-btn-declare{flex:1; padding:11px; font-size:13.5px; font-weight:700; border-radius:12px; border:0; cursor:pointer; background:#2E2E32; color:var(--ink); -webkit-tap-highlight-color:transparent}
+  .rl-btn-declare{flex:1; padding:11px; font-size:13.5px; font-weight:700; border-radius:12px; border:0; cursor:pointer; background:var(--field-bg); color:var(--ink); -webkit-tap-highlight-color:transparent}
   /* .rl-btn-fait : reservee a "Reprendre les relances" (carte suspendue) -- une vraie reprise de
      suivi automatique, verifiable, jamais une declaration humaine. */
   .rl-btn-fait{flex:1; padding:11px; font-size:13.5px; font-weight:700; border-radius:12px; border:0; cursor:pointer; background:var(--ok); color:#04210c; -webkit-tap-highlight-color:transparent}
-  .rl-btn-suspendre2{flex:1; padding:11px; font-size:13.5px; font-weight:700; border-radius:12px; border:0; cursor:pointer; background:#2E2E32; color:var(--ink); -webkit-tap-highlight-color:transparent}
+  .rl-btn-suspendre2{flex:1; padding:11px; font-size:13.5px; font-weight:700; border-radius:12px; border:0; cursor:pointer; background:var(--field-bg); color:var(--ink); -webkit-tap-highlight-color:transparent}
   /* E2 (26/08/2026) : l'explication du bouton [Envoyer] partait dans le toast global -- une
      pilule etroite, en gris semi-transparent sur fond deja sombre, qui coupait le texte et se
      superposait au contenu. Remplacee par un encadre DANS la carte, sous le bouton, opaque et
@@ -1631,12 +1699,12 @@
   .rl-question-txt{font-size:14px; font-weight:600; color:var(--ink); margin-bottom:8px}
   .rl-question-input{
     width:100%; box-sizing:border-box; border:0.5px solid rgba(255,255,255,.25); border-radius:10px;
-    background:#2E2E32; color:var(--ink); font-size:15px; padding:9px 10px; font-family:inherit; margin-bottom:8px;
+    background:var(--field-bg); color:var(--ink); font-size:15px; padding:9px 10px; font-family:inherit; margin-bottom:8px;
   }
   .rl-question-confirm{width:100%; padding:10px; font-size:13.5px; font-weight:700; border-radius:10px; border:0; cursor:pointer; background:var(--gold-a); color:var(--gold-ink); -webkit-tap-highlight-color:transparent}
   .rl-conflit-opt{
     display:flex; align-items:center; justify-content:space-between; gap:8px; padding:9px 10px;
-    border-radius:10px; background:#2E2E32; margin-bottom:8px;
+    border-radius:10px; background:var(--field-bg); margin-bottom:8px;
   }
   .rl-conflit-opt{align-items:flex-start; flex-wrap:wrap}
   .rl-conflit-opt-txt{flex:1; min-width:160px}
@@ -1714,7 +1782,7 @@
     flex:1; font:inherit; font-size:15px; font-weight:600; padding:11px; border-radius:12px;
     cursor:pointer; -webkit-tap-highlight-color:transparent;
   }
-  .carnet-confirm-cancel{background:#2E2E32; color:var(--muted); border:0}
+  .carnet-confirm-cancel{background:var(--field-bg); color:var(--muted); border:0}
   .carnet-confirm-delete{background:rgba(255,69,58,.15); color:#FF453A; border:0.5px solid rgba(255,69,58,.5)}
   .carnet-field{display:flex; align-items:flex-start; gap:8px; padding:8px 0; border-top:0.5px solid var(--hairline)}
   .carnet-field:first-of-type{border-top:none}
@@ -1724,7 +1792,7 @@
   .carnet-field-value.empty{color:var(--muted); font-style:italic; white-space:normal}
   .carnet-field-edit{
     width:100%; box-sizing:border-box; border:0.5px solid rgba(255,255,255,.25); border-radius:8px;
-    background:#2E2E32; color:var(--ink); font-size:14.5px; line-height:1.5; font-family:inherit;
+    background:var(--field-bg); color:var(--ink); font-size:14.5px; line-height:1.5; font-family:inherit;
     padding:8px 9px; resize:none; overflow:hidden; min-height:80px;
   }
   .carnet-ancien{font-size:11px; color:var(--muted); display:block; margin-top:3px}
@@ -1740,7 +1808,7 @@
   #carnet-add-bg.open{display:block}
   #carnet-add-form{
     position:fixed; left:14px; right:14px; top:50%; transform:translateY(-50%) scale(.96); z-index:53;
-    background:#1C1C1E; border-radius:16px; padding:18px 18px calc(18px + env(safe-area-inset-bottom));
+    background:var(--surface); border-radius:16px; padding:18px 18px calc(18px + env(safe-area-inset-bottom));
     display:none; flex-direction:column; gap:10px;
     opacity:0; transition:opacity .2s ease, transform .2s ease;
   }
@@ -1844,7 +1912,7 @@
   .rel-card{background:var(--surface); border-radius:14px; padding:12px 14px; margin-bottom:10px}
   .rel-top{display:flex; align-items:center; gap:8px; flex-wrap:wrap}
   .rel-nom{font-size:15px; font-weight:700}
-  .rel-badge{font-size:11px; font-weight:700; padding:3px 9px; border-radius:99px; background:#2E2E32; color:var(--muted); text-transform:capitalize}
+  .rel-badge{font-size:11px; font-weight:700; padding:3px 9px; border-radius:99px; background:var(--field-bg); color:var(--muted); text-transform:capitalize}
   .rel-badge-averifier{background:rgba(var(--gold-rgb),.16); color:var(--gold-a); text-transform:none}
   .rel-resume{font-size:13.5px; color:var(--ink); display:block; margin-top:6px; line-height:1.4}
   .rel-meta{font-size:12px; color:var(--muted); display:block; margin-top:6px}
@@ -1862,7 +1930,7 @@
   .rel-actions-l1{display:flex; gap:8px; margin-top:8px; flex-wrap:wrap}
   .rel-action-btn{
     display:inline-flex; align-items:center; padding:7px 12px; font-size:12.5px; font-weight:600;
-    border-radius:9px; border:0; cursor:pointer; background:#2E2E32; color:var(--ink);
+    border-radius:9px; border:0; cursor:pointer; background:var(--field-bg); color:var(--ink);
     text-decoration:none; -webkit-tap-highlight-color:transparent;
   }
   .rel-action-l2{margin-top:8px; padding:8px 10px; border-radius:10px; background:rgba(var(--gold-rgb),.1)}
@@ -1880,7 +1948,7 @@
   .rel-obs-imp.moyenne{background:rgba(var(--gold-rgb),.15); color:var(--gold-a)}
   .rel-obs-constat{font-size:13px; color:var(--ink); line-height:1.4}
   .rel-obs-actions{display:flex; gap:8px; margin-top:8px}
-  .rel-obs-btn{font-size:12px; font-weight:600; padding:6px 11px; border-radius:99px; border:none; background:#2E2E32; color:var(--ink)}
+  .rel-obs-btn{font-size:12px; font-weight:600; padding:6px 11px; border-radius:99px; border:none; background:var(--field-bg); color:var(--ink)}
   .rel-obs-btn.voir{background:rgba(10,132,255,.15); color:var(--blue)}
   /* Panneau plein ecran "Documents de reference" (RIB, Kbis, assurance decennale... -- 2026-08-11,
      Jarvis proactif). Meme gabarit que les autres panneaux plein ecran, prefixe docref-. */
@@ -2142,7 +2210,7 @@
   #meute-empty, #meute-loading{color:var(--muted); text-align:center; padding:40px 20px; font-size:14px}
   .meute-email-row{display:flex; gap:6px; margin-bottom:10px}
   .meute-email-input{
-    flex:1; min-width:0; font:inherit; font-size:12.5px; color:var(--ink); background:#2E2E32;
+    flex:1; min-width:0; font:inherit; font-size:12.5px; color:var(--ink); background:var(--field-bg);
     border:0.5px solid rgba(255,255,255,.18); border-radius:9px; padding:8px 10px; margin-bottom:8px;
   }
   .meute-email-send{
@@ -2157,19 +2225,19 @@
      lui non plus aucune classe/regle, fond blanc du navigateur au milieu d'une appli sombre. */
   .meute-notes-textarea{
     width:100%; box-sizing:border-box; border:0.5px solid rgba(255,255,255,.18); border-radius:10px;
-    background:#2E2E32; color:var(--ink); font-family:inherit; font-size:14px;
+    background:var(--field-bg); color:var(--ink); font-family:inherit; font-size:14px;
     padding:9px 10px; resize:vertical; margin-bottom:8px;
   }
   .meute-notes-actions{display:flex; gap:6px; margin-bottom:10px}
   .meute-notes-mic{
-    flex:0 0 auto; padding:7px 12px; border-radius:9px; border:0; background:#2E2E32; color:var(--ink);
+    flex:0 0 auto; padding:7px 12px; border-radius:9px; border:0; background:var(--field-bg); color:var(--ink);
     font-size:12.5px; font-weight:600; cursor:pointer; -webkit-tap-highlight-color:transparent;
   }
   .meute-notes-mic.rec{background:#FF453A; color:#fff; animation:meute-pulse 1s infinite}
   @keyframes meute-pulse{0%,100%{opacity:1}50%{opacity:.55}}
   .meute-rapport-box{margin-top:2px}
   .meute-gen-btn{
-    width:100%; padding:9px; border-radius:10px; border:0.5px solid rgba(255,255,255,.18); background:#2E2E32;
+    width:100%; padding:9px; border-radius:10px; border:0.5px solid rgba(255,255,255,.18); background:var(--field-bg);
     color:var(--ink); font-size:13px; font-weight:700; cursor:pointer; -webkit-tap-highlight-color:transparent; margin-bottom:8px;
   }
   .meute-gen-btn:disabled{opacity:.5}
@@ -2184,12 +2252,12 @@
   }
   .meute-tab{
     flex:0 0 auto; padding:8px 13px; border-radius:99px; border:0.5px solid rgba(255,255,255,.18);
-    background:#2E2E32; color:var(--muted); font-size:13px; font-weight:600; cursor:pointer;
+    background:var(--field-bg); color:var(--muted); font-size:13px; font-weight:600; cursor:pointer;
     -webkit-tap-highlight-color:transparent; white-space:nowrap;
   }
   .meute-tab.active{background:var(--gold-a); color:var(--gold-ink); border-color:var(--gold-a)}
   .meute-card > textarea{
-    width:100%; box-sizing:border-box; font:inherit; font-size:13px; color:var(--ink); background:#2E2E32;
+    width:100%; box-sizing:border-box; font:inherit; font-size:13px; color:var(--ink); background:var(--field-bg);
     border:0.5px solid rgba(255,255,255,.18); border-radius:10px; padding:9px 11px; resize:vertical; margin-bottom:8px;
   }
   .meute-notes-save{
@@ -2265,11 +2333,11 @@
   }
   .opp-notes-area{
     width:100%; box-sizing:border-box; border:0.5px solid rgba(255,255,255,.18); border-radius:10px;
-    background:#2E2E32; color:var(--ink); font-family:inherit; font-size:14px;
+    background:var(--field-bg); color:var(--ink); font-family:inherit; font-size:14px;
     padding:9px 10px; resize:vertical; margin-bottom:8px;
   }
   .opp-prepare-btn{
-    width:100%; padding:9px; border-radius:10px; border:0.5px solid rgba(255,255,255,.18); background:#2E2E32;
+    width:100%; padding:9px; border-radius:10px; border:0.5px solid rgba(255,255,255,.18); background:var(--field-bg);
     color:var(--ink); font-size:13px; font-weight:700; cursor:pointer; -webkit-tap-highlight-color:transparent; margin-bottom:8px;
   }
   .opp-prepare-btn:disabled{opacity:.5}
@@ -2307,7 +2375,7 @@
   #vitrine-lancer-box.open{display:flex}
   #vitrine-lancer-row{display:flex; gap:8px}
   #vitrine-lancer-secteur, #vitrine-lancer-ville, #vitrine-lancer-limit{
-    font:inherit; font-size:13px; color:var(--ink); background:#2E2E32;
+    font:inherit; font-size:13px; color:var(--ink); background:var(--field-bg);
     border:0.5px solid rgba(255,255,255,.18); border-radius:9px; padding:8px 10px;
   }
   #vitrine-lancer-secteur{flex:1}
@@ -2325,7 +2393,7 @@
   }
   .vitrine-tab{
     flex:0 0 auto; padding:8px 13px; border-radius:99px; border:0.5px solid rgba(255,255,255,.18);
-    background:#2E2E32; color:var(--muted); font-size:13px; font-weight:600; cursor:pointer;
+    background:var(--field-bg); color:var(--muted); font-size:13px; font-weight:600; cursor:pointer;
     -webkit-tap-highlight-color:transparent; white-space:nowrap;
   }
   .vitrine-tab.active{background:var(--gold-a); color:var(--gold-ink); border-color:var(--gold-a)}
@@ -2344,17 +2412,17 @@
   .vitrine-expir.expired{color:#FF453A; font-weight:600}
   .vitrine-mail-box{margin-bottom:10px}
   .vitrine-mail-toggle{
-    width:100%; padding:9px; border-radius:10px; border:0.5px solid rgba(255,255,255,.18); background:#2E2E32;
+    width:100%; padding:9px; border-radius:10px; border:0.5px solid rgba(255,255,255,.18); background:var(--field-bg);
     color:var(--ink); font-size:13px; font-weight:700; cursor:pointer; -webkit-tap-highlight-color:transparent;
   }
   .vitrine-mail-fields{display:none; flex-direction:column; gap:6px; margin-top:8px}
   .vitrine-mail-fields.open{display:flex}
   .vitrine-mail-email, .vitrine-mail-objet{
-    font:inherit; font-size:12.5px; color:var(--ink); background:#2E2E32;
+    font:inherit; font-size:12.5px; color:var(--ink); background:var(--field-bg);
     border:0.5px solid rgba(255,255,255,.18); border-radius:9px; padding:8px 10px;
   }
   .vitrine-mail-corps{
-    width:100%; box-sizing:border-box; font:inherit; font-size:13px; color:var(--ink); background:#2E2E32;
+    width:100%; box-sizing:border-box; font:inherit; font-size:13px; color:var(--ink); background:var(--field-bg);
     border:0.5px solid rgba(255,255,255,.18); border-radius:10px; padding:9px 11px; resize:vertical;
   }
   .vitrine-mail-send{
@@ -2377,7 +2445,7 @@
   .vitrine-notes-fields{display:none; flex-direction:column; gap:6px; margin-top:8px}
   .vitrine-notes-fields.open{display:flex}
   .vitrine-notes-area{
-    width:100%; box-sizing:border-box; font:inherit; font-size:13px; color:var(--ink); background:#2E2E32;
+    width:100%; box-sizing:border-box; font:inherit; font-size:13px; color:var(--ink); background:var(--field-bg);
     border:0.5px solid rgba(255,255,255,.18); border-radius:10px; padding:9px 11px; resize:vertical;
   }
   .vitrine-notes-save{
@@ -2387,7 +2455,7 @@
   .vitrine-notes-save:disabled{opacity:.5}
   .vitrine-devis-box{margin-bottom:10px}
   .vitrine-devis-toggle{
-    width:100%; padding:9px; border-radius:10px; border:0.5px solid rgba(255,255,255,.18); background:#2E2E32;
+    width:100%; padding:9px; border-radius:10px; border:0.5px solid rgba(255,255,255,.18); background:var(--field-bg);
     color:var(--ink); font-size:13px; font-weight:700; cursor:pointer; -webkit-tap-highlight-color:transparent;
   }
   .vitrine-devis-fields{display:none; flex-direction:column; gap:8px; margin-top:8px}
@@ -2400,14 +2468,14 @@
   .vitrine-devis-option-titre{flex:1}
   .vitrine-devis-option-prix{color:var(--muted); font-size:12.5px; flex:0 0 auto}
   .vitrine-devis-option-qte{
-    flex:0 0 40px; text-align:center; font:inherit; font-size:12.5px; color:var(--ink); background:#2E2E32;
+    flex:0 0 40px; text-align:center; font:inherit; font-size:12.5px; color:var(--ink); background:var(--field-bg);
     border:0.5px solid rgba(255,255,255,.18); border-radius:7px; padding:5px 2px;
   }
   .vitrine-devis-libre{display:flex; gap:8px; margin-top:4px}
   .vitrine-devis-libre-titre{flex:1; min-width:0}
   .vitrine-devis-libre-prix{flex:0 0 70px; text-align:center}
   .vitrine-devis-libre-titre, .vitrine-devis-libre-prix{
-    font:inherit; font-size:12.5px; color:var(--ink); background:#2E2E32;
+    font:inherit; font-size:12.5px; color:var(--ink); background:var(--field-bg);
     border:0.5px solid rgba(255,255,255,.18); border-radius:9px; padding:8px 10px;
   }
   .vitrine-devis-go{
@@ -2417,7 +2485,7 @@
   .vitrine-devis-go:disabled{opacity:.5}
   .vitrine-devis-result{
     display:none; align-items:center; gap:8px; margin-top:8px; padding:9px 10px; border-radius:10px;
-    background:#2E2E32; border:0.5px solid rgba(52,199,89,.4);
+    background:var(--field-bg); border:0.5px solid rgba(52,199,89,.4);
   }
   .vitrine-devis-result.open{display:flex}
   .vitrine-devis-result-url{flex:1; min-width:0; font-size:12px; color:var(--muted); overflow:hidden; text-overflow:ellipsis; white-space:nowrap}
@@ -2474,17 +2542,17 @@
   .plume-checklist{display:flex; flex-wrap:wrap; gap:6px; margin-bottom:10px}
   .plume-check{
     font-size:11.5px; font-weight:600; padding:5px 9px; border-radius:8px;
-    background:#2E2E32; color:var(--muted); border:0.5px solid rgba(255,255,255,.12);
+    background:var(--field-bg); color:var(--muted); border:0.5px solid rgba(255,255,255,.12);
   }
   .plume-check.done{background:rgba(52,199,89,.16); color:#34C759; border-color:rgba(52,199,89,.4)}
   .plume-next{
-    background:#2E2E32; border:0.5px solid rgba(224,166,79,.35); border-radius:10px;
+    background:var(--field-bg); border:0.5px solid rgba(224,166,79,.35); border-radius:10px;
     padding:10px 11px; margin-bottom:10px;
   }
   .plume-next b{font-size:12px; color:var(--gold-a); display:block; margin-bottom:4px}
   .plume-next span{font-size:13px; color:var(--ink); line-height:1.4}
   .plume-plan-toggle{
-    width:100%; padding:9px; border-radius:10px; border:0.5px solid rgba(255,255,255,.18); background:#2E2E32;
+    width:100%; padding:9px; border-radius:10px; border:0.5px solid rgba(255,255,255,.18); background:var(--field-bg);
     color:var(--ink); font-size:13px; font-weight:700; cursor:pointer; -webkit-tap-highlight-color:transparent;
     margin-bottom:10px;
   }
@@ -2494,7 +2562,7 @@
   .plume-plan-step + .plume-plan-step{border-top:0.5px solid rgba(255,255,255,.08)}
   .plume-plan-dot{
     flex:0 0 auto; width:10px; height:10px; border-radius:50%; margin-top:5px;
-    background:#2E2E32; border:1.5px solid rgba(255,255,255,.25);
+    background:var(--field-bg); border:1.5px solid rgba(255,255,255,.25);
   }
   .plume-plan-step.fait .plume-plan-dot{background:#34C759; border-color:#34C759}
   .plume-plan-step.en_cours .plume-plan-dot{background:var(--gold-a); border-color:var(--gold-a)}
@@ -2506,18 +2574,18 @@
   .plume-plan-resultat b{color:var(--gold-a); font-weight:700}
   .plume-rapport-box{margin-bottom:10px}
   .plume-rapport-toggle{
-    width:100%; padding:9px; border-radius:10px; border:0.5px solid rgba(255,255,255,.18); background:#2E2E32;
+    width:100%; padding:9px; border-radius:10px; border:0.5px solid rgba(255,255,255,.18); background:var(--field-bg);
     color:var(--ink); font-size:13px; font-weight:700; cursor:pointer; -webkit-tap-highlight-color:transparent;
   }
   .plume-rapport-fields{display:none; flex-direction:column; gap:6px; margin-top:8px}
   .plume-rapport-fields.open{display:flex}
   .plume-rapport-dest{font-size:12px; color:var(--muted)}
   .plume-rapport-sujet{
-    font:inherit; font-size:12.5px; color:var(--ink); background:#2E2E32;
+    font:inherit; font-size:12.5px; color:var(--ink); background:var(--field-bg);
     border:0.5px solid rgba(255,255,255,.18); border-radius:9px; padding:8px 10px;
   }
   .plume-rapport-corps{
-    width:100%; box-sizing:border-box; font:inherit; font-size:12.5px; color:var(--ink); background:#2E2E32;
+    width:100%; box-sizing:border-box; font:inherit; font-size:12.5px; color:var(--ink); background:var(--field-bg);
     border:0.5px solid rgba(255,255,255,.18); border-radius:10px; padding:9px 11px; resize:vertical; min-height:220px;
   }
   .plume-rapport-send{
@@ -2527,7 +2595,7 @@
   .plume-rapport-send:disabled{opacity:.5}
   .plume-rapport-envoye{font-size:12px; color:#34C759; font-weight:600; margin-top:2px; display:block}
   .plume-journal-toggle{
-    width:100%; padding:9px; border-radius:10px; border:0.5px solid rgba(255,255,255,.18); background:#2E2E32;
+    width:100%; padding:9px; border-radius:10px; border:0.5px solid rgba(255,255,255,.18); background:var(--field-bg);
     color:var(--ink); font-size:13px; font-weight:700; cursor:pointer; -webkit-tap-highlight-color:transparent;
   }
   .plume-journal-list{display:none; flex-direction:column; gap:8px; margin-top:8px}
@@ -2577,7 +2645,7 @@
   .notes-card.pending{opacity:.55}
   .notes-contenu-edit{
     width:100%; box-sizing:border-box; border:0.5px solid rgba(255,255,255,.25); border-radius:8px;
-    background:#2E2E32; color:var(--ink); font-size:14.5px; line-height:1.4; font-family:inherit; padding:6px 8px;
+    background:var(--field-bg); color:var(--ink); font-size:14.5px; line-height:1.4; font-family:inherit; padding:6px 8px;
     resize:none; overflow:hidden; min-height:40px;
   }
   /* Barre unique en langage naturel (2026-07-25 soir, "notes intelligentes" etape 1) -- toujours
@@ -2586,7 +2654,7 @@
   #notes-bar{display:flex; gap:8px; padding:0 14px 12px; align-items:center}
   #notes-bar-input{
     flex:1; padding:11px 14px; border-radius:20px; border:0.5px solid rgba(255,255,255,.18);
-    background:#2E2E32; color:var(--ink); font-size:14.5px; font-family:inherit;
+    background:var(--field-bg); color:var(--ink); font-size:14.5px; font-family:inherit;
   }
   #notes-bar-send{
     width:38px; height:38px; border-radius:50%; border:0; flex:0 0 auto; background:var(--gold-a);
@@ -2623,7 +2691,7 @@
      un formulaire -- c'est ce qui rend la barre langage naturel utilisable meme si l'IA se trompe. */
   .notes-chips{display:flex; gap:6px; flex-wrap:wrap; margin-top:7px}
   .notes-chip{
-    font-size:11.5px; font-weight:700; padding:4px 10px; border-radius:99px; background:#2E2E32;
+    font-size:11.5px; font-weight:700; padding:4px 10px; border-radius:99px; background:var(--field-bg);
     color:var(--ink); border:0; cursor:pointer; -webkit-tap-highlight-color:transparent;
     -webkit-appearance:none; appearance:none; font-family:inherit;
   }
@@ -2648,12 +2716,15 @@
   .notes-age-tab{
     flex:0 0 auto; padding:6px 12px; border-radius:99px; border:0; font-size:12px; font-weight:700;
     background:transparent; color:var(--muted); cursor:pointer; -webkit-tap-highlight-color:transparent;
-    white-space:nowrap; border:1px solid rgba(255,255,255,.14);
+    white-space:nowrap; border:1px solid var(--soft-fill);
   }
-  .notes-age-tab.active{background:rgba(255,255,255,.14); color:var(--ink); border-color:transparent}
+  .notes-age-tab.active{background:var(--soft-fill); color:var(--ink); border-color:transparent}
+  /* Panneau Notes partage labo+MCS -- meme "etat actif franc" que .df-chip ci-dessus, meme
+     raisonnement (blanc-translucide invisible sur fond blanc), scope html.mcs-theme uniquement. */
+  html.mcs-theme .notes-age-tab.active{background:var(--blue); color:#fff}
   #notes-client-filter{
     margin:0 14px 10px; padding:8px 12px; border-radius:10px; border:0.5px solid rgba(255,255,255,.18);
-    background:#2E2E32; color:var(--ink); font-size:13px; -webkit-appearance:none; max-width:calc(100% - 28px);
+    background:var(--field-bg); color:var(--ink); font-size:13px; -webkit-appearance:none; max-width:calc(100% - 28px);
   }
   .notes-del{
     width:26px; height:26px; border-radius:50%; border:0; flex:0 0 auto; background:transparent;
@@ -2675,7 +2746,7 @@
     cursor:pointer; -webkit-tap-highlight-color:transparent;
   }
   .notes-garder{background:var(--gold-a); color:var(--gold-ink)}
-  .notes-ignorer{background:#2E2E32; color:var(--muted)}
+  .notes-ignorer{background:var(--field-bg); color:var(--muted)}
   /* Panneau plein ecran "Emails" — theme CLAIR dedie façon Mail iOS (le reste de l'app reste sombre :
      les couleurs sont re-definies en variables locales sur #emailsview, donc tous les elements
      enfants qui utilisent deja var(--bg)/var(--surface)/var(--ink)/var(--muted)/var(--hairline)
@@ -2926,7 +2997,7 @@
   #cal-form-bg.open{display:block}
   #cal-form{
     position:fixed; left:14px; right:14px; top:50%; transform:translateY(-50%) scale(.96); z-index:53;
-    background:#1C1C1E; border-radius:16px; padding:18px 18px calc(18px + env(safe-area-inset-bottom));
+    background:var(--surface); border-radius:16px; padding:18px 18px calc(18px + env(safe-area-inset-bottom));
     display:none; flex-direction:column; gap:10px; max-height:80vh; overflow-y:auto;
     opacity:0; transition:opacity .2s ease, transform .2s ease;
   }
@@ -2943,7 +3014,7 @@
   #cf-row{display:flex; gap:8px}
   #cf-sug{
     list-style:none; margin:2px 0 0; padding:0; border:0.5px solid rgba(255,255,255,.18); border-radius:10px;
-    overflow:hidden; position:absolute; left:0; right:0; top:100%; background:#333336; z-index:5;
+    overflow:hidden; position:absolute; left:0; right:0; top:100%; background:var(--dropdown-bg); z-index:5;
     max-height:180px; overflow-y:auto; display:none;
   }
   #cf-sug.open{display:block}
@@ -3032,13 +3103,13 @@
   #devis-form p.dfhint{font-size:12px; color:var(--muted); margin:0 0 4px}
   #devis-form label{display:flex; flex-direction:column; gap:5px; font-size:12.5px; color:var(--muted); position:relative}
   #devis-form input{
-    font:inherit; font-size:15px; color:var(--ink); background:#2E2E32;
+    font:inherit; font-size:15px; color:var(--ink); background:var(--field-bg);
     border:0.5px solid rgba(255,255,255,.18); border-radius:10px; padding:9px 11px; box-sizing:border-box;
   }
   #df-err{color:#FF453A; font-size:12.5px; min-height:1em}
   #df-sug{
     list-style:none; margin:2px 0 0; padding:0; border:0.5px solid rgba(255,255,255,.18); border-radius:10px;
-    overflow:hidden; position:absolute; left:0; right:0; top:100%; background:#333336; z-index:5;
+    overflow:hidden; position:absolute; left:0; right:0; top:100%; background:var(--dropdown-bg); z-index:5;
     max-height:180px; overflow-y:auto; display:none;
   }
   #df-sug.open{display:block}
@@ -3060,7 +3131,7 @@
   #fc-choice b{font-size:16px}
   .fc-choice-btn{
     display:flex; align-items:center; gap:12px; text-align:left; font:inherit;
-    background:#2E2E32; border:0.5px solid rgba(255,255,255,.18); border-radius:12px;
+    background:var(--field-bg); border:0.5px solid rgba(255,255,255,.18); border-radius:12px;
     padding:12px 14px; cursor:pointer; -webkit-tap-highlight-color:transparent;
   }
   .fc-choice-ic{font-size:22px; flex:0 0 auto}
@@ -3084,7 +3155,7 @@
   #fd-form b{font-size:16px}
   #fd-form label{display:flex; flex-direction:column; gap:5px; font-size:12.5px; color:var(--muted)}
   #fd-form input{
-    font:inherit; font-size:15px; color:var(--ink); background:#2E2E32;
+    font:inherit; font-size:15px; color:var(--ink); background:var(--field-bg);
     border:0.5px solid rgba(255,255,255,.18); border-radius:10px; padding:9px 11px; box-sizing:border-box;
   }
   #fd-dates-row{display:flex; gap:8px}
@@ -3137,7 +3208,7 @@
   }
   #mf-list{flex:1; overflow-y:auto; -webkit-overflow-scrolling:touch; display:flex; flex-direction:column; gap:10px}
   #mf-empty{color:var(--muted); font-size:13px; text-align:center; margin-top:20px}
-  .mf-card{background:#1D1D20; border-radius:12px; padding:12px; display:flex; flex-direction:column; gap:6px}
+  .mf-card{background:var(--card-bg-2); border-radius:12px; padding:12px; display:flex; flex-direction:column; gap:6px}
   .mf-card-avoir{border:0.5px solid rgba(255,69,58,.35)}
   .mf-card-avoir .mf-card-montant{color:#FF453A}
   .mf-card-head{display:flex; justify-content:space-between; gap:8px; align-items:baseline}
@@ -3161,7 +3232,7 @@
   .dv-fac-recap.open{display:flex}
   .dv-fac-recap-txt{font-size:13px; color:var(--muted)}
   .mf-avoir-form textarea{
-    font:inherit; font-size:13px; color:var(--ink); background:#2E2E32;
+    font:inherit; font-size:13px; color:var(--ink); background:var(--field-bg);
     border:0.5px solid rgba(255,255,255,.18); border-radius:10px; padding:8px 10px; box-sizing:border-box; resize:vertical; min-height:44px;
   }
   /* Fiche client PINNEE en haut de la discussion (Bruno uniquement, 2026-08-11, demande Matheo) --
@@ -3196,7 +3267,7 @@
   #bc-interventions{display:none; flex-direction:column; gap:8px; margin-top:10px; padding-top:10px; border-top:0.5px solid var(--hairline)}
   #bc-interventions.on{display:flex}
   #bc-int-title{font-size:12.5px; font-weight:700; color:var(--muted)}
-  .bc-int-card{background:#1D1D20; border-radius:12px; padding:12px; display:flex; flex-direction:column; gap:6px}
+  .bc-int-card{background:var(--card-bg-2); border-radius:12px; padding:12px; display:flex; flex-direction:column; gap:6px}
   .bc-int-nom{font-size:14px; font-weight:700; color:var(--ink)}
   .bc-int-objet{font-size:13px; color:var(--muted)}
   .bc-int-montant{font-size:13px; color:var(--gold-a); font-weight:700}
@@ -3209,13 +3280,13 @@
   .bc-type-btn.active{background:rgba(var(--gold-rgb),.15); color:var(--gold-a); border-color:rgba(var(--gold-rgb),.4)}
   #bc-form label{display:flex; flex-direction:column; gap:5px; font-size:12.5px; color:var(--muted); position:relative}
   #bc-form input{
-    font:inherit; font-size:15px; color:var(--ink); background:#2E2E32;
+    font:inherit; font-size:15px; color:var(--ink); background:var(--field-bg);
     border:0.5px solid rgba(255,255,255,.18); border-radius:10px; padding:9px 11px; box-sizing:border-box;
   }
   #bc-err{color:#FF453A; font-size:12.5px; min-height:1em}
   #bc-sug{
     list-style:none; margin:2px 0 0; padding:0; border:0.5px solid rgba(255,255,255,.18); border-radius:10px;
-    overflow:hidden; position:absolute; left:0; right:0; top:100%; background:#333336; z-index:5;
+    overflow:hidden; position:absolute; left:0; right:0; top:100%; background:var(--dropdown-bg); z-index:5;
     max-height:180px; overflow-y:auto; display:none;
   }
   #bc-sug.open{display:block}
@@ -3228,7 +3299,7 @@
      partagent deja bc-sug/df-sug pour Adresse). */
   #bc-nom-sug, #bc-residence-sug, #bc-contact-sug, #bc-ville-sug, #df-nom-sug, #df-residence-sug, #df-ville-sug, #df-contact-sug{
     list-style:none; margin:2px 0 0; padding:0; border:0.5px solid rgba(255,255,255,.18); border-radius:10px;
-    overflow:hidden; position:absolute; left:0; right:0; top:100%; background:#333336; z-index:5;
+    overflow:hidden; position:absolute; left:0; right:0; top:100%; background:var(--dropdown-bg); z-index:5;
     max-height:180px; overflow-y:auto; display:none;
   }
   #bc-nom-sug.open, #bc-residence-sug.open, #bc-contact-sug.open, #bc-ville-sug.open, #df-nom-sug.open, #df-residence-sug.open, #df-ville-sug.open, #df-contact-sug.open{display:block}
@@ -3245,7 +3316,7 @@
   #updModalBg.open{display:block}
   #updModal{
     position:fixed; left:22px; right:22px; top:50%; transform:translateY(-50%) scale(.96); z-index:71;
-    background:#1C1C1E; border-radius:18px; padding:26px 22px calc(20px + env(safe-area-inset-bottom));
+    background:var(--surface); border-radius:18px; padding:26px 22px calc(20px + env(safe-area-inset-bottom));
     display:none; flex-direction:column; align-items:center; text-align:center; gap:8px;
     opacity:0; transition:opacity .2s ease, transform .2s ease;
     box-shadow:0 24px 70px rgba(0,0,0,.55);
@@ -3266,7 +3337,7 @@
   #delModalBg.open{display:block}
   #delModal{
     position:fixed; left:22px; right:22px; top:50%; transform:translateY(-50%) scale(.96); z-index:71;
-    background:#1C1C1E; border-radius:18px; padding:26px 22px calc(20px + env(safe-area-inset-bottom));
+    background:var(--surface); border-radius:18px; padding:26px 22px calc(20px + env(safe-area-inset-bottom));
     display:none; flex-direction:column; align-items:center; text-align:center; gap:8px;
     opacity:0; transition:opacity .2s ease, transform .2s ease;
     box-shadow:0 24px 70px rgba(0,0,0,.55); max-width:360px; margin:0 auto;
@@ -3285,7 +3356,7 @@
   #plumeBilanBg.open{display:block}
   #plumeBilan{
     position:fixed; left:22px; right:22px; top:50%; transform:translateY(-50%) scale(.96); z-index:71;
-    background:#1C1C1E; border-radius:18px; padding:26px 22px calc(20px + env(safe-area-inset-bottom));
+    background:var(--surface); border-radius:18px; padding:26px 22px calc(20px + env(safe-area-inset-bottom));
     display:none; flex-direction:column; align-items:center; text-align:center; gap:8px;
     opacity:0; transition:opacity .2s ease, transform .2s ease;
     box-shadow:0 24px 70px rgba(0,0,0,.55);
@@ -3304,7 +3375,7 @@
   #msgSheetbg.open{display:block}
   #msgSheet{
     position:fixed; left:0; right:0; bottom:0; z-index:51;
-    background:#1C1C1E; border-radius:16px 16px 0 0;
+    background:var(--surface); border-radius:16px 16px 0 0;
     padding:8px 16px calc(16px + env(safe-area-inset-bottom));
     transform:translateY(105%); transition:transform .28s cubic-bezier(.2,.9,.25,1);
   }
@@ -4524,7 +4595,7 @@
 
 <script>
 (function(){
-  var APPV = 'v4.22';
+  var APPV = 'v4.23';
 
   // Debug : ?debug_modal=1 force l'affichage du modal "nouvelle version" sans attendre un vrai
   // déploiement. Capturé ICI, tout au début, car plus bas (login mémorisé, connexion) le code
@@ -4789,43 +4860,19 @@
           text: 'Validez pour créer la fiche — vous pourrez ensuite y ajouter l’accès, le gestionnaire, des notes utiles pour le prochain passage.' }
       ]
     },
+    // Point 1.3 (05/09/2026, RDV du 04/09) : "Mes contacts"/"Documents de reference" retires de
+    // l'accueil (Mickael : "je m'en fous" / "j'ai tous les trucs dans les dossiers") -- steps
+    // videes plutot que la config supprimee (meme convention deja utilisee dans ce fichier,
+    // cf. installTutoButtons() : `if (!cfg.steps.length) return;`) pour qu'AUCUN bouton ❓ ne
+    // soit jamais injecte dans #relations-head/#docref-head -- plus d'etape de tutoriel
+    // orpheline pointant vers un ecran que la tuile n'ouvre plus. Panneaux/HTML non touches.
     relations: {
       head: 'relations-head', close: 'relations-close',
-      steps: [
-        { selector: '#relations-tabs', title: 'Les 2 vues',
-          text: '« Tous » = tous vos interlocuteurs connus. « Avec promesse » = ceux qui vous ont dit « oui » sur quelque chose que vous attendez encore.' },
-        { selector: '#relations-search-wrap', title: 'Rechercher',
-          text: 'Tapez un nom ou une société pour retrouver un contact.' },
-        { selector: '#relations-summary', title: 'Résumé',
-          text: 'Un aperçu rapide de vos contacts et promesses en cours.' },
-        { selector: '#relations-list .rel-card', title: 'Une fiche contact',
-          text: 'Ce que Jarvis sait de cette personne : promesses en cours, historique des échanges.' },
-        // Point 7 (31/08/2026, gros chantier) : les 3 vrais etats (Point du 31/08 -- session
-        // precedente du meme jour) n'avaient aucune etape. ".rel-averifier-footer" n'existe que
-        // s'il reste au moins 1 contact a verifier -- saute silencieusement sinon, comme les
-        // autres etapes conditionnelles de ce fichier.
-        { selector: '#relations-list', title: 'Trois états, pas deux',
-          text: 'Un contact peut être visible (la liste que vous voyez), à vérifier (probablement un vrai contact, mais pas encore certain), ou exclu (spam/newsletter — jamais affiché). Jarvis classe automatiquement à partir des mails échangés.' },
-        { selector: '.rel-averifier-footer', title: 'Les contacts à vérifier',
-          text: 'S’il y en a, ce lien discret en bas de liste les montre — ils n’encombrent jamais la liste principale tant que vous n’allez pas les consulter volontairement.' }
-      ]
+      steps: []
     },
     docref: {
       head: 'docref-head', close: 'docref-close',
-      steps: [
-        { selector: '#docref-note', title: 'À quoi ça sert',
-          text: 'RIB, Kbis, assurance décennale… Jarvis peut les joindre tout seul à un mail quand un client les demande.' },
-        { selector: '#docref-add', title: 'Ajouter un document',
-          text: 'Cliquez ici pour ajouter un document. On regarde ensemble comment le remplir.' },
-        { selector: '#docreff-nom', open: '#docref-add', close: '#docreff-cancel', title: 'Le nom',
-          text: 'Un nom clair, ex : RIB MCS, Kbis, Assurance décennale.' },
-        { selector: '#docreff-mots-cles', open: '#docref-add', close: '#docreff-cancel', title: 'Les mots-clés',
-          text: 'C’est ce qui permet à Jarvis de reconnaître ce document dans un mail et de le proposer au bon moment.' },
-        { selector: '#docreff-choose', open: '#docref-add', close: '#docreff-cancel', title: 'Le fichier',
-          text: 'Choisissez le fichier depuis votre appareil.' },
-        { selector: '#docreff-save', open: '#docref-add', close: '#docreff-cancel', title: 'Enregistrer',
-          text: 'Une fois le fichier choisi, validez ici pour l’ajouter à vos documents de référence.' }
-      ]
+      steps: []
     },
     cal: {
       head: 'cal-head', close: 'cal-close',
@@ -5107,7 +5154,7 @@
   // conditionnelles de ce fichier), et le champ de conversation en bas.
   var TUTO_ACCUEIL_CONFIG = {
     steps: [
-      { selector: '#homeGrid', title: 'Vos onze raccourcis',
+      { selector: '#homeGrid', title: 'Vos neuf raccourcis',
         text: 'Chaque tuile ouvre un écran dédié -- appuyez dessus pour l’ouvrir. Vous pouvez à tout moment appuyer sur ❓ en haut de cet écran pour revoir ce tutoriel.' },
       { selector: '#mcsAccueil', title: 'Ce qu’il y a à savoir aujourd’hui',
         text: 'Quand il y a quelque chose d’important (une facture bloquée, une relance urgente…), ça apparaît ici, au-dessus des raccourcis. Rien à faire si c’est vide -- ça veut dire qu’il n’y a rien à signaler.' },
@@ -6212,13 +6259,19 @@
     // masquage cote client, le backend (chantier 10) n'est pas touché.
     var portefeuilleBtn = document.getElementById('sh-portefeuille');
     if (portefeuilleBtn) portefeuilleBtn.style.display = 'none';
-    // "Mes contacts" (2026-08-11, mémoire relationnelle) : mêmes règles d'accès que Relances/
-    // Rentabilité/Carnet bleu -- données relationnelles (promesses, résumés) jamais pour Bruno.
+    // "Mes contacts" (2026-09-05, retrait demandé par Mickael au RDV du 04/09 : "je m'en fous",
+    // dit deux fois) -- même pattern que "Portefeuille clients" ci-dessus : masquage pur côté
+    // client, le mécanisme de fond (mémoire relationnelle, table mcs_contacts) RESTE actif et
+    // rien n'est supprimé côté serveur -- il suffit de retirer ce 'none' inconditionnel pour
+    // que la tuile réapparaisse un jour si Mickael change d'avis.
     var relationsBtn = document.getElementById('sh-relations');
-    if (relationsBtn) relationsBtn.style.display = (mcs && role === 'patron') ? '' : 'none';
-    if (mcs && role === 'patron') relationsCheckBadge(); else if (relationsMenuBadge) relationsMenuBadge.style.display = 'none';
+    if (relationsBtn) relationsBtn.style.display = 'none';
+    if (relationsMenuBadge) relationsMenuBadge.style.display = 'none';
+    // "Documents de référence" (2026-09-05, retrait demandé par Mickael au RDV du 04/09 :
+    // "j'ai tous les trucs directement dans les dossiers, je m'envoie un mail en deux secondes")
+    // -- même masquage pur, même non-suppression côté serveur.
     var docrefBtn = document.getElementById('sh-docref');
-    if (docrefBtn) docrefBtn.style.display = (mcs && role === 'patron') ? '' : 'none';
+    if (docrefBtn) docrefBtn.style.display = 'none';
     // Transparence (Phase 5) : visible seulement côté tenant secondaire — c'est CE
     // compte-là que le support peut consulter, l'inverse exact de la liste ci-dessus.
     var privacyNote = document.getElementById('privacy-note');
@@ -6368,18 +6421,22 @@
       case 'devis':
         return n + ' devis à valider';
       case 'contrats': {
-        // Sujet 3.1 (01/09/2026) : meme format que la ligne relances -- nombre + montant TTC,
+        // Sujet 3.1 (01/09/2026) : meme format que la ligne relances -- nombre + montant,
         // repli sur l'ancien texte sans montant si le serveur n'a pas encore ce champ (montee de
         // version partielle, jamais de ligne cassee).
+        // Sujet HT/TTC (05/09/2026) : montant desormais en HT (l.montantEur vient du serveur en
+        // prix_ht depuis ce meme chantier) -- ce que MCS produit s'affiche toujours hors-taxe.
         var t3 = n + (n > 1 ? ' contrats à facturer' : ' contrat à facturer');
         if (l.montantEur != null){
-          t3 += ' — ' + Math.round(Number(l.montantEur) || 0).toLocaleString('fr-FR') + ' €';
+          t3 += ' — ' + Math.round(Number(l.montantEur) || 0).toLocaleString('fr-FR') + ' € HT';
         }
         return t3;
       }
       case 'relances': {
+        // Sujet HT/TTC (05/09/2026) : mention explicite "TTC" -- ce que les clients doivent
+        // (une creance) reste en TTC, comme avant, mais desormais toujours dit en toutes lettres.
         var montant = Math.round(Number(l.montantEur) || 0).toLocaleString('fr-FR');
-        var t = n + (n > 1 ? ' relances — ' : ' relance — ') + montant + ' €';
+        var t = n + (n > 1 ? ' relances — ' : ' relance — ') + montant + ' € TTC';
         if (typeof l.snapshotAgeHeures === 'number' && l.snapshotAgeHeures > 30 && l.snapshotDate){
           t += ' au ' + accueilDateCourte(l.snapshotDate);
         }
@@ -6487,7 +6544,13 @@
     // (contrairement a une fiche enrichie ou un digicode detecte). C'est pour ca que la
     // decision validee mentionne "12 mails" DANS la phrase de repli elle-meme, jamais comme
     // une ligne active a part entiere quand les 6 lignes metier sont vides.
-    var ORDRE_METIER = ['devis', 'contrats', 'propositions', 'relances', 'rdv', 'observations', 'prospects'];
+    // Point 1.2/1.6 (05/09/2026, RDV du 04/09) : 'observations' retire (tuile "Mes contacts"
+    // masquee, plus de cible pour cette ligne -- rien de supprime cote serveur, la table
+    // continue d'exister, cf. Preparer accueil (web)/n8n) ; 'contrats' et 'relances' places EN
+    // TETE -- c'est explicitement ce que Mickael a dit apprecier ("ca c'est bien de savoir
+    // combien de contrats j'ai a faire tous les mois, des que tu ouvres l'application, c'est
+    // parfait").
+    var ORDRE_METIER = ['contrats', 'relances', 'devis', 'rdv', 'propositions', 'prospects'];
     var parType = {};
     j.lignes.forEach(function(l){ if (l && l.type) parType[l.type] = l; });
 
@@ -8447,16 +8510,20 @@
   //    metier n'est jamais stocke tel quel en base). Meme correspondance deja utilisee ailleurs
   //    dans ce fichier (contratsBuildMoisCard/contratsBuildPrevisionnelCard), pas inventee ici.
   function contratsBuildCatalogueCA(data){
+    // Sujet HT/TTC (05/09/2026, demande explicite de Mickael : "moi je parle que hors-taxe,
+    // tout le temps") : ce que MCS PRODUIT (le catalogue) s'affiche desormais en prix_ht, jamais
+    // prix_ttc -- avant, ce bandeau additionnait prix_ttc sans le dire, d'ou l'ecart de ~26 000 €
+    // vu par Mickael face a son propre classeur (deja en HT chez lui).
     var caVmc = 0, caDerat = 0;
     (data || []).forEach(function(c){
-      var v = Number(c.prix_ttc) || 0;
+      var v = Number(c.prix_ht) || 0;
       if (c.type_contrat === 'VMC') caVmc += v; else caDerat += v;
     });
     var wrap = document.createElement('div'); wrap.id = 'contrats-ca-secteur';
     function bloc(label, montant, cls){
       var b = document.createElement('div'); b.className = 'ct-ca-bloc' + (cls ? ' ' + cls : '');
       var l = document.createElement('span'); l.className = 'ct-ca-label'; l.textContent = label;
-      var v = document.createElement('span'); v.className = 'ct-ca-val'; v.textContent = fmtEuro(montant);
+      var v = document.createElement('span'); v.className = 'ct-ca-val'; v.textContent = fmtEuro(montant) + ' HT';
       b.appendChild(l); b.appendChild(v);
       return b;
     }
@@ -8526,14 +8593,15 @@
       // "Passe" = mois deja ecoule dans l'annee civile en cours (avant le mois en cours) --
       // jamais le mois en cours lui-meme, meme s'il est deja bien avance.
       var estPasse = idx !== 0 && idx < contratsMoisMois;
-      var totalTtc = liste.reduce(function(s, c){ return s + (Number(c.prix_ttc) || 0); }, 0);
+      // Sujet HT/TTC (05/09/2026) : total HT, jamais TTC -- catalogue = ce que MCS produit.
+      var totalHt = liste.reduce(function(s, c){ return s + (Number(c.prix_ht) || 0); }, 0);
       var nomMois = idx === 0 ? 'Mois illisible' : CONTRATS_MOIS_NOMS[idx - 1];
       var section = document.createElement('div'); section.className = 'ct-mois-section' + (estPasse ? ' replie' : '');
       var head = document.createElement('button'); head.type = 'button'; head.className = 'ct-mois-head';
       var titre = document.createElement('span'); titre.className = 'ct-mois-titre';
       titre.textContent = nomMois + (estMoisEnCours ? ' (en cours)' : '');
       var compte = document.createElement('span'); compte.className = 'ct-mois-compte';
-      compte.textContent = liste.length + ' contrat' + (liste.length > 1 ? 's' : '') + ' · ' + fmtEuro(totalTtc);
+      compte.textContent = liste.length + ' contrat' + (liste.length > 1 ? 's' : '') + ' · ' + fmtEuro(totalHt) + ' HT';
       var chevron = document.createElement('span'); chevron.className = 'ct-mois-chevron'; chevron.textContent = estPasse ? '▸' : '▾';
       head.appendChild(titre); head.appendChild(compte); head.appendChild(chevron);
       var body = document.createElement('div'); body.className = 'ct-mois-body';
@@ -8597,10 +8665,11 @@
     ordre.forEach(function(fam){
       var liste = groupes[fam];
       if (!liste || !liste.length) return;
-      var total = liste.reduce(function(s, f){ return s + (Number(f.prix_ttc) || 0); }, 0);
+      // Sujet HT/TTC (05/09/2026) : total HT, jamais TTC -- catalogue = ce que MCS produit.
+      var total = liste.reduce(function(s, f){ return s + (Number(f.prix_ht) || 0); }, 0);
       var head = document.createElement('div'); head.className = 'ct-famille-head';
       var lab = document.createElement('span'); lab.className = 'ct-famille-label'; lab.textContent = (CONTRATS_FAMILLE_LABEL[fam] || fam) + ' (' + liste.length + ')';
-      var tot = document.createElement('span'); tot.className = 'ct-famille-total'; tot.textContent = fmtEuro(total);
+      var tot = document.createElement('span'); tot.className = 'ct-famille-total'; tot.textContent = fmtEuro(total) + ' HT';
       head.appendChild(lab); head.appendChild(tot);
       out.push(head);
       liste.forEach(function(f){ out.push(contratsBuildMoisCard(f)); });
@@ -10736,7 +10805,7 @@
     t.clientsDistincts.forEach(function(c){ var s = document.createElement('span'); s.textContent = c; clientsWrap.appendChild(s); });
     card.appendChild(clientsWrap);
     if (suspendu){ var bs = document.createElement('span'); bs.className = 'df-badge suspendu'; bs.textContent = '⏸ Suspendue'; card.appendChild(bs); }
-    var montant = document.createElement('span'); montant.className = 'rl-montant-gros'; montant.textContent = fmtEuros(t.totalTTC) + ' dû';
+    var montant = document.createElement('span'); montant.className = 'rl-montant-gros'; montant.textContent = fmtEuros(t.totalTTC) + ' TTC dû';
     card.appendChild(montant);
     var anc = document.createElement('span'); anc.className = 'rl-anciennete';
     anc.textContent = 'La plus ancienne remonte à ' + t.joursRetardMax + ' j.';
@@ -10808,7 +10877,7 @@
       var bs = document.createElement('span'); bs.className = 'df-badge suspendu'; bs.textContent = '⏸ Suspendue'; card.appendChild(bs);
     }
     // 2) Montant + anciennete
-    var montant = document.createElement('span'); montant.className = 'rl-montant-gros'; montant.textContent = fmtEuros(b.totalTTC) + ' dû';
+    var montant = document.createElement('span'); montant.className = 'rl-montant-gros'; montant.textContent = fmtEuros(b.totalTTC) + ' TTC dû';
     card.appendChild(montant);
     var anc = document.createElement('span'); anc.className = 'rl-anciennete';
     anc.textContent = 'La plus ancienne remonte à ' + b.joursRetardMax + ' j.';
