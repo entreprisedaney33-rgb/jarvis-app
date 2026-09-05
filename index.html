@@ -166,6 +166,17 @@
      override necessaire (pas juste border-color) car la regle de base est en 0.5px. */
   html.mcs-theme .sh-tile{background:#FFFFFF; border:2px solid var(--blue)}
   html.mcs-theme .sh-tile:active{background:#E5F0FA}
+  /* Session 2 quater, point 1a : REGRESSION signalee par Dorian sur la v4.26 -- .sh-tile-ic
+     (halo colore decoratif derriere l'emoji, meme motif que .ma-ligne-ic) et .sh-tile-label
+     (le texte) sont des ENFANTS de .sh-tile (deja bordee juste au-dessus) et avaient recu, par
+     erreur, leur PROPRE bordure/fond dans un lot de corrections trop large (Session 2 ter,
+     point 1) -- 3 cadres imbriques pour 1 seul bouton. Principe desormais explicite (voir
+     jarvis/telecommande-pages/CLAUDE.md) : la bordure/le fond appartiennent a l'element
+     interactif le plus exterieur, jamais a ses enfants. .sh-tile-ic : halo neutralise (le
+     labo garde le sien, gold-rgb resout differemment). .sh-tile-label : deja sans fond de
+     base, l'override incorrect a ete retire du lot (voir plus bas dans ce fichier) -- reste
+     seulement son override de taille (14px), legitime. */
+  html.mcs-theme .sh-tile-ic{background:transparent; color:var(--blue)}
   *{box-sizing:border-box; -webkit-tap-highlight-color:transparent}
   html{-webkit-text-size-adjust:100%; height:100%}
   body{
@@ -347,6 +358,12 @@
   html.mcs-theme .ma-ligne{
     background:#FFFFFF; border:2px solid var(--blue); padding:12px 14px; font-size:16px; min-height:44px;
   }
+  /* Session 2 quater, point 1a : .ma-ligne-ic est un ENFANT de .ma-ligne (deja bordee juste
+     au-dessus) -- son fond decoratif de base (rgba(var(--gold-rgb),.13), un halo colore derriere
+     l'emoji) devient un 2e cadre colore a l'interieur d'un bouton deja borde. La bordure/le fond
+     appartiennent a l'element cliquable le plus exterieur (.ma-ligne) ; ses enfants n'en ont
+     jamais. Neutralise ICI (mcs-theme uniquement, le labo garde son halo dore d'origine). */
+  html.mcs-theme .ma-ligne-ic{background:transparent; color:inherit}
   /* Turquoise sur l'accueil (25/08/2026) : meme traitement que .sh-tile-ic (pastille +
      rgba(var(--gold-rgb),.13)), volontairement plus petit (32px, pas 44) -- une tuile de menu
      grossit l'ecran d'accueil, pas la ligne du Point du jour. Compense le padding vertical de
@@ -4323,15 +4340,23 @@
   {background:#FFFFFF; border:1.5px solid var(--hairline)}
   html.mcs-theme .fd-ligne-add-btn,
   html.mcs-theme .ik-sug li,
-  html.mcs-theme .mem-badge,
   html.mcs-theme .meute-act-btn,
   html.mcs-theme .mf-btn-avoir,
-  html.mcs-theme .notes-auto-badge,
   html.mcs-theme .notes-chip.echeance,
   html.mcs-theme .notes-chip.echeance.retard,
   html.mcs-theme .notes-chip.lien,
   html.mcs-theme .notes-client-chip
   {background:#FFFFFF; border:1.5px solid var(--hairline)}
+  /* .mem-badge (texte simple, pas un bouton) : retire du lot ci-dessus (Session 2 quater,
+     point 1a) -- un cadre autour d'un texte informatif n'a pas de sens, ce n'est pas cliquable. */
+  /* .notes-auto-badge : retire du lot ci-dessus (Session 2 quater, point 1b) -- c'est un
+     INDICATEUR (badge colore avec sa propre teinte de base rgba(232,178,92,.18)+texte gold-a),
+     pas un bouton -- un contour gris generique ecrasait sa teinte semantique. Renforce comme
+     les autres badges de statut deja traites (meme principe que .df-badge.*) plutot qu'un
+     contour neutre. */
+  html.mcs-theme .notes-auto-badge{
+    background:rgba(138,75,0,.14); border:1.5px solid var(--warn); color:var(--warn);
+  }
   html.mcs-theme .notes-group-head,
   html.mcs-theme .notes-ignorer,
   html.mcs-theme .notes-source-chip,
@@ -4357,9 +4382,6 @@
   html.mcs-theme .rl-tri-btn,
   html.mcs-theme .sh-item,
   html.mcs-theme .sh-mini-check.busy,
-  html.mcs-theme .sh-tile .badge-count,
-  html.mcs-theme .sh-tile-ic,
-  html.mcs-theme .sh-tile-label,
   html.mcs-theme .tuto-btn,
   html.mcs-theme .tvr-row .tvr-toggle,
   html.mcs-theme .upd-row button,
@@ -4704,6 +4726,13 @@
   html.mcs-theme .upd-row button.vc-ok, html.mcs-theme .ct-actions .vc-ok{background:var(--ok); color:#fff}
   html.mcs-theme .upd-row button.vc-no, html.mcs-theme .ct-actions .vc-no,
   html.mcs-theme .docref-actions .vc-no{background:#FFFFFF; color:var(--no); border-color:var(--no)}
+
+  /* Session 2 ter, point 3 : le numero de version (#loginver sur l'ecran de connexion,
+     #subline sous le nom dans l'en-tete) porte desormais le tenant + le build -- Mickael doit
+     pouvoir le lire "au telephone sans le chercher". Exigence plus stricte que le plancher
+     secondaire general (14px, .hint/.sh-ver) : 16px + contraste texte courant (7:1), sur ces
+     2 ID PRECIS uniquement, sans changer les autres usages de .hint/.sh-ver ailleurs. */
+  html.mcs-theme #loginver, html.mcs-theme #subline{font-size:16px; color:var(--ink)}
 </style>
 </head>
 <body>
@@ -5778,7 +5807,26 @@
 
 <script>
 (function(){
-  var APPV = 'v4.26';
+  /* Session 2 ter (05-06/09/2026) : un seul index.html sert 2 tenants (MCS/LABO), qui
+     evoluent a des rythmes independants -- une seule ligne "var APPV" garantissait un
+     conflit d'edition entre les 2 cotes tot ou tard. 3 constantes desormais :
+       - APPV_MCS / APPV_LABO : a la main, chacune UNIQUEMENT modifiee par la personne qui
+         travaille sur SON tenant (jamais l'autre chiffre).
+       - BUILD : entier, incremente UNIQUEMENT par scripts/push-jarvis-app-protege.py a
+         chaque deploiement reussi (quel que soit le tenant touche) -- jamais a la main,
+         c'est ce qui supprime le conflit humain sur cette ligne precise. Sert aussi de cle
+         unique de detection de mise a jour (voir checkUpdate ci-dessous), plus fiable qu'une
+         comparaison de chaine de version par tenant. */
+  var APPV_MCS = '4.27';
+  var APPV_LABO = '1.00';
+  var BUILD = 2;
+  // displayVersion()/displayVersionShort() lisent isMcsCode() (definie plus bas dans cette
+  // meme IIFE -- declaration de fonction, donc disponible ici par hoisting) : le TENANT
+  // affiche depend du code de connexion, jamais d'un simple "APPV" global qui ne dirait ni
+  // le tenant ni qui l'a produit.
+  function displayVersion(){
+    return (isMcsCode() ? ('MCS ' + APPV_MCS) : ('LABO ' + APPV_LABO)) + ' · build ' + BUILD;
+  }
 
   // Debug : ?debug_modal=1 force l'affichage du modal "nouvelle version" sans attendre un vrai
   // déploiement. Capturé ICI, tout au début, car plus bas (login mémorisé, connexion) le code
@@ -5799,11 +5847,15 @@
     fetch('./version.json?t=' + Date.now(), { cache:'no-store' })
       .then(function(r){ return r.json(); })
       .then(function(j){
-        if (!j || !j.v || ('v' + j.v) === APPV) return;
+        // Session 2 ter : BUILD (un seul entier, incremente a CHAQUE deploiement quel que
+        // soit le tenant touche) remplace la comparaison de chaine "v4.xx" -- fiable meme
+        // quand seul APPV_LABO (ou seul APPV_MCS) a change, ce qu'une comparaison sur le
+        // seul tenant courant aurait pu manquer.
+        if (!j || j.build == null || Number(j.build) === BUILD) return;
         var tried = null;
         try { tried = sessionStorage.getItem('majTentee'); } catch(e){}
-        if (tried === j.v) return; // déjà tenté (nouvelle version en cours de propagation)
-        try { sessionStorage.setItem('majTentee', j.v); } catch(e){}
+        if (tried === String(j.build)) return; // déjà tenté (nouvelle version en cours de propagation)
+        try { sessionStorage.setItem('majTentee', String(j.build)); } catch(e){}
         location.replace(location.pathname + '?u=' + Date.now());
       }).catch(function(){});
   }
@@ -6482,9 +6534,11 @@
   // zone (textin/sendbtn/micbtn capturent deja tot pour la meme raison).
   var devisAmbiguWrap = document.getElementById('devis-ambigu-wrap');
   var subline = document.getElementById('subline');
-  // Version affichée = TOUJOURS APPV (sert au diagnostic à distance : elle ne doit jamais mentir)
+  // Version affichée = TOUJOURS displayVersion() (sert au diagnostic à distance : elle ne
+  // doit jamais mentir) -- Session 2 ter : dit desormais le TENANT + qui a produit quoi
+  // (via BUILD, trace dans CHANGELOG-DEPLOIEMENTS.md), pas juste un numero de version isole.
   var loginver = document.getElementById('loginver');
-  if (loginver) loginver.textContent = APPV;
+  if (loginver) loginver.textContent = displayVersion();
 
   // Clavier iOS : garder la conversation calée en bas (sans toucher a la hauteur du body)
   if (window.visualViewport){
@@ -6579,7 +6633,13 @@
     }
   }
   function read(k){
-    if (mem[k] !== undefined) return mem[k];
+    // Session 2 ter : garde ajoutee apres un vrai plantage trouve en testant -- displayVersion()
+    // (donc isMcsCode() -> read()) est appelee TRES tot (loginver.textContent, avant meme que
+    // "var mem = {}" plus bas dans ce fichier ait ete EXECUTEE, seulement hoistee) -> mem valait
+    // encore undefined et "mem[k]" levait "Cannot read properties of undefined", plantant tout
+    // le reste du script. mem est garanti defini par la suite ; ce garde couvre tout futur appel
+    // aussi precoce sans avoir a reordonner le fichier (plus sur).
+    if (mem && mem[k] !== undefined) return mem[k];
     try { var v = localStorage.getItem(k); if (v !== null) return v; } catch(e){}
     if (k === 'jarvisCode') return urlCode();
     return null;
@@ -7322,7 +7382,7 @@
   function enterApp(nom, msgs, extras){
     login.style.display = 'none';
     app.style.display = 'flex';
-    subline.textContent = (nom ? ('Assistant de ' + nom + ' — en ligne') : 'en ligne') + ' · ' + APPV + ' · H' + window.innerHeight + '/' + ((screen && screen.height) || '?');
+    subline.textContent = (nom ? ('Assistant de ' + nom + ' — en ligne') : 'en ligne') + ' · ' + displayVersion() + ' · H' + window.innerHeight + '/' + ((screen && screen.height) || '?');
     renderHistory(msgs, extras);
     if (forceModalTest) showUpdateModal(); else maybeOfferPushOnUpdate();
     // Un compte tenant secondaire n'a ni les outils métier du compte principal
@@ -8150,13 +8210,14 @@
   document.getElementById('upd-no').addEventListener('click', function(){ updOpen(false); });
   updBg.addEventListener('click', function(){ updOpen(false); });
   function showUpdateModal(){
-    updTitle.textContent = '🆕 Nouvelle version ' + APPV + ' installée';
+    updTitle.textContent = '🆕 Nouvelle version ' + displayVersion() + ' installée';
     updOpen(true);
   }
   function maybeOfferPushOnUpdate(){
     var seen = read('jarvisAppVersion');
-    if (seen === APPV) return; // deja vu cette version (ou deja propose pour elle)
-    store('jarvisAppVersion', APPV);
+    var courant = displayVersion();
+    if (seen === courant) return; // deja vu cette version (ou deja propose pour elle)
+    store('jarvisAppVersion', courant);
     if (!seen) return; // premiere ouverture jamais faite sur cet appareil : pas une mise a jour
     if (!pushSupported) return; // rien a proposer si le navigateur ne sait meme pas faire de push
     // Systematique des qu'une vraie mise a jour est detectee, MEME si les notifs semblent deja
