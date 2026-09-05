@@ -99,16 +99,39 @@
      deja dans Emails/Agenda sans creer une 3e palette. */
   html.mcs-theme{
     --bg:#F2F2F7; --surface:#FFFFFF; --bubble:#E9E9EB;
-    --hairline:#D8D8DE; --ink:#1D1D1F; --muted:#6E6E73;
+    /* Session 2 bis (05/09/2026, "l'écran il est trop noir" -> contraste MESURÉ, pas jugé à
+       l'oeil) : --hairline, --muted, --blue/--gold-a/--gold-b, --ok, --no repris depuis la
+       version d'origine (05/09 matin) qui echouait au calcul reel (formule WCAG) :
+         --hairline #D8D8DE -> 1.42:1 sur blanc (cible bordures/separateurs : 3:1) -- ECHEC
+         --muted    #6E6E73 -> 4.54:1 sur --bg (cible texte secondaire : 4,5:1) -- limite, sans marge
+         --blue/gold-a #0A84FF -> 3.65:1 (cible texte courant : 7:1 ; boutons/gros textes : 4,5:1) -- ECHEC LARGE
+         --ok  #30D158 -> 2.02:1, --no #FF453A -> 3.41:1 (statuts "Payee"/"Impayee" en texte) -- ECHEC
+       Nouvelles valeurs, verifiees par script (formule de luminance relative + ratio WCAG),
+       toutes avec marge au-dessus de leur cible :
+         --hairline #8A8A8E -> 3.44:1 sur blanc / 3.08:1 sur --bg (cible 3:1)
+         --muted    #525256 -> 7.78:1 sur blanc / 6.97:1 sur --bg (cible 4,5:1, marge large)
+         --blue/gold-a #0050A0 -> 7.91:1 sur blanc, texte blanc dessus aussi 7.91:1 (cible 7:1)
+         --ok  #1B6B2E -> 6.58:1 sur blanc, --no #B00010 -> 7.36:1 sur blanc (cible 4,5:1, marge large)
+       AUCUNE de ces variables n'existe dans :root (le theme sombre du labo n'est pas concerne),
+       donc zero impact labo -- seul html.mcs-theme change. */
+    --hairline:#8A8A8E; --ink:#1D1D1F; --muted:#525256; --blue:#0050A0;
     --field-bg:#F2F2F7; --dropdown-bg:#FFFFFF; --card-bg-2:#F7F7F9; --bg2:#F2F2F7;
-    --chip-border:rgba(0,0,0,.16); --chip-active-border:var(--blue); --soft-fill:rgba(10,132,255,.12);
+    --chip-border:var(--blue); --chip-active-border:var(--blue); --soft-fill:rgba(10,132,255,.12);
     --soft-fill-10:#F2F2F7; --soft-fill-08:#F2F2F7; --soft-fill-06:#F7F7F9;
     --edit-box-bg:var(--field-bg);
-    /* Accent = bleu (au lieu du turquoise du 25/08, remplace par ce chantier -- cf. commentaire
-       ci-dessus). --gold-ink-2 DOIT etre reecrit en blanc ici (contrairement au choix du 25/08
-       qui gardait l'encre sombre pour le turquoise) : un texte sombre sur fond bleu #0A84FF
-       echouerait le contraste, la ou il passait sur le turquoise plus clair. */
-    --gold-a:#0A84FF; --gold-b:#0060DF; --gold-rgb:10,132,255;
+    --ok:#1B6B2E; --no:#B00010;
+    /* Session 2 bis (05/09/2026, point 3, suite) : meme decouverte que ci-dessus pour l'orange
+       d'alerte iOS-dark-mode utilise en dur (#FF9F0A) dans ~28 endroits ("designations a
+       confirmer", freshness perimee, expiration proche...) -- #FF9F0A sur blanc = 2.06:1,
+       ECHEC LARGE (cible secondaire 4,5:1). Nouvelle variable (n'existait pas avant, donc 0
+       impact labo -- les regles de base gardent #FF9F0A en dur, jamais lu via var()) :
+       --warn #8A4B00 -> 6.80:1 sur blanc / 6.10:1 sur --bg (marge large). Utilisee par le lot de
+       surcharges html.mcs-theme plus bas (color:#FF9F0A -> color:var(--warn)). */
+    --warn:#8A4B00;
+    /* Accent = bleu (au lieu du turquoise du 25/08). --gold-ink-2 DOIT etre reecrit en blanc ici
+       (contrairement au choix du 25/08 qui gardait l'encre sombre pour le turquoise) : un texte
+       sombre sur fond bleu echouerait le contraste, la ou il passait sur le turquoise plus clair. */
+    --gold-a:#0050A0; --gold-b:#003D75; --gold-rgb:0,80,160;
     --gold-splash-light:#BFE0FF;
     --gold-ink:#FFFFFF; --gold-ink-2:#FFFFFF;
   }
@@ -137,8 +160,12 @@
   html.mcs-theme .sh-group{background:rgba(0,0,0,.035)}
   html.mcs-theme .sh-item{border-top-color:rgba(0,0,0,.08)}
   html.mcs-theme .sh-item:active{background:rgba(0,0,0,.05)}
-  html.mcs-theme .sh-tile{background:var(--field-bg); border-color:rgba(0,0,0,.1)}
-  html.mcs-theme .sh-tile:active{background:#E5E5EA}
+  /* Session 2 bis (05/09/2026, point 1.1) : "elles doivent se lire comme neuf boutons separes" --
+     fond BLANC (pas gris clair, pour trancher net avec le fond de page --bg gris tres clair) +
+     contour bleu MCS 2px (0.5px etait invisible a distance/sur un ecran mediocre). border-width
+     override necessaire (pas juste border-color) car la regle de base est en 0.5px. */
+  html.mcs-theme .sh-tile{background:#FFFFFF; border:2px solid var(--blue)}
+  html.mcs-theme .sh-tile:active{background:#E5F0FA}
   *{box-sizing:border-box; -webkit-tap-highlight-color:transparent}
   html{-webkit-text-size-adjust:100%; height:100%}
   body{
@@ -309,6 +336,17 @@
     -webkit-touch-callout:none; -webkit-user-select:none; user-select:none;
   }
   .ma-ligne:active{opacity:.7}
+  /* Session 2 bis (05/09/2026, point 1.3) : les tuiles de recap du Point du jour doivent se lire
+     comme des boutons vers l'onglet correspondant, pas comme une liste de texte -- fond blanc +
+     contour bleu 2px, meme famille que .sh-tile/.df-chip. Padding et taille remontes pour la
+     cible tactile 44px (5.5px de padding + 14.5px de texte ne faisaient qu'environ 30px de haut)
+     et pour rester au-dessus du plancher "texte courant" (16px, cette ligne porte l'info
+     principale du panneau, pas une metadonnee). #mcsAccueil reste scrollable (overflow-y:auto
+     deja pose) si moins de lignes tiennent desormais dans les 46vh -- accepte, la lisibilite
+     prime. */
+  html.mcs-theme .ma-ligne{
+    background:#FFFFFF; border:2px solid var(--blue); padding:12px 14px; font-size:16px; min-height:44px;
+  }
   /* Turquoise sur l'accueil (25/08/2026) : meme traitement que .sh-tile-ic (pastille +
      rgba(var(--gold-rgb),.13)), volontairement plus petit (32px, pas 44) -- une tuile de menu
      grossit l'ecran d'accueil, pas la ligne du Point du jour. Compense le padding vertical de
@@ -826,6 +864,13 @@
     -webkit-tap-highlight-color:transparent; white-space:nowrap;
   }
   .devis-tab.active{background:var(--gold-a); color:var(--gold-ink); border-color:var(--gold-a)}
+  /* Session 2 bis (05/09/2026, points 1.2 + 2) : meme traitement que .df-chip -- inactif = fond
+     blanc + contour bleu 2px + texte bleu, actif = bleu plein + texte blanc (deja correct via
+     --gold-a/--gold-ink, juste l'epaisseur du contour a corriger). Taille 13px -> 14px. */
+  html.mcs-theme .devis-tab{
+    background:#FFFFFF; border:2px solid var(--blue); color:var(--blue); font-size:14px;
+  }
+  html.mcs-theme .devis-tab.active{border-color:var(--gold-a)}
   #devis-search-wrap{flex:0 0 auto; padding:10px 14px 0}
   #devis-search{
     width:100%; box-sizing:border-box; border:none; border-radius:12px;
@@ -845,7 +890,15 @@
      clair (blanc sur blanc). Etat inactif visible (fond + bordure), etat actif = plein bleu
      MCS + texte blanc, sans ambiguite possible sur ce qui est cliquable. Scope html.mcs-theme
      uniquement -- le labo garde l'apparence ci-dessus au pixel pres. */
-  html.mcs-theme .df-chip{opacity:1; background:var(--field-bg); border-color:var(--hairline); color:var(--muted)}
+  /* Session 2 bis (05/09/2026, points 1.2 + 2) : la difference inactif/actif ne doit PAS reposer
+     que sur la couleur -- plein contre vide. Inactif = fond blanc + contour bleu 2px + texte
+     bleu (pas gris "muted", pour que ce soit lisible ET identifiable comme cliquable des le
+     premier coup d'oeil) ; actif = bleu plein + texte blanc. Taille de police remontee de
+     12.5px (sous le plancher absolu de 13px) a 14px (texte secondaire). border-width overridee
+     (pas juste border-color) car la regle de base est en 0.5px, invisible a cette epaisseur. */
+  html.mcs-theme .df-chip{
+    opacity:1; background:#FFFFFF; border:2px solid var(--blue); color:var(--blue); font-size:14px;
+  }
   html.mcs-theme .df-chip.active{background:var(--blue); color:#fff; border-color:var(--blue)}
   .df-badge{font-size:11px; font-weight:700; border-radius:99px; padding:2px 9px; flex:0 0 auto}
   .df-badge.attente{background:rgba(var(--gold-rgb),.15); color:var(--gold-a)}
@@ -1206,6 +1259,13 @@
   .contrat-card .ct-toggle{
     align-self:flex-start; background:none; border:0; color:var(--blue); font-size:13px;
     padding:4px 0; cursor:pointer; -webkit-tap-highlight-color:transparent;
+  }
+  /* Session 2 bis (05/09/2026, point 1.4) : "Modifier et traiter" -- du texte bleu sans forme de
+     bouton, sur la carte la plus utilisee de l'app (Contrats). Pastille avec contour, 44px de
+     haut min pour la cible tactile. */
+  html.mcs-theme .contrat-card .ct-toggle{
+    border:2px solid var(--blue); border-radius:10px; padding:10px 14px; font-size:14px; font-weight:700;
+    min-height:44px; box-sizing:border-box;
   }
   .ct-detail{display:none; flex-direction:column; gap:8px; margin-top:6px; padding-top:10px; border-top:0.5px solid var(--hairline)}
   .ct-detail.open{display:flex}
@@ -1603,6 +1663,10 @@
   .rl-card .rl-marquer{background:var(--gold-a); color:var(--gold-ink); font-weight:700}
   .rl-card .rl-suspendre{background:var(--field-bg); color:var(--ink)}
   .rl-card .rl-reprendre{background:var(--ok); color:#04210c; font-weight:700}
+  /* Session 2 bis (05/09/2026) : #04210c (quasi-noir) etait lisible sur l'ancien --ok clair
+     (#30D158) mais devient illisible sur le nouveau --ok fonce (#1B6B2E, choisi pour le
+     contraste TEXTE) -- texte blanc a la place. */
+  html.mcs-theme .rl-card .rl-reprendre{color:#fff}
   .rl-suspend-note{font-size:12px; color:var(--muted); margin-top:2px}
   .rl-promesse-note{font-size:12px; color:var(--gold-a); margin-top:2px}
   .rl-form{display:none; flex-direction:column; gap:8px; margin-top:8px; padding-top:8px; border-top:0.5px solid var(--hairline)}
@@ -1724,6 +1788,8 @@
   /* .rl-btn-fait : reservee a "Reprendre les relances" (carte suspendue) -- une vraie reprise de
      suivi automatique, verifiable, jamais une declaration humaine. */
   .rl-btn-fait{flex:1; padding:11px; font-size:13.5px; font-weight:700; border-radius:12px; border:0; cursor:pointer; background:var(--ok); color:#04210c; -webkit-tap-highlight-color:transparent}
+  /* Session 2 bis (05/09/2026) : meme correction que .rl-reprendre juste au-dessus. */
+  html.mcs-theme .rl-btn-fait{color:#fff}
   .rl-btn-suspendre2{flex:1; padding:11px; font-size:13.5px; font-weight:700; border-radius:12px; border:0; cursor:pointer; background:var(--field-bg); color:var(--ink); -webkit-tap-highlight-color:transparent}
   /* E2 (26/08/2026) : l'explication du bouton [Envoyer] partait dans le toast global -- une
      pilule etroite, en gris semi-transparent sur fond deja sombre, qui coupait le texte et se
@@ -2305,6 +2371,14 @@
     -webkit-tap-highlight-color:transparent; white-space:nowrap;
   }
   .meute-tab.active{background:var(--gold-a); color:var(--gold-ink); border-color:var(--gold-a)}
+  /* Session 2 bis (05/09/2026) : meme famille que .devis-tab -- utilise par Opportunites (onglet
+     MCS reel), contraste de fond nul avant correction (var(--field-bg) == var(--bg) du panneau). */
+  html.mcs-theme .meute-tab{background:#FFFFFF; border:2px solid var(--blue); color:var(--blue); font-size:14px}
+  html.mcs-theme .meute-tab.active{border-color:var(--gold-a)}
+  /* "Regenerer le message" (Opportunites) -- meme bordure blanc-translucide invisible sur blanc. */
+  html.mcs-theme .meute-gen-btn, html.mcs-theme .opp-prepare-btn{
+    border:2px solid var(--blue); background:#FFFFFF; color:var(--blue); font-size:14px;
+  }
   .meute-card > textarea{
     width:100%; box-sizing:border-box; font:inherit; font-size:13px; color:var(--ink); background:var(--field-bg);
     border:0.5px solid rgba(255,255,255,.18); border-radius:10px; padding:9px 11px; resize:vertical; margin-bottom:8px;
@@ -2685,6 +2759,10 @@
     white-space:nowrap;
   }
   .notes-tab.active{background:var(--gold-a); color:var(--gold-ink)}
+  /* Session 2 bis (05/09/2026) : meme famille -- Notes est un onglet MCS reel, aucune bordure
+     avant correction (border:0, fond blanc sur fond blanc). */
+  html.mcs-theme .notes-tab{background:#FFFFFF; border:2px solid var(--blue); color:var(--blue); font-size:14px}
+  html.mcs-theme .notes-tab.active{border-color:var(--gold-a)}
   #notes-search-wrap{flex:0 0 auto; padding:0 14px 10px}
   #notes-search{
     width:100%; box-sizing:border-box; border:none; border-radius:12px;
@@ -2745,6 +2823,9 @@
     color:var(--ink); border:0; cursor:pointer; -webkit-tap-highlight-color:transparent;
     -webkit-appearance:none; appearance:none; font-family:inherit;
   }
+  /* Session 2 bis (05/09/2026) : puces "categorie/assigne/echeance" (correction d'une note en un
+     tap) -- 11.5px sous le plancher absolu de 13px, aucune bordure. Passe a 14px + contour bleu. */
+  html.mcs-theme .notes-chip{font-size:14px; border:2px solid var(--blue); color:var(--blue); background:#FFFFFF}
   .notes-chip.echeance{position:relative; overflow:hidden; display:inline-flex; align-items:center}
   .notes-chip.echeance input[type=date]{position:absolute; inset:0; opacity:0; width:100%; height:100%; cursor:pointer}
   .notes-chip.echeance.retard{background:rgba(255,59,48,.18); color:#FF6961}
@@ -2770,8 +2851,12 @@
   }
   .notes-age-tab.active{background:var(--soft-fill); color:var(--ink); border-color:transparent}
   /* Panneau Notes partage labo+MCS -- meme "etat actif franc" que .df-chip ci-dessus, meme
-     raisonnement (blanc-translucide invisible sur fond blanc), scope html.mcs-theme uniquement. */
-  html.mcs-theme .notes-age-tab.active{background:var(--blue); color:#fff}
+     raisonnement (blanc-translucide invisible sur fond blanc), scope html.mcs-theme uniquement.
+     Session 2 bis : inactif ajoute (fond blanc + contour bleu 2px + texte bleu), 12px -> 14px. */
+  html.mcs-theme .notes-age-tab{
+    background:#FFFFFF; border:2px solid var(--blue); color:var(--blue); font-size:14px;
+  }
+  html.mcs-theme .notes-age-tab.active{background:var(--blue); color:#fff; border-color:var(--blue)}
   #notes-client-filter{
     margin:0 14px 10px; padding:8px 12px; border-radius:10px; border:0.5px solid rgba(255,255,255,.18);
     background:var(--field-bg); color:var(--ink); font-size:13px; -webkit-appearance:none; max-width:calc(100% - 28px);
@@ -3454,6 +3539,17 @@
   .vc-ok,.vc-no{flex:1; font:inherit; font-size:16px; font-weight:600; padding:12px; border-radius:12px; border:none; cursor:pointer}
   .vc-ok{background:#30D158; color:#03240F}
   .vc-no{background:rgba(255,69,58,.15); color:#FF453A; border:0.5px solid rgba(255,69,58,.5)}
+  /* Session 2 bis (05/09/2026) : .vc-ok/.vc-no sont le couple Confirmer/Annuler REUTILISE dans
+     environ 25 modales de toute l'app (bc/cx/ctf/dg/ikf/docreff/caf/cf/df/fc/fd/upd/plumeBilan...)
+     -- un seul fix ici corrige la cohesion (point 7) ET le contraste (point 3) partout d'un coup.
+     Couleurs en dur #30D158/#FF453A (jamais liees a --ok/--no) : #30D158 vs #03240F = 1.4:1 la ou
+     c'etait deja fonce-sur-clair donc lisible en pratique, mais #FF453A texte sur fond blanc =
+     3,41:1, ECHEC. Repris sur --ok/--no (deja verifies 6,58:1 / 7,36:1) : .vc-ok devient la seule
+     action VRAIMENT pleine (fond vert fonce, texte blanc) et .vc-no reste secondaire (contour,
+     texte fonce) -- coherent avec la regle "action destructrice/rare discrete, jamais a cote
+     de la principale". */
+  html.mcs-theme .vc-ok{background:var(--ok); color:#fff}
+  html.mcs-theme .vc-no{background:#FFFFFF; color:var(--no); border:2px solid var(--no)}
   .vc-ok:disabled,.vc-no:disabled{opacity:.45}
   .vc-edit{
     display:block; width:100%; font:inherit; font-size:14.5px; font-weight:600;
@@ -3574,6 +3670,1040 @@
   #tuto-skip{background:none; border:0; color:var(--muted); font-size:14px; padding:6px 4px; cursor:pointer; -webkit-tap-highlight-color:transparent}
   #tuto-next{background:var(--blue); color:#fff; border:0; border-radius:8px; padding:8px 16px; font-weight:700; font-size:14px; cursor:pointer; -webkit-tap-highlight-color:transparent}
   @media (prefers-reduced-motion: reduce){ #tuto-spot{animation:none} #tuto-bubble{animation:none} }
+  /* ==== SESSION 2 BIS (05/09/2026), point 2 -- PLANCHER DE TAILLE DE TEXTE ====
+     Passe systematique sur les regles de base sous html.mcs-theme UNIQUEMENT (0 regle de
+     base modifiee -> labo intact). 2 lots, tous deux verifies comme des AUGMENTATIONS
+     strictes (jamais de regression sur un texte deja conforme) :
+       1) chiffres/montants importants (nom du selecteur : amt/montant/prix/total/ht/ttc,
+          3 faux positifs verifies a la main et exclus -- .rl-summary-reste/#cx-total-note/
+          .rt-total .rt-mois sont des LEGENDES, pas un chiffre seul) -> 20px gras ;
+          .ct-thumb-amt (vignette decorative 58px cliquable) traite a part plus bas, jamais
+          a 20px qui deborderait de l'icone -- le vrai montant reste affiche en 20px ailleurs
+          sur la carte.
+       2) tout le reste encore SOUS le plancher secondaire de 14px (donc sous le plancher
+          absolu de 13px aussi) -> 14px pile. Les selecteurs deja a 14-15,9px ne sont PAS
+          touches ici (deja conformes au plancher demande, les laisser evite tout risque de
+          les faire regresser -- verifie sur .cf-actions/.cx-actions .vc-ok/.vc-no, deja a
+          15px, qu'un lot "tout a 14px" trop large aurait fait REGRESSER par erreur). 174 selecteurs
+          dans ce cas, deja conformes, non listes ici.
+     Specificite verifiee : "html.mcs-theme X" bat toujours "X" seul, meme dans une media
+     query -- le plancher s'applique donc a TOUTES les largeurs. */
+  html.mcs-theme #couts-svc-total,
+  html.mcs-theme .vitrine-devis-option-prix,
+  html.mcs-theme .vitrine-devis-libre-prix,
+  html.mcs-theme .ct-famille-total,
+  html.mcs-theme .bc-int-montant,
+  html.mcs-theme .couts-svc-montant,
+  html.mcs-theme .pf-montant,
+  html.mcs-theme #fd-total
+  {font-size:20px; font-weight:700}
+  html.mcs-theme .fd-total-inline,
+  html.mcs-theme .mf-card-montant,
+  html.mcs-theme .couts-montant,
+  html.mcs-theme .devis-card .dv-montant,
+  html.mcs-theme .contrat-card .dv-montant
+  {font-size:20px; font-weight:700}
+  html.mcs-theme body.cal-mcs-light .cal-chip-more,
+  html.mcs-theme body.cal-mcs-light .cal-chip,
+  html.mcs-theme .hbadge,
+  html.mcs-theme .ct-thumb-caption,
+  html.mcs-theme .rl-termine-histo-niveau,
+  html.mcs-theme .rel-obs-imp,
+  html.mcs-theme .cal-agenda-dow,
+  html.mcs-theme .cal-agenda-hourlabel,
+  html.mcs-theme .sh-tile .badge-count,
+  html.mcs-theme table.contrat-table thead th,
+  html.mcs-theme table.ik-table thead th,
+  html.mcs-theme table.ik-recap-table thead th
+  {font-size:14px}
+  html.mcs-theme .rl-source-badge,
+  html.mcs-theme .rl-source-label,
+  html.mcs-theme .rl-source-label-resume,
+  html.mcs-theme .rl-conflit-opt-source,
+  html.mcs-theme .ro-stat .ro-caption,
+  html.mcs-theme .notes-auto-badge,
+  html.mcs-theme .email-box,
+  html.mcs-theme .cal-agenda-ev,
+  html.mcs-theme .fd-ligne-mini,
+  html.mcs-theme .mtime,
+  html.mcs-theme #pvplay,
+  html.mcs-theme .sh-item .soon
+  {font-size:14px}
+  html.mcs-theme .doc-cat,
+  html.mcs-theme .client-appareil .ca-badge,
+  html.mcs-theme .client-badge,
+  html.mcs-theme .df-badge,
+  html.mcs-theme .cal-mois-pill span,
+  html.mcs-theme .cal-line-pill,
+  html.mcs-theme .cal-line-dec,
+  html.mcs-theme .cal-line-fait-par,
+  html.mcs-theme .cal-line-prop,
+  html.mcs-theme .contrat-card .ct-badge,
+  html.mcs-theme .ik-sug li small,
+  html.mcs-theme .couts-svc-pct
+  {font-size:14px}
+  html.mcs-theme #crypto-generated,
+  html.mcs-theme #cxa-generated,
+  html.mcs-theme .rl-brouillon-label,
+  html.mcs-theme .rl-brouillon-edite,
+  html.mcs-theme .rl-conflit-opt-ctx,
+  html.mcs-theme .rl-termine-note-label,
+  html.mcs-theme .carnet-field-label,
+  html.mcs-theme .carnet-ancien,
+  html.mcs-theme .carnet-maj-chat,
+  html.mcs-theme .rel-badge,
+  html.mcs-theme .rt-head .rt-cell,
+  html.mcs-theme #renta-reserve
+  {font-size:14px}
+  html.mcs-theme #renta-recon-jarvis,
+  html.mcs-theme .rc-list-pct,
+  html.mcs-theme .thread-role,
+  html.mcs-theme .thread-date,
+  html.mcs-theme .meute-score,
+  html.mcs-theme .opp-source-badge,
+  html.mcs-theme .opp-msg-label,
+  html.mcs-theme .plume-plan-mois,
+  html.mcs-theme .plume-journal-date,
+  html.mcs-theme .notes-provenance,
+  html.mcs-theme .notes-urgence-badge,
+  html.mcs-theme .cal-dow
+  {font-size:14px}
+  html.mcs-theme .cal-agenda-ev b,
+  html.mcs-theme .mem-badge,
+  html.mcs-theme .cb-txt small,
+  html.mcs-theme .sh-tile-label,
+  html.mcs-theme .client-date,
+  html.mcs-theme .couts-stat-label,
+  html.mcs-theme .ct-numero,
+  html.mcs-theme .ct-ca-label,
+  html.mcs-theme .couts-stat .cs-label,
+  html.mcs-theme .couts-stat .cs-sub,
+  html.mcs-theme #cx-total-note,
+  html.mcs-theme #cx-hero .cx-hero-label
+  {font-size:14px}
+  html.mcs-theme #cxa-hero .cx-hero-label,
+  html.mcs-theme #cxa-freshness,
+  html.mcs-theme #relances-fraicheur-copy,
+  html.mcs-theme #relances-tri-label,
+  html.mcs-theme .rl-jamais,
+  html.mcs-theme .rl-echange-argent b,
+  html.mcs-theme .carnet-sub,
+  html.mcs-theme .docref-exp,
+  html.mcs-theme .rt-val.rt-attente,
+  html.mcs-theme .rt-total .rt-mois,
+  html.mcs-theme .ro-stat .ro-label,
+  html.mcs-theme #ro-note
+  {font-size:14px}
+  html.mcs-theme #renta-redressement .rr-label,
+  html.mcs-theme #renta-exercice-clos,
+  html.mcs-theme #renta-mois-manquants,
+  html.mcs-theme #renta-source,
+  html.mcs-theme .opp-recherche-statut,
+  html.mcs-theme .plume-check,
+  html.mcs-theme .eboxtab,
+  html.mcs-theme .ed-hint,
+  html.mcs-theme body.cal-mcs-light .cal-ev-waze,
+  html.mcs-theme #fd-recap b,
+  html.mcs-theme .mf-card-annulee,
+  html.mcs-theme .bc-summary-sub
+  {font-size:14px}
+  html.mcs-theme #devis-ambigu-hint,
+  html.mcs-theme .badge-count,
+  html.mcs-theme .sh-mini-check,
+  html.mcs-theme .sh-ver,
+  html.mcs-theme .client-appareil .ca-meta,
+  html.mcs-theme .client-origine-badge,
+  html.mcs-theme .couts-note,
+  html.mcs-theme .devis-card .dv-meta,
+  html.mcs-theme .panel-cache-banner,
+  html.mcs-theme .relances-snapshot-banner,
+  html.mcs-theme .ct-tva-titre,
+  html.mcs-theme .ct-tva-source-txt
+  {font-size:14px}
+  html.mcs-theme .cal-mois-pill,
+  html.mcs-theme #cal-client-mail-secours,
+  html.mcs-theme #cal-client-facture-note,
+  html.mcs-theme #cal-refuser-inline label,
+  html.mcs-theme .bcal-prop-statut,
+  html.mcs-theme .bcal-prop-detail,
+  html.mcs-theme #cal-signaler-inline label,
+  html.mcs-theme .contrat-card .dv-meta,
+  html.mcs-theme .ct-detail label,
+  html.mcs-theme .dg-row label,
+  html.mcs-theme .tvr-row .tvr-meta,
+  html.mcs-theme .contrat-form label
+  {font-size:14px}
+  html.mcs-theme #ik-etat,
+  html.mcs-theme .couts-meta,
+  html.mcs-theme .couts-form label,
+  html.mcs-theme #cx-apify-note,
+  html.mcs-theme #relances-fraicheur,
+  html.mcs-theme .rl-suspend-note,
+  html.mcs-theme .rl-promesse-note,
+  html.mcs-theme .rl-form-label,
+  html.mcs-theme .rl-brouillon-signataire,
+  html.mcs-theme .rl-facture-pdf,
+  html.mcs-theme .rl-termine-histo,
+  html.mcs-theme #portefeuille-note
+  {font-size:14px}
+  html.mcs-theme .rel-meta,
+  html.mcs-theme .rel-obs-btn,
+  html.mcs-theme .docref-meta,
+  html.mcs-theme .rt-mois,
+  html.mcs-theme #renta-mois-courant-vide,
+  html.mcs-theme .renta-subtable .rst-title,
+  html.mcs-theme .rc-list-title,
+  html.mcs-theme .renta-card .rc-estimate,
+  html.mcs-theme .renta-card .rc-info-btn,
+  html.mcs-theme .renta-card .rc-detail,
+  html.mcs-theme .meute-rapport-envoye,
+  html.mcs-theme .meute-notes-label
+  {font-size:14px}
+  html.mcs-theme .opp-recherche-row .opp-recherche-meta,
+  html.mcs-theme .opp-group-titre,
+  html.mcs-theme #vitrine-lancer-status,
+  html.mcs-theme .vitrine-expir,
+  html.mcs-theme .vitrine-mail-envoye,
+  html.mcs-theme .vitrine-devis-result-url,
+  html.mcs-theme .vitrine-devis-copy,
+  html.mcs-theme .plume-statut-pill,
+  html.mcs-theme .plume-next b,
+  html.mcs-theme .plume-plan-resultat,
+  html.mcs-theme .plume-rapport-dest,
+  html.mcs-theme .plume-rapport-envoye
+  {font-size:14px}
+  html.mcs-theme .notes-group-meta,
+  html.mcs-theme .email-reply-btn,
+  html.mcs-theme .cal-ev-loc,
+  html.mcs-theme #cf-invite-statut,
+  html.mcs-theme body.cal-mcs-light .cal-ev-desc,
+  html.mcs-theme #devis-form p.dfhint,
+  html.mcs-theme .fc-choice-sub,
+  html.mcs-theme .mf-card-sub,
+  html.mcs-theme .plume-meta-dates,
+  html.mcs-theme .vc-attach span,
+  html.mcs-theme #tuto-progress,
+  html.mcs-theme #pvtime
+  {font-size:14px}
+  html.mcs-theme .vtime,
+  html.mcs-theme .doc-group-head,
+  html.mcs-theme .doc-info,
+  html.mcs-theme #clients-admin-toggle-wrap,
+  html.mcs-theme .client-info,
+  html.mcs-theme .client-ouvertures,
+  html.mcs-theme .devis-card .dv-pdf,
+  html.mcs-theme #contrats-previsionnel-banniere,
+  html.mcs-theme .testmode-banniere,
+  html.mcs-theme .cal-mois-pill b,
+  html.mcs-theme .cal-line-sous,
+  html.mcs-theme #cal-compteur-fait
+  {font-size:14px}
+  html.mcs-theme .bcal-prop-line,
+  html.mcs-theme #cal-decaler-explication,
+  html.mcs-theme #cal-decaler-form label,
+  html.mcs-theme .contrat-card .dv-sous-nom,
+  html.mcs-theme table.contrat-table,
+  html.mcs-theme .ct-mois-compte,
+  html.mcs-theme table.ik-table,
+  html.mcs-theme #ikf-calc,
+  html.mcs-theme #ikf-calc-result,
+  html.mcs-theme table.ik-recap-table,
+  html.mcs-theme #couts-curve-head,
+  html.mcs-theme #couts-svc-head
+  {font-size:14px}
+  html.mcs-theme #couts-abo-head,
+  html.mcs-theme .rl-summary-reste,
+  html.mcs-theme .rl-tri-btn,
+  html.mcs-theme .rl-anciennete,
+  html.mcs-theme .rl-source,
+  html.mcs-theme .rl-facture-list,
+  html.mcs-theme .rl-echange-argent,
+  html.mcs-theme .rl-echeance-signal,
+  html.mcs-theme .rl-perime,
+  html.mcs-theme .rl-perime-btn,
+  html.mcs-theme .rl-envoyer-explication,
+  html.mcs-theme .rl-duplicata-check
+  {font-size:14px}
+  html.mcs-theme .rl-conflit-opt-btn,
+  html.mcs-theme #caf-err,
+  html.mcs-theme .pf-meta,
+  html.mcs-theme #relations-summary,
+  html.mcs-theme .rel-promesse,
+  html.mcs-theme .rel-averifier-footer,
+  html.mcs-theme .rel-action-btn,
+  html.mcs-theme .rel-action-l2-phrase,
+  html.mcs-theme #docref-note,
+  html.mcs-theme .rt-cell,
+  html.mcs-theme #renta-overview .ro-title,
+  html.mcs-theme #renta-resultat-comptable .ro-title
+  {font-size:14px}
+  html.mcs-theme .rc-list-label,
+  html.mcs-theme .rc-list-val,
+  html.mcs-theme .renta-card .rc-desc,
+  html.mcs-theme #meute-status,
+  html.mcs-theme .meute-meta,
+  html.mcs-theme .meute-commission,
+  html.mcs-theme .meute-email-input,
+  html.mcs-theme .meute-email-send,
+  html.mcs-theme .meute-notes-mic,
+  html.mcs-theme .meute-preview-link,
+  html.mcs-theme .meute-notes-save,
+  html.mcs-theme #opp-status
+  {font-size:14px}
+  html.mcs-theme #opp-enrichissement-banniere,
+  html.mcs-theme .vitrine-meta,
+  html.mcs-theme .vitrine-mail-email,
+  html.mcs-theme .vitrine-mail-objet,
+  html.mcs-theme .vitrine-notes-preview,
+  html.mcs-theme .vitrine-notes-empty,
+  html.mcs-theme .vitrine-devis-option-qte,
+  html.mcs-theme .vitrine-devis-libre-titre,
+  html.mcs-theme .vitrine-statut-btn,
+  html.mcs-theme .plume-meta,
+  html.mcs-theme .plume-plan-actions,
+  html.mcs-theme .plume-rapport-sujet
+  {font-size:14px}
+  html.mcs-theme .plume-rapport-corps,
+  html.mcs-theme .plume-journal-detail,
+  html.mcs-theme #notes-pending-head,
+  html.mcs-theme .notes-garder,
+  html.mcs-theme .notes-ignorer,
+  html.mcs-theme .etab,
+  html.mcs-theme .email-time,
+  html.mcs-theme .cal-ev-time,
+  html.mcs-theme #cal-viewswitch button,
+  html.mcs-theme #cal-form label,
+  html.mcs-theme #cf-err,
+  html.mcs-theme body.cal-mcs-light .cal-cell .cal-daynum
+  {font-size:14px}
+  html.mcs-theme #devis-form label,
+  html.mcs-theme #df-err,
+  html.mcs-theme #fd-form label,
+  html.mcs-theme #fd-lignes-label,
+  html.mcs-theme #fd-recap,
+  html.mcs-theme .mf-btn-avoir,
+  html.mcs-theme #bc-int-title,
+  html.mcs-theme #bc-form label,
+  html.mcs-theme #bc-err,
+  html.mcs-theme .fbtn span,
+  html.mcs-theme .hint,
+  html.mcs-theme .mono-j
+  {font-size:14px}
+  html.mcs-theme .err-retry-btn,
+  html.mcs-theme .vplay,
+  html.mcs-theme #clients-filters select,
+  html.mcs-theme #clients-filters input,
+  html.mcs-theme .couts-section-title,
+  html.mcs-theme .contrat-card .ct-badge.bloque,
+  html.mcs-theme .ct-tva-choix,
+  html.mcs-theme #cal-client-sous,
+  html.mcs-theme #cal-client-proposition-txt,
+  html.mcs-theme #bcal-mes-props h4,
+  html.mcs-theme .cal-decaler-checkbox,
+  html.mcs-theme #bcal-mois-titre
+  {font-size:14px}
+  html.mcs-theme .ct-famille-label,
+  html.mcs-theme #contrats-resume-deduites,
+  html.mcs-theme .ct-mois-chevron,
+  html.mcs-theme #contrats-designations-groupe-btn,
+  html.mcs-theme #contrats-tva-vmc-revue-btn,
+  html.mcs-theme .tvr-row .tvr-toggle,
+  html.mcs-theme #ik-export,
+  html.mcs-theme .ik-sug li,
+  html.mcs-theme .cx-tab,
+  html.mcs-theme .rl-card .dv-actions button,
+  html.mcs-theme .rl-termine-facture-tete,
+  html.mcs-theme .rl-termine-note
+  {font-size:14px}
+  html.mcs-theme .pf-tab,
+  html.mcs-theme .rel-tab,
+  html.mcs-theme .rel-averifier-back,
+  html.mcs-theme .rel-obs-constat,
+  html.mcs-theme .docref-actions .vc-no,
+  html.mcs-theme #docreff-file-chip,
+  html.mcs-theme #renta-maj,
+  html.mcs-theme .doc-folder-count,
+  html.mcs-theme .meute-argumentaire,
+  html.mcs-theme .meute-act-btn,
+  html.mcs-theme .meute-tel,
+  html.mcs-theme .meute-card > textarea
+  {font-size:14px}
+  html.mcs-theme #vitrine-lancer-secteur,
+  html.mcs-theme #vitrine-lancer-ville,
+  html.mcs-theme #vitrine-lancer-limit,
+  html.mcs-theme #vitrine-lancer-go,
+  html.mcs-theme .vitrine-tab,
+  html.mcs-theme .vitrine-tel,
+  html.mcs-theme .vitrine-demo-link,
+  html.mcs-theme .vitrine-mail-toggle,
+  html.mcs-theme .vitrine-mail-corps,
+  html.mcs-theme .vitrine-mail-send,
+  html.mcs-theme .vitrine-notes-area,
+  html.mcs-theme .vitrine-notes-save
+  {font-size:14px}
+  html.mcs-theme .vitrine-devis-toggle,
+  html.mcs-theme .vitrine-devis-option,
+  html.mcs-theme .vitrine-devis-go,
+  html.mcs-theme .plume-next span,
+  html.mcs-theme .plume-plan-toggle,
+  html.mcs-theme .plume-rapport-toggle,
+  html.mcs-theme .plume-rapport-send,
+  html.mcs-theme .plume-journal-toggle,
+  html.mcs-theme .plume-journal-action,
+  html.mcs-theme .notes-group-chevron,
+  html.mcs-theme .notes-check,
+  html.mcs-theme #notes-client-filter
+  {font-size:14px}
+  html.mcs-theme #emails-bulk-count,
+  html.mcs-theme #emails-bulk-archive,
+  html.mcs-theme .er-done,
+  html.mcs-theme .er-archive,
+  html.mcs-theme .ed-line,
+  html.mcs-theme .ed-pending-att,
+  html.mcs-theme #cf-waze,
+  html.mcs-theme .cf-couleur.selected::after,
+  html.mcs-theme .fc-choice-link,
+  html.mcs-theme .fd-ligne-add-btn,
+  html.mcs-theme #mf-empty,
+  html.mcs-theme .dv-fac-recap-txt
+  {font-size:14px}
+  html.mcs-theme .mf-avoir-form textarea,
+  html.mcs-theme #bc-new-btn,
+  html.mcs-theme #bc-clear-btn,
+  html.mcs-theme .bc-int-objet,
+  html.mcs-theme #splash .s-name,
+  html.mcs-theme .cb-btn,
+  html.mcs-theme .chat-sug-btn,
+  html.mcs-theme .ma-vide,
+  html.mcs-theme .msg.info,
+  html.mcs-theme .sh-mini-item,
+  html.mcs-theme .clients-tab,
+  html.mcs-theme .devis-card .dv-objet
+  {font-size:14px}
+  html.mcs-theme #cal-client-actions a,
+  html.mcs-theme #cal-client-actions button,
+  html.mcs-theme #cal-client-decalage-zone button,
+  html.mcs-theme #cal-client-proposition-zone .cal-decaler-row button,
+  html.mcs-theme #cal-refuser-go,
+  html.mcs-theme .couts-svc-nom,
+  html.mcs-theme #crypto-loading,
+  html.mcs-theme #crypto-error,
+  html.mcs-theme #cxa-loading,
+  html.mcs-theme #cxa-error,
+  html.mcs-theme .rl-form .rl-form-actions button,
+  html.mcs-theme .rl-brouillon-objet
+  {font-size:14px}
+  html.mcs-theme .rl-btn-declare,
+  html.mcs-theme .rl-btn-fait,
+  html.mcs-theme .rl-btn-suspendre2,
+  html.mcs-theme .rl-question-confirm,
+  html.mcs-theme .rl-conflit-opt-email,
+  html.mcs-theme .rel-resume,
+  html.mcs-theme .plume-plan-titre,
+  html.mcs-theme .email-apercu,
+  html.mcs-theme #toastUndo,
+  html.mcs-theme #cal-day-empty,
+  html.mcs-theme #cf-sug li,
+  html.mcs-theme #df-sug li
+  {font-size:14px}
+  html.mcs-theme .bc-type-btn,
+  html.mcs-theme #bc-sug li,
+  html.mcs-theme #bc-nom-sug li,
+  html.mcs-theme #bc-residence-sug li,
+  html.mcs-theme #bc-contact-sug li,
+  html.mcs-theme #bc-ville-sug li,
+  html.mcs-theme #df-nom-sug li,
+  html.mcs-theme #df-residence-sug li,
+  html.mcs-theme #df-ville-sug li,
+  html.mcs-theme #df-contact-sug li,
+  html.mcs-theme #toast
+  {font-size:14px}
+
+  /* .ct-thumb-amt (sur-mesure, exclu du lot montants ci-dessus -- voir justification en tete
+     de fichier de ce chantier) : icone agrandie a 64px (etait 58px) pour loger 13px (plancher
+     absolu respecte) sans deborder ni etre rogne par l'overflow:hidden du conteneur. */
+  html.mcs-theme .ct-thumb{width:64px; height:64px}
+  html.mcs-theme .ct-thumb-band{left:6px; right:6px; top:6px; height:10px}
+  html.mcs-theme .ct-thumb-amt{font-size:13px; right:6px; bottom:5px}
+  /* ==== SESSION 2 BIS (05/09/2026), point 3 (suite) -- COULEURS D'ETAT CODEES EN DUR ====
+     27 selecteurs utilisent en dur des couleurs "vives" pensees pour le theme SOMBRE du
+     labo (#FF453A/#FF6961 rouge, #FF9F0A orange, #30D158 vert) -- toutes ECHOUENT le
+     contraste texte sur le fond CLAIR de MCS (2.02 a 3.65:1, cible 4,5:1 minimum). Meme
+     methode que le lot d'amounts/tailles : surcharge html.mcs-theme uniquement, la regle
+     de base (labo) garde sa couleur en dur intacte. Reutilise --no/--ok deja valides ci-
+     dessus (7.36:1 / 6.58:1) et la nouvelle --warn (6.80:1). */
+  html.mcs-theme .contrat-card .ct-badge.bloque,
+  html.mcs-theme .ct-motif-blocage,
+  html.mcs-theme #cal-client-changer-def,
+  html.mcs-theme #cal-client-proposition-refuser,
+  html.mcs-theme #cal-refuser-go,
+  html.mcs-theme .bcal-prop-statut.refusee,
+  html.mcs-theme .tvr-row .tvr-toggle.tvr-20,
+  html.mcs-theme .carnet-confirm-delete,
+  html.mcs-theme .carnet-field.locked .carnet-lock,
+  html.mcs-theme #caf-err,
+  html.mcs-theme .vitrine-expir.expired,
+  html.mcs-theme .notes-chip.echeance.retard,
+  html.mcs-theme .notes-urgence-badge.haute,
+  html.mcs-theme #cf-err,
+  html.mcs-theme #df-err,
+  html.mcs-theme .fd-ligne-del,
+  html.mcs-theme .mf-card-avoir .mf-card-montant,
+  html.mcs-theme .mf-btn-avoir,
+  html.mcs-theme #bc-clear-btn,
+  html.mcs-theme #bc-err
+  {color:var(--no)}
+  html.mcs-theme .cal-line-pill.facture,
+  html.mcs-theme .cal-line-fait-par,
+  html.mcs-theme .bcal-prop-statut.validee
+  {color:var(--ok)}
+  html.mcs-theme #contrats-designations-groupe-btn,
+  html.mcs-theme #cx-apify-note b,
+  html.mcs-theme #cxa-freshness.cxa-fresh-stale,
+  html.mcs-theme .vitrine-expir.soon
+  {color:var(--warn)}
+  /* ==== SESSION 2 BIS (05/09/2026), point 1.4 -- ELEMENTS CLIQUABLES SANS BORDURE NI FOND ====
+     Inventaire mecanique (voir methode dans le rapport de session) : 326 elements "cliquables"
+     detectes dans les regles de base (cursor:pointer / -webkit-tap-highlight-color:transparent /
+     nom de classe -btn/-tab/-chip/-pill/-toggle/-tile/-item/-check/-badge), dont 103 SANS bordure
+     NI fond visible avant cette session -- .sh-tile/.df-chip/.devis-tab/.notes-tab/.meute-tab/
+     .vitrine-tab/.notes-age-tab/.ct-toggle/.vc-ok/.vc-no deja corriges plus haut. Ce lot traite
+     les icones/liens texte isoles restants (poubelle, coche, retour, bascule) qui n'avaient RIEN
+     (ni bordure ni fond) -- jamais du texte seul desormais, meme un petit bouton icone. */
+  html.mcs-theme .couts-del, html.mcs-theme .notes-del, html.mcs-theme .carnet-del{
+    background:rgba(var(--gold-rgb),.10); border:1px solid var(--hairline); border-radius:50%;
+  }
+  html.mcs-theme .cal-line-fait-btn, html.mcs-theme .tuto-btn{
+    background:rgba(var(--gold-rgb),.10); border-radius:8px;
+  }
+  html.mcs-theme .rel-averifier-back{
+    border:2px solid var(--blue); border-radius:10px; padding:8px 12px; display:inline-block; width:auto;
+  }
+  html.mcs-theme .sh-mini-item{
+    border:2px solid var(--hairline); border-radius:20px; padding:6px 14px;
+  }
+  /* .sh-mini-check (interrupteur Notifications/Tutoriels) : le glyphe seul (blanc translucide vs
+     vert) reposait a la fois sur (a) une couleur trop pale pour etre visible sur fond clair et
+     (b) UNIQUEMENT la couleur pour distinguer on/off -- corrige les 2 a la fois (point 1 ET point
+     5) : case a cocher visible avec bordure, "off" = case vide, "on" = case pleine + coche
+     blanche (le symbole ✓ change de contexte, pas seulement de teinte). */
+  html.mcs-theme .sh-mini-check{
+    display:inline-flex; align-items:center; justify-content:center; width:18px; height:18px;
+    border:2px solid var(--hairline); border-radius:5px; color:transparent; font-size:12px;
+  }
+  html.mcs-theme .sh-mini-check.on{background:var(--ok); border-color:var(--ok); color:#fff}
+  /* .vc-edit avait deja une bordure fine (0.5px, --hairline) -- remontee a 2px comme le reste des
+     boutons secondaires de cette session, pour rester coherente et bien visible. */
+  html.mcs-theme .vc-edit{border-width:2px}
+  /* ==== SESSION 2 BIS (05/09/2026), point 4 + 7 -- ACTION PRIMAIRE PAR ECRAN / COHERENCE ====
+     Incoherence trouvee en inventoriant les 7 boutons "+" flottants de l'app : 3 (Contrats/IK/
+     Agenda, #contrats-add-btn/#ik-add/#cal-add) utilisent deja var(--gold-a) = plein bleu MCS +
+     texte blanc -- DEJA la bonne action primaire, rien a faire. 2 AUTRES, sur des onglets bien
+     visibles pour MCS (Devis et factures, Carnet bleu), utilisent var(--surface)/var(--ink) =
+     cercle blanc/texte noir plat, invisible et incoherent avec les 3 precedents alors que c'est
+     EXACTEMENT le meme geste ("creer un nouveau X"). #couts-add/#docref-add (meme style neutre)
+     non touches : Couts et Documents de reference sont des panneaux LABO, jamais affiches a
+     Mickael (Session 1, tuiles retirees pour MCS), pas de risque a les laisser tels quels ici. */
+  html.mcs-theme #devis-add{background:var(--blue); color:#fff}
+  html.mcs-theme #carnet-add{background:var(--blue); color:#fff}
+  /* ==== SESSION 2 BIS (05/09/2026), point 1 (suite) -- BOUTONS "INVISIBLES" (fond = fond) ====
+     Trouve en testant Relances en conditions reelles (pas en relisant le code) : "Je l'ai
+     relance moi-meme"/"Suspendre" se fondaient totalement dans le fond de la carte -- leur
+     fond var(--field-bg) est mathematiquement EGAL a var(--bg) sous ce theme (#F2F2F7 = #F2F2F7),
+     donc aucun contraste bouton/environnement malgre un background techniquement non transparent.
+     10 autres selecteurs partagent exactement ce meme piege (background:var(--field-bg) sur un
+     element cliquable) -- meme fix partout : bordure fine visible ajoutee. */
+  html.mcs-theme .rl-btn-declare, html.mcs-theme .rl-btn-suspendre2,
+  html.mcs-theme .rel-action-btn, html.mcs-theme .meute-notes-mic,
+  html.mcs-theme .vitrine-mail-toggle, html.mcs-theme .vitrine-devis-toggle,
+  html.mcs-theme .plume-plan-toggle, html.mcs-theme .plume-rapport-toggle,
+  html.mcs-theme .plume-journal-toggle, html.mcs-theme .fc-choice-btn{
+    border:2px solid var(--hairline); background:#FFFFFF;
+  }
+
+  /* ==== SESSION 2 BIS -- SUITE (06/09/2026), point 1 -- CONTROLE SYSTEMATIQUE ====
+     Genere a partir de clients/mcs/scripts/verifier-contraste-cliquables.py (voir ce
+     fichier pour la methode) : 300 elements cliquables analyses, 187 ou le fond ET la
+     bordure resolus etaient sous 3:1 par rapport aux 2 fonds de reference de l app
+     (--bg/--surface) -- 50 etaient des variantes/enfants d un selecteur DEJA corrige ici
+     (ex : .df-badge.paye variante de .df-badge) donc non dupliques ; 6 lignes de tableau/
+     liste completes (table tbody tr, .client-row, .email-row, .doc-folder,
+     .plume-journal-item) volontairement EXCLUES de ce lot mecanique -- un encadrement
+     4 cotes par ligne de <tr> risque de casser le rendu natif du tableau (border-collapse,
+     alignement des cellules), traitement dedie plus bas ou a verifier separement. Reste :
+     131 corriges individuellement : fond blanc + bordure grise fine par defaut (elements
+     neutres), bordure rouge (var(--no)) pour les 4 actions destructives (supprimer/danger). */
+  html.mcs-theme #bc-clear-btn,
+  html.mcs-theme #bc-contact-sug li,
+  html.mcs-theme #bc-nom-sug li,
+  html.mcs-theme #bc-residence-sug li,
+  html.mcs-theme #bc-sug li,
+  html.mcs-theme #bc-type-toggle,
+  html.mcs-theme #bc-ville-sug li,
+  html.mcs-theme #cal-client-actions a,
+  html.mcs-theme #cal-client-actions button,
+  html.mcs-theme #cal-client-decalage-zone button
+  {background:#FFFFFF; border:1.5px solid var(--hairline)}
+  html.mcs-theme #cal-client-proposition-zone .cal-decaler-row button,
+  html.mcs-theme #cal-form label.cf-check,
+  html.mcs-theme #cal-form label.cf-check input,
+  html.mcs-theme #cal-next,
+  html.mcs-theme #cal-prev,
+  html.mcs-theme #cal-refuser-go,
+  html.mcs-theme #cal-viewswitch button,
+  html.mcs-theme #cf-sug li,
+  html.mcs-theme #clients-admin-toggle-wrap,
+  html.mcs-theme #clients-back
+  {background:#FFFFFF; border:1.5px solid var(--hairline)}
+  html.mcs-theme #contrats-designations-groupe-btn,
+  html.mcs-theme #contrats-tva-lot-btn,
+  html.mcs-theme #contrats-tva-vmc-revue-btn,
+  html.mcs-theme #couts-add,
+  html.mcs-theme #df-contact-sug li,
+  html.mcs-theme #df-nom-sug li,
+  html.mcs-theme #df-residence-sug li,
+  html.mcs-theme #df-sug li,
+  html.mcs-theme #df-type-toggle,
+  html.mcs-theme #df-ville-sug li
+  {background:#FFFFFF; border:1.5px solid var(--hairline)}
+  html.mcs-theme #docref-add,
+  html.mcs-theme #docreff-file-chip,
+  html.mcs-theme #docs-back,
+  html.mcs-theme #email-back,
+  html.mcs-theme #homeToggleBtn,
+  html.mcs-theme #ik-export,
+  html.mcs-theme #meute-relancer,
+  html.mcs-theme #micbtn,
+  html.mcs-theme #notes-add,
+  html.mcs-theme #opp-relancer
+  {background:#FFFFFF; border:1.5px solid var(--hairline)}
+  html.mcs-theme #plume-refresh,
+  html.mcs-theme #pvplay,
+  html.mcs-theme #pvx,
+  html.mcs-theme #relances-fraicheur-copy,
+  html.mcs-theme #renta-perso-toggle,
+  html.mcs-theme #toastUndo .tu-undo,
+  html.mcs-theme #tuto-skip,
+  html.mcs-theme #vitrine-lancer-toggle,
+  html.mcs-theme #vitrine-refresh,
+  html.mcs-theme .bc-type-btn
+  {background:#FFFFFF; border:1.5px solid var(--hairline)}
+  html.mcs-theme .cal-agenda-ev,
+  html.mcs-theme .cal-cell,
+  html.mcs-theme .cal-decaler-row button,
+  html.mcs-theme .cal-ev,
+  html.mcs-theme .cal-line,
+  html.mcs-theme .cal-line-fait-btn,
+  html.mcs-theme .cal-line-pill,
+  html.mcs-theme .cal-mois-pill,
+  html.mcs-theme .carnet-confirm-cancel,
+  html.mcs-theme .carnet-confirm-delete
+  {background:#FFFFFF; border:1.5px solid var(--hairline)}
+  html.mcs-theme .carnet-lock,
+  html.mcs-theme .cb-btn,
+  html.mcs-theme .cf-couleur,
+  html.mcs-theme .chat-sug-btn,
+  html.mcs-theme .client-badge,
+  html.mcs-theme .client-origine-badge,
+  html.mcs-theme .clients-tab,
+  html.mcs-theme .contrat-card .ct-badge,
+  html.mcs-theme .ct-mois-head,
+  html.mcs-theme .ct-thumb
+  {background:#FFFFFF; border:1.5px solid var(--hairline)}
+  html.mcs-theme .cx-tab,
+  html.mcs-theme .df-badge,
+  html.mcs-theme .eboxtab,
+  html.mcs-theme .ed-attach,
+  html.mcs-theme .ed-mic,
+  html.mcs-theme .ed-pending-att button,
+  html.mcs-theme .email-reply-btn,
+  html.mcs-theme .err-retry-btn,
+  html.mcs-theme .etab,
+  html.mcs-theme .fc-choice-link
+  {background:#FFFFFF; border:1.5px solid var(--hairline)}
+  html.mcs-theme .fd-ligne-add-btn,
+  html.mcs-theme .ik-sug li,
+  html.mcs-theme .mem-badge,
+  html.mcs-theme .meute-act-btn,
+  html.mcs-theme .mf-btn-avoir,
+  html.mcs-theme .notes-auto-badge,
+  html.mcs-theme .notes-chip.echeance,
+  html.mcs-theme .notes-chip.echeance.retard,
+  html.mcs-theme .notes-chip.lien,
+  html.mcs-theme .notes-client-chip
+  {background:#FFFFFF; border:1.5px solid var(--hairline)}
+  html.mcs-theme .notes-group-head,
+  html.mcs-theme .notes-ignorer,
+  html.mcs-theme .notes-source-chip,
+  html.mcs-theme .notes-urgence-badge,
+  html.mcs-theme .opp-source-badge,
+  html.mcs-theme .pf-tab,
+  html.mcs-theme .plume-check,
+  html.mcs-theme .rel-averifier-footer,
+  html.mcs-theme .rel-badge,
+  html.mcs-theme .rel-badge-averifier
+  {background:#FFFFFF; border:1.5px solid var(--hairline)}
+  html.mcs-theme .rel-obs-btn,
+  html.mcs-theme .rel-tab,
+  html.mcs-theme .renta-perso-item,
+  html.mcs-theme .rl-brouillon-toggle,
+  html.mcs-theme .rl-btn-row2,
+  html.mcs-theme .rl-card .dv-actions button,
+  html.mcs-theme .rl-duplicata-check,
+  html.mcs-theme .rl-form .rl-form-actions button,
+  html.mcs-theme .rl-perime-btn,
+  html.mcs-theme .rl-source-badge
+  {background:#FFFFFF; border:1.5px solid var(--hairline)}
+  html.mcs-theme .rl-tri-btn,
+  html.mcs-theme .sh-item,
+  html.mcs-theme .sh-mini-check.busy,
+  html.mcs-theme .sh-tile .badge-count,
+  html.mcs-theme .sh-tile-ic,
+  html.mcs-theme .sh-tile-label,
+  html.mcs-theme .tuto-btn,
+  html.mcs-theme .tvr-row .tvr-toggle,
+  html.mcs-theme .upd-row button,
+  html.mcs-theme .vitrine-notes-empty
+  {background:#FFFFFF; border:1.5px solid var(--hairline)}
+  html.mcs-theme .vitrine-notes-preview,
+  html.mcs-theme .vitrine-statut-btn,
+  html.mcs-theme .vitrine-tab,
+  html.mcs-theme .vplay,
+  html.mcs-theme a.fbtn,
+  html.mcs-theme body.cal-mcs-light .cal-chip,
+  html.mcs-theme body.cal-mcs-light .cal-chip-more
+  {background:#FFFFFF; border:1.5px solid var(--hairline)}
+  html.mcs-theme .del-row button,
+  html.mcs-theme .fd-ligne-del,
+  html.mcs-theme .sh-item.danger,
+  html.mcs-theme .sh-mini-item.danger
+  {background:#FFFFFF; border:1.5px solid var(--no)}
+
+  /* ==== SESSION 2 BIS -- SUITE (06/09/2026), point 1, lignes de liste/tableau ====
+     6 selecteurs de lignes completes (pas des boutons compacts) volontairement traites a part
+     (border/fond encadrant chaque <tr> serait casse par le rendu natif des tableaux) : separateur
+     renforce + fond au tap, jamais un encadrement 4 cotes. */
+  html.mcs-theme .doc-folder, html.mcs-theme .client-row, html.mcs-theme .email-row{
+    border-top:1px solid var(--hairline);
+  }
+  html.mcs-theme .plume-journal-item{border-bottom:1px solid var(--hairline)}
+  html.mcs-theme table.contrat-table tbody tr, html.mcs-theme table.ik-table tbody tr{
+    border-bottom:1px solid var(--hairline);
+  }
+  html.mcs-theme table.contrat-table tbody tr:active, html.mcs-theme table.ik-table tbody tr:active{
+    background:var(--field-bg);
+  }
+
+  /* Session 2 bis (suite) : 2 couleurs d'etat en dur echappees au 1er passage sur les couleurs
+     iOS-dark-mode (seuls #FF453A/#FF6961/#FF9F0A/#30D158 avaient ete traites) --
+     #34C759 (vert) 2.22:1 et #FFB340 (orange) 1.78:1 sur blanc, memes echecs, meme fix. */
+  html.mcs-theme .tvr-row .tvr-toggle.tvr-10, html.mcs-theme .notes-source-chip.humain{color:var(--ok)}
+  html.mcs-theme .notes-urgence-badge.moyenne{color:var(--warn)}
+
+  /* ==== SESSION 2 BIS -- SUITE (06/09/2026), point 1 + 5 -- TEINTES DE BADGES ILLISIBLES ====
+     Le controle de contraste (clients/mcs/scripts/verifier-contraste-cliquables.py) a revele
+     une classe de bug supplementaire : ~30 badges d'etat (df-badge/client-badge/rl-source-badge/
+     notes-source-chip/notes-urgence-badge/cal-line-pill/ct-badge/tvr-toggle) utilisent des
+     teintes translucides a 10-18% d'opacite -- percues comme un aplat de couleur net sur le
+     fond SOMBRE du labo, elles deviennent des lavis quasi invisibles (1.0 a 1.24:1) sur le fond
+     CLAIR de MCS. Fix : fond renforce (rgba a plus forte opacite, couleur alignee sur le TEXTE
+     deja affiche par la regle de base -- jamais une nouvelle categorie semantique inventee) +
+     bordure de la meme teinte a pleine opacite. Le texte (deja verifie a 6,58-7,91:1) reste la
+     source d'info fiable ; le fond/la bordure RENFORCENT l'etat, jamais le seul moyen de le lire. */
+  html.mcs-theme .client-badge.ok, html.mcs-theme .df-badge.accepte, html.mcs-theme .df-badge.paye,
+  html.mcs-theme .cal-line-pill.facture, html.mcs-theme .rl-source-badge.confirme,
+  html.mcs-theme .rl-source-badge.manuel, html.mcs-theme .tvr-row .tvr-toggle.tvr-10,
+  html.mcs-theme .notes-source-chip.humain{
+    background:rgba(27,107,46,.14); border:1.5px solid var(--ok);
+  }
+  html.mcs-theme .client-badge.bloque, html.mcs-theme .client-badge.erreur,
+  html.mcs-theme .df-badge.rejete, html.mcs-theme .df-badge.impaye, html.mcs-theme .df-badge.r2,
+  html.mcs-theme .contrat-card .ct-badge.bloque, html.mcs-theme .tvr-row .tvr-toggle.tvr-20,
+  html.mcs-theme .notes-urgence-badge.haute{
+    background:rgba(176,0,16,.12); border:1.5px solid var(--no);
+  }
+  html.mcs-theme .client-badge.incompris, html.mcs-theme .client-badge.precision,
+  html.mcs-theme .df-badge.envoye, html.mcs-theme .df-badge.attente, html.mcs-theme .df-badge.r1,
+  html.mcs-theme .contrat-card .ct-badge.vmc, html.mcs-theme .rl-source-badge.meg,
+  html.mcs-theme .rel-obs-btn.voir, html.mcs-theme .cal-line-pill.a_facturer,
+  html.mcs-theme .notes-source-chip.suppose, html.mcs-theme .bc-type-btn.active{
+    background:rgba(0,80,160,.12); border:1.5px solid var(--blue);
+  }
+  html.mcs-theme .client-badge.abandonne, html.mcs-theme .df-badge.brouillon,
+  html.mcs-theme .df-badge.suspendu, html.mcs-theme .cal-line-pill.passage_seul,
+  html.mcs-theme .cal-mois-pill.passe{
+    background:#FFFFFF; border:1.5px solid var(--hairline); color:var(--muted);
+  }
+  html.mcs-theme .notes-urgence-badge.moyenne{
+    background:rgba(138,75,0,.14); border:1.5px solid var(--warn);
+  }
+  html.mcs-theme .cx-tab.active{background:var(--blue); color:#fff}
+
+  html.mcs-theme .contrat-card .ct-badge-deduit, html.mcs-theme .contrat-card .ct-badge-tva-info{
+    background:#FFFFFF; border:1.5px solid var(--hairline);
+  }
+
+  /* ==== SESSION 2 BIS -- SUITE (06/09/2026), point 2b -- LES 174 SELECTEURS 14-15,9PX ====
+     Demande : soit une justification ecrite par selecteur pour rester sous 16px, soit
+     remonter a 16px. Ecrire 174 justifications individuelles authentiques et non-
+     rubber-stamp (un simple copier-coller du meme argument generique n aurait aucune
+     valeur) n est pas realiste dans le temps de cette session -- decision explicite :
+     appliquer la regle de repli EXPLICITEMENT autorisee par la demande ("si tu ne peux
+     pas ecrire une justification qui tient debout... tu montes"). Les 174 sont des
+     champs de formulaire, noms/titres d element, etats vide/chargement, boutons
+     d action -- rien d assez etroit pour que 16px casse visuellement (verifie sur un
+     echantillon en navigateur avant d appliquer au reste, voir rapport de session).
+     Plancher absolu 13px et secondaire 14px INCHANGES par ailleurs (deja garantis). */
+  html.mcs-theme .hname,
+  html.mcs-theme .msg.err,
+  html.mcs-theme #docs-empty,
+  html.mcs-theme #docs-loading,
+  html.mcs-theme .client-appareil .ca-compte,
+  html.mcs-theme #clients-empty,
+  html.mcs-theme #clients-loading,
+  html.mcs-theme .devis-card .dv-actions .vc-ok,
+  html.mcs-theme .devis-card .dv-actions .vc-no,
+  html.mcs-theme #devis-empty,
+  html.mcs-theme #devis-loading,
+  html.mcs-theme #contrats-mois-selector select
+  {font-size:16px}
+  html.mcs-theme #contrats-generer-btn,
+  html.mcs-theme #contrats-tva-lot-btn,
+  html.mcs-theme .ct-motif-blocage,
+  html.mcs-theme #cal-client-close,
+  html.mcs-theme #cal-client-tel-inline button,
+  html.mcs-theme #cal-signaler-go,
+  html.mcs-theme #cal-client-signaler,
+  html.mcs-theme .cal-decaler-row button,
+  html.mcs-theme #contrats-empty,
+  html.mcs-theme #contrats-loading,
+  html.mcs-theme .ct-detail input,
+  html.mcs-theme .ct-detail textarea
+  {font-size:16px}
+  html.mcs-theme .ct-actions .vc-ok,
+  html.mcs-theme .ct-actions .vc-no,
+  html.mcs-theme .dg-row input,
+  html.mcs-theme .tvr-row .tvr-nom,
+  html.mcs-theme .contrat-form input,
+  html.mcs-theme .contrat-form select,
+  html.mcs-theme .contrat-form textarea,
+  html.mcs-theme #ik-empty,
+  html.mcs-theme #ik-loading,
+  html.mcs-theme #couts-empty,
+  html.mcs-theme #couts-loading,
+  html.mcs-theme .couts-form input
+  {font-size:16px}
+  html.mcs-theme .couts-form select,
+  html.mcs-theme .couts-form textarea,
+  html.mcs-theme #relances-empty,
+  html.mcs-theme #relances-loading,
+  html.mcs-theme .rl-form input[type=date],
+  html.mcs-theme .rl-form textarea,
+  html.mcs-theme .rl-brouillon-corps,
+  html.mcs-theme .rl-question-txt,
+  html.mcs-theme #carnet-empty,
+  html.mcs-theme #carnet-loading,
+  html.mcs-theme .carnet-del,
+  html.mcs-theme .carnet-confirm-text
+  {font-size:16px}
+  html.mcs-theme #portefeuille-empty,
+  html.mcs-theme #portefeuille-loading,
+  html.mcs-theme #relations-empty,
+  html.mcs-theme #relations-loading,
+  html.mcs-theme #docref-empty,
+  html.mcs-theme #docref-loading,
+  html.mcs-theme .docref-del,
+  html.mcs-theme #renta-empty,
+  html.mcs-theme #renta-loading,
+  html.mcs-theme #renta-perso-toggle,
+  html.mcs-theme .renta-perso-item span,
+  html.mcs-theme #meute-empty
+  {font-size:16px}
+  html.mcs-theme #meute-loading,
+  html.mcs-theme .meute-notes-textarea,
+  html.mcs-theme #opp-empty,
+  html.mcs-theme #opp-loading,
+  html.mcs-theme .opp-msg-box textarea,
+  html.mcs-theme .opp-notes-area,
+  html.mcs-theme #vitrine-empty,
+  html.mcs-theme #vitrine-loading,
+  html.mcs-theme .plume-commencer-btn,
+  html.mcs-theme #plume-empty,
+  html.mcs-theme #plume-loading,
+  html.mcs-theme .notes-del
+  {font-size:16px}
+  html.mcs-theme #notes-empty,
+  html.mcs-theme #notes-loading,
+  html.mcs-theme #emails-empty,
+  html.mcs-theme #emails-loading,
+  html.mcs-theme .cal-cell .cal-daynum,
+  html.mcs-theme .fd-ligne-del,
+  html.mcs-theme .mf-card-client,
+  html.mcs-theme #bc-summary-txt,
+  html.mcs-theme .bc-int-nom,
+  html.mcs-theme #delModal p,
+  html.mcs-theme .cb-txt,
+  html.mcs-theme #tuto-bubble-text
+  {font-size:16px}
+  html.mcs-theme #tuto-skip,
+  html.mcs-theme #tuto-next,
+  html.mcs-theme .ouv-nom,
+  html.mcs-theme .ct-mois-titre,
+  html.mcs-theme .rl-brouillon-toggle,
+  html.mcs-theme .carnet-field-value,
+  html.mcs-theme .carnet-field-edit,
+  html.mcs-theme .thread-content,
+  html.mcs-theme .opp-recherche-row .opp-recherche-nom,
+  html.mcs-theme .notes-contenu-edit,
+  html.mcs-theme #notes-bar-input,
+  html.mcs-theme .notes-group-contenu
+  {font-size:16px}
+  html.mcs-theme .notes-contenu,
+  html.mcs-theme .email-objet,
+  html.mcs-theme .cal-ev-title,
+  html.mcs-theme #cal-form label.cf-check,
+  html.mcs-theme #updModal p,
+  html.mcs-theme .vc-edit,
+  html.mcs-theme .vc-attach b,
+  html.mcs-theme .vc-dest b,
+  html.mcs-theme #loginerr,
+  html.mcs-theme #rectime2,
+  html.mcs-theme #pvx,
+  html.mcs-theme .vtxt
+  {font-size:16px}
+  html.mcs-theme .doc-nom,
+  html.mcs-theme .client-nom,
+  html.mcs-theme .ouv-select,
+  html.mcs-theme .ouv-n,
+  html.mcs-theme .ct-tva-opt,
+  html.mcs-theme .cal-line-nom,
+  html.mcs-theme #cal-refuser-inline input,
+  html.mcs-theme #cal-client-tel-inline input,
+  html.mcs-theme #cal-signaler-inline select,
+  html.mcs-theme #cal-signaler-inline input,
+  html.mcs-theme #cal-decaler-form select,
+  html.mcs-theme #cal-decaler-form input[type=text]
+  {font-size:16px}
+  html.mcs-theme .contrat-form .cf-actions .vc-ok,
+  html.mcs-theme .contrat-form .cf-actions .vc-no,
+  html.mcs-theme #ik-close,
+  html.mcs-theme #ik-add,
+  html.mcs-theme .couts-nom,
+  html.mcs-theme .couts-form .cx-actions .vc-ok,
+  html.mcs-theme .couts-form .cx-actions .vc-no,
+  html.mcs-theme #cx-hero .cx-hero-unit,
+  html.mcs-theme #cxa-hero .cx-hero-unit,
+  html.mcs-theme .rl-btn-envoyer,
+  html.mcs-theme .rl-question-input,
+  html.mcs-theme .carnet-confirm-cancel
+  {font-size:16px}
+  html.mcs-theme .carnet-confirm-delete,
+  html.mcs-theme .carnet-lock,
+  html.mcs-theme #carnet-add-form input,
+  html.mcs-theme .pf-nom,
+  html.mcs-theme .rel-nom,
+  html.mcs-theme .docref-nom,
+  html.mcs-theme #renta-redressement .rr-compare,
+  html.mcs-theme #meute-relancer,
+  html.mcs-theme #meute-close,
+  html.mcs-theme .meute-nom,
+  html.mcs-theme #opp-relancer,
+  html.mcs-theme #opp-close
+  {font-size:16px}
+  html.mcs-theme #vitrine-lancer-toggle,
+  html.mcs-theme #vitrine-refresh,
+  html.mcs-theme #vitrine-close,
+  html.mcs-theme .vitrine-nom,
+  html.mcs-theme #plume-refresh,
+  html.mcs-theme #plume-close,
+  html.mcs-theme .plume-nom,
+  html.mcs-theme .ed-body,
+  html.mcs-theme .ed-reply textarea,
+  html.mcs-theme .ed-send,
+  html.mcs-theme .ed-pending-att button,
+  html.mcs-theme .cal-agenda-daynum
+  {font-size:16px}
+  html.mcs-theme #cal-form input,
+  html.mcs-theme #cal-form textarea,
+  html.mcs-theme #cal-form select,
+  html.mcs-theme #devis-form input,
+  html.mcs-theme .fc-choice-txt,
+  html.mcs-theme #fd-form input,
+  html.mcs-theme #bc-form input,
+  html.mcs-theme .vc-resume,
+  html.mcs-theme .vc-docsend-edit,
+  html.mcs-theme #tuto-bubble-title,
+  html.mcs-theme .doc-folder-nom,
+  html.mcs-theme .devis-card .dv-nom
+  {font-size:16px}
+  html.mcs-theme .contrat-card .dv-nom,
+  html.mcs-theme .rl-clients,
+  html.mcs-theme .carnet-nom,
+  html.mcs-theme .renta-card .rc-title,
+  html.mcs-theme .del-row button,
+  html.mcs-theme .fbtn b
+  {font-size:16px}
+
+  /* ==== SESSION 2 BIS -- SUITE (06/09/2026), point 3 -- FAMILLES DE SOUS-ONGLETS RESTANTES ====
+     Meme traitement que .devis-tab/.meute-tab/.notes-tab/.notes-age-tab (deja fait) applique
+     aux familles de pilules pas encore couvertes : inactif = fond blanc + contour bleu 2px +
+     texte bleu, actif = deja en var(--gold-a) (= bleu plein MCS) pour la plupart, rien a changer
+     cote actif sauf .eboxtab (garde son style "segment blanc" deja distinct, juste l'inactif). */
+  html.mcs-theme .clients-tab, html.mcs-theme .cx-tab, html.mcs-theme .pf-tab,
+  html.mcs-theme .rel-tab, html.mcs-theme .vitrine-tab{
+    background:#FFFFFF; border:2px solid var(--blue); color:var(--blue); font-size:14px;
+  }
+  html.mcs-theme .eboxtab{
+    background:#FFFFFF; border:1.5px solid var(--hairline); color:var(--muted);
+  }
+
+  /* ==== SESSION 2 BIS -- SUITE (06/09/2026), BUG TROUVE EN TESTANT : ETATS ACTIFS ECRASES ====
+     En testant Agenda en conditions reelles : le bouton "Mois" (selectionne) etait rendu texte
+     BLANC SUR FOND BLANC, totalement invisible. Cause : mes propres corrections precedentes de
+     cette session ("html.mcs-theme SELECTEUR{background:#FFFFFF;...}", posees sur la regle DE
+     BASE pour donner un contour aux etats INACTIFS) ont, par un effet de specificite CSS non
+     anticipe, une specificite plus haute que la regle ".active"/".selected" DEJA existante dans
+     le fichier ("SELECTEUR.active{background:var(--gold-a)}") -- meme nombre de classes, mais
+     "html.mcs-theme X" ajoute un TYPE (html) que "X.active" seul n'a pas, et le type depobite\n     la comparaison a nombre de classes egal. Resultat : mon fond blanc "inactif" s'appliquait
+     AUSSI aux boutons SELECTIONNES, les rendant indiscernables (ou carrement invisibles quand le
+     texte actif etait deja blanc). Verifie systematiquement (voir script de contraste) : 15 AUTRES
+     selecteurs de cette session avaient exactement le meme risque -- tous re-affirmes ici avec
+     une specificite superieure (html.mcs-theme SELECTEUR.active), pour que "actif = plein bleu"
+     REDEVIENNE visuellement vrai partout, jamais confondu avec "inactif = contour". */
+  html.mcs-theme #cal-viewswitch button.active,
+  html.mcs-theme .clients-tab.active, html.mcs-theme .pf-tab.active, html.mcs-theme .rel-tab.active,
+  html.mcs-theme .meute-act-btn.active, html.mcs-theme .rl-tri-btn.active,
+  html.mcs-theme .vitrine-statut-btn.active, html.mcs-theme .vitrine-tab.active,
+  html.mcs-theme .cal-cell.selected, html.mcs-theme .cx-tab.active,
+  html.mcs-theme .eboxtab.active, html.mcs-theme .etab.active{
+    background:var(--blue); color:#fff; border-color:var(--blue); box-shadow:none;
+  }
+  html.mcs-theme .cal-mois-pill.active{background:var(--blue); color:#fff}
+  html.mcs-theme .bc-type-btn.active{background:rgba(0,80,160,.14); color:var(--blue); border-color:var(--blue)}
+  html.mcs-theme .cf-couleur.selected{border-color:var(--blue)}
+
+  /* Session 2 bis (suite) : meme classe de bug que ci-dessus, 3 AUTRES sous-onglets trouves en
+     verifiant systematiquement TOUTE la session (pas seulement le cas repere par hasard sur
+     Agenda) -- .devis-tab.active/.meute-tab.active/.notes-tab.active avaient deja une surcharge
+     html.mcs-theme MAIS qui ne touchait QUE border-color, pas background -- le fond blanc de
+     l'etat inactif (fixe plus tot dans la session) gagnait donc aussi sur l'onglet SELECTIONNE
+     (verifie : "Devis a valider/envoyer" rendu identique a un onglet inactif). Reaffirme le fond
+     plein + le texte blanc avec une specificite suffisante. */
+  html.mcs-theme .devis-tab.active, html.mcs-theme .meute-tab.active, html.mcs-theme .notes-tab.active{
+    background:var(--blue); color:#fff; border-color:var(--blue);
+  }
+  html.mcs-theme .cf-couleur.selected{border-color:var(--blue)}
+
+  /* Session 2 bis (suite) : MEME classe de bug que les etats actifs, mais cette fois une de mes
+     PROPRES corrections en ecrase une autre -- trouve en testant le modal "Nouvelle version"
+     apres fusion avec le depot public (bouton "Oui" blanc sur blanc, invisible). Cause : mon
+     correctif ".upd-row button{background:#FFFFFF;...}" (elements sans bordure/fond, point 1)
+     cible aussi les boutons .vc-ok/.vc-no qui vivent DANS .upd-row/.ct-actions/.docref-actions --
+     "html.mcs-theme .upd-row button" (2 classes+2 types) bat "html.mcs-theme .vc-ok" (2 classes+
+     1 type). Reaffirme vc-ok/vc-no avec le contexte complet pour regagner la priorite. */
+  html.mcs-theme .upd-row button.vc-ok, html.mcs-theme .ct-actions .vc-ok{background:var(--ok); color:#fff}
+  html.mcs-theme .upd-row button.vc-no, html.mcs-theme .ct-actions .vc-no,
+  html.mcs-theme .docref-actions .vc-no{background:#FFFFFF; color:var(--no); border-color:var(--no)}
 </style>
 </head>
 <body>
@@ -4648,7 +5778,7 @@
 
 <script>
 (function(){
-  var APPV = 'v4.25';
+  var APPV = 'v4.26';
 
   // Debug : ?debug_modal=1 force l'affichage du modal "nouvelle version" sans attendre un vrai
   // déploiement. Capturé ICI, tout au début, car plus bas (login mémorisé, connexion) le code
