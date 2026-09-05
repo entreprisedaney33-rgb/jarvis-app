@@ -3461,20 +3461,31 @@
   #bc-nom-sug li:last-child, #bc-residence-sug li:last-child, #bc-contact-sug li:last-child, #bc-ville-sug li:last-child, #df-nom-sug li:last-child, #df-residence-sug li:last-child, #df-ville-sug li:last-child, #df-contact-sug li:last-child{border-bottom:none}
   #bc-nom-sug li:active, #bc-residence-sug li:active, #bc-contact-sug li:active, #bc-ville-sug li:active, #df-nom-sug li:active, #df-residence-sug li:active, #df-ville-sug li:active, #df-contact-sug li:active{background:rgba(255,255,255,.1)}
   #df-type-toggle{display:flex; gap:6px}
-  /* Modal "nouvelle version installee -> reactiver les notifs ?" — au-dessus de tout le reste
-     (menu, panneaux plein ecran, callbar), pour etre impossible a manquer et bloquer l'interaction
-     avec le reste de l'app tant qu'il n'est pas ferme. */
-  #updModalBg{position:fixed; inset:0; background:rgba(0,0,0,.62); display:none; z-index:70}
+  /* Bandeau "activer les notifications ?" -- Session 3 (07/09/2026, demande explicite Dorian).
+     AVANT : #updModalBg (scrim plein ecran) + #updModal centre bloquaient TOUTE interaction avec
+     le reste de l'app au chargement -- et se declenchaient a CHAQUE mise a jour, meme quand les
+     notifications etaient deja actives (rien a demander). Deux defauts distincts corriges :
+     (1) l'annonce de version pure (aucune question) passe desormais par toast(), non bloquant,
+         qui se referme seul -- voir maybeOfferPushOnUpdate() ;
+     (2) CE bandeau ne s'affiche plus QUE quand il y a une vraie decision a prendre (permission
+         jamais demandee sur cet appareil), au plus une fois par appareil (voir
+         checkNotifDecision()) -- jamais a chaque mise a jour. Si l'autorisation est deja accordee
+         mais l'abonnement a disparu (cas iOS connu), on le retablit SILENCIEUSEMENT, sans rien
+         demander : ce n'est pas une nouvelle question, l'utilisateur a deja tranche une fois.
+     Devenu un bandeau ANCRE EN HAUT, non bloquant : #updModalBg n'est plus jamais ouvert (JS ne
+     l'utilise plus), et #updModal ne couvre plus l'ecran -- l'utilisateur peut continuer a
+     utiliser l'app derriere/autour tant qu'il n'a pas repondu. */
+  #updModalBg{position:fixed; inset:0; background:transparent; display:none; z-index:70; pointer-events:none}
   #updModalBg.open{display:block}
   #updModal{
-    position:fixed; left:22px; right:22px; top:50%; transform:translateY(-50%) scale(.96); z-index:71;
-    background:var(--surface); border-radius:18px; padding:26px 22px calc(20px + env(safe-area-inset-bottom));
+    position:fixed; left:14px; right:14px; top:max(14px, env(safe-area-inset-top)); z-index:71;
+    background:var(--surface); border-radius:18px; padding:18px 20px;
     display:none; flex-direction:column; align-items:center; text-align:center; gap:8px;
-    opacity:0; transition:opacity .2s ease, transform .2s ease;
-    box-shadow:0 24px 70px rgba(0,0,0,.55);
+    opacity:0; transform:translateY(-130%); transition:opacity .22s ease, transform .22s ease;
+    box-shadow:0 14px 40px rgba(0,0,0,.4);
     max-width:360px; margin:0 auto;
   }
-  #updModal.open{display:flex; opacity:1; transform:translateY(-50%) scale(1)}
+  #updModal.open{display:flex; opacity:1; transform:translateY(0)}
   @media (prefers-reduced-motion: reduce){#updModal{transition:none}}
   .upd-emoji{font-size:36px; line-height:1; margin-bottom:2px}
   #updModal b{font-size:17.5px; font-weight:700; line-height:1.3}
@@ -3565,8 +3576,17 @@
      action VRAIMENT pleine (fond vert fonce, texte blanc) et .vc-no reste secondaire (contour,
      texte fonce) -- coherent avec la regle "action destructrice/rare discrete, jamais a cote
      de la principale". */
-  html.mcs-theme .vc-ok{background:var(--ok); color:#fff}
-  html.mcs-theme .vc-no{background:#FFFFFF; color:var(--no); border:2px solid var(--no)}
+  /* Session 3 (07/09/2026, demande explicite Dorian) : .vc-ok/.vc-no etait vert plein / rouge
+     contour -- une paire rouge-vert classique, illisible pour la forme de daltonisme la plus
+     repandue (deuteranopie/protanopie, ~1 homme sur 12) qui ne peut pas distinguer les deux.
+     AUCUNE de ces ~25 modales n'est une action destructrice (la suppression reelle passe par
+     #delModal, rouge seul sans vert en face, jamais touche ici) -- ce sont des Confirmer/Annuler
+     de saisie ordinaires. Fix : bleu MCS plein (l'accent deja utilise partout ailleurs pour
+     l'action principale) + contour neutre pour l'annulation, plus aucune paire rouge/vert.
+     --blue #0050A0 -> 7,91:1 sur blanc (deja verifie ligne ~113) ; --hairline #8A8A8E en bordure
+     -> 3,44:1 sur blanc (cible bordure 3:1) ; texte du bouton annuler = --ink (~16:1, tres large). */
+  html.mcs-theme .vc-ok{background:var(--blue); color:#fff}
+  html.mcs-theme .vc-no{background:#FFFFFF; color:var(--ink); border:2px solid var(--hairline)}
   .vc-ok:disabled,.vc-no:disabled{opacity:.45}
   .vc-edit{
     display:block; width:100%; font:inherit; font-size:14.5px; font-weight:600;
@@ -4723,9 +4743,9 @@
      cible aussi les boutons .vc-ok/.vc-no qui vivent DANS .upd-row/.ct-actions/.docref-actions --
      "html.mcs-theme .upd-row button" (2 classes+2 types) bat "html.mcs-theme .vc-ok" (2 classes+
      1 type). Reaffirme vc-ok/vc-no avec le contexte complet pour regagner la priorite. */
-  html.mcs-theme .upd-row button.vc-ok, html.mcs-theme .ct-actions .vc-ok{background:var(--ok); color:#fff}
+  html.mcs-theme .upd-row button.vc-ok, html.mcs-theme .ct-actions .vc-ok{background:var(--blue); color:#fff}
   html.mcs-theme .upd-row button.vc-no, html.mcs-theme .ct-actions .vc-no,
-  html.mcs-theme .docref-actions .vc-no{background:#FFFFFF; color:var(--no); border-color:var(--no)}
+  html.mcs-theme .docref-actions .vc-no{background:#FFFFFF; color:var(--ink); border-color:var(--hairline)}
 
   /* Session 2 ter, point 3 : le numero de version (#loginver sur l'ecran de connexion,
      #subline sous le nom dans l'en-tete) porte desormais le tenant + le build -- Mickael doit
@@ -5775,12 +5795,12 @@
 
 <div id="updModalBg"></div>
 <div id="updModal">
-  <div class="upd-emoji">🆕</div>
-  <b id="upd-title">Nouvelle version installée</b>
-  <p id="upd-text">Voulez-vous réactiver les notifications ?</p>
+  <div class="upd-emoji">🔔</div>
+  <b id="upd-title">Activer les notifications ?</b>
+  <p id="upd-text">Pour être prévenu des relances, des factures et des messages sans avoir à rouvrir l’app.</p>
   <div class="upd-row">
-    <button id="upd-no" type="button" class="vc-no">Non</button>
-    <button id="upd-yes" type="button" class="vc-ok">Oui</button>
+    <button id="upd-no" type="button" class="vc-no">Plus tard</button>
+    <button id="upd-yes" type="button" class="vc-ok">Activer</button>
   </div>
 </div>
 
@@ -5819,7 +5839,7 @@
          comparaison de chaine de version par tenant. */
   var APPV_MCS = '4.27';
   var APPV_LABO = '1.00';
-  var BUILD = 2;
+  var BUILD = 3;
   // displayVersion()/displayVersionShort() lisent isMcsCode() (definie plus bas dans cette
   // meme IIFE -- declaration de fonction, donc disponible ici par hoisting) : le TENANT
   // affiche depend du code de connexion, jamais d'un simple "APPV" global qui ne dirait ni
@@ -7302,11 +7322,11 @@
   // ---- Toast (petite confirmation, ex: "Copié") ----
   var toastEl = document.getElementById('toast');
   var toastTimer = null;
-  function toast(msg){
+  function toast(msg, ms){
     toastEl.textContent = msg;
     toastEl.classList.add('on');
     clearTimeout(toastTimer);
-    toastTimer = setTimeout(function(){ toastEl.classList.remove('on'); }, 1600);
+    toastTimer = setTimeout(function(){ toastEl.classList.remove('on'); }, ms || 1600);
   }
 
   // ---- Toast avec "Annuler" (archivage d'email differe, cf. archiveWithUndo) ----
@@ -7384,7 +7404,7 @@
     app.style.display = 'flex';
     subline.textContent = (nom ? ('Assistant de ' + nom + ' — en ligne') : 'en ligne') + ' · ' + displayVersion() + ' · H' + window.innerHeight + '/' + ((screen && screen.height) || '?');
     renderHistory(msgs, extras);
-    if (forceModalTest) showUpdateModal(); else maybeOfferPushOnUpdate();
+    if (forceModalTest) updOpen(true); else maybeOfferPushOnUpdate();
     // Un compte tenant secondaire n'a ni les outils métier du compte principal
     // (Meute/Vitrine/SEO, ses propres workflows séparés, non dupliqués pour lui) ni
     // encore d'accès Gmail/Calendrier (détail dans la doc privée du dépôt) : ces
@@ -8196,34 +8216,60 @@
     });
   });
 
-  // ---- Modal "nouvelle version installée -> réactiver les notifications ?" ----
-  // N'apparaît qu'UNE fois par nouvelle version détectée (jarvisAppVersion en localStorage
-  // trace la dernière version vue sur CET appareil) et jamais si les notifs sont déjà actives.
-  var updBg = document.getElementById('updModalBg');
-  var updModal = document.getElementById('updModal');
-  var updTitle = document.getElementById('upd-title');
-  function updOpen(o){ updBg.classList.toggle('open', o); updModal.classList.toggle('open', o); }
+  // ---- Bandeau "activer les notifications ?" (Session 3, 07/09/2026, refonte complete) ----
+  // Deux choses etaient melangees dans une seule boite bloquante avant cette session :
+  // annoncer une version installee (pure information, personne n'a a decider quoi que ce soit)
+  // et demander d'activer les notifications (une vraie decision, mais que l'utilisateur n'a a
+  // prendre QU'UNE FOIS -- ni a chaque ouverture, ni a chaque mise a jour). Elles sont separees :
+  //   - showVersionToast() : un simple toast() non bloquant, se referme seul, aucune action.
+  //   - le bandeau #updModal (jamais plus un scrim plein ecran, voir CSS) : ne s'ouvre QUE quand
+  //     il y a reellement une decision a prendre, au plus une fois par appareil.
+  var updModal = document.getElementById('updModal'); // #updModalBg existe encore dans le DOM (CSS
+  // dormante, transparente et pointer-events:none) mais n'est plus jamais ouvert -- rien ne bloque
+  // derriere ce bandeau.
+  function updOpen(o){ updModal.classList.toggle('open', o); }
   document.getElementById('upd-yes').addEventListener('click', async function(){
     updOpen(false);
     await activatePush();
   });
   document.getElementById('upd-no').addEventListener('click', function(){ updOpen(false); });
-  updBg.addEventListener('click', function(){ updOpen(false); });
-  function showUpdateModal(){
-    updTitle.textContent = '🆕 Nouvelle version ' + displayVersion() + ' installée';
-    updOpen(true);
+  function showVersionToast(courant){
+    toast('🆕 ' + courant + ' installée', 3200);
+  }
+  // checkNotifDecision() tourne a CHAQUE ouverture de l'app (pas seulement sur une mise a jour) :
+  // c'est la seule facon de retablir un abonnement perdu (iOS) ou de proposer l'activation a
+  // quelqu'un qui n'avait pas encore l'app au moment d'une precedente mise a jour (ex : Bruno).
+  async function checkNotifDecision(){
+    if (!pushSupported) return;
+    try {
+      if (Notification.permission === 'granted'){
+        // L'utilisateur a deja tranche par le passe : on ne redemande RIEN. Si l'abonnement a
+        // disparu entre-temps (iOS peut le faire silencieusement), on le retablit tout seul --
+        // subscribe() ne redemande pas de permission tant qu'elle est deja accordee.
+        var reg = await navigator.serviceWorker.ready;
+        var sub = await reg.pushManager.getSubscription();
+        if (!sub) await activatePush();
+      } else if (Notification.permission === 'default'){
+        // Jamais demande sur CET appareil : la seule vraie question, posee au plus une fois
+        // (jarvisPushOffered) pour ne pas revenir a chaque ouverture si la personne a ignore le
+        // bandeau -- elle reste joignable en permanence via 🔔 Notifications dans le menu.
+        if (!read('jarvisPushOffered')){
+          store('jarvisPushOffered', '1');
+          updOpen(true);
+        }
+      }
+      // denied : aucune re-demande possible (le navigateur la bloquerait) -- rien a faire ici,
+      // visible/explicable uniquement via le menu.
+    } catch(e){}
   }
   function maybeOfferPushOnUpdate(){
     var seen = read('jarvisAppVersion');
     var courant = displayVersion();
-    if (seen === courant) return; // deja vu cette version (ou deja propose pour elle)
-    store('jarvisAppVersion', courant);
-    if (!seen) return; // premiere ouverture jamais faite sur cet appareil : pas une mise a jour
-    if (!pushSupported) return; // rien a proposer si le navigateur ne sait meme pas faire de push
-    // Systematique des qu'une vraie mise a jour est detectee, MEME si les notifs semblent deja
-    // actives : iOS coupe l'abonnement en silence avec le temps, et le patron doit de toute facon
-    // etre informe qu'une nouvelle version vient d'etre installee (decision explicite du 2026-07-20).
-    showUpdateModal();
+    if (seen !== courant){
+      store('jarvisAppVersion', courant);
+      if (seen) showVersionToast(courant); // pas au tout premier lancement (rien a "annoncer")
+    }
+    checkNotifDecision();
   }
   // D2 (21/08/2026, demande explicite) : confirmation avant deconnexion -- geste destructif
   // (perd l'acces si le code n'est pas note ailleurs) qui n'en avait aucune, agrandir sa zone
