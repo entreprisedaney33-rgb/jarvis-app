@@ -178,6 +178,10 @@
      seulement son override de taille (14px), legitime. */
   html.mcs-theme .sh-tile-ic{background:transparent; color:var(--blue)}
   *{box-sizing:border-box; -webkit-tap-highlight-color:transparent}
+  /* Section 7 (06/09/2026) : tous les boutons desactives de l'app (~14 familles) ne se
+     distinguaient que par l'opacite (paleur) -- aucun n'avait cursor:not-allowed. Regle unique,
+     globale, plutot que 14 corrections eparpillees. */
+  button:disabled{cursor:not-allowed}
   html{-webkit-text-size-adjust:100%; height:100%}
   body{
     margin:0; background:var(--bg); color:var(--ink);
@@ -251,14 +255,21 @@
     transition:transform .32s cubic-bezier(.32,.72,0,1);
   }
   header.menu-open #hchev{transform:rotate(180deg)}
+  /* Section 6 (06/09/2026) : rond icone seule ("Appeler Jarvis" ne vivait que dans un
+     aria-label invisible au toucher) -> icone + mot "Appeler" empile dessous, meme famille
+     visuelle (degrade gold-a/gold-b). Largeur elargie (44 -> 60px) pour que le mot tienne sans
+     empiler des lettres coupees ; le header (flex:0 0 auto, align-items:center) grandit tout
+     seul pour accueillir la hauteur supplementaire, aucun autre element de l'en-tete ne bouge. */
   #hcallbtn{
     margin-left:auto; flex:0 0 auto;
-    width:44px; height:44px; border-radius:50%; border:0; padding:0;
-    display:flex; align-items:center; justify-content:center;
+    width:60px; height:44px; border-radius:14px; border:0; padding:4px 0;
+    display:flex; flex-direction:column; align-items:center; justify-content:center; gap:1px;
     background:linear-gradient(145deg,var(--gold-a),var(--gold-b));
     color:var(--gold-ink-2); box-shadow:0 1px 8px rgba(var(--gold-rgb),.4);
     cursor:pointer; -webkit-tap-highlight-color:transparent;
   }
+  #hcallbtn svg{flex:0 0 auto; width:18px; height:18px}
+  #hcallbtn span{font-size:9.5px; font-weight:700; line-height:1}
   #hcallbtn:active{opacity:.75}
   /* Logo en-tete (25/08/2026) : le badge de notification (.hbadge, juste apres) doit rester
      ancre au coin peu importe LEQUEL des deux logos est affiche (le "J" mono-j pour le labo, le
@@ -427,6 +438,21 @@
   #homeGrid.grow{flex:1 1 auto}
   #app.home-mode #homeGrid{display:flex; flex-direction:column; flex:1 1 auto; min-height:0}
   #app.home-mode #chat{display:none}
+  /* Session 4 (06/09/2026) : MEME BUG que l'accueil (cf. juste au-dessus) mais sur les 9 PANNEAUX
+     eux-memes -- Mickael, textuellement : "sur ordinateur c'est degueulasse". Chacun des 9
+     panneaux (#rentaview, #contratsview, #devisview, #relancesview, #calendarview,
+     #opportunitesview, #carnetview, #ikview, #notesview) est en position:fixed;inset:0 (plein
+     ecran, sans aucune limite de largeur) -- verifie a 1920px : le contenu (tableaux, cartes)
+     s'etire bord a bord, colonnes ecartees de partout, illisible. Meme conteneur DRY que
+     l'accueil : chaque panneau a un enfant #xxx-list qui porte deja flex:1+overflow-y:auto
+     (convention commune aux 9) -- centre CE conteneur, pas le panneau lui-meme (qui reste
+     plein ecran pour son fond). Scope html.mcs-theme uniquement (Mickael/Bruno) -- labo n'a pas
+     signale ce probleme et doit rester pixel-identique. */
+  html.mcs-theme #relances-list, html.mcs-theme #devis-list, html.mcs-theme #contrats-list,
+  html.mcs-theme #cal-list, html.mcs-theme #renta-list, html.mcs-theme #opp-list,
+  html.mcs-theme #carnet-list, html.mcs-theme #ik-list, html.mcs-theme #notes-list{
+    width:100%; max-width:1180px; margin-left:auto; margin-right:auto;
+  }
   /* Ordre des tuiles sur la home (uniquement quand la grille vit dans #homeGrid -- l'ordre du
      DOM lui-meme ne change jamais, donc rien ne bouge cote #sheet/tenant labo). */
   #homeGrid #sh-relances{order:1}
@@ -542,22 +568,31 @@
      legerement different de --bg pour lire "barre" plutot que "vide", mais en clair). Trouve en
      testant a 360px : la home MCS blanche gardait une bande noire tout en bas. */
   html.mcs-theme{--composer-bg:#F7F7F9}
+  /* Section 6 (06/09/2026) : rond icone seule -> icone + mot empile dessous, meme principe que
+     #hcallbtn juste au-dessus dans ce fichier. Largeur elargie (40 -> 50px) pour le mot ; le
+     composer est deja align-items:flex-end (le textarea grandit, les boutons restent colles en
+     bas) donc grandir seulement leur HAUTEUR ne deplace rien d'autre -- verifie visuellement. */
   #micbtn{
-    width:40px; height:40px; border-radius:50%; flex:0 0 auto; cursor:pointer;
+    width:50px; height:48px; border-radius:14px; flex:0 0 auto; cursor:pointer;
     border:none; background:var(--surface); color:var(--muted);
-    display:none; align-items:center; justify-content:center;
+    display:none; flex-direction:column; align-items:center; justify-content:center; gap:1px;
     margin-bottom:2px;
   }
+  #micbtn svg{flex:0 0 auto}
+  #micbtn span{font-size:9px; font-weight:700; line-height:1}
   #micbtn.on{display:flex}
   #micbtn.rec{background:var(--no); color:#fff; animation:pulse 1.4s infinite}
   /* Refonte accueil MCS (29/08/2026) : bascule home<->conversation -- meme gabarit que #micbtn
-     (40px, rond) pour ne rien deranger a l'alignement du composer. display gere en JS
+     pour ne rien deranger a l'alignement du composer. display gere en JS
      (updateHomeToggleBtn), pas de classe .on -- un seul etat booleen, pas besoin d'un 2e systeme. */
   #homeToggleBtn{
-    width:40px; height:40px; border-radius:50%; flex:0 0 auto; cursor:pointer;
+    width:50px; height:48px; border-radius:14px; flex:0 0 auto; cursor:pointer;
     border:none; background:var(--surface); color:var(--muted); font-size:18px;
-    display:flex; align-items:center; justify-content:center; margin-bottom:2px;
+    display:flex; flex-direction:column; align-items:center; justify-content:center; gap:1px;
+    margin-bottom:2px;
   }
+  #homeToggleBtn svg{flex:0 0 auto}
+  #homeToggleBtn span{font-size:9px; font-weight:700; line-height:1}
   @keyframes pulse{0%,100%{box-shadow:0 0 0 0 rgba(255,69,58,.5)}60%{box-shadow:0 0 0 12px rgba(255,69,58,0)}}
   @media (prefers-reduced-motion: reduce){#micbtn.rec{animation:none}}
   #textin{
@@ -568,12 +603,14 @@
   #textin::placeholder{color:var(--muted)}
   #textin:focus{outline:none; border-color:rgba(10,132,255,.7)}
   #sendbtn{
-    width:40px; height:40px; border-radius:50%; flex:0 0 auto; cursor:pointer;
+    width:50px; height:48px; border-radius:14px; flex:0 0 auto; cursor:pointer;
     border:none; background:var(--blue); color:#fff;
-    display:flex; align-items:center; justify-content:center;
+    display:flex; flex-direction:column; align-items:center; justify-content:center; gap:1px;
     margin-bottom:2px;
     transition:opacity .12s ease, transform .12s ease;
   }
+  #sendbtn svg{flex:0 0 auto}
+  #sendbtn span{font-size:9px; font-weight:700; line-height:1}
   #sendbtn:active{transform:scale(.9)}
   #sendbtn.idle{opacity:.4}
   @media (prefers-reduced-motion: reduce){#sendbtn{transition:none}}
@@ -595,7 +632,10 @@
   #pvplay{width:28px; height:28px; border-radius:50%; border:none; cursor:pointer; background:rgba(255,255,255,.28); color:#fff; font-size:11px; flex:0 0 auto; display:flex; align-items:center; justify-content:center}
   #pvtime{font-size:12.5px; color:#fff; font-variant-numeric:tabular-nums}
   #pvx{width:34px; height:34px; border-radius:50%; border:none; cursor:pointer; background:var(--surface); color:var(--muted); font-size:15px; flex:0 0 auto}
-  #pvsend{width:40px; height:40px; border-radius:50%; border:none; cursor:pointer; background:var(--blue); color:#fff; display:flex; align-items:center; justify-content:center; flex:0 0 auto}
+  /* Section 6 (06/09/2026) : meme conversion que #sendbtn -- rond icone seule -> icone + mot. */
+  #pvsend{width:50px; height:48px; border-radius:14px; border:none; cursor:pointer; background:var(--blue); color:#fff; display:flex; flex-direction:column; align-items:center; justify-content:center; gap:1px; flex:0 0 auto}
+  #pvsend svg{flex:0 0 auto}
+  #pvsend span{font-size:9px; font-weight:700; line-height:1}
   /* Ecran dedie Bruno -- REVU le 2026-08-11 (retour Matheo) : le gros micro central du
      2026-08-10 est retire. Raison : un bug de comprehension vocale le decouragerait des le
      1er essai ("ca va le souler"). Il tape desormais, ou utilise le micro NATIF du clavier
@@ -795,9 +835,9 @@
     padding:calc(10px + env(safe-area-inset-top)) 14px 12px;
     border-bottom:0.5px solid var(--hairline);
   }
-  #docs-head b{font-size:16px; flex:1; white-space:nowrap; overflow:hidden; text-overflow:ellipsis}
+  #docs-head b{font-size:16px; flex:1; line-height:1.25}
   #docs-close, #docs-back{
-    width:32px; height:32px; border-radius:50%; border:0; flex:0 0 auto;
+    width:44px; height:44px; border-radius:50%; border:0; flex:0 0 auto;
     background:var(--surface); color:var(--ink); font-size:16px;
     display:flex; align-items:center; justify-content:center; cursor:pointer;
     -webkit-tap-highlight-color:transparent;
@@ -849,9 +889,9 @@
     padding:calc(10px + env(safe-area-inset-top)) 14px 12px;
     border-bottom:0.5px solid var(--hairline);
   }
-  #clients-head b{font-size:16px; flex:1; white-space:nowrap; overflow:hidden; text-overflow:ellipsis}
+  #clients-head b{font-size:16px; flex:1; line-height:1.25}
   #clients-close, #clients-back{
-    width:32px; height:32px; border-radius:50%; border:0; flex:0 0 auto;
+    width:44px; height:44px; border-radius:50%; border:0; flex:0 0 auto;
     background:var(--surface); color:var(--ink); font-size:16px;
     display:flex; align-items:center; justify-content:center; cursor:pointer;
     -webkit-tap-highlight-color:transparent;
@@ -936,13 +976,13 @@
     padding:calc(10px + env(safe-area-inset-top)) 14px 12px;
     border-bottom:0.5px solid var(--hairline);
   }
-  #devis-head b{font-size:16px; flex:1; white-space:nowrap; overflow:hidden; text-overflow:ellipsis}
+  #devis-head b{font-size:16px; flex:1; line-height:1.25}
   /* 25/08/2026 (soir) : #devis-add ouvre la fiche client (devisOpen()) -- meme gabarit visuel
      que #devis-close, jamais un bloc epingle (Mickael a 11 tuiles + le Point du jour, un bloc
      de plus lui volerait de la place -- contrairement a Bruno, pour qui la fiche EST le seul
      ecran). Regle A tactile (44x44 invisible) ajoutee separement, cf. plus haut dans ce fichier. */
   #devis-add, #devis-close{
-    width:32px; height:32px; border-radius:50%; border:0; flex:0 0 auto;
+    width:44px; height:44px; border-radius:50%; border:0; flex:0 0 auto;
     display:flex; align-items:center; justify-content:center; cursor:pointer;
     -webkit-tap-highlight-color:transparent;
   }
@@ -1032,9 +1072,9 @@
     padding:calc(10px + env(safe-area-inset-top)) 14px 12px;
     border-bottom:0.5px solid var(--hairline);
   }
-  #contrats-head b{font-size:16px; flex:1; white-space:nowrap; overflow:hidden; text-overflow:ellipsis}
+  #contrats-head b{font-size:16px; flex:1; line-height:1.25}
   #contrats-close{
-    width:32px; height:32px; border-radius:50%; border:0; flex:0 0 auto;
+    width:44px; height:44px; border-radius:50%; border:0; flex:0 0 auto;
     font-size:16px;
     display:flex; align-items:center; justify-content:center; cursor:pointer;
     -webkit-tap-highlight-color:transparent;
@@ -1171,7 +1211,7 @@
     max-height:80vh; overflow-y:auto;
   }
   #cal-client-card.show{display:flex}
-  #cal-client-close{position:absolute; top:10px; right:10px; width:32px; height:32px; border-radius:50%; border:0; background:var(--surface); color:var(--ink); font-size:14px; cursor:pointer}
+  #cal-client-close{position:absolute; top:10px; right:10px; width:44px; height:44px; border-radius:50%; border:0; background:var(--surface); color:var(--ink); font-size:14px; cursor:pointer}
   #cal-client-titre{font-size:17px; font-weight:700; margin:0; padding-right:30px}
   #cal-client-sous{font-size:13px; color:var(--muted); margin:0}
   #cal-client-actions{display:flex; flex-wrap:wrap; gap:8px}
@@ -1277,17 +1317,22 @@
     padding:calc(10px + env(safe-area-inset-top)) 14px 12px; border-bottom:0.5px solid var(--hairline);
   }
   #bcal-head b{font-size:16px; flex:1}
-  #bcal-close{width:32px; height:32px; border-radius:50%; border:0; background:var(--surface); color:var(--ink); font-size:16px; cursor:pointer}
+  #bcal-close{width:44px; height:44px; border-radius:50%; border:0; background:var(--surface); color:var(--ink); font-size:16px; cursor:pointer}
   #bcal-mois-titre{flex:0 0 auto; margin:10px 14px 0; font-size:13px; color:var(--muted)}
   #bcal-list{flex:1; overflow-y:auto; -webkit-overflow-scrolling:touch; padding:10px 14px calc(20px + env(safe-area-inset-bottom))}
 
   #contrats-list{flex:1; overflow-y:auto; -webkit-overflow-scrolling:touch; padding:14px 14px calc(20px + env(safe-area-inset-bottom))}
   #contrats-empty, #contrats-loading{color:var(--muted); text-align:center; padding:40px 20px; font-size:14px}
+  /* Section 6 (06/09/2026) : rond 52px avec juste un "+" -- aucun mot visible, seul un
+     aria-label invisible au toucher (Mickael est sur tablette). Repris exactement du gabarit
+     deja corrige #ik-add (pastille large centree, icone + mot, meme apparence/estampille
+     gold-a/gold-b) plutot que d'inventer un 2e style de bouton flottant. */
   #contrats-add-btn{
-    position:fixed; right:18px; bottom:calc(22px + env(safe-area-inset-bottom)); z-index:51;
-    width:52px; height:52px; border-radius:50%; border:0;
+    position:fixed; left:50%; transform:translateX(-50%);
+    bottom:calc(18px + env(safe-area-inset-bottom)); z-index:51;
+    display:none; align-items:center; gap:7px; padding:13px 22px; border:0; border-radius:99px;
     background:linear-gradient(145deg,var(--gold-a),var(--gold-b)); color:var(--gold-ink);
-    font-size:26px; display:none; align-items:center; justify-content:center; cursor:pointer;
+    font-size:15px; font-weight:700; cursor:pointer; white-space:nowrap;
     box-shadow:0 6px 16px rgba(0,0,0,.35); -webkit-tap-highlight-color:transparent;
   }
   .contrat-card{
@@ -1462,9 +1507,9 @@
     padding:calc(10px + env(safe-area-inset-top)) 14px 12px;
     border-bottom:0.5px solid var(--hairline);
   }
-  #ik-head b{font-size:16px; flex:1; white-space:nowrap; overflow:hidden; text-overflow:ellipsis}
+  #ik-head b{font-size:16px; flex:1; line-height:1.25}
   #ik-close{
-    width:32px; height:32px; border-radius:50%; border:0; flex:0 0 auto;
+    width:44px; height:44px; border-radius:50%; border:0; flex:0 0 auto;
     font-size:15px;
     display:flex; align-items:center; justify-content:center; cursor:pointer;
     -webkit-tap-highlight-color:transparent; text-decoration:none;
@@ -1550,14 +1595,22 @@
     padding:calc(10px + env(safe-area-inset-top)) 14px 12px;
     border-bottom:0.5px solid var(--hairline);
   }
-  #couts-head b{font-size:16px; flex:1; white-space:nowrap; overflow:hidden; text-overflow:ellipsis}
-  #couts-add, #couts-close{
-    width:32px; height:32px; border-radius:50%; border:0; flex:0 0 auto;
+  #couts-head b{font-size:16px; flex:1; line-height:1.25}
+  #couts-close{
+    width:44px; height:44px; border-radius:50%; border:0; flex:0 0 auto;
     font-size:16px;
     display:flex; align-items:center; justify-content:center; cursor:pointer;
     -webkit-tap-highlight-color:transparent;
   }
-  #couts-add{background:var(--surface); color:var(--ink)}
+  /* Section 6 (06/09/2026) : meme conversion que #carnet-add/#docref-add/#ik-add. */
+  #couts-add{
+    position:fixed; left:50%; transform:translateX(-50%);
+    bottom:calc(18px + env(safe-area-inset-bottom)); z-index:51;
+    display:flex; align-items:center; gap:7px; padding:13px 22px; border:0; border-radius:99px;
+    background:var(--blue); color:#fff;
+    font-size:15px; font-weight:700; cursor:pointer; white-space:nowrap;
+    box-shadow:0 6px 16px rgba(0,0,0,.35); -webkit-tap-highlight-color:transparent;
+  }
   #couts-list{flex:1; overflow-y:auto; -webkit-overflow-scrolling:touch; padding:6px 14px calc(20px + env(safe-area-inset-bottom))}
   #couts-empty, #couts-loading{color:var(--muted); text-align:center; padding:40px 20px; font-size:14px}
   .couts-row{
@@ -1717,9 +1770,9 @@
     padding:calc(10px + env(safe-area-inset-top)) 14px 12px;
     border-bottom:0.5px solid var(--hairline);
   }
-  #relances-head b{font-size:16px; flex:1; white-space:nowrap; overflow:hidden; text-overflow:ellipsis}
+  #relances-head b{font-size:16px; flex:1; line-height:1.25}
   #relances-close{
-    width:32px; height:32px; border-radius:50%; border:0; flex:0 0 auto;
+    width:44px; height:44px; border-radius:50%; border:0; flex:0 0 auto;
     font-size:16px;
     display:flex; align-items:center; justify-content:center; cursor:pointer;
     -webkit-tap-highlight-color:transparent;
@@ -1965,13 +2018,22 @@
     border-bottom:0.5px solid var(--hairline);
   }
   #carnet-head b{font-size:16px; flex:1}
-  #carnet-add, #carnet-close{
-    width:32px; height:32px; border-radius:50%; border:0; flex:0 0 auto;
+  #carnet-close{
+    width:44px; height:44px; border-radius:50%; border:0; flex:0 0 auto;
     font-size:18px; font-weight:700;
     display:flex; align-items:center; justify-content:center; cursor:pointer;
     -webkit-tap-highlight-color:transparent;
   }
-  #carnet-add{background:var(--surface); color:var(--ink)}
+  /* Section 6 (06/09/2026) : sorti de l'en-tete (rond 32px "+" seul, aucun mot visible) -- meme
+     pastille flottante centree bas + mot lisible que #ik-add/#contrats-add-btn. */
+  #carnet-add{
+    position:fixed; left:50%; transform:translateX(-50%);
+    bottom:calc(18px + env(safe-area-inset-bottom)); z-index:51;
+    display:flex; align-items:center; gap:7px; padding:13px 22px; border:0; border-radius:99px;
+    background:var(--blue); color:#fff;
+    font-size:15px; font-weight:700; cursor:pointer; white-space:nowrap;
+    box-shadow:0 6px 16px rgba(0,0,0,.35); -webkit-tap-highlight-color:transparent;
+  }
   #carnet-search-wrap{flex:0 0 auto; padding:10px 14px 0}
   #carnet-search{
     width:100%; box-sizing:border-box; border:none; border-radius:12px;
@@ -2050,7 +2112,7 @@
   }
   #portefeuille-head b{font-size:16px; flex:1}
   #portefeuille-close{
-    width:32px; height:32px; border-radius:50%; border:0; flex:0 0 auto;
+    width:44px; height:44px; border-radius:50%; border:0; flex:0 0 auto;
     font-size:16px;
     display:flex; align-items:center; justify-content:center; cursor:pointer;
     -webkit-tap-highlight-color:transparent;
@@ -2097,7 +2159,7 @@
   }
   #relations-head b{font-size:16px; flex:1}
   #relations-close{
-    width:32px; height:32px; border-radius:50%; border:0; flex:0 0 auto;
+    width:44px; height:44px; border-radius:50%; border:0; flex:0 0 auto;
     font-size:16px;
     display:flex; align-items:center; justify-content:center; cursor:pointer;
     -webkit-tap-highlight-color:transparent;
@@ -2178,13 +2240,22 @@
     border-bottom:0.5px solid var(--hairline);
   }
   #docref-head b{font-size:16px; flex:1}
-  #docref-add, #docref-close{
-    width:32px; height:32px; border-radius:50%; border:0; flex:0 0 auto;
+  #docref-close{
+    width:44px; height:44px; border-radius:50%; border:0; flex:0 0 auto;
     font-size:16px;
     display:flex; align-items:center; justify-content:center; cursor:pointer;
     -webkit-tap-highlight-color:transparent;
   }
-  #docref-add{background:var(--surface); color:var(--ink)}
+  /* Section 6 (06/09/2026) : meme conversion que #carnet-add/#ik-add -- rond "+" seul sans mot
+     visible -> pastille flottante centree bas, icone + mot. */
+  #docref-add{
+    position:fixed; left:50%; transform:translateX(-50%);
+    bottom:calc(18px + env(safe-area-inset-bottom)); z-index:51;
+    display:flex; align-items:center; gap:7px; padding:13px 22px; border:0; border-radius:99px;
+    background:var(--blue); color:#fff;
+    font-size:15px; font-weight:700; cursor:pointer; white-space:nowrap;
+    box-shadow:0 6px 16px rgba(0,0,0,.35); -webkit-tap-highlight-color:transparent;
+  }
   #docref-note{font-size:12.5px; color:var(--muted); text-align:center; margin:10px 14px 0; line-height:1.4}
   #docref-list{flex:1; overflow-y:auto; -webkit-overflow-scrolling:touch; padding:10px 14px calc(20px + env(safe-area-inset-bottom))}
   #docref-empty, #docref-loading{color:var(--muted); text-align:center; padding:40px 20px; font-size:14px}
@@ -2198,7 +2269,7 @@
   .docref-exp-perime{background:rgba(255,69,58,.18); color:#ff8a8a}
   .docref-actions{display:flex; gap:8px; flex-wrap:wrap}
   .docref-actions .vc-no{flex:1 1 auto; min-width:120px; padding:8px 10px; font-size:13px}
-  .docref-del{width:32px; height:32px; border-radius:50%; border:0; flex:0 0 auto; background:#3a2020; color:#ff8a8a; font-size:14px; cursor:pointer; -webkit-tap-highlight-color:transparent}
+  .docref-del{width:44px; height:44px; border-radius:50%; border:0; flex:0 0 auto; background:#3a2020; color:#ff8a8a; font-size:14px; cursor:pointer; -webkit-tap-highlight-color:transparent}
   #docref-form-bg{position:fixed; inset:0; z-index:55; background:rgba(0,0,0,.55); display:none}
   #docref-form-bg.open{display:block}
   #docreff-file-chip{font-size:13px; color:var(--muted); margin-top:8px}
@@ -2215,9 +2286,9 @@
     padding:calc(10px + env(safe-area-inset-top)) 14px 12px;
     border-bottom:0.5px solid var(--hairline);
   }
-  #renta-head b{font-size:16px; flex:1; white-space:nowrap; overflow:hidden; text-overflow:ellipsis}
+  #renta-head b{font-size:16px; flex:1; line-height:1.25}
   #renta-close{
-    width:32px; height:32px; border-radius:50%; border:0; flex:0 0 auto;
+    width:44px; height:44px; border-radius:50%; border:0; flex:0 0 auto;
     font-size:16px;
     display:flex; align-items:center; justify-content:center; cursor:pointer;
     -webkit-tap-highlight-color:transparent;
@@ -2392,7 +2463,7 @@
   }
   #meute-head b{font-size:16px; flex:1}
   #meute-relancer, #meute-close{
-    width:32px; height:32px; border-radius:50%; border:0; flex:0 0 auto;
+    width:44px; height:44px; border-radius:50%; border:0; flex:0 0 auto;
     font-size:15px;
     display:flex; align-items:center; justify-content:center; cursor:pointer;
     -webkit-tap-highlight-color:transparent;
@@ -2499,13 +2570,21 @@
     border-bottom:0.5px solid var(--hairline);
   }
   #opp-head b{font-size:16px; flex:1}
-  #opp-relancer, #opp-close{
-    width:32px; height:32px; border-radius:50%; border:0; flex:0 0 auto;
+  #opp-close{
+    width:44px; height:44px; border-radius:50%; border:0; flex:0 0 auto;
     font-size:15px;
     display:flex; align-items:center; justify-content:center; cursor:pointer;
     -webkit-tap-highlight-color:transparent;
   }
-  #opp-relancer{background:var(--surface); color:var(--ink)}
+  /* Section 6 (06/09/2026) : rond icone seule ("aria-label" invisible au toucher) -> pastille
+     avec mot lisible, toujours dans l'en-tete (assez de place, le titre passe a la ligne si
+     besoin depuis la section 3/C). */
+  #opp-relancer{
+    height:32px; padding:0 12px; border-radius:16px; border:0; flex:0 0 auto; gap:6px;
+    font-size:13px; font-weight:700; white-space:nowrap;
+    display:flex; align-items:center; justify-content:center; cursor:pointer;
+    -webkit-tap-highlight-color:transparent; background:var(--surface); color:var(--ink);
+  }
   #opp-relancer.spin svg{animation:meute-spin 1s linear infinite}
   #opp-status{padding:8px 14px; font-size:12.5px; color:var(--muted); text-align:center; display:none}
   #opp-status.show{display:block}
@@ -2583,7 +2662,7 @@
   }
   #vitrine-head b{font-size:16px; flex:1}
   #vitrine-lancer-toggle, #vitrine-refresh, #vitrine-close{
-    width:32px; height:32px; border-radius:50%; border:0; flex:0 0 auto;
+    width:44px; height:44px; border-radius:50%; border:0; flex:0 0 auto;
     font-size:15px;
     display:flex; align-items:center; justify-content:center; cursor:pointer;
     -webkit-tap-highlight-color:transparent;
@@ -2740,7 +2819,7 @@
   }
   #plume-head b{font-size:16px; flex:1}
   #plume-refresh, #plume-close{
-    width:32px; height:32px; border-radius:50%; border:0; flex:0 0 auto;
+    width:44px; height:44px; border-radius:50%; border:0; flex:0 0 auto;
     font-size:15px;
     display:flex; align-items:center; justify-content:center; cursor:pointer;
     -webkit-tap-highlight-color:transparent;
@@ -2844,7 +2923,7 @@
   }
   #notes-head b{font-size:16px; flex:1}
   #notes-add, #notes-close{
-    width:32px; height:32px; border-radius:50%; border:0; flex:0 0 auto;
+    width:44px; height:44px; border-radius:50%; border:0; flex:0 0 auto;
     font-size:18px; font-weight:700;
     display:flex; align-items:center; justify-content:center; cursor:pointer;
     -webkit-tap-highlight-color:transparent;
@@ -3003,7 +3082,7 @@
   }
   #emails-head b{font-size:17px; font-weight:700; flex:1}
   #emails-close, #email-back{
-    width:32px; height:32px; border-radius:50%; border:0; flex:0 0 auto;
+    width:44px; height:44px; border-radius:50%; border:0; flex:0 0 auto;
     background:#E3E3E8; color:#3C3C43; font-size:16px;
     display:flex; align-items:center; justify-content:center; cursor:pointer;
     -webkit-tap-highlight-color:transparent;
@@ -3150,7 +3229,7 @@
   }
   #cal-head b{font-size:16px; flex:1}
   #cal-close{
-    width:32px; height:32px; border-radius:50%; border:0; flex:0 0 auto;
+    width:44px; height:44px; border-radius:50%; border:0; flex:0 0 auto;
     font-size:16px;
     display:flex; align-items:center; justify-content:center; cursor:pointer;
     -webkit-tap-highlight-color:transparent;
@@ -3434,7 +3513,7 @@
   #mf-view-head{display:flex; align-items:center; justify-content:space-between; flex:0 0 auto}
   #mf-view-head b{font-size:16px}
   #mf-view-close{
-    width:32px; height:32px; border-radius:50%; border:0; flex:0 0 auto;
+    width:44px; height:44px; border-radius:50%; border:0; flex:0 0 auto;
     font-size:16px;
     display:flex; align-items:center; justify-content:center; cursor:pointer;
     -webkit-tap-highlight-color:transparent;
@@ -3669,9 +3748,19 @@
   html.mcs-theme .vc-ok{background:var(--blue); color:#fff}
   html.mcs-theme .vc-no{background:#FFFFFF; color:var(--ink); border:2px solid var(--hairline)}
   .vc-ok:disabled,.vc-no:disabled{opacity:.45}
+  /* Section 7 (06/09/2026) : "Annuler le devis" bascule entre .vc-edit (repos) et .vc-no (arme,
+     "Confirmer l'annulation ?") -- .vc-no seul n'a pas de marge, donc au moment le plus sensible
+     (juste avant de confirmer une suppression) le bouton redevenait colle a la ligne
+     Envoyer/Valider juste au-dessus. Regle par position (suit toujours .vc-row ici), peu importe
+     laquelle des 2 classes est active. */
+  .vc-row + .vc-no{margin-top:8px; display:block; width:100%}
+  /* Section 7 (06/09/2026) : margin-top ajoute -- ce bouton peut suivre directement .vc-row
+     (cas "Annuler le devis" apres Envoyer/Valider) sans aucun espace avant, un bouton destructeur
+     colle a un bouton de validation. margin-bottom deja present ne joue que dans l'autre sens
+     (quand .vc-edit precede la ligne, cas "Modifier"). */
   .vc-edit{
     display:block; width:100%; font:inherit; font-size:14.5px; font-weight:600;
-    padding:10px; border-radius:12px; margin-bottom:8px; cursor:pointer;
+    padding:10px; border-radius:12px; margin-top:8px; margin-bottom:8px; cursor:pointer;
     background:none; border:0.5px solid var(--hairline); color:var(--muted);
   }
   .vc-edit:disabled{opacity:.4}
@@ -3756,11 +3845,21 @@
   @media (prefers-reduced-motion: reduce){ .cb-dot{animation:none} }
 
   /* ---- Tutoriel par onglet (2026-08-13, MCS patron uniquement) ---- */
+  /* Section 6 (06/09/2026) : ce bouton n'affichait que l'emoji "❓" -- lisible mais pas un MOT
+     (Mickael est sur tablette, aucun title/tooltip). Icone + "Aide" desormais, garde une
+     largeur compacte (ce bouton est injecte dans ~20 en-tetes de panneaux, jamais de place a
+     revendre). */
+  /* Section 7 (06/09/2026) : 32px de haut mesure en reel, sous le plancher 44px (Mickael sur
+     tablette). min-height ajoute plutot que gonfler le padding visuel -- la zone cliquable
+     grandit, l'apparence (icone+mot compact) ne change pas. */
   .tuto-btn{
-    flex:0 0 auto; background:none; border:none; font-size:18px; line-height:1;
-    padding:6px; margin-right:2px; cursor:pointer; opacity:.85;
+    flex:0 0 auto; display:flex; align-items:center; justify-content:center; gap:4px;
+    min-height:44px; background:none; border:none;
+    font-size:13px; font-weight:700; line-height:1;
+    padding:6px 8px; margin-right:2px; cursor:pointer; opacity:.85; white-space:nowrap;
     -webkit-tap-highlight-color:transparent;
   }
+  .tuto-btn svg{flex:0 0 auto; width:18px; height:18px}
   .tuto-btn:active{opacity:.5}
   #tuto-overlay{position:fixed; inset:0; z-index:80; display:none}
   #tuto-spot{
@@ -4376,7 +4475,6 @@
   html.mcs-theme #contrats-designations-groupe-btn,
   html.mcs-theme #contrats-tva-lot-btn,
   html.mcs-theme #contrats-tva-vmc-revue-btn,
-  html.mcs-theme #couts-add,
   html.mcs-theme #df-contact-sug li,
   html.mcs-theme #df-nom-sug li,
   html.mcs-theme #df-residence-sug li,
@@ -4384,7 +4482,6 @@
   html.mcs-theme #df-type-toggle,
   html.mcs-theme #df-ville-sug li
   {background:#FFFFFF; border:1.5px solid var(--hairline)}
-  html.mcs-theme #docref-add,
   html.mcs-theme #docreff-file-chip,
   html.mcs-theme #docs-back,
   html.mcs-theme #email-back,
@@ -4411,12 +4508,24 @@
   html.mcs-theme .cal-decaler-row button,
   html.mcs-theme .cal-ev,
   html.mcs-theme .cal-line,
-  html.mcs-theme .cal-line-fait-btn,
   html.mcs-theme .cal-line-pill,
   html.mcs-theme .cal-mois-pill,
   html.mcs-theme .carnet-confirm-cancel,
   html.mcs-theme .carnet-confirm-delete
   {background:#FFFFFF; border:1.5px solid var(--hairline)}
+  /* Session 4 (06/09/2026, section 3) : .cal-line-fait-btn RETIRE de la regle ci-dessus --
+     "la bordure appartient a l'element cliquable le plus exterieur" (deja etabli dans ce
+     projet). Ce bouton coche est un clic INDEPENDANT (calToggleFait) niche a l'interieur de
+     la carte .cal-line, elle-meme cliquable (calOpenClientCard) et deja bordee juste au-dessus
+     -- 2 bordures cliquables imbriquees etaient un vrai defaut trouve en auditant Calendrier,
+     pas suppose. Retour a son fond dore arrondi sans bordure (regle ligne ~4309, jamais
+     touchee), qui redevient visible maintenant qu'aucune regle plus tardive ne l'ecrase. */
+  /* Sujet 4 (06/09/2026) : "color" jamais fixe ici -- l'icone SVG interieure (fill/stroke=
+     currentColor) heritait donc du texte noir/--ink ambiant, pas du bleu MCS voulu (case cochee
+     rendue en case NOIRE pleine au lieu de bleue). Trouve par controle mecanique reel
+     (getComputedStyle), pas suppose -- fixe en fixant explicitement color:var(--gold-a) (= bleu
+     MCS sous ce theme, cf. --gold-a redefinie plus haut). */
+  html.mcs-theme .cal-line-fait-btn{background:rgba(var(--gold-rgb),.14); border:0; color:var(--gold-a)}
   html.mcs-theme .carnet-lock,
   html.mcs-theme .cb-btn,
   html.mcs-theme .cf-couleur,
@@ -4802,7 +4911,14 @@
     background:var(--blue); color:#fff; border-color:var(--blue); box-shadow:none;
   }
   html.mcs-theme .cal-mois-pill.active{background:var(--blue); color:#fff}
-  html.mcs-theme .bc-type-btn.active{background:rgba(0,80,160,.14); color:var(--blue); border-color:var(--blue)}
+  /* Session 4 (06/09/2026) : etait background:rgba(0,80,160,.14) (bleu a 14% d'opacite) --
+     mesure : contraste actif/inactif seulement 2,30:1 (fond quasi identique au blanc de l'etat
+     inactif, 1,26:1 entre les 2 fonds), sous le seuil de 3:1. Seul le principe "actif = fond
+     PLEIN bleu, inactif = contour" (deja applique partout ailleurs -- devis-tab/meute-tab/
+     notes-tab/clients-tab/pf-tab/rel-tab/vitrine-tab/cx-tab/cal-viewswitch, tous mesures a
+     6,26-7,91:1) n'avait pas ete applique ici. Aligne : fond plein, texte blanc, meme famille
+     que les autres. */
+  html.mcs-theme .bc-type-btn.active{background:var(--blue); color:#fff; border-color:var(--blue)}
   html.mcs-theme .cf-couleur.selected{border-color:var(--blue)}
 
   /* Session 2 bis (suite) : meme classe de bug que ci-dessus, 3 AUTRES sous-onglets trouves en
@@ -4827,6 +4943,23 @@
   html.mcs-theme .upd-row button.vc-ok, html.mcs-theme .ct-actions .vc-ok{background:var(--blue); color:#fff}
   html.mcs-theme .upd-row button.vc-no, html.mcs-theme .ct-actions .vc-no,
   html.mcs-theme .docref-actions .vc-no{background:#FFFFFF; color:var(--ink); border-color:var(--hairline)}
+  /* Session 4, section 7 (06/09/2026) : les 2 seuls boutons qui declenchent une EMISSION REELLE
+     immediate (facture contrat "Envoyer" dans le catalogue mensuel + "Confirmer la facturation"
+     du flux devis->facture, tous deux verifies : ils appellent postContrats(choix:'envoyer')/
+     postFacturation(type:'emettre') sans aucune autre confirmation apres) sont visuellement
+     IDENTIQUES aux ~25 confirmations internes qui partagent la meme classe .vc-ok (meme icone
+     coche, meme bleu) -- aucun moyen de les distinguer d'un simple "Confirmer" de sauvegarde.
+     Marqueur .vc-envoi-reel pose UNIQUEMENT sur ces 2 boutons (JS) : couleur --warn (deja
+     verifiee 6,80:1/6,10:1, Session 2 bis) au lieu du bleu routinier -- ni vert/rouge (pas de
+     nouvelle paire au sens du Principe 3, --warn n'a pas de contrepartie "annuler" coloree en
+     face) -- ET icone distincte (avion en papier, pose en JS) au lieu de la coche generique,
+     pour ne jamais reposer sur la couleur seule (coherent avec la regle "jamais la couleur
+     seule" de la section 8). Specificite (4 classes) volontairement superieure a la regle
+     .ct-actions .vc-ok juste au-dessus pour gagner dessus. */
+  html.mcs-theme .vc-ok.vc-envoi-reel, html.mcs-theme .ct-actions .vc-ok.vc-envoi-reel,
+  html.mcs-theme .rl-confirm.vc-envoi-reel{
+    background:var(--warn); color:#fff;
+  }
 
   /* Session 2 ter, point 3 : le numero de version (#loginver sur l'ecran de connexion,
      #subline sous le nom dans l'en-tete) porte desormais le tenant + le build -- Mickael doit
@@ -4874,14 +5007,15 @@
     <span class="hver" id="hver"></span>
     <svg id="hchev" width="13" height="13" viewBox="0 0 24 24" fill="none" aria-hidden="true"><path d="M5 8.5 12 15.5 19 8.5" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round"/></svg>
     <button id="hcallbtn" type="button" aria-label="Appeler Jarvis">
-      <svg width="21" height="21" viewBox="0 0 24 24" fill="currentColor"><path d="M6.6 10.8c1.4 2.8 3.8 5.1 6.6 6.6l2.2-2.2c.3-.3.7-.4 1.1-.2 1.2.4 2.5.6 3.8.6.6 0 1 .5 1 1V20.5c0 .6-.4 1-1 1C11.5 21.5 2.5 12.5 2.5 1.7c0-.6.4-1 1-1H7c.6 0 1 .4 1 1 0 1.3.2 2.6.6 3.8.1.4 0 .8-.2 1.1L6.6 10.8Z"/></svg>
+      <svg viewBox="0 0 24 24" fill="currentColor"><path d="M6.6 10.8c1.4 2.8 3.8 5.1 6.6 6.6l2.2-2.2c.3-.3.7-.4 1.1-.2 1.2.4 2.5.6 3.8.6.6 0 1 .5 1 1V20.5c0 .6-.4 1-1 1C11.5 21.5 2.5 12.5 2.5 1.7c0-.6.4-1 1-1H7c.6 0 1 .4 1 1 0 1.3.2 2.6.6 3.8.1.4 0 .8-.2 1.1L6.6 10.8Z"/></svg>
+      <span>Appeler</span>
     </button>
     <!-- Chantier C (31/08/2026) : tutoriel dédié à l'écran d'accueil (11 tuiles, points du jour,
          chat en bas) -- jusque-là AUCUNE étape ne couvrait cet écran (seuls les 11 sous-écrans
          ouverts avaient leur propre tutoriel). Bouton toujours visible en tête (jamais dans un
          head/close de panneau comme les autres -- pas de sous-écran ici), même gating MCS patron
          que les autres, câblé à part comme #bruno-tuto-btn (cf. applyTutoVisibility). -->
-    <button id="accueil-tuto-btn" class="tuto-btn" type="button" aria-label="Tutoriel de l'accueil" style="display:none">❓</button>
+    <button id="accueil-tuto-btn" class="tuto-btn" type="button" aria-label="Tutoriel de l'accueil" style="display:none"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="9"/><path d="M9.5 9a2.5 2.5 0 0 1 4.6 1.4c0 1.6-2.1 1.8-2.1 3.4"/><circle cx="12" cy="17" r="0.8" fill="currentColor" stroke="none"/></svg>Aide</button>
   </header>
   <div id="brunoClient">
     <div id="bc-summary">
@@ -4952,15 +5086,16 @@
   <div id="composer">
     <!-- Refonte accueil MCS (29/08/2026) : bascule home<->conversation, MCS patron seulement
          (cf. updateHomeToggleBtn) -- a gauche du micro, sans coûter un pixel de hauteur. -->
-    <button id="homeToggleBtn" type="button" aria-label="Retour à l’accueil" style="display:none"><svg class="hicon-md" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 11l8-7 8 7"/><path d="M6 10v9a1 1 0 0 0 1 1h3v-6h4v6h3a1 1 0 0 0 1-1v-9"/></svg></button>
+    <button id="homeToggleBtn" type="button" aria-label="Retour à l’accueil" style="display:none"><svg class="hicon-md" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 11l8-7 8 7"/><path d="M6 10v9a1 1 0 0 0 1 1h3v-6h4v6h3a1 1 0 0 0 1-1v-9"/></svg><span>Accueil</span></button>
     <button id="micbtn" type="button" aria-label="Message vocal">
-      <svg width="18" height="22" viewBox="0 0 22 26" fill="currentColor"><rect x="7" y="1" width="8" height="14" rx="4"/><path d="M3 12a8 8 0 0 0 16 0M11 20v4M7 24.5h8" stroke="currentColor" stroke-width="2" fill="none" stroke-linecap="round"/></svg>
+      <svg width="16" height="19" viewBox="0 0 22 26" fill="currentColor"><rect x="7" y="1" width="8" height="14" rx="4"/><path d="M3 12a8 8 0 0 0 16 0M11 20v4M7 24.5h8" stroke="currentColor" stroke-width="2" fill="none" stroke-linecap="round"/></svg>
+      <span>Micro</span>
     </button>
     <div id="recui"><span class="recdot"></span><canvas id="reccv"></canvas><span id="rectime2">0:00</span></div>
     <div id="prevui">
       <button id="pvx" type="button" aria-label="Annuler">✕</button>
       <div class="pill"><button id="pvplay" type="button" aria-label="Écouter">▶</button><canvas id="pvcv"></canvas><span id="pvtime">0:00</span></div>
-      <button id="pvsend" type="button" aria-label="Envoyer le vocal"><svg width="18" height="18" viewBox="0 0 20 20" fill="currentColor"><path d="M10 17V5.5M10 3l-6 6.2M10 3l6 6.2" stroke="currentColor" stroke-width="2.6" fill="none" stroke-linecap="round" stroke-linejoin="round"/></svg></button>
+      <button id="pvsend" type="button" aria-label="Envoyer le vocal"><svg width="16" height="16" viewBox="0 0 20 20" fill="currentColor"><path d="M10 17V5.5M10 3l-6 6.2M10 3l6 6.2" stroke="currentColor" stroke-width="2.6" fill="none" stroke-linecap="round" stroke-linejoin="round"/></svg><span>Envoyer</span></button>
     </div>
     <div id="brunohint">Ou écris ici si le micro se trompe sur un nom</div>
     <div id="devis-ambigu-wrap">
@@ -4971,7 +5106,8 @@
     <div class="composer-row2">
       <textarea id="textin" rows="1" placeholder="Écrire à Jarvis…"></textarea>
       <button id="sendbtn" class="idle" type="button" aria-label="Envoyer">
-        <svg width="18" height="18" viewBox="0 0 20 20" fill="currentColor"><path d="M10 17V5.5M10 3l-6 6.2M10 3l6 6.2" stroke="currentColor" stroke-width="2.6" fill="none" stroke-linecap="round" stroke-linejoin="round"/></svg>
+        <svg width="16" height="16" viewBox="0 0 20 20" fill="currentColor"><path d="M10 17V5.5M10 3l-6 6.2M10 3l6 6.2" stroke="currentColor" stroke-width="2.6" fill="none" stroke-linecap="round" stroke-linejoin="round"/></svg>
+        <span>Envoyer</span>
       </button>
     </div>
   </div>
@@ -5042,7 +5178,6 @@
 <div id="coutsview">
   <div id="couts-head">
     <b id="couts-title">💰 Coûts</b>
-    <button id="couts-add" type="button" aria-label="Ajouter un abonnement">+</button>
     <button id="couts-close" type="button" aria-label="Fermer">✕</button>
   </div>
   <div id="couts-list">
@@ -5065,6 +5200,7 @@
     <div id="couts-abo-head">Abonnements (gérés ici)</div>
     <div id="couts-abo-rows"></div>
   </div>
+  <button id="couts-add" type="button" aria-label="Ajouter un abonnement">+ Ajouter un abonnement</button>
 </div>
 
 <div id="cryptoview">
@@ -5194,7 +5330,7 @@
 
 <div id="devisview">
   <div id="devis-head">
-    <b id="devis-title">📝 Devis et factures</b>
+    <b id="devis-title"><svg class="hicon-sm" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><path d="M14 2v6h6"/><line x1="8" y1="13" x2="16" y2="13"/><line x1="8" y1="17" x2="16" y2="17"/><line x1="8" y1="9" x2="10" y2="9"/></svg>Devis et factures</b>
     <button id="devis-add" type="button" aria-label="Nouveau devis">＋</button>
     <button id="devis-close" type="button" aria-label="Fermer">✕</button>
   </div>
@@ -5208,19 +5344,19 @@
     <input id="devis-search" type="search" inputmode="search" placeholder="🔍 Rechercher un client…" autocomplete="off" autocapitalize="off" autocorrect="off">
   </div>
   <div class="df-filter-group" id="df-filter-devis">
-    <button class="df-chip active" data-val="attente" type="button">⏳ En attente</button>
-    <button class="df-chip" data-val="valides" type="button">✅ Validés</button>
+    <button class="df-chip active" data-val="attente" type="button"><svg class="hicon-sm" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="9"/><polyline points="12,7 12,12 15.5,14"/></svg>En attente</button>
+    <button class="df-chip" data-val="valides" type="button"><svg class="hicon-sm" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="9"/><polyline points="8,12.5 10.7,15.2 16,9.5"/></svg>Validés</button>
   </div>
   <div class="df-filter-group" id="df-filter-factures" style="display:none">
-    <button class="df-chip active" data-val="payees" type="button">✅ Payées</button>
-    <button class="df-chip active" data-val="impayees" type="button">🔴 Impayées</button>
+    <button class="df-chip active" data-val="payees" type="button"><svg class="hicon-sm" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="9"/><polyline points="8,12.5 10.7,15.2 16,9.5"/></svg>Payées</button>
+    <button class="df-chip active" data-val="impayees" type="button"><svg class="hicon-sm" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="9"/><line x1="6.5" y1="6.5" x2="17.5" y2="17.5"/></svg>Impayées</button>
   </div>
   <div id="devis-list"></div>
 </div>
 
 <div id="contratsview">
   <div id="contrats-head">
-    <b id="contrats-title">📋 Contrats</b>
+    <b id="contrats-title"><svg class="hicon-sm" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M13 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h7"/><path d="M13 2v5a1 1 0 0 0 1 1h4"/><line x1="7.5" y1="12" x2="12" y2="12"/><line x1="7.5" y1="16" x2="10.5" y2="16"/><circle cx="17.5" cy="17.5" r="4.5"/><polyline points="15.7,17.6 17,18.8 19.4,16.3"/></svg>Contrats</b>
     <button id="contrats-close" type="button" aria-label="Fermer">✕</button>
   </div>
   <div id="contrats-tabs">
@@ -5236,9 +5372,9 @@
     <select id="contrats-annee-select" aria-label="Année"></select>
   </div>
   <div class="df-filter-group" id="contrats-mois-substatuts" style="display:none">
-    <button class="df-chip active" data-statut="a_traiter" type="button">⏳ À traiter</button>
-    <button class="df-chip" data-statut="envoyee" type="button">✅ Facture envoyée</button>
-    <button class="df-chip" data-statut="skip" type="button">⏭️ Pas cette année</button>
+    <button class="df-chip active" data-statut="a_traiter" type="button"><svg class="hicon-sm" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="9"/><polyline points="12,7 12,12 15.5,14"/></svg>À traiter</button>
+    <button class="df-chip" data-statut="envoyee" type="button"><svg class="hicon-sm" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="9"/><polyline points="8,12.5 10.7,15.2 16,9.5"/></svg>Facture envoyée</button>
+    <button class="df-chip" data-statut="skip" type="button"><svg class="hicon-sm" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><polyline points="7,5 13,12 7,19"/><polyline points="13,5 19,12 13,19"/></svg>Pas cette année</button>
   </div>
   <button id="contrats-tva-lot-btn" type="button" style="display:none"><svg class="hicon-sm" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 3v18"/><path d="M5 8l-2 5a3 3 0 0 0 6 0l-2-5"/><path d="M19 8l-2 5a3 3 0 0 0 6 0l-2-5"/><path d="M5 8h14"/><path d="M8 21h8"/></svg>Choisir le taux de TVA pour tout le lot VMC</button>
   <p id="contrats-previsionnel-banniere" style="display:none">🔮 Rien n'est encore généré pour ce mois — aperçu de ce qui sera facturé automatiquement le 1<sup>er</sup> (prix indicatifs, peuvent encore changer d'ici là).</p>
@@ -5248,19 +5384,19 @@
   </div>
   <div class="df-filter-group" id="contrats-cat-subtabs" style="display:none">
     <button class="df-chip active" data-subtab="TOUT" type="button">Tout</button>
-    <button class="df-chip" data-subtab="BRUNO" type="button">🐜 Dératisation / désinsectisation</button>
-    <button class="df-chip" data-subtab="VMC" type="button">🌬️ VMC</button>
+    <button class="df-chip" data-subtab="BRUNO" type="button"><svg class="hicon-sm" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="13" r="5"/><line x1="12" y1="8" x2="12" y2="3"/><line x1="7" y1="10" x2="3" y2="7"/><line x1="17" y1="10" x2="21" y2="7"/><line x1="7" y1="16" x2="3" y2="19"/><line x1="17" y1="16" x2="21" y2="19"/></svg>Dératisation / désinsectisation</button>
+    <button class="df-chip" data-subtab="VMC" type="button"><svg class="hicon-sm" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 8h9a3 3 0 1 0-3-3"/><path d="M3 12h13a3 3 0 1 1-3 3"/><path d="M3 16h7"/></svg>VMC</button>
   </div>
   <div id="contrats-list"></div>
-  <button id="contrats-add-btn" type="button" aria-label="Ajouter un contrat">+</button>
+  <button id="contrats-add-btn" type="button" aria-label="Ajouter un contrat">＋ Ajouter un contrat</button>
 
   <!-- Chantier 6 : Calendrier des interventions (distinct de la facturation, 6.1) -->
   <div id="cal-view" style="display:none">
     <div id="cal-mois-band"></div>
     <div class="df-filter-group" id="cal-filtre-chips">
       <button class="df-chip active" data-filtre="TOUT" type="button">Tout</button>
-      <button class="df-chip" data-filtre="BRUNO" type="button">🐜 Dérat</button>
-      <button class="df-chip" data-filtre="VMC" type="button">🌬️ VMC</button>
+      <button class="df-chip" data-filtre="BRUNO" type="button"><svg class="hicon-sm" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="13" r="5"/><line x1="12" y1="8" x2="12" y2="3"/><line x1="7" y1="10" x2="3" y2="7"/><line x1="17" y1="10" x2="21" y2="7"/><line x1="7" y1="16" x2="3" y2="19"/><line x1="17" y1="16" x2="21" y2="19"/></svg>Dérat</button>
+      <button class="df-chip" data-filtre="VMC" type="button"><svg class="hicon-sm" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 8h9a3 3 0 1 0-3-3"/><path d="M3 12h13a3 3 0 1 1-3 3"/><path d="M3 16h7"/></svg>VMC</button>
     </div>
     <!-- Sujet 2.5 (01/09/2026) : compteur "N faits sur M" -- visible d'un coup d'oeil pour ce mois. -->
     <div id="cal-compteur-fait" style="display:none"></div>
@@ -5454,7 +5590,7 @@
 
 <div id="rentaview">
   <div id="renta-head">
-    <b id="renta-title">💹 Rentabilité</b>
+    <b id="renta-title"><svg class="hicon-sm" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><polyline points="3,20 9,13 13,16 21,6"/><polyline points="15,6 21,6 21,12"/><text x="2.5" y="10" font-size="8" font-weight="800" stroke="none" fill="currentColor" font-family="inherit">€</text></svg>Rentabilité</b>
     <button id="renta-close" type="button" aria-label="Fermer">✕</button>
   </div>
   <div id="renta-list"></div>
@@ -5462,7 +5598,7 @@
 
 <div id="relancesview">
   <div id="relances-head">
-    <b id="relances-title">📨 Relances clients</b>
+    <b id="relances-title"><svg class="hicon-sm" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 6a1.5 1.5 0 0 1 1.5-1.5h13A1.5 1.5 0 0 1 19 6v10.5a1.5 1.5 0 0 1-1.5 1.5H8"/><path d="M3.5 6.2L11 12l7.5-5.8"/><path d="M17.5 15.5a3 3 0 0 0 3-3v-.5"/><polyline points="16,13.3 17.3,12 18.6,13.3"/></svg>Relances clients</b>
     <button id="relances-close" type="button" aria-label="Fermer">✕</button>
   </div>
   <div id="relances-tabs">
@@ -5491,13 +5627,13 @@
 <div id="carnetview">
   <div id="carnet-head">
     <b id="carnet-title">📘 Carnet bleu</b>
-    <button id="carnet-add" type="button" aria-label="Ajouter une résidence">＋</button>
     <button id="carnet-close" type="button" aria-label="Fermer">✕</button>
   </div>
   <div id="carnet-search-wrap">
     <input id="carnet-search" type="search" inputmode="search" placeholder="🔍 Rechercher une résidence…" autocomplete="off" autocapitalize="off" autocorrect="off">
   </div>
   <div id="carnet-list"></div>
+  <button id="carnet-add" type="button" aria-label="Ajouter une résidence">＋ Ajouter une résidence</button>
 </div>
 
 <div id="portefeuilleview">
@@ -5536,11 +5672,11 @@
 <div id="docrefview">
   <div id="docref-head">
     <b>📎 Documents de référence</b>
-    <button id="docref-add" type="button" aria-label="Ajouter un document">+</button>
     <button id="docref-close" type="button" aria-label="Fermer">✕</button>
   </div>
   <p id="docref-note">RIB, Kbis, assurance décennale… Jarvis peut les joindre automatiquement à un mail quand un client en fait la demande.</p>
   <div id="docref-list"></div>
+  <button id="docref-add" type="button" aria-label="Ajouter un document">+ Ajouter un document</button>
 </div>
 
 <div id="docref-form-bg">
@@ -5605,7 +5741,7 @@
 <div id="opportunitesview">
   <div id="opp-head">
     <b>🏗️ Opportunités</b>
-    <button id="opp-relancer" type="button" aria-label="Chercher de nouveaux prospects"><svg width="16" height="16" viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M17 10a7 7 0 1 1-2-4.9M17 3v4h-4"/></svg></button>
+    <button id="opp-relancer" type="button" aria-label="Chercher de nouveaux prospects"><svg width="16" height="16" viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M17 10a7 7 0 1 1-2-4.9M17 3v4h-4"/></svg>Chercher</button>
     <button id="opp-close" type="button" aria-label="Fermer">✕</button>
   </div>
   <p id="opp-status"></p>
@@ -5866,7 +6002,7 @@
   <div id="fd-err"></div>
   <div id="df-row">
     <button id="fd-cancel" type="button" class="vc-no">Annuler</button>
-    <button id="fd-save" type="button" class="vc-ok">Émettre la facture</button>
+    <button id="fd-save" type="button" class="vc-ok vc-envoi-reel"><svg class="hicon-sm" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><line x1="22" y1="2" x2="11" y2="13"/><polygon points="22 2 15 22 11 13 2 9 22 2"/></svg>Émettre la facture</button>
   </div>
 </div>
 
@@ -5920,9 +6056,9 @@
          c'est ce qui supprime le conflit humain sur cette ligne precise. Sert aussi de cle
          unique de detection de mise a jour (voir checkUpdate ci-dessous), plus fiable qu'une
          comparaison de chaine de version par tenant. */
-  var APPV_MCS = '4.30';
+  var APPV_MCS = '4.31';
   var APPV_LABO = '1.00';
-  var BUILD = 6;
+  var BUILD = 7;
   // displayVersion()/displayVersionShort() lisent isMcsCode() (definie plus bas dans cette
   // meme IIFE -- declaration de fonction, donc disponible ici par hoisting) : le TENANT
   // affiche depend du code de connexion, jamais d'un simple "APPV" global qui ne dirait ni
@@ -6305,6 +6441,10 @@
     store('jarvisTutoOn', v ? '1' : '0');
     applyTutoVisibility();
   }
+  // Icone partagee (Section 6, 06/09/2026) : remplace l'emoji "❓" brut par une icone SVG + le
+  // mot "Aide", sur les 2 points d'injection (installTutoButtons/installBrunoTuto ci-dessous) et
+  // le bouton statique #accueil-tuto-btn (HTML).
+  var ICON_AIDE_TUTO = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="9"/><path d="M9.5 9a2.5 2.5 0 0 1 4.6 1.4c0 1.6-2.1 1.8-2.1 3.4"/><circle cx="12" cy="17" r="0.8" fill="currentColor" stroke="none"/></svg>';
   // Injection des boutons ❓ -- appelée depuis enterApp(), idempotente (enterApp tourne 2x par
   // ouverture, cache puis frais -- cf. commentaire plus haut sur window._mcsOpenPinged).
   function installTutoButtons(){
@@ -6316,7 +6456,8 @@
       if (!head || !closeBtn || document.getElementById(key + '-tuto')) return;
       var btn = document.createElement('button');
       btn.id = key + '-tuto'; btn.className = 'tuto-btn'; btn.type = 'button';
-      btn.setAttribute('aria-label', 'Tutoriel'); btn.textContent = '❓';
+      btn.setAttribute('aria-label', 'Tutoriel');
+      btn.innerHTML = ICON_AIDE_TUTO + 'Aide';
       btn.addEventListener('click', function(){ tutoStart(key); });
       head.insertBefore(btn, closeBtn);
     });
@@ -6548,7 +6689,7 @@
     if (summary && !document.getElementById('bruno-tuto-btn')){
       var btn = document.createElement('button');
       btn.id = 'bruno-tuto-btn'; btn.type = 'button'; btn.className = 'tuto-btn';
-      btn.setAttribute('aria-label', 'Aide'); btn.textContent = '❓';
+      btn.setAttribute('aria-label', 'Aide'); btn.innerHTML = ICON_AIDE_TUTO + 'Aide';
       btn.addEventListener('click', startBrunoTuto);
       summary.appendChild(btn);
     }
@@ -7225,19 +7366,26 @@
       var isDevisMcs = j.validation.kind === 'devis_mcs';
       var isConfirmationEtape = isDevisMcs && j.validation.etape === 'confirmation';
       var isDraftEtape = isDevisMcs && !isConfirmationEtape;
+      // Jeu d'icones SVG partage (Session 4, section 3) -- remplace les emoji bruts qui portaient
+      // jusqu'ici ✅/✏️/📄/❌/🗑 sur ce builder generique reutilise dans ~25 modales de l'app.
+      var ICON_CHECK_VC = '<svg class="hicon-sm" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="9"/><polyline points="8,12.5 10.7,15.2 16,9.5"/></svg>';
+      var ICON_PENCIL_VC = '<svg class="hicon-sm" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 20h4L20 8l-4-4L4 16z"/><line x1="14" y1="6" x2="18" y2="10"/></svg>';
+      var ICON_DOC_VC = '<svg class="hicon-sm" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><path d="M14 2v6h6"/><line x1="8" y1="13" x2="16" y2="13"/><line x1="8" y1="17" x2="16" y2="17"/><line x1="8" y1="9" x2="10" y2="9"/></svg>';
+      var ICON_TRASH_VC = '<svg class="hicon-sm" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 7h16"/><path d="M9 7V4a1 1 0 0 1 1-1h4a1 1 0 0 1 1 1v3"/><path d="M6 7l1 13a2 2 0 0 0 2 2h6a2 2 0 0 0 2-2l1-13"/><line x1="10" y1="11" x2="10" y2="17"/><line x1="14" y1="11" x2="14" y2="17"/></svg>';
+      var ICON_WARN_VC = '<svg class="hicon-sm" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 3l10 18H2z"/><line x1="12" y1="9" x2="12" y2="14"/><circle cx="12" cy="17" r="0.8" fill="currentColor" stroke="none"/></svg>';
       var row = document.createElement('div'); row.className = 'vc-row';
       var ok = document.createElement('button'); ok.type = 'button'; ok.className = 'vc-ok';
       var no = document.createElement('button'); no.type = 'button'; no.className = 'vc-no';
       var choixOk, choixNo;
       if (isConfirmationEtape){
-        ok.textContent = '✅ Oui, vas-y'; choixOk = 'oui';
-        no.textContent = "✏️ Non, j'ai des modifs à faire"; choixNo = 'modifier';
+        ok.innerHTML = ICON_CHECK_VC + 'Oui, vas-y'; choixOk = 'oui';
+        no.innerHTML = ICON_PENCIL_VC + "Non, j'ai des modifs à faire"; choixNo = 'modifier';
       } else if (isDraftEtape){
-        ok.textContent = '📄 Voir le PDF brouillon'; choixOk = 'apercu';
-        no.textContent = '✏️ Continuer à modifier'; choixNo = 'modifier';
+        ok.innerHTML = ICON_DOC_VC + 'Voir le PDF brouillon'; choixOk = 'apercu';
+        no.innerHTML = ICON_PENCIL_VC + 'Continuer à modifier'; choixNo = 'modifier';
       } else {
-        ok.textContent = j.validation.kind === 'docsend' ? '✅ Envoyer' : '✅ Valider'; choixOk = 'oui';
-        no.textContent = '❌ Annuler'; choixNo = 'non';
+        ok.innerHTML = ICON_CHECK_VC + (j.validation.kind === 'docsend' ? 'Envoyer' : 'Valider'); choixOk = 'oui';
+        no.textContent = 'Annuler'; choixNo = 'non';
       }
       if (destBox) card.appendChild(destBox);
       row.appendChild(ok); row.appendChild(no); card.appendChild(row);
@@ -7248,7 +7396,7 @@
       var annulerDevis = null, annulerArme = false, annulerTimer = null;
       if (isDraftEtape){
         annulerDevis = document.createElement('button');
-        annulerDevis.type = 'button'; annulerDevis.className = 'vc-edit'; annulerDevis.textContent = '🗑 Annuler le devis';
+        annulerDevis.type = 'button'; annulerDevis.className = 'vc-edit'; annulerDevis.innerHTML = ICON_TRASH_VC + 'Annuler le devis';
         card.appendChild(annulerDevis);
       }
       function act(choix){
@@ -7286,10 +7434,10 @@
       if (annulerDevis) annulerDevis.addEventListener('click', function(){
         if (!annulerArme){
           annulerArme = true;
-          annulerDevis.textContent = "⚠️ Confirmer l'annulation ?";
+          annulerDevis.innerHTML = ICON_WARN_VC + "Confirmer l'annulation ?";
           annulerDevis.className = 'vc-no';
           annulerTimer = setTimeout(function(){
-            annulerArme = false; annulerDevis.textContent = '🗑 Annuler le devis'; annulerDevis.className = 'vc-edit';
+            annulerArme = false; annulerDevis.innerHTML = ICON_TRASH_VC + 'Annuler le devis'; annulerDevis.className = 'vc-edit';
           }, 4000);
           return;
         }
@@ -7432,6 +7580,18 @@
     if (extras && typeof updateEmailBadge === 'function') updateEmailBadge(extras.emailsImportantCount);
   }
 
+  // Session 4 (06/09/2026, section 3) : echappement HTML -- des que du texte DYNAMIQUE (saisi
+  // par un utilisateur, importe de MEG, genere par Claude...) doit se meler a une icone SVG dans
+  // un .innerHTML, il DOIT passer par escHtml() d'abord. Trouve en auditant : plusieurs builders
+  // de cartes concatenaient deja des valeurs libres (motif de skip, designation tapee en direct,
+  // nom de client MEG...) directement dans du innerHTML -- un vrai risque d'injection HTML/XSS,
+  // pas juste theorique (ex. motif_skip est un texte libre tape par Bruno/Mickael et rejoue tel
+  // quel a la prochaine ouverture de la liste, partagee entre les deux comptes).
+  function escHtml(s){
+    return String(s == null ? '' : s).replace(/[&<>"']/g, function(c){
+      return { '&':'&amp;', '<':'&lt;', '>':'&gt;', '"':'&quot;', "'":'&#39;' }[c];
+    });
+  }
   // ---- Toast (petite confirmation, ex: "Copié") ----
   var toastEl = document.getElementById('toast');
   var toastTimer = null;
@@ -7746,11 +7906,11 @@
       // desormais des SVG de la meme famille que le reste de l'app (24x24, trait 2, currentColor),
       // coherents avec le bouton "Continuer la discussion" (meme bulle de discussion) et la
       // tuile Carnet bleu (meme silhouette de maison).
-      homeToggleBtn.innerHTML = '<svg class="hicon-md" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M21 11.5a8.4 8.4 0 0 1-.9 3.8 8.5 8.5 0 0 1-7.6 4.7 8.4 8.4 0 0 1-3.8-.9L3 21l1.9-5.7a8.4 8.4 0 0 1-.9-3.8 8.5 8.5 0 0 1 4.7-7.6 8.4 8.4 0 0 1 3.8-.9h.5a8.48 8.48 0 0 1 8 8v.5z"/></svg>';
+      homeToggleBtn.innerHTML = '<svg class="hicon-md" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M21 11.5a8.4 8.4 0 0 1-.9 3.8 8.5 8.5 0 0 1-7.6 4.7 8.4 8.4 0 0 1-3.8-.9L3 21l1.9-5.7a8.4 8.4 0 0 1-.9-3.8 8.5 8.5 0 0 1 4.7-7.6 8.4 8.4 0 0 1 3.8-.9h.5a8.48 8.48 0 0 1 8 8v.5z"/></svg><span>Discussion</span>';
       homeToggleBtn.setAttribute('aria-label', 'Reprendre la conversation');
     } else {
       homeToggleBtn.style.display = '';
-      homeToggleBtn.innerHTML = '<svg class="hicon-md" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 11l8-7 8 7"/><path d="M6 10v9a1 1 0 0 0 1 1h3v-6h4v6h3a1 1 0 0 0 1-1v-9"/></svg>';
+      homeToggleBtn.innerHTML = '<svg class="hicon-md" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 11l8-7 8 7"/><path d="M6 10v9a1 1 0 0 0 1 1h3v-6h4v6h3a1 1 0 0 0 1-1v-9"/></svg><span>Accueil</span>';
       homeToggleBtn.setAttribute('aria-label', 'Retour à l’accueil');
     }
   }
@@ -7859,10 +8019,17 @@
   // l'une au-dessus de l'autre. Reprend LE MEME trace SVG que la tuile de destination
   // correspondante (contrats/relances/prospects->Opportunites/devis/rdv->Agenda) pour une
   // vraie coherence, pas juste un "style similaire" : coller un exemple aide a le verifier.
-  // nuit/propositions/observations n'ont pas de tuile equivalente (nuit n'est en pratique jamais
-  // rendue comme ligne a part entiere, cf. commentaire juste au-dessus ; observations est
-  // "retire" depuis le 01/09 mais l'entree reste dans la table par prudence) -- nouvelles icones
-  // de la meme famille (24x24, trait 2, currentColor) plutot que les laisser en emoji.
+  // Session 4 (06/09/2026) : liste des 8 types REMONTEE A LA SOURCE (nœud "Construire accueil
+  // (web)" du workflow n8n "MCS · Accueil", id xO7SuSmFcvltlZAi -- lu directement via l'API, pas
+  // suppose) -- CE SONT LES 8 SEULS TYPES QUE LE SERVEUR PEUT ENVOYER AUJOURD'HUI, TOUJOURS LES
+  // 8 EN MEME TEMPS (n:0 inclus quand rien a signaler). Corrige au passage un commentaire faux
+  // (ci-dessous avant cette session) : 'nuit' N'EST PAS "jamais rendue comme ligne a part
+  // entiere" -- verifie dans renderAccueil() juste plus bas, elle EST ajoutee comme ligne reelle
+  // des qu'elle est active (mails/fiches/digicodes>0) ET qu'au moins une autre ligne metier est
+  // deja affichee (sinon elle est simplement citee dans le texte de repli "Rien ne t'attend...").
+  // 'observations' reste volontairement exclue de l'affichage (decision produit du 05/09, la
+  // tuile "Mes contacts" est masquee) -- pas un oubli, son icone reste presente ici par prudence
+  // si jamais reactivee un jour.
   var ACCUEIL_ICONES_SVG = {
     contrats: '<path d="M13 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h7"/><path d="M13 2v5a1 1 0 0 0 1 1h4"/><line x1="7.5" y1="12" x2="12" y2="12"/><line x1="7.5" y1="16" x2="10.5" y2="16"/><circle cx="17.5" cy="17.5" r="4.5"/><polyline points="15.7,17.6 17,18.8 19.4,16.3"/>',
     relances: '<path d="M3 6a1.5 1.5 0 0 1 1.5-1.5h13A1.5 1.5 0 0 1 19 6v10.5a1.5 1.5 0 0 1-1.5 1.5H8"/><path d="M3.5 6.2L11 12l7.5-5.8"/><path d="M17.5 15.5a3 3 0 0 0 3-3v-.5"/><polyline points="16,13.3 17.3,12 18.6,13.3"/>',
@@ -7873,9 +8040,18 @@
     propositions: '<path d="M3 9v6h3l10 5V4L6 9H3z"/><path d="M18 10a3 3 0 0 1 0 4"/>',
     observations: '<circle cx="9" cy="8" r="3"/><path d="M3 20c0-3 2.5-5 6-5s6 2 6 5"/><circle cx="17" cy="9" r="2.5"/><path d="M15 20c.3-2 1.8-3.5 4-3.8"/>'
   };
+  // Les 8 types que le serveur connait AUJOURD'HUI (ci-dessus). Si un jour un 9e type apparait
+  // sans que le front ait ete mis a jour, ORDRE_METIER/nuitActive (plus bas) ne le rendraient tout
+  // simplement JAMAIS -- pas une case vide moche, une ligne totalement invisible, pire. Corrige :
+  // renderAccueil() ajoute desormais explicitement tout type hors de cette liste, avec l'icone
+  // neutre ci-dessous.
+  var ACCUEIL_TYPES_CONNUS = ['devis', 'relances', 'contrats', 'observations', 'prospects', 'rdv', 'propositions', 'nuit'];
   function accueilIconeSvg(type){
     var d = ACCUEIL_ICONES_SVG[type];
-    if (!d) return null;
+    // Session 4 (06/09/2026) : repli icone NEUTRE (jamais null, jamais un texte '•' brut) pour un
+    // type que le serveur enverrait un jour sans que ACCUEIL_ICONES_SVG ait ete mis a jour --
+    // meme famille visuelle (24x24, trait 2, currentColor) qu'un simple "i" d'information.
+    if (!d) d = '<circle cx="12" cy="12" r="9"/><line x1="12" y1="11" x2="12" y2="16"/><circle cx="12" cy="8" r="1" fill="currentColor" stroke="none"/>';
     return '<svg class="hicon-md" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">' + d + '</svg>';
   }
 
@@ -7976,8 +8152,23 @@
     var nuit = parType.nuit;
     var nuitActive = nuit && ((Number(nuit.mailsLus) || 0) > 0 || (Number(nuit.fichesEnrichies) || 0) > 0 || (Number(nuit.digicodesDetectes) || 0) > 0);
 
+    // Session 4 (06/09/2026) : type INCONNU -- hors des 8 types recenses a la source (n8n,
+    // "Construire accueil (web)") ET hors du cas special 'nuit' traite a part -- jamais rencontre
+    // a ce jour, mais si le serveur en envoie un demain sans que ce fichier ait ete mis a jour,
+    // ORDRE_METIER.forEach l'aurait ignore SILENCIEUSEMENT (pas une case vide -- une ligne qui
+    // n'apparait jamais du tout, pire). Affiche quand meme, avec icone neutre (accueilIconeSvg)
+    // et le texte brut du serveur (accueilTexteCourt: default -> String(l.texte||'')) -- jamais
+    // une erreur console, jamais un trou invisible.
+    var lignesInconnues = [];
+    j.lignes.forEach(function(l){
+      if (!l || !l.type) return;
+      if (ACCUEIL_TYPES_CONNUS.indexOf(l.type) !== -1) return; // deja gere (connu ou exclu a raison)
+      if (!l.texte) return; // rien a montrer sans texte
+      lignesInconnues.push(l);
+    });
+
     accueilBody.innerHTML = '';
-    if (!lignesMetier.length){
+    if (!lignesMetier.length && !lignesInconnues.length){
       var mailsLus = nuit ? (Number(nuit.mailsLus) || 0) : 0;
       var vide = document.createElement('div');
       vide.className = 'ma-vide';
@@ -7986,6 +8177,7 @@
     } else {
       var lignesRetenues = lignesMetier.slice();
       if (nuitActive) lignesRetenues.push(nuit);
+      lignesRetenues = lignesRetenues.concat(lignesInconnues);
       lignesRetenues.forEach(function(l){ accueilBody.appendChild(renderAccueilLigne(l)); });
     }
     // La classe .on doit etre posee AVANT de mesurer scrollHeight/clientHeight -- un element
@@ -8359,6 +8551,11 @@
     if (!msg){ err.textContent = "Écris un message avant d'envoyer."; return; }
     err.textContent = '';
     var btn = document.getElementById('bugf-save');
+    // L'icone SVG "Envoyer" vit dans le HTML statique du bouton (ligne ~5601) -- on la
+    // recopie ici plutot que de la reconstruire, pour que le reset apres envoi/erreur ne
+    // remplace jamais l'icone par du texte brut (bug trouve Session 4 : btn.textContent
+    // ecrasait l'icone avec l'emoji "✅ Envoyer" en clair).
+    var btnIdleHtml = btn.innerHTML;
     btn.disabled = true; btn.textContent = 'Envoi…';
     fetch('https://n8n-self-hosted-t0pz.onrender.com/webhook/mcs-signalement', {
       method: 'POST', headers: { 'Content-Type': 'application/json' },
@@ -8368,11 +8565,11 @@
         message: msg
       })
     }).then(function(r){ return r.json(); }).then(function(j){
-      btn.disabled = false; btn.textContent = '✅ Envoyer';
+      btn.disabled = false; btn.innerHTML = btnIdleHtml;
       if (j && j.success){ bugFormClose(); toast('Merci, c’est envoyé !'); }
       else { err.textContent = (j && j.message) || 'Erreur, réessaie.'; }
     }).catch(function(){
-      btn.disabled = false; btn.textContent = '✅ Envoyer';
+      btn.disabled = false; btn.innerHTML = btnIdleHtml;
       err.textContent = 'Pas de réseau, réessaie.';
     });
   });
@@ -8534,7 +8731,7 @@
     post({ type:'documents' }, function(j){
       docsAll = j.documents || [];
       renderFolders();
-    }, function(err){ docsList.innerHTML = '<p id="docs-empty">' + (err || 'Impossible de charger les documents.') + '</p>'; });
+    }, function(err){ docsList.innerHTML = '<p id="docs-empty">' + escHtml(err || 'Impossible de charger les documents.') + '</p>'; });
   }
   docsSearch.addEventListener('input', function(){
     var q = normDoc(docsSearch.value);
@@ -8627,7 +8824,7 @@
       if (!cached || frais !== JSON.stringify(cached)){ coutsListeRender(items); }
       try { localStorage.setItem('jarvisCoutsListe', frais); } catch(e){}
     }, function(err){
-      if (!cached){ coutsAboRows.innerHTML = '<p id="couts-empty">' + (err || 'Impossible de charger les coûts.') + '</p>'; }
+      if (!cached){ coutsAboRows.innerHTML = '<p id="couts-empty">' + escHtml(err || 'Impossible de charger les coûts.') + '</p>'; }
     });
   }
   function coutsEur(n){ var v = Number(n); if (!isFinite(v)) v = 0; return v.toFixed(2).replace('.', ',') + ' €'; }
@@ -8903,7 +9100,7 @@
         body.style.display = '';
         var fb = document.getElementById('cxa-freshness');
         fb.className = ({live:'cxa-fresh-live', cached:'cxa-fresh-cached', stale:'cxa-fresh-stale'})[fresh] || 'cxa-fresh-stale';
-        var freshLabel = ({live:'En direct', cached:'En cache', stale:'Pas à jour (stale)'})[fresh] || ('État : ' + fresh);
+        var freshLabel = ({live:'En direct', cached:'En cache', stale:'Pas à jour (stale)'})[fresh] || ('État : ' + escHtml(fresh));
         fb.innerHTML = '<span class="cxa-dot"></span>' + freshLabel;
         var net = data.revenue_estimated_net_usd || {};
         var gross = data.revenue_estimated_gross_usd || {};
@@ -9061,12 +9258,14 @@
     meta.textContent = (dv.createurRole === 'salarie' ? 'Préparé par un salarié' : 'Préparé par vous') + ' · ' + fmtDevisDate(dv.createdAt);
     card.appendChild(meta);
     if (dv.montant){ var montant = document.createElement('span'); montant.className = 'dv-montant'; montant.textContent = dv.montant + ' € TTC'; card.appendChild(montant); }
-    var pdf = document.createElement('a'); pdf.className = 'dv-pdf'; pdf.textContent = '📄 Voir le PDF'; pdf.target = '_blank';
+    var pdf = document.createElement('a'); pdf.className = 'dv-pdf'; pdf.target = '_blank';
+    pdf.innerHTML = '<svg class="hicon-sm" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><path d="M14 2v6h6"/><line x1="8" y1="13" x2="16" y2="13"/><line x1="8" y1="17" x2="16" y2="17"/><line x1="8" y1="9" x2="10" y2="9"/></svg>Voir le PDF';
     pdf.href = 'https://n8n-self-hosted-t0pz.onrender.com' + dv.url + '&code=' + encodeURIComponent(String(read('jarvisCode') || '').trim());
     card.appendChild(pdf);
     var actions = document.createElement('div'); actions.className = 'dv-actions';
-    var okBtn = document.createElement('button'); okBtn.className = 'vc-ok'; okBtn.type = 'button'; okBtn.textContent = '✅ Confirmer et envoyer';
-    var noBtn = document.createElement('button'); noBtn.className = 'vc-no'; noBtn.type = 'button'; noBtn.textContent = '❌ Rejeter';
+    var okBtn = document.createElement('button'); okBtn.className = 'vc-ok'; okBtn.type = 'button';
+    okBtn.innerHTML = '<svg class="hicon-sm" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="9"/><polyline points="8,12.5 10.7,15.2 16,9.5"/></svg>Confirmer et envoyer';
+    var noBtn = document.createElement('button'); noBtn.className = 'vc-no'; noBtn.type = 'button'; noBtn.textContent = 'Rejeter';
     okBtn.addEventListener('click', function(){ devisAgir(dv.token, 'confirmer', okBtn, noBtn); });
     noBtn.addEventListener('click', function(){ devisAgir(dv.token, 'rejeter', okBtn, noBtn); });
     actions.appendChild(okBtn); actions.appendChild(noBtn);
@@ -9139,13 +9338,17 @@
     // Point 2b/2c (31/08/2026) : "Voir le PDF" existe desormais pour TOUTE origine (jarvis =
     // toujours genere a la creation ; meg = des qu'un PDF a ete importe, cf. bouton d'import
     // ci-dessous). L'origine est une INFORMATION, jamais une caste qui bloque le geste.
+    var ICON_DOC_DV = '<svg class="hicon-sm" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><path d="M14 2v6h6"/><line x1="8" y1="13" x2="16" y2="13"/><line x1="8" y1="17" x2="16" y2="17"/><line x1="8" y1="9" x2="10" y2="9"/></svg>';
+    var ICON_CHECK_DV = '<svg class="hicon-sm" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="9"/><polyline points="8,12.5 10.7,15.2 16,9.5"/></svg>';
+    var ICON_CLIP_DV = '<svg class="hicon-sm" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M21 12.5V6a3 3 0 0 0-3-3H6a3 3 0 0 0-3 3v13a3 3 0 0 0 3 3h9"/><path d="M9 8h8M9 12h5"/></svg>';
     if (dv.url){
-      var pdf = document.createElement('a'); pdf.className = 'dv-pdf'; pdf.textContent = '📄 Voir le PDF'; pdf.target = '_blank';
+      var pdf = document.createElement('a'); pdf.className = 'dv-pdf'; pdf.target = '_blank';
+      pdf.innerHTML = ICON_DOC_DV + 'Voir le PDF';
       pdf.href = 'https://n8n-self-hosted-t0pz.onrender.com' + dv.url + '&code=' + encodeURIComponent(String(read('jarvisCode') || '').trim());
       row.appendChild(pdf);
     } else if (dv.source === 'meg'){
       var importBtn = document.createElement('button'); importBtn.type = 'button'; importBtn.className = 'vc-no';
-      importBtn.textContent = '📎 Importer le PDF';
+      importBtn.innerHTML = ICON_CLIP_DV + 'Importer le PDF';
       importBtn.addEventListener('click', function(){ dvPdfImportTarget = dv; dvPdfImportInput.value = ''; dvPdfImportInput.click(); });
       row.appendChild(importBtn);
     }
@@ -9160,7 +9363,7 @@
     // patron-seul et anti-double-facturation que le reste de la chaine MEG).
     if ((dv.source === 'jarvis' && dv.statut === 'envoye' && dv.token) || (dv.source === 'meg' && dv.statut === 'brouillon')){
       var accBtn = document.createElement('button'); accBtn.type = 'button'; accBtn.className = 'vc-ok'; accBtn.style.marginTop = '8px'; accBtn.style.width = '100%';
-      accBtn.textContent = '✅ Le client a accepté';
+      accBtn.innerHTML = ICON_CHECK_DV + 'Le client a accepté';
       accBtn.addEventListener('click', function(){
         accBtn.disabled = true;
         var payload = dv.source === 'meg'
@@ -9184,7 +9387,9 @@
     // devis, evite un aller-retour supplementaire).
     if (dv.statut === 'accepte' && (dv.token || dv.numero)){
       var intBtn = document.createElement('button'); intBtn.type = 'button'; intBtn.className = 'vc-ok dv-intervention-btn';
-      intBtn.style.marginTop = '8px'; intBtn.style.width = '100%'; intBtn.textContent = '✅ Intervention faite — facturer le client';
+      intBtn.style.marginTop = '8px'; intBtn.style.width = '100%';
+      var intBtnIdleHtml = ICON_CHECK_DV + 'Intervention faite — facturer le client';
+      intBtn.innerHTML = intBtnIdleHtml;
       intBtn.addEventListener('click', function(){
         intBtn.disabled = true; intBtn.textContent = 'Enregistrement…';
         var payload = dv.source === 'meg'
@@ -9192,8 +9397,8 @@
           : { type: 'terminer', token: dv.token };
         postDevisIntervention(payload, function(r){
           if (r && r.ok){ dv.statut = 'intervention_faite'; toast('✅ Intervention déclarée terminée'); devisApplyFilter(); }
-          else { intBtn.disabled = false; intBtn.textContent = '✅ Intervention faite — facturer le client'; toast('❌ ' + ((r && r.message) || 'Impossible.')); }
-        }, function(err){ intBtn.disabled = false; intBtn.textContent = '✅ Intervention faite — facturer le client'; toast('❌ ' + err); });
+          else { intBtn.disabled = false; intBtn.innerHTML = intBtnIdleHtml; toast('❌ ' + ((r && r.message) || 'Impossible.')); }
+        }, function(err){ intBtn.disabled = false; intBtn.innerHTML = intBtnIdleHtml; toast('❌ ' + err); });
       });
       row.appendChild(intBtn);
     }
@@ -9209,15 +9414,23 @@
     // deja utilise par l'avoir et la facture directe.
     if (dv.statut === 'intervention_faite' && (dv.token || dv.numero) && !dv.dejaFacturee){
       var facBtn = document.createElement('button'); facBtn.type = 'button'; facBtn.className = 'vc-ok dv-facturer-btn';
-      facBtn.style.marginTop = '8px'; facBtn.style.width = '100%'; facBtn.textContent = '🧾 Facturer ce devis';
+      facBtn.style.marginTop = '8px'; facBtn.style.width = '100%';
+      var facBtnIdleHtml = ICON_DOC_DV + 'Facturer ce devis';
+      facBtn.innerHTML = facBtnIdleHtml;
       var facRecap = document.createElement('div'); facRecap.className = 'dv-fac-recap';
       var facTxt = document.createElement('span'); facTxt.className = 'dv-fac-recap-txt';
       var facLignesWrap = document.createElement('div'); facLignesWrap.className = 'fd-lignes';
       var facLignesAdd = document.createElement('button'); facLignesAdd.type = 'button'; facLignesAdd.className = 'fd-ligne-add-btn'; facLignesAdd.textContent = '+ Ajouter une ligne';
       var facLignesTotal = document.createElement('div'); facLignesTotal.className = 'fd-total-inline';
       var facLignesSave = document.createElement('button'); facLignesSave.type = 'button'; facLignesSave.className = 'vc-ok'; facLignesSave.style.width = '100%'; facLignesSave.textContent = 'Enregistrer les lignes';
-      var facConfirm = document.createElement('button'); facConfirm.type = 'button'; facConfirm.className = 'vc-ok';
-      facConfirm.style.width = '100%'; facConfirm.textContent = 'Confirmer la facturation';
+      // Section 7 (06/09/2026, dernier point) : emission reelle immediate (postFacturation
+      // type:'emettre', consomme un numero) -- meme marqueur vc-envoi-reel + icone avion en
+      // papier que le bouton "Envoyer" du catalogue Contrats (voir plus bas dans ce fichier),
+      // jamais une simple coche confondue avec un "Enregistrer les lignes" juste au-dessus.
+      var facConfirm = document.createElement('button'); facConfirm.type = 'button'; facConfirm.className = 'vc-ok vc-envoi-reel';
+      facConfirm.style.width = '100%';
+      var facConfirmIdleHtml = '<svg class="hicon-sm" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><line x1="22" y1="2" x2="11" y2="13"/><polygon points="22 2 15 22 11 13 2 9 22 2"/></svg>Confirmer la facturation';
+      facConfirm.innerHTML = facConfirmIdleHtml;
       facRecap.appendChild(facTxt);
       facRecap.appendChild(facLignesWrap); facRecap.appendChild(facLignesAdd); facRecap.appendChild(facLignesTotal); facRecap.appendChild(facLignesSave);
       facRecap.appendChild(facConfirm);
@@ -9228,7 +9441,7 @@
       function facPreparer(){
         facBtn.disabled = true; facBtn.textContent = 'Vérification…';
         postDevisFacturer(Object.assign({ type: 'preparer' }, facIdentifiant), function(r){
-          facBtn.disabled = false; facBtn.textContent = '🧾 Facturer ce devis';
+          facBtn.disabled = false; facBtn.innerHTML = facBtnIdleHtml;
           if (r && r.manque === 'lignes'){
             facTxt.textContent = r.message;
             facLignesWrap.innerHTML = ''; facLignesWrap.appendChild(lignesEditorRow(facLignesWrap, facLignesRecalc)); facLignesRecalc();
@@ -9256,7 +9469,7 @@
           facLignesWrap.style.display = 'none'; facLignesAdd.style.display = 'none'; facLignesTotal.style.display = 'none'; facLignesSave.style.display = 'none';
           facConfirm.style.display = '';
           facRecap.classList.add('open');
-        }, function(err){ facBtn.disabled = false; facBtn.textContent = '🧾 Facturer ce devis'; toast('❌ ' + err); });
+        }, function(err){ facBtn.disabled = false; facBtn.innerHTML = facBtnIdleHtml; toast('❌ ' + err); });
       }
       facBtn.addEventListener('click', facPreparer);
       facLignesSave.addEventListener('click', function(){
@@ -9273,7 +9486,7 @@
         if (!facPayload) return;
         facConfirm.disabled = true; facConfirm.textContent = 'Émission…';
         postFacturation({ type: 'emettre', type_doc: 'facture', client: facPayload.client, objet: facPayload.objet, lignes: facPayload.lignes, devis_origine_token: facPayload.devis_origine_token }, function(r){
-          facConfirm.disabled = false; facConfirm.textContent = 'Confirmer la facturation';
+          facConfirm.disabled = false; facConfirm.innerHTML = facConfirmIdleHtml;
           if (r && r.ok){
             toast('✅ Facture émise pour ' + (facPayload.client && facPayload.client.nom));
             if (dv.source === 'meg'){
@@ -9283,7 +9496,7 @@
             }
           }
           else { toast('❌ ' + ((r && r.message) || 'Émission impossible.')); }
-        }, function(err){ facConfirm.disabled = false; facConfirm.textContent = 'Confirmer la facturation'; toast('❌ ' + err); });
+        }, function(err){ facConfirm.disabled = false; facConfirm.innerHTML = facConfirmIdleHtml; toast('❌ ' + err); });
       });
       row.appendChild(facBtn);
       row.appendChild(facRecap);
@@ -9302,7 +9515,8 @@
     var estAvoir = f.typeDoc === 'avoir';
     var row = document.createElement('div'); row.className = 'devis-card' + (estAvoir ? ' mf-card-avoir' : '');
     var top = document.createElement('div'); top.className = 'df-row-top';
-    var nom = document.createElement('span'); nom.className = 'dv-nom'; nom.textContent = (estAvoir ? '↩️ ' : '') + (f.nom || '(client non précisé)');
+    var nom = document.createElement('span'); nom.className = 'dv-nom';
+    nom.innerHTML = (estAvoir ? '<svg class="hicon-sm" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M9 14l-4-4 4-4"/><path d="M5 10h9a5 5 0 0 1 5 5v1"/></svg>' : '') + escHtml(f.nom || '(client non précisé)');
     var badge = document.createElement('span');
     if (estAvoir){ badge.className = 'df-badge'; badge.textContent = 'Avoir'; }
     else { badge.className = 'df-badge ' + (f.paye ? 'paye' : 'impaye'); badge.textContent = f.paye ? 'Payée' : 'Impayée'; }
@@ -9321,11 +9535,13 @@
     // webhook authentifié que les devis) ; les autres ont un lien générique vers le portail MEG
     // (aucun deep-link par facture n'existe côté MEG).
     if (f.pdfUrl){
-      var pdfF = document.createElement('a'); pdfF.className = 'dv-pdf'; pdfF.textContent = '📄 Voir la facture'; pdfF.target = '_blank';
+      var pdfF = document.createElement('a'); pdfF.className = 'dv-pdf'; pdfF.target = '_blank';
+      pdfF.innerHTML = '<svg class="hicon-sm" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><path d="M14 2v6h6"/><line x1="8" y1="13" x2="16" y2="13"/><line x1="8" y1="17" x2="16" y2="17"/><line x1="8" y1="9" x2="10" y2="9"/></svg>Voir la facture';
       pdfF.href = 'https://n8n-self-hosted-t0pz.onrender.com' + f.pdfUrl + '&code=' + encodeURIComponent(String(read('jarvisCode') || '').trim());
       row.appendChild(pdfF);
     } else if (f.megUrl){
-      var megF = document.createElement('a'); megF.className = 'dv-pdf'; megF.textContent = '↗️ Ouvrir dans MEG'; megF.target = '_blank';
+      var megF = document.createElement('a'); megF.className = 'dv-pdf'; megF.target = '_blank';
+      megF.innerHTML = '<svg class="hicon-sm" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"/><polyline points="15,3 21,3 21,9"/><line x1="10" y1="14" x2="21" y2="3"/></svg>Ouvrir dans MEG';
       megF.href = f.megUrl;
       row.appendChild(megF);
     }
@@ -9411,7 +9627,7 @@
     devisChargerListe(function(j){
       panelCacheSave('devis', j);
       devisApplyData(j);
-    }, function(err){ if (!cached) devisList.innerHTML = '<p id="devis-empty">' + err + '</p>'; });
+    }, function(err){ if (!cached) devisList.innerHTML = '<p id="devis-empty">' + escHtml(err) + '</p>'; });
   }
   document.querySelectorAll('.devis-tab').forEach(function(btn){
     btn.addEventListener('click', function(){
@@ -9745,12 +9961,16 @@
   tvaVmcRevueBg.addEventListener('click', function(e){ if (e.target === tvaVmcRevueBg) tvaVmcRevueBg.classList.remove('open'); });
   if (tvaVmcRevueTout10Btn) tvaVmcRevueTout10Btn.addEventListener('click', function(){
     if (!confirm('Passer TOUS les contrats VMC de 20 % à 10 % ? Cette action est tracée et réversible ligne par ligne, mais touche tous les contrats affichés d\'un coup.')) return;
+    // L'icone SVG "chute vers le bas" vit dans le HTML statique du bouton (ligne ~5429) -- on la
+    // recopie ici plutot que de la reconstruire, meme fix que bugf-save : le reset ne doit jamais
+    // remplacer l'icone par de l'emoji brut (⬇️).
+    var tvaBtnIdleHtml = tvaVmcRevueTout10Btn.innerHTML;
     tvaVmcRevueTout10Btn.disabled = true; tvaVmcRevueTout10Btn.textContent = '…';
     postContrats({ type: 'catalogue-tva-vmc-tout-10' }, function(j){
       toast('✅ ' + (j.nb != null ? j.nb : '') + ' contrat(s) passé(s) à 10 %');
-      tvaVmcRevueTout10Btn.disabled = false; tvaVmcRevueTout10Btn.textContent = '⬇️ Tout passer à 10 %';
+      tvaVmcRevueTout10Btn.disabled = false; tvaVmcRevueTout10Btn.innerHTML = tvaBtnIdleHtml;
       tvaVmcRevueOuvrir();
-    }, function(err){ tvaVmcRevueTout10Btn.disabled = false; tvaVmcRevueTout10Btn.textContent = '⬇️ Tout passer à 10 %'; toast(err); });
+    }, function(err){ tvaVmcRevueTout10Btn.disabled = false; tvaVmcRevueTout10Btn.innerHTML = tvaBtnIdleHtml; toast(err); });
   });
 
   // Ecran de revue des factures de contrats (29/08/2026). Desormais base sur famille_prestation
@@ -9772,13 +9992,15 @@
       var sousNom = document.createElement('span'); sousNom.className = 'dv-sous-nom'; sousNom.textContent = sousTitre;
       main.appendChild(sousNom);
     }
+    var ICON_TAG_BADGE = '<svg class="hicon-sm" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 2h7a1 1 0 0 1 1 1v7a1 1 0 0 1-.3.7l-9 9a1 1 0 0 1-1.4 0l-7-7a1 1 0 0 1 0-1.4l9-9A1 1 0 0 1 12 2z"/><circle cx="16.5" cy="7.5" r="1.5" fill="currentColor" stroke="none"/></svg>';
+    var ICON_INFO_BADGE = '<svg class="hicon-sm" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="9"/><line x1="12" y1="11" x2="12" y2="16"/><circle cx="12" cy="8" r="1" fill="currentColor" stroke="none"/></svg>';
     var badge = document.createElement('span');
     badge.className = 'ct-badge' + (bloque ? ' bloque' : (f.type_contrat === 'VMC' ? ' vmc' : ''));
     // Badge lisible : montre le libellé brut tel que Mickael l'a écrit dans son classeur (ex.
     // "MS3D"), jamais un texte générique -- c'est lui qui doit reconnaître ce qu'il a tapé.
     var libelleBrutBadge = (f.prestation_resolue || f.prestation || '').trim();
-    badge.textContent = bloque
-      ? ('🏷️ Désignation à confirmer' + (libelleBrutBadge ? (' : « ' + libelleBrutBadge + ' »') : ''))
+    badge.innerHTML = bloque
+      ? (ICON_TAG_BADGE + 'Désignation à confirmer' + (libelleBrutBadge ? (' : « ' + escHtml(libelleBrutBadge) + ' »') : ''))
       : (f.type_contrat === 'VMC' ? 'VMC · +3 % auto' : 'Dératisation / désinsectisation');
     main.appendChild(badge);
     // Sujet 1 (01/09/2026) : la designation n'est pas confirmee par Mickael lui-meme mais deduite
@@ -9787,7 +10009,7 @@
     // un signal discret pour que Mickael sache qu'il peut la relire quand il aura le temps.
     if (!bloque && (f.designation_deduite === true || f.designation_deduite === 'true')){
       var badgeDeduit = document.createElement('span'); badgeDeduit.className = 'ct-badge ct-badge-deduit';
-      badgeDeduit.textContent = '🔖 Déduit par Jarvis';
+      badgeDeduit.innerHTML = ICON_TAG_BADGE + 'Déduit par Jarvis';
       main.appendChild(badgeDeduit);
     }
     // Sujet 2.4 (01/09/2026) : mention discrete (pas une alerte) quand le taux applique vient du
@@ -9795,7 +10017,7 @@
     // ni n'alarme (voir aussi l'ecran de revue groupe, contratsOuvrirRevueTvaVmc).
     if (f.type_contrat === 'VMC' && Number(f.tva) === 0.2 && String(f.tva_provenance) === 'registre'){
       var mentionTva = document.createElement('span'); mentionTva.className = 'ct-badge ct-badge-tva-info';
-      mentionTva.textContent = 'ℹ️ ton classeur dit 20 %';
+      mentionTva.innerHTML = ICON_INFO_BADGE + 'ton classeur dit 20 %';
       main.appendChild(mentionTva);
     }
     var meta = document.createElement('span'); meta.className = 'dv-meta';
@@ -9834,19 +10056,22 @@
         numEnvoi.textContent = '№ ' + f.numero_facture;
         card.appendChild(numEnvoi);
       }
+      var ICON_CHECK_CT = '<svg class="hicon-sm" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="9"/><polyline points="8,12.5 10.7,15.2 16,9.5"/></svg>';
       var metaEnvoi = document.createElement('span'); metaEnvoi.className = 'dv-meta';
-      metaEnvoi.textContent = '✅ Envoyée le ' + fmtDevisDateSimple(f.date_envoi) + (f.destinataire_email ? (' à ' + f.destinataire_email) : '');
+      metaEnvoi.innerHTML = ICON_CHECK_CT + 'Envoyée le ' + escHtml(fmtDevisDateSimple(f.date_envoi)) + (f.destinataire_email ? (' à ' + escHtml(f.destinataire_email)) : '');
       card.appendChild(metaEnvoi);
       return card;
     }
 
     // ---- Statut "skip" : motif + option de revenir en arrière ----
     if (f.statut === 'skip'){
+      var ICON_SKIP_CT = '<svg class="hicon-sm" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><polyline points="7,5 13,12 7,19"/><polyline points="13,5 19,12 13,19"/></svg>';
+      var ICON_UNDO_CT = '<svg class="hicon-sm" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M9 14l-4-4 4-4"/><path d="M5 10h9a5 5 0 0 1 5 5v1"/></svg>';
       var metaSkip = document.createElement('span'); metaSkip.className = 'dv-meta';
-      metaSkip.textContent = '⏭️ Motif : ' + (f.motif_skip || '(non précisé)');
+      metaSkip.innerHTML = ICON_SKIP_CT + 'Motif : ' + escHtml(f.motif_skip || '(non précisé)');
       card.appendChild(metaSkip);
       var undoBtn = document.createElement('button'); undoBtn.className = 'ct-toggle'; undoBtn.type = 'button';
-      undoBtn.textContent = '↩️ Remettre à traiter';
+      undoBtn.innerHTML = ICON_UNDO_CT + 'Remettre à traiter';
       undoBtn.addEventListener('click', function(){
         undoBtn.disabled = true;
         postContrats({ type: 'mois-action', id: f.id, choix: 'reactiver' }, function(){
@@ -9866,7 +10091,9 @@
       card.appendChild(motifP);
     }
     var toggleBtn = document.createElement('button'); toggleBtn.type = 'button'; toggleBtn.className = 'ct-toggle';
-    toggleBtn.textContent = bloque ? '✏️ Saisir la désignation et traiter' : '✏️ Modifier et traiter';
+    // Session 4 (06/09/2026) : innerHTML (pas textContent) -- meme icone crayon que
+    // "cal-client-changer-def" (famille SVG 24x24/trait 2/currentColor), au lieu de l'emoji ✏️.
+    toggleBtn.innerHTML = '<svg class="hicon-sm" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 20h4L20 8l-4-4L4 16z"/><line x1="14" y1="6" x2="18" y2="10"/></svg>' + (bloque ? 'Saisir la désignation et traiter' : 'Modifier et traiter');
     card.appendChild(toggleBtn);
 
     var detail = document.createElement('div'); detail.className = 'ct-detail';
@@ -9878,7 +10105,7 @@
     var destInput = contratField(detail, 'Destinataire (email) — "à renseigner" si aucune correspondance trouvée dans l\'export MEG', 'input', f.destinataire_email || f.destinataire_candidat); destInput.type = 'text';
     if (!f.destinataire_email && f.destinataire_candidat) {
       var destPreuve = document.createElement('p'); destPreuve.className = 'ct-motif-blocage';
-      destPreuve.textContent = '🔎 À confirmer — ' + (f.destinataire_preuve || 'candidat trouvé, à vérifier.');
+      destPreuve.innerHTML = '<svg class="hicon-sm" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="10.5" cy="10.5" r="6.5"/><line x1="20" y1="20" x2="15.3" y2="15.3"/></svg>À confirmer — ' + escHtml(f.destinataire_preuve || 'candidat trouvé, à vérifier.');
       detail.appendChild(destPreuve);
     }
     var designationInput = contratField(detail,
@@ -9891,9 +10118,12 @@
     // pour mcs_memoire_champs, adapté à la table dédiée mcs_designations demandée pour ce chantier.
     if (f.famille_prestation){
       var confirmBtn = document.createElement('button'); confirmBtn.type = 'button'; confirmBtn.className = 'ct-toggle ct-confirm-designation';
-      confirmBtn.textContent = bloque
-        ? ('✅ Confirmer « ' + (designationInput.value || '(à écrire ci-dessus)') + ' » pour toutes les factures de ce type')
-        : '✅ Reconfirmer cette désignation pour toutes les factures de ce type';
+      // Session 4 (06/09/2026) : innerHTML (pas textContent) -- meme coche SVG que partout
+      // ailleurs (checkmark-cercle 24x24/trait 2/currentColor) au lieu de l'emoji ✅.
+      var ICON_CHECK_CT = '<svg class="hicon-sm" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="9"/><polyline points="8,12.5 10.7,15.2 16,9.5"/></svg>';
+      confirmBtn.innerHTML = ICON_CHECK_CT + (bloque
+        ? ('Confirmer « ' + escHtml(designationInput.value || '(à écrire ci-dessus)') + ' » pour toutes les factures de ce type')
+        : 'Reconfirmer cette désignation pour toutes les factures de ce type');
       confirmBtn.addEventListener('click', function(){
         var valeur = String(designationInput.value || '').trim();
         if (!valeur){ toast('Écris la désignation avant de confirmer.'); designationInput.focus(); return; }
@@ -9901,7 +10131,7 @@
         postContrats({ type: 'designations-ecrire', cleNormalisee: f.famille_prestation, designationFacture: valeur }, function(){
           toast('✅ Désignation confirmée, appliquée à toutes les factures « ' + (f.prestation_resolue || f.prestation || '') + ' »');
           contratsAppliquerDesignationPartout(f.famille_prestation, valeur);
-        }, function(err){ confirmBtn.disabled = false; confirmBtn.textContent = '✅ Confirmer'; toast(err); });
+        }, function(err){ confirmBtn.disabled = false; confirmBtn.innerHTML = ICON_CHECK_CT + 'Confirmer'; toast(err); });
       });
       detail.appendChild(confirmBtn);
     }
@@ -9967,8 +10197,14 @@
     var corpsInput = contratField(detail, 'Corps du mail', 'textarea', f.corps_mail);
 
     var actions = document.createElement('div'); actions.className = 'ct-actions';
-    var okBtn = document.createElement('button'); okBtn.className = 'vc-ok'; okBtn.type = 'button'; okBtn.textContent = '✅ Envoyer';
-    var skipBtn = document.createElement('button'); skipBtn.className = 'vc-no'; skipBtn.type = 'button'; skipBtn.textContent = '⏭️ Pas cette année';
+    // Section 7 (06/09/2026, dernier point) : SEUL bouton de ce panneau a declencher une
+    // emission reelle immediate (postContrats choix:'envoyer', sans autre confirmation apres) --
+    // classe vc-envoi-reel + icone avion en papier (au lieu de la coche generique de vc-ok
+    // partagee par ~25 boutons de confirmation interne). Voir CSS html.mcs-theme .vc-envoi-reel.
+    var okBtn = document.createElement('button'); okBtn.className = 'vc-ok vc-envoi-reel'; okBtn.type = 'button';
+    okBtn.innerHTML = '<svg class="hicon-sm" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><line x1="22" y1="2" x2="11" y2="13"/><polygon points="22 2 15 22 11 13 2 9 22 2"/></svg>Envoyer';
+    var skipBtn = document.createElement('button'); skipBtn.className = 'vc-no'; skipBtn.type = 'button';
+    skipBtn.innerHTML = '<svg class="hicon-sm" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><polyline points="7,5 13,12 7,19"/><polyline points="13,5 19,12 13,19"/></svg>Pas cette année';
     okBtn.addEventListener('click', function(){
       var checked = tvaRadios.find(function(r){ return r.checked; });
       // Sujet 3 (02/09/2026) : provenance deduite de la valeur choisie (les 2 radios sont
@@ -10296,7 +10532,9 @@
         if (nbDeduites > 0){
           var resumeDeduites = document.createElement('button'); resumeDeduites.type = 'button';
           resumeDeduites.id = 'contrats-resume-deduites';
-          resumeDeduites.textContent = (contratsFiltreDeduites ? '👁️ ' : '🔖 ') + nbDeduites + ' désignation' + (nbDeduites > 1 ? 's' : '') + ' déduite' + (nbDeduites > 1 ? 's' : '') + ' par Jarvis, à confirmer quand tu as le temps' + (contratsFiltreDeduites ? ' (afficher tout)' : ' (voir la liste)');
+          var ICON_TAG_RD = '<svg class="hicon-sm" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 2h7a1 1 0 0 1 1 1v7a1 1 0 0 1-.3.7l-9 9a1 1 0 0 1-1.4 0l-7-7a1 1 0 0 1 0-1.4l9-9A1 1 0 0 1 12 2z"/><circle cx="16.5" cy="7.5" r="1.5" fill="currentColor" stroke="none"/></svg>';
+          var ICON_EYE_RD = '<svg class="hicon-sm" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M2 12s3.5-7 10-7 10 7 10 7-3.5 7-10 7-10-7-10-7z"/><circle cx="12" cy="12" r="3"/></svg>';
+          resumeDeduites.innerHTML = (contratsFiltreDeduites ? ICON_EYE_RD : ICON_TAG_RD) + nbDeduites + ' désignation' + (nbDeduites > 1 ? 's' : '') + ' déduite' + (nbDeduites > 1 ? 's' : '') + ' par Jarvis, à confirmer quand tu as le temps' + (contratsFiltreDeduites ? ' (afficher tout)' : ' (voir la liste)');
           resumeDeduites.addEventListener('click', function(){ contratsFiltreDeduites = !contratsFiltreDeduites; contratsApplyFilter(); });
           contratsList.appendChild(resumeDeduites);
         } else if (contratsFiltreDeduites){
@@ -10358,7 +10596,7 @@
           panelCacheSave(cleMois, j);
           contratsApplyMoisData(j);
         },
-        function(err){ if (!cachedMois) contratsList.innerHTML = '<p id="contrats-empty">' + err + '</p>'; });
+        function(err){ if (!cachedMois) contratsList.innerHTML = '<p id="contrats-empty">' + escHtml(err) + '</p>'; });
     } else {
       var cachedCat = useCache ? panelCacheLoad('contrats-catalogue') : null;
       if (cachedCat){
@@ -10372,7 +10610,7 @@
         panelCacheSave('contrats-catalogue', j);
         contratsCatalogueData = j.contrats || [];
         contratsApplyFilter();
-      }, function(err){ if (!cachedCat) contratsList.innerHTML = '<p id="contrats-empty">' + err + '</p>'; });
+      }, function(err){ if (!cachedCat) contratsList.innerHTML = '<p id="contrats-empty">' + escHtml(err) + '</p>'; });
     }
   }
 
@@ -10438,7 +10676,12 @@
   var calSelectedItem = null;
   var calIsBrunoFlow = false;
 
-  var CAL_PILL_LABEL = { facture: '✅ Facturé', a_facturer: '⏳ À facturer', passage_seul: '🔧 Passage seul' };
+  // Session 4 (06/09/2026, section 3) : icones SVG (pas d'emoji brut) -- coherent avec le reste
+  // du panneau Contrats deja converti (chips Derat/VMC, badges Deduit par Jarvis...).
+  var ICON_CHECK_PILL = '<svg class="hicon-sm" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="9"/><polyline points="8,12.5 10.7,15.2 16,9.5"/></svg>';
+  var ICON_CLOCK_PILL = '<svg class="hicon-sm" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="9"/><polyline points="12,7 12,12 15.5,14"/></svg>';
+  var ICON_WRENCH_PILL = '<svg class="hicon-sm" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M14.7 6.3a4 4 0 0 1-5.66 5.66L4 17l3 3 5.04-5.04a4 4 0 0 1 5.66-5.66l-2.83 2.83-2.83-2.83z"/></svg>';
+  var CAL_PILL_LABEL = { facture: ICON_CHECK_PILL + 'Facturé', a_facturer: ICON_CLOCK_PILL + 'À facturer', passage_seul: ICON_WRENCH_PILL + 'Passage seul' };
 
   function calMoisEstPasse(m){
     var moisCourant = new Date().getMonth() + 1;
@@ -10501,7 +10744,7 @@
     top.appendChild(nom);
     if (!bruno){
       var pill = document.createElement('span'); pill.className = 'cal-line-pill ' + item.statutAffichage;
-      pill.textContent = CAL_PILL_LABEL[item.statutAffichage] || item.statutAffichage;
+      pill.innerHTML = CAL_PILL_LABEL[item.statutAffichage] || escHtml(item.statutAffichage);
       top.appendChild(pill);
     }
     line.appendChild(top);
@@ -10510,21 +10753,26 @@
     line.appendChild(sous);
     if (item.decalageActif){
       var dec = document.createElement('span'); dec.className = 'cal-line-dec';
-      dec.textContent = '↔️ Décalé depuis ' + (CONTRATS_MOIS_NOMS[(item.moisPrevu || 1) - 1] || '');
+      dec.innerHTML = '<svg class="hicon-sm" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><line x1="4" y1="12" x2="20" y2="12"/><polyline points="9,7 4,12 9,17"/><polyline points="15,7 20,12 15,17"/></svg>Décalé depuis ' + (CONTRATS_MOIS_NOMS[(item.moisPrevu || 1) - 1] || '');
       line.appendChild(dec);
     }
     // Point 1.1 (01/09/2026) : etat distinct d'un decalage deja acte -- une proposition n'a
     // encore RIEN change (l'item reste sur son mois d'origine), c'est juste signale.
     if (item.propositionEnAttente){
       var prop = document.createElement('span'); prop.className = 'cal-line-prop';
-      prop.textContent = '📣 Report proposé par Bruno — ' + (CONTRATS_MOIS_NOMS[(item.propositionEnAttente.moisRetenu || 1) - 1] || '');
+      prop.innerHTML = '<svg class="hicon-sm" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 11l18-5v12l-18-5z"/><path d="M11 15v4a2 2 0 0 0 4 0"/></svg>Report proposé par Bruno — ' + (CONTRATS_MOIS_NOMS[(item.propositionEnAttente.moisRetenu || 1) - 1] || '');
       line.appendChild(prop);
     }
     var faitRow = document.createElement('div'); faitRow.className = 'cal-line-fait-row';
     var faitPar = document.createElement('span'); faitPar.className = 'cal-line-fait-par';
-    faitPar.textContent = (item.fait && item.faitPar) ? ('✅ Fait par ' + item.faitPar) : '';
+    var ICON_CHECK_FAIT = '<svg class="hicon-sm" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="9"/><polyline points="8,12.5 10.7,15.2 16,9.5"/></svg>';
+    faitPar.innerHTML = (item.fait && item.faitPar) ? (ICON_CHECK_FAIT + 'Fait par ' + escHtml(item.faitPar)) : '';
     var faitBtn = document.createElement('button'); faitBtn.type = 'button'; faitBtn.className = 'cal-line-fait-btn';
-    faitBtn.textContent = item.fait ? '✅' : '⬜️';
+    // Case a cocher SVG (pas d'emoji ✅/⬜️) : pleine bleue = fait, contour = pas fait -- meme
+    // convention actif/inactif que le reste de l'app (fond plein bleu vs contour).
+    faitBtn.innerHTML = item.fait
+      ? '<svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="3" y="3" width="18" height="18" rx="4" fill="currentColor"/><polyline points="7,12.5 10.3,16 17,8.5" stroke="var(--surface)"/></svg>'
+      : '<svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="3" y="3" width="18" height="18" rx="4"/></svg>';
     faitBtn.setAttribute('aria-label', item.fait ? 'Marquer non fait' : 'Marquer fait');
     faitBtn.addEventListener('click', function(e){ calToggleFait(item, bruno, e); });
     faitRow.appendChild(faitPar); faitRow.appendChild(faitBtn);
@@ -10564,7 +10812,7 @@
     postContrats({ type: 'calendrier-mois', mois: calMois, filtre: calFiltre }, function(j){
       calCurrentItems = j.items || [];
       calRenderList();
-    }, function(err){ document.getElementById('cal-list').innerHTML = '<p id="contrats-empty">' + err + '</p>'; });
+    }, function(err){ document.getElementById('cal-list').innerHTML = '<p id="contrats-empty">' + escHtml(err) + '</p>'; });
   }
 
   function calOpen(){ calIsBrunoFlow = false; calLoadResume(); calLoadMois(); }
@@ -10794,7 +11042,11 @@
 
   // Point 1.4 (01/09/2026) : Bruno voit ce que sont devenus SES signalements -- lecture seule,
   // il ne decide jamais rien ici (pas de bouton d'action sur cette liste).
-  var BCAL_STATUT_LABEL = { en_attente: '⏳ En attente de Mickael', validee: '✅ Validé', refusee: '✕ Refusé' };
+  var BCAL_STATUT_LABEL = {
+    en_attente: '<svg class="hicon-sm" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="9"/><polyline points="12,7 12,12 15.5,14"/></svg>En attente de Mickael',
+    validee: '<svg class="hicon-sm" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="9"/><polyline points="8,12.5 10.7,15.2 16,9.5"/></svg>Validé',
+    refusee: '✕ Refusé'
+  };
   function bcalRenderMesPropositions(propositions){
     var zone = document.getElementById('bcal-mes-props');
     var list = document.getElementById('bcal-mes-props-list');
@@ -10804,7 +11056,7 @@
     propositions.forEach(function(p){
       var line = document.createElement('div'); line.className = 'bcal-prop-line';
       var statut = document.createElement('span'); statut.className = 'bcal-prop-statut ' + p.statut;
-      statut.textContent = BCAL_STATUT_LABEL[p.statut] || p.statut;
+      statut.innerHTML = BCAL_STATUT_LABEL[p.statut] || escHtml(p.statut);
       line.appendChild(statut);
       var detail = document.createElement('span'); detail.className = 'bcal-prop-detail';
       var nom = p.residence || p.client || '';
@@ -10829,7 +11081,7 @@
       // mis en cache pour que bcalRenderList puisse recalculer le compteur apres chaque toggle.
       bcalMoisLabel = (CONTRATS_MOIS_NOMS[(j.mois || 1) - 1] || '') + ' 2026';
       bcalRenderList(j.items || []);
-    }, function(err){ document.getElementById('bcal-mois-titre').textContent = ''; document.getElementById('bcal-list').innerHTML = '<p id="contrats-empty">' + err + '</p>'; });
+    }, function(err){ document.getElementById('bcal-mois-titre').textContent = ''; document.getElementById('bcal-list').innerHTML = '<p id="contrats-empty">' + escHtml(err) + '</p>'; });
     postContrats({ type: 'calendrier-mes-propositions' }, function(j){
       bcalRenderMesPropositions(j.propositions || []);
     }, function(){ document.getElementById('bcal-mes-props').style.display = 'none'; });
@@ -11010,7 +11262,7 @@
     var s1 = document.createElement('div'); s1.className = 'couts-stat';
     s1.innerHTML = '<span class="cs-label">Km cumulés ' + ikResume.annee + '</span><span class="cs-value">' + ikResume.kmAnnee.toLocaleString('fr-FR') + '</span><span class="cs-sub">' + ikResume.nbTrajetsAnnee + ' trajets</span>';
     var s2 = document.createElement('div'); s2.className = 'couts-stat';
-    s2.innerHTML = '<span class="cs-label">Frais IK estimés</span><span class="cs-value">' + Number(ikResume.fraisAnnee).toLocaleString('fr-FR', {maximumFractionDigits:2}) + ' €</span><span class="cs-sub">véhicule ' + (ikResume.vehicule === '7+' ? '7 CV et plus' : ikResume.vehicule + ' CV') + '</span>';
+    s2.innerHTML = '<span class="cs-label">Frais IK estimés</span><span class="cs-value">' + Number(ikResume.fraisAnnee).toLocaleString('fr-FR', {maximumFractionDigits:2}) + ' €</span><span class="cs-sub">véhicule ' + (ikResume.vehicule === '7+' ? '7 CV et plus' : escHtml(ikResume.vehicule) + ' CV') + '</span>';
     stats.appendChild(s1); stats.appendChild(s2);
     wrap.appendChild(stats);
     var etat = document.createElement('div'); etat.id = 'ik-etat';
@@ -11154,7 +11406,7 @@
     postIk({ type: 'liste' }, function(j){
       panelCacheSave('ik', j);
       ikApplyData(j);
-    }, function(err){ if (!cached) ikList.innerHTML = '<p id="ik-empty">' + err + '</p>'; });
+    }, function(err){ if (!cached) ikList.innerHTML = '<p id="ik-empty">' + escHtml(err) + '</p>'; });
   }
 
   function ikOpen(){
@@ -11205,7 +11457,7 @@
           feats.forEach(function(f){
             var li = document.createElement('li');
             var ville = f.properties.city || f.properties.label;
-            li.innerHTML = ville + '<small>' + (f.properties.context || '') + ' · ' + Math.round(f._dist) + ' km de Bordeaux</small>';
+            li.innerHTML = escHtml(ville) + '<small>' + escHtml(f.properties.context || '') + ' · ' + Math.round(f._dist) + ' km de Bordeaux</small>';
             li.addEventListener('click', function(){
               input.value = ville;
               sug.innerHTML = ''; sug.classList.remove('open');
@@ -11710,7 +11962,7 @@
     postRentabilite({}, function(j){
       panelCacheSave('rentabilite', j);
       rentaApplyData(j, null);
-    }, function(err){ if (!cached) rentaList.innerHTML = '<p id="renta-empty">' + err + '</p>'; });
+    }, function(err){ if (!cached) rentaList.innerHTML = '<p id="renta-empty">' + escHtml(err) + '</p>'; });
   }
   document.getElementById('renta-close').addEventListener('click', rentaAttenteClose);
   document.getElementById('sh-rentabilite').addEventListener('click', function(){ sheetOpen(false); rentabiliteOpen(); });
@@ -11886,7 +12138,8 @@
       // Point 3 (28/08/2026) : bouton present UNIQUEMENT si le PDF existe (50 factures impayees
       // archivees depuis MEG) -- jamais un bouton mort qui ne mene nulle part.
       if (f.pdfUrl){
-        var pdfL = document.createElement('a'); pdfL.className = 'rl-facture-pdf'; pdfL.textContent = '📄 Voir la facture'; pdfL.target = '_blank';
+        var pdfL = document.createElement('a'); pdfL.className = 'rl-facture-pdf'; pdfL.target = '_blank';
+        pdfL.innerHTML = '<svg class="hicon-sm" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><path d="M14 2v6h6"/><line x1="8" y1="13" x2="16" y2="13"/><line x1="8" y1="17" x2="16" y2="17"/><line x1="8" y1="9" x2="10" y2="9"/></svg>Voir la facture';
         pdfL.href = 'https://n8n-self-hosted-t0pz.onrender.com' + f.pdfUrl + '&code=' + encodeURIComponent(String(read('jarvisCode') || '').trim());
         list.appendChild(pdfL);
       }
@@ -12135,11 +12388,15 @@
       // Cote serveur, le brouillon est RECALCULE via `cle` (Preparer envoi relance (ok)) --
       // jamais un texte transmis d'ici, donc toujours "sa version" telle qu'affichee/editee.
       var envBtn = document.createElement('button'); envBtn.type = 'button'; envBtn.className = 'rl-btn-envoyer';
-      envBtn.textContent = '✉️ Envoyer';
+      envBtn.innerHTML = '<svg class="hicon-sm" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="3" y="5" width="18" height="14" rx="2"/><polyline points="3,7 12,13 21,7"/></svg>Envoyer';
       var envExpl = document.createElement('div'); envExpl.className = 'rl-envoyer-explication';
       var envTxt = document.createElement('div');
       envTxt.textContent = 'Envoyer ce message à ' + b.destinataire + ' ?';
-      var envConfirmBtn = document.createElement('button'); envConfirmBtn.type = 'button'; envConfirmBtn.className = 'rl-confirm';
+      // Section 7 (06/09/2026, dernier point) : envoi reel immediat au client (postRelancesAction
+      // action:'envoyer') -- meme marqueur vc-envoi-reel que les boutons de facturation, distinct
+      // de "Confirmer la suspension" qui reutilise .rl-confirm sans ce marqueur (action interne,
+      // pas un envoi).
+      var envConfirmBtn = document.createElement('button'); envConfirmBtn.type = 'button'; envConfirmBtn.className = 'rl-confirm vc-envoi-reel';
       envConfirmBtn.textContent = 'Confirmer l’envoi';
       envExpl.appendChild(envTxt);
       // Point 3 (28/08/2026) : le gabarit dit déjà "si vous avez besoin d'un duplicata,
@@ -12649,7 +12906,7 @@
         banner.textContent = '⚡ Calcul du matin (' + heure + ') — pas un recalcul en direct. Envoyer une relance déclenche toujours un calcul frais.';
         relancesList.insertBefore(banner, relancesList.firstChild);
       }
-    }, function(err){ if (!cached) relancesList.innerHTML = '<p id="relances-empty">' + err + '</p>'; }, !!keepOpen);
+    }, function(err){ if (!cached) relancesList.innerHTML = '<p id="relances-empty">' + escHtml(err) + '</p>'; }, !!keepOpen);
   }
   function relancesSnapshotHeureLabel(iso){
     try { return new Date(iso).toLocaleTimeString('fr-FR', { hour:'2-digit', minute:'2-digit', timeZone:'Europe/Paris' }); }
@@ -12839,7 +13096,7 @@
       panelCacheSave('carnet', j);
       carnetAll = j.residences || [];
       carnetRender();
-    }, function(err){ if (!cached) carnetList.innerHTML = '<p id="carnet-empty">' + err + '</p>'; });
+    }, function(err){ if (!cached) carnetList.innerHTML = '<p id="carnet-empty">' + escHtml(err) + '</p>'; });
   }
   function carnetClose(){ carnetview.classList.remove('open'); }
   document.getElementById('carnet-close').addEventListener('click', carnetClose);
@@ -12921,7 +13178,7 @@
       portefeuilleData = j.donnees;
       portefeuilleNote.textContent = (portefeuilleData && portefeuilleData.note) || '';
       portefeuilleApplyFilter();
-    }, function(err){ portefeuilleList.innerHTML = '<p id="portefeuille-empty">' + err + '</p>'; });
+    }, function(err){ portefeuilleList.innerHTML = '<p id="portefeuille-empty">' + escHtml(err) + '</p>'; });
   }
   function portefeuilleClose(){ portefeuilleview.classList.remove('open'); }
   document.getElementById('portefeuille-close').addEventListener('click', portefeuilleClose);
@@ -13150,7 +13407,7 @@
     relationsChargerListe(function(j){
       panelCacheSave('relations', j);
       relationsApplyData(j);
-    }, function(err){ if (!cached) relationsList.innerHTML = '<p id="relations-empty">' + err + '</p>'; });
+    }, function(err){ if (!cached) relationsList.innerHTML = '<p id="relations-empty">' + escHtml(err) + '</p>'; });
   }
   function relationsClose(){ relationsview.classList.remove('open'); }
   // Badge "N observations" (2026-08-11) : même famille visuelle/mécanisme que le badge Relances
@@ -13309,7 +13566,7 @@
     postDocref({ type:'liste' }, function(j){
       panelCacheSave('docref', j);
       docrefApplyData(j, null);
-    }, function(err){ if (!cached) docrefList.innerHTML = '<p id="docref-empty">' + err + '</p>'; });
+    }, function(err){ if (!cached) docrefList.innerHTML = '<p id="docref-empty">' + escHtml(err) + '</p>'; });
   }
   function docrefOpen(){ docrefview.classList.add('open'); docrefLoad(true); }
   function docrefClose(){ docrefview.classList.remove('open'); }
@@ -13382,7 +13639,7 @@
         clientsList.appendChild(row);
         clientsLoadOuvertures(mid);
       });
-    }, function(err){ clientsList.innerHTML = '<p id="clients-empty">' + err + '</p>'; });
+    }, function(err){ clientsList.innerHTML = '<p id="clients-empty">' + escHtml(err) + '</p>'; });
   }
 
   // Compteur "ouvertures Jarvis / jour" (2026-08-11, demande Mathéo) -- affiché directement
@@ -13410,7 +13667,7 @@
     adminPost({ action:'ouvertures', inclureAdmin: clientsIncludeAdmin }, function(j){
       ouverturesTabData = j;
       clientsRenderOuverturesTab();
-    }, function(err){ clientsList.innerHTML = '<p id="clients-empty">' + err + '</p>'; });
+    }, function(err){ clientsList.innerHTML = '<p id="clients-empty">' + escHtml(err) + '</p>'; });
   }
 
   function clientsRenderOuverturesTab(){
@@ -13471,7 +13728,7 @@
     clientsList.innerHTML = '<p id="clients-loading">Chargement…</p>';
     adminPost({ action:'couts', inclureAdmin: clientsIncludeAdmin }, function(j){
       clientsRenderCoutsTab(j);
-    }, function(err){ clientsList.innerHTML = '<p id="clients-empty">' + err + '</p>'; });
+    }, function(err){ clientsList.innerHTML = '<p id="clients-empty">' + escHtml(err) + '</p>'; });
   }
 
   function fmtUsd(n){ return '$' + (Number(n) || 0).toFixed(2); }
@@ -13596,14 +13853,14 @@
       frictionsAll = j.frictions || [];
       clientsRebuildUserFilter(frictionsAll.map(function(f){ return f.utilisateur; }));
       clientsRenderFrictions();
-    }, function(err){ clientsList.innerHTML = '<p id="clients-empty">' + err + '</p>'; });
+    }, function(err){ clientsList.innerHTML = '<p id="clients-empty">' + escHtml(err) + '</p>'; });
   }
 
   function clientsRebuildUserFilter(noms){
     var uniq = Array.from(new Set(noms.filter(Boolean)));
     var current = clientsFilterUser.value;
     clientsFilterUser.innerHTML = '<option value="">Tous les utilisateurs</option>' +
-      uniq.map(function(n){ return '<option value="' + n.replace(/"/g, '') + '">' + n + '</option>'; }).join('');
+      uniq.map(function(n){ return '<option value="' + escHtml(n) + '">' + escHtml(n) + '</option>'; }).join('');
     clientsFilterUser.value = uniq.indexOf(current) !== -1 ? current : '';
   }
 
@@ -13637,7 +13894,7 @@
       conversationsAll = j.conversations || [];
       clientsRebuildUserFilter(conversationsAll.map(function(c){ return c.utilisateur; }));
       clientsRenderConversations();
-    }, function(err){ clientsList.innerHTML = '<p id="clients-empty">' + err + '</p>'; });
+    }, function(err){ clientsList.innerHTML = '<p id="clients-empty">' + escHtml(err) + '</p>'; });
   }
 
   function clientsRenderConversations(){
@@ -13669,7 +13926,7 @@
     adminPost({ action:'appareils' }, function(j){
       appareilsAll = j.appareils || [];
       clientsRenderAppareils();
-    }, function(err){ clientsList.innerHTML = '<p id="clients-empty">' + err + '</p>'; });
+    }, function(err){ clientsList.innerHTML = '<p id="clients-empty">' + escHtml(err) + '</p>'; });
   }
 
   function clientsRenderAppareils(){
@@ -13718,7 +13975,7 @@
         wrap.appendChild(d);
       });
       clientsList.appendChild(wrap);
-    }, function(err){ clientsList.innerHTML = '<p id="clients-empty">' + err + '</p>'; });
+    }, function(err){ clientsList.innerHTML = '<p id="clients-empty">' + escHtml(err) + '</p>'; });
   }
 
   function clientsOpen(){
@@ -13911,7 +14168,7 @@
       meuteAll = j.structures || [];
       meuteRender();
       meuteUpdateBadge();
-    }, function(err){ meuteList.innerHTML = '<p id="meute-empty">' + err + '</p>'; });
+    }, function(err){ meuteList.innerHTML = '<p id="meute-empty">' + escHtml(err) + '</p>'; });
   }
 
   function meuteOpen(){
@@ -14208,7 +14465,7 @@
     oppChargerListe(function(j){
       panelCacheSave('opportunites', j);
       oppApplyData(j);
-    }, function(err){ if (!oppAll.length) oppList.innerHTML = '<p id="opp-empty">' + err + '</p>'; else toast(err); });
+    }, function(err){ if (!oppAll.length) oppList.innerHTML = '<p id="opp-empty">' + escHtml(err) + '</p>'; else toast(err); });
   }
 
   function oppOpen(){
@@ -14546,7 +14803,7 @@
       vitrineAll = j.sites || [];
       vitrineRender();
       if (onDone) onDone();
-    }, function(err){ vitrineList.innerHTML = '<p id="vitrine-empty">' + err + '</p>'; if (onDone) onDone(); });
+    }, function(err){ vitrineList.innerHTML = '<p id="vitrine-empty">' + escHtml(err) + '</p>'; if (onDone) onDone(); });
   }
 
   function vitrineOpen(){
@@ -14897,7 +15154,7 @@
       plumeRender();
       plumeCheckBilan(plumeAll);
       if (onDone) onDone();
-    }, function(err){ plumeList.innerHTML = '<p id="plume-empty">' + err + '</p>'; if (onDone) onDone(); });
+    }, function(err){ plumeList.innerHTML = '<p id="plume-empty">' + escHtml(err) + '</p>'; if (onDone) onDone(); });
   }
 
   // ---- Pop-up "bilan à 30 jours" : dès qu'un site démarré (date_debut posée au clic
@@ -15108,7 +15365,7 @@
     noms.sort(function(a, b){ return notesNorm(a) < notesNorm(b) ? -1 : 1; });
     var prevVal = sel.value;
     sel.innerHTML = '<option value="">Tous les clients</option>' + noms.map(function(nom){
-      return '<option value="' + nom.replace(/"/g, '&quot;') + '">' + nom + '</option>';
+      return '<option value="' + escHtml(nom) + '">' + escHtml(nom) + '</option>';
     }).join('');
     sel.value = noms.indexOf(prevVal) !== -1 ? prevVal : '';
     sel.style.display = noms.length ? '' : 'none';
@@ -15557,7 +15814,7 @@
       panelCacheSave('notes', j);
       notesApplyData(j);
       if (onDone) onDone();
-    }, function(err){ if (!cached) notesList.innerHTML = '<p id="notes-empty">' + err + '</p>'; if (onDone) onDone(); });
+    }, function(err){ if (!cached) notesList.innerHTML = '<p id="notes-empty">' + escHtml(err) + '</p>'; if (onDone) onDone(); });
   }
 
   function notesOpen(){
@@ -16043,7 +16300,7 @@
     emailDetailEl.innerHTML = '<p id="emails-loading">Chargement…</p>';
     post({ type:'email-detail', id: m.id }, function(j){
       renderEmailDetail(j);
-    }, function(err){ emailDetailEl.innerHTML = '<p id="emails-empty">' + (err || 'Impossible de charger ce mail.') + '</p>'; });
+    }, function(err){ emailDetailEl.innerHTML = '<p id="emails-empty">' + escHtml(err || 'Impossible de charger ce mail.') + '</p>'; });
   }
   emailBackBtn.addEventListener('click', emailResetDetail);
 
@@ -16135,7 +16392,7 @@
       emailsAll = j.emails || [];
       updateEmailTabCounts();
       renderEmailsTab();
-    }, function(err){ emailsList.innerHTML = '<p id="emails-empty">' + (err || 'Impossible de charger les emails.') + '</p>'; });
+    }, function(err){ emailsList.innerHTML = '<p id="emails-empty">' + escHtml(err || 'Impossible de charger les emails.') + '</p>'; });
   }
   document.getElementById('sh-emails').addEventListener('click', function(){ sheetOpen(false); emailsOpen(); });
   document.getElementById('emails-close').addEventListener('click', emailsClose);
@@ -16458,7 +16715,7 @@
         if (pending === 0){ calEvents = results; panelCacheSave(cleCache, results); calRenderCurrentView(); }
       }, function(err){
         failed = true;
-        if (!cached) calDayEl.innerHTML = '<p id="cal-day-empty">' + (err || 'Impossible de charger l’agenda.') + '</p>';
+        if (!cached) calDayEl.innerHTML = '<p id="cal-day-empty">' + escHtml(err || 'Impossible de charger l’agenda.') + '</p>';
       });
     });
   }
@@ -16895,6 +17152,9 @@
   var fdTotal = document.getElementById('fd-total');
   var fdErr = document.getElementById('fd-err');
   var fdSave = document.getElementById('fd-save');
+  // Section 7 (06/09/2026, dernier point) : emission reelle immediate (postFacturation
+  // type:'emettre'), meme icone/couleur que les autres boutons vc-envoi-reel de l'app.
+  var ICON_ENVOI_REEL = '<svg class="hicon-sm" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><line x1="22" y1="2" x2="11" y2="13"/><polygon points="22 2 15 22 11 13 2 9 22 2"/></svg>';
   // Point 2b (31/08/2026, gros chantier) : editeur de lignes generalise -- reutilise par le
   // formulaire "Facture directe" (fdLigneRow/fdRecalcTotal, ci-dessous, comportement inchange)
   // ET par l'editeur de lignes d'un devis MEG sans lignes exploitables (devisRenderRowDevis,
@@ -16947,7 +17207,7 @@
     fdRecapArme = false;
     fdRecap.classList.remove('open');
     fdRecap.innerHTML = '';
-    fdSave.textContent = 'Émettre la facture';
+    fdSave.innerHTML = ICON_ENVOI_REEL + 'Émettre la facture';
   }
   function fdFormOpen(){
     fdNom.value = ''; fdAdresse.value = ''; fdEmail.value = ''; fdObjet.value = '';
@@ -17019,7 +17279,7 @@
       tot.appendChild(tl); tot.appendChild(tv); fdRecap.appendChild(tot);
       fdRecap.classList.add('open');
       fdRecapArme = true;
-      fdSave.textContent = 'Confirmer l’émission';
+      fdSave.innerHTML = ICON_ENVOI_REEL + 'Confirmer l’émission';
       return;
     }
 
@@ -17042,7 +17302,6 @@
     }, function(err){
       fdSave.disabled = false;
       fdRecapDesarmer();
-      fdSave.textContent = 'Émettre la facture';
       fdErr.textContent = err || "Impossible d'émettre la facture.";
     });
   });
@@ -17066,7 +17325,7 @@
       return;
     }
     var avoirBtn = document.createElement('button'); avoirBtn.type = 'button'; avoirBtn.className = 'mf-btn-avoir';
-    avoirBtn.textContent = '↩️ Annuler par un avoir';
+    avoirBtn.innerHTML = '<svg class="hicon-sm" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M9 14l-4-4 4-4"/><path d="M5 10h9a5 5 0 0 1 5 5v1"/></svg>Annuler par un avoir';
     var form = document.createElement('div'); form.className = 'mf-avoir-form';
     var motif = document.createElement('textarea'); motif.placeholder = 'Motif (ex : erreur de facturation, double émission)…'; motif.rows = 2;
     // Sujet 4 (02/09/2026) : rappel explicite juste avant le clic -- quelle facture est annulée
@@ -17076,7 +17335,9 @@
     var montantTxt = (f.montantTtc != null ? Number(f.montantTtc).toFixed(2) + ' € TTC' : (f.montant || ''));
     recap.textContent = 'Cet avoir annulera intégralement la facture ' + f.numeroComplet + ' (' + montantTxt + ') — destinataire résolu automatiquement via Mes contacts.';
     var actions = document.createElement('div'); actions.className = 'rl-form-actions';
-    var confirm = document.createElement('button'); confirm.type = 'button'; confirm.className = 'rl-confirm'; confirm.textContent = "Confirmer l'avoir";
+    // Section 7 (06/09/2026, dernier point) : emission reelle immediate d'un avoir (postFacturation
+    // type:'emettre'), meme marqueur que les autres boutons d'emission reelle de l'app.
+    var confirm = document.createElement('button'); confirm.type = 'button'; confirm.className = 'rl-confirm vc-envoi-reel'; confirm.textContent = "Confirmer l'avoir";
     var cancel = document.createElement('button'); cancel.type = 'button'; cancel.className = 'rl-cancel'; cancel.textContent = 'Annuler';
     actions.appendChild(confirm); actions.appendChild(cancel);
     form.appendChild(recap); form.appendChild(motif); form.appendChild(actions);
@@ -17149,7 +17410,7 @@
       if (r.avoirs && r.avoirs.length){ r.avoirs.forEach(function(a){ mfList.appendChild(mfCardAvoir(a)); }); }
       if (!r.factures || !r.factures.length){ return; }
       r.factures.forEach(function(f){ mfList.appendChild(mfCard(f)); });
-    }, function(err){ mfList.innerHTML = '<p id="mf-empty">' + err + '</p>'; });
+    }, function(err){ mfList.innerHTML = '<p id="mf-empty">' + escHtml(err) + '</p>'; });
   }
   function mfViewClose(){ mfViewBg.classList.remove('open'); mfView.classList.remove('open'); }
   mfViewBg.addEventListener('click', mfViewClose);
@@ -17379,7 +17640,7 @@
     }, function(r){
       bcSave.disabled = false;
       bcSave.textContent = 'Enregistrer';
-      bcSummaryTxt.innerHTML = nomRaw + '<span class="bc-summary-sub"></span>';
+      bcSummaryTxt.innerHTML = escHtml(nomRaw) + '<span class="bc-summary-sub"></span>';
       bcSummaryTxt.querySelector('.bc-summary-sub').textContent = adresse;
       bcClearBtn.style.display = '';
       bcNewBtn.style.display = 'none';
