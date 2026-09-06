@@ -6064,7 +6064,7 @@
          comparaison de chaine de version par tenant. */
   var APPV_MCS = '4.31';
   var APPV_LABO = '1.00';
-  var BUILD = 8;
+  var BUILD = 9;
   // displayVersion()/displayVersionShort() lisent isMcsCode() (definie plus bas dans cette
   // meme IIFE -- declaration de fonction, donc disponible ici par hoisting) : le TENANT
   // affiche depend du code de connexion, jamais d'un simple "APPV" global qui ne dirait ni
@@ -7112,9 +7112,22 @@
       headers:{'Content-Type':'application/json'},
       body: JSON.stringify(payload),
       signal: ctrl ? ctrl.signal : undefined
-    }).then(function(r){ return r.json(); }).then(function(j){
+    }).then(function(r){
+      // Section 9 (06/09/2026) : ce fetch() n'a JAMAIS verifie r.ok/r.status -- un vrai code
+      // HTTP d'erreur (401/403/500...) etait silencieusement traite comme un succes des lors
+      // que r.json() parsait un corps valide, sans jamais remonter d'erreur ni de symptome
+      // visible (contrairement a postDevisWeb, qui verifie deja son statut). C'est ce qui rend
+      // un tel refus invisible cote UI tout en restant visible en rouge dans les DevTools --
+      // "le 403 recurrent en console" precisement decrit comme jamais creuse. Meme convention
+      // que postDevisWeb desormais : status capture avant le parse JSON.
+      var status = r.status;
+      return r.json().catch(function(){ return {}; }).then(function(j){ return { status: status, body: j }; });
+    }).then(function(res){
       clearTimeout(timer);
-      if (j && j.error){ onErr(j.error); } else { onOk(j || {}); }
+      var j = res.body;
+      if (j && j.error){ onErr(j.error); return; }
+      if (res.status >= 200 && res.status < 300){ onOk(j || {}); return; }
+      onErr((res.status === 401 || res.status === 403) ? 'Accès refusé.' : ERR_TECHNIQUE);
     }).catch(function(e){
       clearTimeout(timer);
       if (timedOut){ onErr(ERR_TIMEOUT); return; }
@@ -7976,15 +7989,19 @@
         // prix_ht depuis ce meme chantier) -- ce que MCS produit s'affiche toujours hors-taxe.
         var t3 = n + (n > 1 ? ' contrats à facturer' : ' contrat à facturer');
         if (l.montantEur != null){
-          t3 += ' — ' + Math.round(Number(l.montantEur) || 0).toLocaleString('fr-FR') + ' € HT';
+          // Section 8 (06/09/2026) : arrondi entier remplace par fmtEuros() (2 decimales, meme
+          // fonction/format que partout ailleurs dans l'app) -- ce montant est desormais
+          // identique au chiffre exact utilise par le garde-fou de deploiement (22 141,75 €),
+          // au lieu d'un arrondi affichant silencieusement 22 142 €.
+          t3 += ' — ' + fmtEuros(Number(l.montantEur) || 0) + ' HT';
         }
         return t3;
       }
       case 'relances': {
         // Sujet HT/TTC (05/09/2026) : mention explicite "TTC" -- ce que les clients doivent
         // (une creance) reste en TTC, comme avant, mais desormais toujours dit en toutes lettres.
-        var montant = Math.round(Number(l.montantEur) || 0).toLocaleString('fr-FR');
-        var t = n + (n > 1 ? ' relances — ' : ' relance — ') + montant + ' € TTC';
+        var montant = fmtEuros(Number(l.montantEur) || 0);
+        var t = n + (n > 1 ? ' relances — ' : ' relance — ') + montant + ' TTC';
         if (typeof l.snapshotAgeHeures === 'number' && l.snapshotAgeHeures > 30 && l.snapshotDate){
           t += ' au ' + accueilDateCourte(l.snapshotDate);
         }
@@ -10308,7 +10325,7 @@
     function bloc(label, montant, cls){
       var b = document.createElement('div'); b.className = 'ct-ca-bloc' + (cls ? ' ' + cls : '');
       var l = document.createElement('span'); l.className = 'ct-ca-label'; l.textContent = label;
-      var v = document.createElement('span'); v.className = 'ct-ca-val'; v.textContent = fmtEuro(montant) + ' HT';
+      var v = document.createElement('span'); v.className = 'ct-ca-val'; v.textContent = fmtEuros(montant) + ' HT';
       b.appendChild(l); b.appendChild(v);
       return b;
     }
@@ -10386,7 +10403,7 @@
       var titre = document.createElement('span'); titre.className = 'ct-mois-titre';
       titre.textContent = nomMois + (estMoisEnCours ? ' (en cours)' : '');
       var compte = document.createElement('span'); compte.className = 'ct-mois-compte';
-      compte.textContent = liste.length + ' contrat' + (liste.length > 1 ? 's' : '') + ' · ' + fmtEuro(totalHt) + ' HT';
+      compte.textContent = liste.length + ' contrat' + (liste.length > 1 ? 's' : '') + ' · ' + fmtEuros(totalHt) + ' HT';
       var chevron = document.createElement('span'); chevron.className = 'ct-mois-chevron'; chevron.textContent = estPasse ? '▸' : '▾';
       head.appendChild(titre); head.appendChild(compte); head.appendChild(chevron);
       var body = document.createElement('div'); body.className = 'ct-mois-body';
@@ -10467,7 +10484,7 @@
       var total = liste.reduce(function(s, f){ return s + (Number(f.prix_ht) || 0); }, 0);
       var head = document.createElement('div'); head.className = 'ct-famille-head';
       var lab = document.createElement('span'); lab.className = 'ct-famille-label'; lab.textContent = (CONTRATS_FAMILLE_LABEL[fam] || fam) + ' (' + liste.length + ')';
-      var tot = document.createElement('span'); tot.className = 'ct-famille-total'; tot.textContent = fmtEuro(total) + ' HT';
+      var tot = document.createElement('span'); tot.className = 'ct-famille-total'; tot.textContent = fmtEuros(total) + ' HT';
       head.appendChild(lab); head.appendChild(tot);
       out.push(head);
       liste.forEach(function(f){ out.push(contratsBuildMoisCard(f)); });
@@ -11215,7 +11232,7 @@
     if (key === 'date') return ikDateAffichee(t.date);
     if (key === 'trajet') return (t.ville_depart || '?') + ' → ' + (t.ville_arrivee || '?');
     if (key === 'km_total') return (t.km_total != null ? t.km_total + ' km' : '');
-    if (key === 'frais') return (ikTripFraisMap[t.id] != null) ? ikTripFraisMap[t.id].toLocaleString('fr-FR', {maximumFractionDigits:2}) + ' €' : '';
+    if (key === 'frais') return (ikTripFraisMap[t.id] != null) ? fmtEuros(ikTripFraisMap[t.id]) : '';
     return t[key] || '';
   }
 
@@ -11268,7 +11285,7 @@
     var s1 = document.createElement('div'); s1.className = 'couts-stat';
     s1.innerHTML = '<span class="cs-label">Km cumulés ' + ikResume.annee + '</span><span class="cs-value">' + ikResume.kmAnnee.toLocaleString('fr-FR') + '</span><span class="cs-sub">' + ikResume.nbTrajetsAnnee + ' trajets</span>';
     var s2 = document.createElement('div'); s2.className = 'couts-stat';
-    s2.innerHTML = '<span class="cs-label">Frais IK estimés</span><span class="cs-value">' + Number(ikResume.fraisAnnee).toLocaleString('fr-FR', {maximumFractionDigits:2}) + ' €</span><span class="cs-sub">véhicule ' + (ikResume.vehicule === '7+' ? '7 CV et plus' : escHtml(ikResume.vehicule) + ' CV') + '</span>';
+    s2.innerHTML = '<span class="cs-label">Frais IK estimés</span><span class="cs-value">' + fmtEuros(Number(ikResume.fraisAnnee)) + '</span><span class="cs-sub">véhicule ' + (ikResume.vehicule === '7+' ? '7 CV et plus' : escHtml(ikResume.vehicule) + ' CV') + '</span>';
     stats.appendChild(s1); stats.appendChild(s2);
     wrap.appendChild(stats);
     var etat = document.createElement('div'); etat.id = 'ik-etat';
@@ -11285,7 +11302,7 @@
     var s1 = document.createElement('div'); s1.className = 'couts-stat';
     s1.innerHTML = '<span class="cs-label">Km cumulés ' + IK_MOIS_LONG[monthIdx] + '</span><span class="cs-value">' + monthly.km.toLocaleString('fr-FR') + '</span>';
     var s2 = document.createElement('div'); s2.className = 'couts-stat';
-    s2.innerHTML = '<span class="cs-label">Frais IK estimés</span><span class="cs-value">' + monthly.frais.toLocaleString('fr-FR', {maximumFractionDigits:2}) + ' €</span>';
+    s2.innerHTML = '<span class="cs-label">Frais IK estimés</span><span class="cs-value">' + fmtEuros(monthly.frais) + '</span>';
     stats.appendChild(s1); stats.appendChild(s2);
     wrap.appendChild(stats);
     var etat = document.createElement('div'); etat.id = 'ik-etat';
@@ -11305,11 +11322,11 @@
       tr.innerHTML = '<td>' + IK_MOIS_LONG[row.mois] + '</td>' +
         '<td class="ik-td-num">' + row.km.toLocaleString('fr-FR') + '</td>' +
         '<td class="ik-td-num">' + row.kmCumule.toLocaleString('fr-FR') + '</td>' +
-        '<td class="ik-td-num">' + row.frais.toLocaleString('fr-FR', {maximumFractionDigits:2}) + ' €</td>';
+        '<td class="ik-td-num">' + fmtEuros(row.frais) + '</td>';
       tbody.appendChild(tr);
     });
     var trTotal = document.createElement('tr'); trTotal.className = 'ik-recap-total';
-    trTotal.innerHTML = '<td>Total ' + m.annee + '</td><td class="ik-td-num">' + m.kmTotal.toLocaleString('fr-FR') + '</td><td></td><td class="ik-td-num">' + m.fraisTotal.toLocaleString('fr-FR', {maximumFractionDigits:2}) + ' €</td>';
+    trTotal.innerHTML = '<td>Total ' + m.annee + '</td><td class="ik-td-num">' + m.kmTotal.toLocaleString('fr-FR') + '</td><td></td><td class="ik-td-num">' + fmtEuros(m.fraisTotal) + '</td>';
     tbody.appendChild(trTotal);
     table.appendChild(tbody);
     wrap.appendChild(table);
@@ -11586,10 +11603,12 @@
   var rentaList = document.getElementById('renta-list');
   var rentaData = null;
 
-  function fmtEuro(n){
-    n = Math.round(n || 0);
-    return n.toLocaleString('fr-FR') + ' €';
-  }
+  // Section 8 (06/09/2026) : fmtEuros() et fmtEuros() etaient 2 fonctions distinctes pour le
+  // meme concept (arrondi entier ici, 2 decimales dans fmtEuros plus bas) -- un meme montant
+  // (ex. 22141,75€ HT de septembre) s'affichait "22 142 €" sur Contrats/Rentabilite et
+  // "22 141,75 €" sur Devis et factures/Relances. fmtEuros() supprimee, tous ses appels
+  // redigés vers fmtEuros() (2 decimales partout, la precision reelle utilisee par le
+  // backend et les garde-fous de deploiement) -- un seul nom, un seul format.
   var MOIS_NOMS = ['janvier','février','mars','avril','mai','juin','juillet','août','septembre','octobre','novembre','décembre'];
   function moisLabel(mm){
     var p = mm.split('-');
@@ -11620,11 +11639,11 @@
       valeur: function(d){ return d.levier1_impayes.montantRisque; },
       desc: function(d){
         var l = d.levier1_impayes;
-        return fmtEuro(l.totalImpaye) + ' de factures validées sont encore impayées, dont ' + fmtEuro(l.montantRisque) + ' ont plus de 60 jours de retard.';
+        return fmtEuros(l.totalImpaye) + ' de factures validées sont encore impayées, dont ' + fmtEuros(l.montantRisque) + ' ont plus de 60 jours de retard.';
       },
       detail: function(d){
         var l = d.levier1_impayes;
-        return 'Source : ' + d.sourceLabel + '. Montant à risque = factures validées non payées de plus de 60 jours (' + fmtEuro(l.detail.j61_90) + ' entre 61 et 90 jours + ' + fmtEuro(l.detail.plus90) + ' à plus de 90 jours — la tranche la plus proche d\'une perte définitive).';
+        return 'Source : ' + d.sourceLabel + '. Montant à risque = factures validées non payées de plus de 60 jours (' + fmtEuros(l.detail.j61_90) + ' entre 61 et 90 jours + ' + fmtEuros(l.detail.plus90) + ' à plus de 90 jours — la tranche la plus proche d\'une perte définitive).';
       },
     },
     {
@@ -11632,11 +11651,11 @@
       valeur: function(d){ return d.levier2_devis.stockPondere; },
       desc: function(d){
         var l = d.levier2_devis;
-        return l.nbDevis + ' devis (' + fmtEuro(l.stockBrut) + ') sont restés sans suite, certains depuis plusieurs mois.';
+        return l.nbDevis + ' devis (' + fmtEuros(l.stockBrut) + ') sont restés sans suite, certains depuis plusieurs mois.';
       },
       detail: function(d){
         var a = d.levier2_devis.detailAge;
-        return 'Source : ' + d.sourceLabel + '. Répartition par ancienneté : ' + fmtEuro(a.le7) + ' (≤7j) · ' + fmtEuro(a.j8_30) + ' (8-30j) · ' + fmtEuro(a.j31_90) + ' (31-90j) · ' + fmtEuro(a.plus90) + ' (+90j). Montant pondéré : les devis de plus de 90 jours ne comptent que pour 40 % de leur montant (ils aboutissent moins souvent).';
+        return 'Source : ' + d.sourceLabel + '. Répartition par ancienneté : ' + fmtEuros(a.le7) + ' (≤7j) · ' + fmtEuros(a.j8_30) + ' (8-30j) · ' + fmtEuros(a.j31_90) + ' (31-90j) · ' + fmtEuros(a.plus90) + ' (+90j). Montant pondéré : les devis de plus de 90 jours ne comptent que pour 40 % de leur montant (ils aboutissent moins souvent).';
       },
     },
   ];
@@ -11652,7 +11671,7 @@
     card.appendChild(row);
 
     var estimate = document.createElement('div'); estimate.className = 'rc-estimate';
-    var valueEl = document.createElement('span'); valueEl.className = 'rc-value'; valueEl.textContent = fmtEuro(lever.valeur(d));
+    var valueEl = document.createElement('span'); valueEl.className = 'rc-value'; valueEl.textContent = fmtEuros(lever.valeur(d));
     estimate.appendChild(valueEl);
     card.appendChild(estimate);
 
@@ -11690,8 +11709,8 @@
     // l'affichage (demande explicite) -- suppression d'affichage uniquement, d.ca.panierMoyenHT/
     // d.ca.nbFactures/d.levier4_contrats.nbClientsTotal restent calcules cote serveur, plus
     // aucun usage cote client apres ce changement (signale, pas supprime -- pourraient resservir).
-    grid.appendChild(tile('CA sur la période', fmtEuro(d.ca.reelHT), periodeTxt));
-    grid.appendChild(tile('Total actuellement impayé', fmtEuro(d.levier1_impayes.totalImpaye)));
+    grid.appendChild(tile('CA sur la période (HT)', fmtEuros(d.ca.reelHT), periodeTxt));
+    grid.appendChild(tile('Total actuellement impayé (TTC)', fmtEuros(d.levier1_impayes.totalImpaye)));
     wrap.appendChild(grid);
 
     var note = document.createElement('p'); note.id = 'ro-note';
@@ -11709,7 +11728,7 @@
     entries.forEach(function(e){
       var row = document.createElement('div'); row.className = 'rc-list-row';
       var lbl = document.createElement('span'); lbl.className = 'rc-list-label'; lbl.textContent = e[0];
-      var val = document.createElement('span'); val.className = 'rc-list-val'; val.textContent = fmtEuro(e[1]);
+      var val = document.createElement('span'); val.className = 'rc-list-val'; val.textContent = fmtEuros(e[1]);
       var pct = document.createElement('span'); pct.className = 'rc-list-pct';
       pct.textContent = total > 0 ? (Math.round((e[1] / total) * 1000) / 10) + '%' : '';
       row.appendChild(lbl); row.appendChild(val); row.appendChild(pct);
@@ -11741,9 +11760,9 @@
       if (caption){ var c = document.createElement('span'); c.className = 'ro-caption'; c.textContent = caption; t.appendChild(c); }
       return t;
     }
-    grid.appendChild(tile('CA comptable réel', fmtEuro(rc.caNet), null, periodeTxt));
-    grid.appendChild(tile('Charges réelles totales', fmtEuro(rc.chargesNet), null, periodeTxt));
-    grid.appendChild(tile('Résultat net', fmtEuro(rc.resultatNet), rc.resultatNet >= 0 ? 'ro-pos' : 'ro-neg', periodeTxt));
+    grid.appendChild(tile('CA comptable réel (HT)', fmtEuros(rc.caNet), null, periodeTxt));
+    grid.appendChild(tile('Charges réelles totales (HT)', fmtEuros(rc.chargesNet), null, periodeTxt));
+    grid.appendChild(tile('Résultat net', fmtEuros(rc.resultatNet), rc.resultatNet >= 0 ? 'ro-pos' : 'ro-neg', periodeTxt));
     wrap.appendChild(grid);
 
     var note = document.createElement('p'); note.id = 'ro-note';
@@ -11781,7 +11800,7 @@
       if (rc.exercicePrecedent.cloture){
         var clo = rc.exercicePrecedent.cloture;
         var closDiv = document.createElement('div'); closDiv.id = 'renta-exercice-clos';
-        closDiv.innerHTML = 'Cet exercice (01/10/2024 → 30/09/2025) s’est clôturé avec un CA de <b>' + fmtEuro(clo.ca) + '</b> et un résultat de <b>' + fmtEuro(clo.resultat) + '</b> (contre ' + fmtEuro(clo.resultatExerciceAvant) + ' l’exercice d’avant) — attestation signée de l’expert-comptable, donnée ici comme référence de comparaison.';
+        closDiv.innerHTML = 'Cet exercice (01/10/2024 → 30/09/2025) s’est clôturé avec un CA de <b>' + fmtEuros(clo.ca) + '</b> et un résultat de <b>' + fmtEuros(clo.resultat) + '</b> (contre ' + fmtEuros(clo.resultatExerciceAvant) + ' l’exercice d’avant) — attestation signée de l’expert-comptable, donnée ici comme référence de comparaison.';
         wrap.appendChild(closDiv);
       }
     }
@@ -11815,9 +11834,9 @@
     var label = document.createElement('div'); label.className = 'rr-label';
     label.textContent = "Sur les 8 memes mois (oct. -> mai), un an plus tot vs cette annee :";
     var compare = document.createElement('div'); compare.className = 'rr-compare';
-    compare.innerHTML = fmtEuro(r.resultat8MoisAnneePrecedente) + ' → <b>' + fmtEuro(r.resultat8MoisAnneeCourante) + '</b>';
+    compare.innerHTML = fmtEuros(r.resultat8MoisAnneePrecedente) + ' → <b>' + fmtEuros(r.resultat8MoisAnneeCourante) + '</b>';
     var delta = document.createElement('div'); delta.className = 'rr-delta';
-    delta.textContent = 'Redressement de ' + (r.delta >= 0 ? '+' : '') + fmtEuro(r.delta);
+    delta.textContent = 'Redressement de ' + (r.delta >= 0 ? '+' : '') + fmtEuros(r.delta);
     wrap.appendChild(label); wrap.appendChild(compare); wrap.appendChild(delta);
     return wrap;
   }
@@ -11837,9 +11856,9 @@
   function rentaTableRow(rowCls, moisTxt, m, estime){
     var row = document.createElement('div'); row.className = 'rt-row ' + (rowCls || '');
     row.appendChild(rentaCell('rt-mois', moisTxt));
-    row.appendChild(rentaCell('rt-val ca', fmtEuro(m.ca)));
-    row.appendChild(rentaCell('rt-val dep' + (m.depenses == null ? ' rt-attente' : ''), m.depenses == null ? 'en attente' : fmtEuro(m.depenses)));
-    var beneficeTxt = m.benefice == null ? 'en attente' : fmtEuro(m.benefice);
+    row.appendChild(rentaCell('rt-val ca', fmtEuros(m.ca)));
+    row.appendChild(rentaCell('rt-val dep' + (m.depenses == null ? ' rt-attente' : ''), m.depenses == null ? 'en attente' : fmtEuros(m.depenses)));
+    var beneficeTxt = m.benefice == null ? 'en attente' : fmtEuros(m.benefice);
     var beneficeCls = 'rt-val benef' + (m.benefice == null ? ' rt-attente' : (m.benefice >= 0 ? ' pos' : ' neg'));
     row.appendChild(rentaCell(beneficeCls, beneficeTxt));
     return row;
@@ -11860,9 +11879,9 @@
     var table = document.createElement('div'); table.id = 'renta-table';
     var head = document.createElement('div'); head.className = 'rt-head';
     head.appendChild(rentaCell(null, 'Mois'));
-    head.appendChild(rentaCell(null, 'Rentrées'));
-    head.appendChild(rentaCell(null, 'Sorties'));
-    head.appendChild(rentaCell(null, 'Reste'));
+    head.appendChild(rentaCell(null, 'Rentrées (HT)'));
+    head.appendChild(rentaCell(null, 'Sorties (HT)'));
+    head.appendChild(rentaCell(null, 'Reste (HT)'));
     table.appendChild(head);
 
     if (courant){
@@ -13848,10 +13867,9 @@
   function badgeLabel(r){
     return ({ ok:'OK', incompris:'Incompris', bloque:'Bloqué', erreur:'Erreur', abandonne:'Abandonné', precision:'Précision demandée' })[r] || r;
   }
-  function fmtClientsDate(iso){
-    try { return new Date(iso).toLocaleString('fr-FR', { day:'2-digit', month:'2-digit', hour:'2-digit', minute:'2-digit' }); }
-    catch (e) { return ''; }
-  }
+  // Section 8 (06/09/2026) : fmtDevisDate() etait identique caractere pour caractere a
+  // fmtDevisDate() (meme format DD/MM HH:MM) sous un nom different -- fusionnee, ses 3 appels
+  // redigés vers fmtDevisDate().
 
   function clientsLoadFrictions(){
     clientsList.innerHTML = '<p id="clients-loading">Chargement…</p>';
@@ -13888,7 +13906,7 @@
       nom.textContent = f.utilisateur + (f.canal ? ' · ' + f.canal : '') + (f.origine === 'administrateur' ? ' 🛠️' : '');
       var info = document.createElement('span'); info.className = 'client-info'; info.textContent = f.message_extrait || '';
       mid.appendChild(nom); mid.appendChild(info);
-      var d = document.createElement('span'); d.className = 'client-date'; d.textContent = fmtClientsDate(f.date);
+      var d = document.createElement('span'); d.className = 'client-date'; d.textContent = fmtDevisDate(f.date);
       row.appendChild(badge); row.appendChild(mid); row.appendChild(d);
       clientsList.appendChild(row);
     });
@@ -13920,7 +13938,7 @@
       nom.textContent = c.utilisateur + (c.origine === 'administrateur' ? ' 🛠️' : '');
       var info = document.createElement('span'); info.className = 'client-info'; info.textContent = c.nb_messages + ' message(s)';
       mid.appendChild(nom); mid.appendChild(info);
-      var d = document.createElement('span'); d.className = 'client-date'; d.textContent = fmtClientsDate(c.dernier_message_at);
+      var d = document.createElement('span'); d.className = 'client-date'; d.textContent = fmtDevisDate(c.dernier_message_at);
       row.appendChild(mid); row.appendChild(d);
       row.addEventListener('click', function(){ clientsOpenThread(c.chat_id, c.utilisateur); });
       clientsList.appendChild(row);
@@ -13949,7 +13967,7 @@
       }
       card.appendChild(top);
       var meta = document.createElement('span'); meta.className = 'ca-meta';
-      meta.textContent = 'Vu pour la 1ère fois le ' + fmtClientsDate(a.first_seen) + ' · dernière fois le ' + fmtClientsDate(a.last_seen);
+      meta.textContent = 'Vu pour la 1ère fois le ' + fmtDevisDate(a.first_seen) + ' · dernière fois le ' + fmtDevisDate(a.last_seen);
       card.appendChild(meta);
       var idLine = document.createElement('span'); idLine.className = 'ca-meta';
       idLine.textContent = 'Appareil : ' + (a.device_id || '?');
