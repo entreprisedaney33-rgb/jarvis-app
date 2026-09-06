@@ -436,7 +436,7 @@
      tel quel (JS non touche), sans effet visible different. */
   #homeGrid{display:none; flex:0 0 auto; width:100%; max-width:1180px; margin-left:auto; margin-right:auto}
   #homeGrid.grow{flex:1 1 auto}
-  #app.home-mode #homeGrid{display:flex; flex-direction:column; flex:1 1 auto; min-height:0}
+  #app.home-mode #homeGrid{display:flex; flex-direction:column; flex:1 1 auto; min-height:0; overflow-y:auto}
   #app.home-mode #chat{display:none}
   /* Session 4 (06/09/2026) : MEME BUG que l'accueil (cf. juste au-dessus) mais sur les 9 PANNEAUX
      eux-memes -- Mickael, textuellement : "sur ordinateur c'est degueulasse". Chacun des 9
@@ -746,7 +746,22 @@
      regle supplementaire necessaire) ; l'icone/le libelle restent centres dedans
      (justify-content:center deja sur .sh-tile) -- l'espace en plus devient de la respiration a
      l'interieur d'une tuile bordee, plus une zone morte de fond uni derriere. */
-  #homeGrid .sh-grid{flex:1 1 auto; min-height:0; grid-template-rows:repeat(3,1fr); margin-bottom:8px}
+  /* Session 5 (06/09/2026) : "1fr" seul equivaut a "minmax(auto,1fr)" -- "auto" impose un
+     plancher au MIN-CONTENT de la rangee (icone+libelle+padding de la tuile) que le mecanisme
+     grid ne peut jamais descendre en dessous, MEME si le conteneur lui-meme est plus petit
+     (#homeGrid recoit sa part de #app selon la hauteur REELLE de #composer, via flex -- mais
+     grid ignorait ce budget une fois sous ce plancher). Sur un ecran court, les 3 rangees
+     restaient donc a leur hauteur MINIMALE de contenu (136+116+136=388px mesure) alors que
+     #homeGrid.sh-grid ne recevait que 189px -- 199px de tuiles rendus mais invisibles/hors
+     du conteneur, recouverts par #composer juste en dessous (overflow:visible ne les coupe
+     pas, il les laisse deborder par-dessus ce qui vient apres dans le flux). minmax(0,1fr) leve
+     ce plancher : les 3 rangees restent EGALES entre elles (toujours "1fr" chacune, l'exigence de
+     Dorian "pas de hauteurs differentes" est intacte) mais peuvent se comprimer ENSEMBLE jusqu'a
+     epouser l'espace reellement alloue. Filet de secours ajoute sur #homeGrid (overflow-y:auto,
+     juste au-dessus) : si meme la taille minimale confortable ne suffit pas sur un appareil
+     extreme, la grille defile a l'interieur de sa propre zone plutot que de deborder sous
+     #composer -- aucune tuile ne peut plus jamais disparaitre derriere la barre de saisie. */
+  #homeGrid .sh-grid{flex:1 1 auto; min-height:0; grid-template-rows:repeat(3,minmax(0,1fr)); margin-bottom:8px}
   /* Icone/libelle grossis en proportion de la tuile agrandie (contenu FIXE, pas un calcul fluide :
      plus simple et plus sur qu'un scaling dynamique, l'espace en trop se repartit en respiration
      verticale via le stretch grid ci-dessus). Libelle jamais sous 16px (regle explicite). */
@@ -1198,12 +1213,19 @@
      cochee), jamais lie a statutAffichage (la facturation, pill ci-dessus, reste inchangee). */
   .cal-line.fait{opacity:.6}
   .cal-line.fait .cal-line-nom{text-decoration:line-through}
-  .cal-line-fait-row{display:flex; align-items:center; justify-content:space-between; gap:8px; margin-top:4px}
+  /* Section 2 (Session 5, 06/09/2026) : bouton en toutes lettres au lieu d'une case a cocher
+     SVG muette -- voir le commentaire au point d'usage (calBuildLine). margin-top genereux
+     (12px, pas 4px) : "jamais colle a un autre bouton" (retour Dorian explicite), la ligne du
+     dessus (sous-titre/decalage/proposition) doit se distinguer nettement de l'action. */
+  .cal-line-fait-row{display:flex; flex-direction:column; align-items:stretch; gap:4px; margin-top:12px}
   .cal-line-fait-btn{
-    flex:0 0 auto; font:inherit; font-size:20px; line-height:1; border:0; background:none;
-    cursor:pointer; -webkit-tap-highlight-color:transparent; padding:4px;
+    display:flex; align-items:center; justify-content:center; gap:7px;
+    width:100%; box-sizing:border-box; min-height:44px; font:inherit; font-size:14px; font-weight:700;
+    border-radius:12px; cursor:pointer; -webkit-tap-highlight-color:transparent; padding:10px 14px;
+    background:#fff; border:2px solid var(--blue); color:var(--blue);
   }
-  .cal-line-fait-par{font-size:11px; color:#30D158; font-weight:600}
+  .cal-line-fait-btn.fait{background:var(--blue); color:#fff}
+  .cal-line-fait-par{font-size:11.5px; color:var(--muted); font-weight:600; padding-left:2px}
   #cal-compteur-fait{
     flex:0 0 auto; padding:6px 14px 0; font-size:12.5px; color:var(--muted); text-align:center;
   }
@@ -1327,7 +1349,11 @@
   #bcal-mois-titre{flex:0 0 auto; margin:10px 14px 0; font-size:13px; color:var(--muted)}
   #bcal-list{flex:1; overflow-y:auto; -webkit-overflow-scrolling:touch; padding:10px 14px calc(20px + env(safe-area-inset-bottom))}
 
-  #contrats-list{flex:1; overflow-y:auto; -webkit-overflow-scrolling:touch; padding:14px 14px calc(20px + env(safe-area-inset-bottom))}
+  /* Section 1 (Session 5, 06/09/2026) : 20px de marge basse ne suffisait pas a degager le
+     bouton flottant #contrats-add-btn (~70px de haut avec son offset bas) -- la derniere carte
+     restait recouverte, texte coupe, meme entierement scrollee. Aligne sur #ik-list (88px),
+     deja corrige, seule reference qui avait bien ce recul. */
+  #contrats-list{flex:1; overflow-y:auto; -webkit-overflow-scrolling:touch; padding:14px 14px calc(88px + env(safe-area-inset-bottom))}
   #contrats-empty, #contrats-loading{color:var(--muted); text-align:center; padding:40px 20px; font-size:14px}
   /* Section 6 (06/09/2026) : rond 52px avec juste un "+" -- aucun mot visible, seul un
      aria-label invisible au toucher (Mickael est sur tablette). Repris exactement du gabarit
@@ -1617,7 +1643,8 @@
     font-size:15px; font-weight:700; cursor:pointer; white-space:nowrap;
     box-shadow:0 6px 16px rgba(0,0,0,.35); -webkit-tap-highlight-color:transparent;
   }
-  #couts-list{flex:1; overflow-y:auto; -webkit-overflow-scrolling:touch; padding:6px 14px calc(20px + env(safe-area-inset-bottom))}
+  /* Section 1 (Session 5, 06/09/2026) : meme correctif que #contrats-list -- voir son commentaire. */
+  #couts-list{flex:1; overflow-y:auto; -webkit-overflow-scrolling:touch; padding:6px 14px calc(88px + env(safe-area-inset-bottom))}
   #couts-empty, #couts-loading{color:var(--muted); text-align:center; padding:40px 20px; font-size:14px}
   .couts-row{
     display:flex; align-items:center; gap:10px; width:100%;
@@ -2047,21 +2074,29 @@
     -webkit-appearance:none;
   }
   #carnet-search::placeholder{color:var(--muted)}
-  #carnet-list{flex:1; overflow-y:auto; -webkit-overflow-scrolling:touch; padding:10px 14px calc(20px + env(safe-area-inset-bottom))}
+  /* Section 1 (Session 5, 06/09/2026, retour Dorian) : "+ Ajouter une residence" recouvrait le
+     texte de la derniere carte (ex. Cauderan Harmony) -- meme correctif que #contrats-list. */
+  #carnet-list{flex:1; overflow-y:auto; -webkit-overflow-scrolling:touch; padding:10px 14px calc(88px + env(safe-area-inset-bottom))}
   #carnet-empty, #carnet-loading{color:var(--muted); text-align:center; padding:40px 20px; font-size:14px}
   .carnet-card{background:var(--surface); border-radius:14px; padding:14px; margin-bottom:12px}
   .carnet-card-head{display:flex; align-items:flex-start; justify-content:space-between; gap:8px}
   .carnet-nom{font-size:15.5px; font-weight:700; display:block; margin-bottom:2px}
   .carnet-sub{font-size:11.5px; color:var(--muted); display:block; margin-bottom:10px}
+  /* Section 4b (Session 5, 06/09/2026) : la poubelle (26px, sans mot) etait a la fois sous le
+     seuil tactile de l'app (44px) et une action destructrice sans libelle en haut a droite de
+     chaque carte -- "Supprimer" ajoute en toutes lettres, 44px de haut minimum. */
   .carnet-del{
-    width:26px; height:26px; border-radius:50%; border:0; flex:0 0 auto; margin-top:1px;
-    background:transparent; color:var(--muted); font-size:14px; cursor:pointer; -webkit-tap-highlight-color:transparent;
+    height:44px; padding:0 14px; border-radius:22px; border:0; flex:0 0 auto; margin-top:0;
+    display:flex; align-items:center; gap:6px;
+    background:transparent; color:var(--muted); font:inherit; font-size:13px; font-weight:600;
+    cursor:pointer; -webkit-tap-highlight-color:transparent; white-space:nowrap;
   }
   .carnet-confirm-text{font-size:14px; color:var(--ink); line-height:1.4; margin:10px 0}
   .carnet-confirm-row{display:flex; gap:8px; padding-bottom:2px}
   .carnet-confirm-cancel, .carnet-confirm-delete{
     flex:1; font:inherit; font-size:15px; font-weight:600; padding:11px; border-radius:12px;
-    cursor:pointer; -webkit-tap-highlight-color:transparent;
+    cursor:pointer; -webkit-tap-highlight-color:transparent; min-height:44px;
+    display:flex; align-items:center; justify-content:center; gap:6px;
   }
   .carnet-confirm-cancel{background:var(--field-bg); color:var(--muted); border:0}
   .carnet-confirm-delete{background:rgba(255,69,58,.15); color:#FF453A; border:0.5px solid rgba(255,69,58,.5)}
@@ -2077,13 +2112,20 @@
     padding:8px 9px; resize:none; overflow:hidden; min-height:80px;
   }
   .carnet-ancien{font-size:11px; color:var(--muted); display:block; margin-top:3px}
+  /* Section 4c/4e (Session 5, 06/09/2026) : le cadenas porte desormais un mot ("Verrouillé" /
+     "Non verrouillé", jamais l'icone/la couleur seule) -- passe d'un rond 30px muet a une
+     pastille icone+texte, 44px de haut minimum (seuil tactile de l'app). Fond neutre (etait
+     rouge -- un commentaire verrouille contre une reecriture automatique n'est ni destructeur
+     ni engageant, le rouge est reserve a ca, cf. Principe 3 de ce fichier) : gris/bleu tres
+     doux, jamais une paire rouge/vert avec l'etat "non verrouille". */
   .carnet-lock{
-    width:30px; height:30px; border-radius:50%; border:0; flex:0 0 auto; margin-top:16px;
-    background:transparent; font-size:15px; cursor:pointer; -webkit-tap-highlight-color:transparent;
-    display:flex; align-items:center; justify-content:center;
+    height:44px; padding:0 12px; border-radius:22px; border:0; flex:0 0 auto; margin-top:14px;
+    background:var(--soft-fill-08,rgba(255,255,255,.08)); color:var(--muted); font:inherit; font-size:12px; font-weight:600;
+    cursor:pointer; -webkit-tap-highlight-color:transparent;
+    display:flex; align-items:center; justify-content:center; gap:5px; white-space:nowrap;
   }
-  .carnet-field.locked{background:rgba(255,69,58,.06); margin:0 -14px; padding:8px 14px; border-radius:8px}
-  .carnet-field.locked .carnet-lock{color:#FF453A}
+  .carnet-field.locked{background:var(--soft-fill-06,rgba(255,255,255,.06)); margin:0 -14px; padding:8px 14px; border-radius:8px}
+  .carnet-field.locked .carnet-lock{background:rgba(var(--gold-rgb),.14); color:var(--gold-a)}
   .carnet-maj-chat{font-size:11px; color:var(--gold-a); display:block; margin-top:8px}
   #carnet-add-bg{position:fixed; inset:0; background:rgba(0,0,0,.5); display:none; z-index:52}
   #carnet-add-bg.open{display:block}
@@ -2263,7 +2305,8 @@
     box-shadow:0 6px 16px rgba(0,0,0,.35); -webkit-tap-highlight-color:transparent;
   }
   #docref-note{font-size:12.5px; color:var(--muted); text-align:center; margin:10px 14px 0; line-height:1.4}
-  #docref-list{flex:1; overflow-y:auto; -webkit-overflow-scrolling:touch; padding:10px 14px calc(20px + env(safe-area-inset-bottom))}
+  /* Section 1 (Session 5, 06/09/2026) : meme correctif que #contrats-list -- voir son commentaire. */
+  #docref-list{flex:1; overflow-y:auto; -webkit-overflow-scrolling:touch; padding:10px 14px calc(88px + env(safe-area-inset-bottom))}
   #docref-empty, #docref-loading{color:var(--muted); text-align:center; padding:40px 20px; font-size:14px}
   .docref-card{background:var(--surface); border-radius:14px; padding:12px 14px; margin-bottom:10px; display:flex; flex-direction:column; gap:10px}
   .docref-info{min-width:0}
@@ -3330,6 +3373,26 @@
   }
   #cf-err{color:#FF453A; font-size:12.5px; min-height:1em}
   #cf-row{display:flex; gap:8px}
+  /* Section 3 (Session 5, 06/09/2026, retour Dorian) : #cf-save reutilisait .ed-send (le bouton
+     Envoyer du composeur de chat, flex:1 SANS hauteur/padding propres -- il ne mesure 44-50px
+     que parce qu'il est toujours a cote de boutons ronds de 44px qui l'etirent par align-items).
+     Ici, dans #cf-row, il etait souvent SEUL (cf-delete masque par defaut) et retombait a la
+     hauteur de son seul texte : 23px mesures, la plus petite chose de tout le formulaire alors
+     que c'est l'ACTION PRINCIPALE de l'ecran. Correctif cible sur #cf-save (jamais sur .ed-send
+     lui-meme, qui reste inchange pour le composeur) : 56px minimum, au moins aussi haut que les
+     champs du dessus (41-43px mesures). */
+  #cf-save{min-height:56px; padding:14px 18px}
+  /* Section 3 (Session 5, 06/09/2026, suite -- "verifie tous les autres boutons de validation
+     de formulaire de l'app : meme regle partout") : audit de tous les boutons Valider/
+     Enregistrer/Ajouter/Confirmer qui sont l'action PRINCIPALE d'un formulaire autonome (pas
+     les paires Confirmer/Annuler d'une carte de validation dans le chat, deja a 44px -- un
+     motif different, deja audite section 7 de la session precedente). Meme seuil 56px partout,
+     que le champ soit seul ou en paire avec son Annuler (les 2 boutons d'une meme rangee
+     doivent rester a la meme hauteur, jamais l'un plus petit que l'autre). Liste des ecrans
+     concernes : Carnet bleu (nouvelle residence #caf-save, coordonnees client #bc-save),
+     Devis #df-save, Contrats calendrier (decaler #cal-decaler-go, refuser #cal-refuser-go). */
+  #bc-save, #bc-cancel, #df-save, #df-cancel, #caf-save, #caf-cancel,
+  #cal-decaler-go, #cal-refuser-go{min-height:56px}
   #cf-sug{
     list-style:none; margin:2px 0 0; padding:0; border:0.5px solid rgba(255,255,255,.18); border-radius:10px;
     overflow:hidden; position:absolute; left:0; right:0; top:100%; background:var(--dropdown-bg); z-index:5;
@@ -3352,13 +3415,20 @@
   #cf-mcs-extra{display:none; flex-direction:column; gap:10px}
   #cf-mcs-extra.show{display:flex}
   #cf-mcs-extra textarea{min-height:52px}
-  #cf-couleurs{display:flex; flex-wrap:wrap; gap:8px; padding-top:2px}
+  #cf-couleurs{display:flex; flex-wrap:wrap; gap:10px; padding-top:2px}
+  /* Section 5 (Session 5, 06/09/2026, retour Dorian) : 26px etait sous le seuil tactile de
+     l'app (44px) ET rendait la coche de selection minuscule/difficile a voir. 44px + coche
+     agrandie -- l'etat selectionne se lit desormais par 2 signaux non-colores (contour epais
+     + coche), jamais la teinte seule. Le NOM (title=... deja pose, mais un attribut title est
+     INVISIBLE au toucher, aucun hover sur mobile) est rendu lisible en permanence par
+     #cf-couleur-nom, texte sous la palette, mis a jour au clic -- voir le JS. */
   .cf-couleur{
-    width:26px; height:26px; border-radius:50%; border:2px solid transparent; cursor:pointer;
+    width:44px; height:44px; border-radius:50%; border:3px solid transparent; cursor:pointer;
     -webkit-tap-highlight-color:transparent; padding:0;
   }
   .cf-couleur.selected{border-color:var(--ink)}
-  .cf-couleur.selected::after{content:'✓'; display:block; color:#fff; font-size:13px; font-weight:700; text-align:center; line-height:22px; text-shadow:0 0 2px rgba(0,0,0,.6)}
+  .cf-couleur.selected::after{content:'✓'; display:block; color:#fff; font-size:20px; font-weight:700; text-align:center; line-height:38px; text-shadow:0 1px 3px rgba(0,0,0,.7)}
+  #cf-couleur-nom{font-size:12.5px; color:var(--muted); padding-top:2px; min-height:1.4em}
   #cal-form label.cf-check{flex-direction:row; align-items:center; gap:8px; font-size:14.5px; color:var(--ink)}
   #cal-form label.cf-check input{width:auto; padding:0}
   #cf-invite-statut{font-size:12px; color:var(--muted); margin-top:-4px}
@@ -4363,7 +4433,6 @@
   html.mcs-theme .bcal-prop-statut.refusee,
   html.mcs-theme .tvr-row .tvr-toggle.tvr-20,
   html.mcs-theme .carnet-confirm-delete,
-  html.mcs-theme .carnet-field.locked .carnet-lock,
   html.mcs-theme #caf-err,
   html.mcs-theme .vitrine-expir.expired,
   html.mcs-theme .notes-chip.echeance.retard,
@@ -4393,10 +4462,23 @@
      .vitrine-tab/.notes-age-tab/.ct-toggle/.vc-ok/.vc-no deja corriges plus haut. Ce lot traite
      les icones/liens texte isoles restants (poubelle, coche, retour, bascule) qui n'avaient RIEN
      (ni bordure ni fond) -- jamais du texte seul desormais, meme un petit bouton icone. */
-  html.mcs-theme .couts-del, html.mcs-theme .notes-del, html.mcs-theme .carnet-del{
+  html.mcs-theme .couts-del{
     background:rgba(var(--gold-rgb),.10); border:1px solid var(--hairline); border-radius:50%;
   }
-  html.mcs-theme .cal-line-fait-btn, html.mcs-theme .tuto-btn{
+  /* Section 4b (Session 5, 06/09/2026) : carnet-del sorti de la regle ronde ci-dessus (forme
+     pilule desormais, avec le mot "Supprimer") -- fond neutre discret, jamais rouge au repos
+     (le rouge n'apparait qu'a la confirmation reelle, .carnet-confirm-delete, deja le cas). */
+  html.mcs-theme .carnet-del{background:var(--soft-fill-08,rgba(0,0,0,.05)); border:1px solid var(--hairline)}
+  /* Section 6 (Session 5, 06/09/2026) : notes-del sorti de la regle ronde a son tour, cote MCS
+     seulement -- meme traitement que carnet-del (icone + mot "Supprimer", jamais une icone seule
+     pour une action destructive). LABO garde le bouton rond emoji d'origine (voir isMcsCode()
+     dans notesCard()) : ce bloc ne s'applique qu'a html.mcs-theme, jamais a la regle de base. */
+  html.mcs-theme .notes-del{
+    width:auto; height:44px; padding:0 14px; border-radius:22px;
+    display:flex; align-items:center; gap:6px; font-size:13px; font-weight:600;
+    background:var(--soft-fill-08,rgba(0,0,0,.05)); border:1px solid var(--hairline);
+  }
+  html.mcs-theme .tuto-btn{
     background:rgba(var(--gold-rgb),.10); border-radius:8px;
   }
   html.mcs-theme .rel-averifier-back{
@@ -4526,12 +4608,17 @@
      -- 2 bordures cliquables imbriquees etaient un vrai defaut trouve en auditant Calendrier,
      pas suppose. Retour a son fond dore arrondi sans bordure (regle ligne ~4309, jamais
      touchee), qui redevient visible maintenant qu'aucune regle plus tardive ne l'ecrase. */
-  /* Sujet 4 (06/09/2026) : "color" jamais fixe ici -- l'icone SVG interieure (fill/stroke=
-     currentColor) heritait donc du texte noir/--ink ambiant, pas du bleu MCS voulu (case cochee
-     rendue en case NOIRE pleine au lieu de bleue). Trouve par controle mecanique reel
-     (getComputedStyle), pas suppose -- fixe en fixant explicitement color:var(--gold-a) (= bleu
-     MCS sous ce theme, cf. --gold-a redefinie plus haut). */
-  html.mcs-theme .cal-line-fait-btn{background:rgba(var(--gold-rgb),.14); border:0; color:var(--gold-a)}
+  /* Section 2 (Session 5, 06/09/2026) : bouton en toutes lettres, 2 etats lisibles sans la
+     couleur seule (le MOT change aussi : "Intervention faite ?" / "Intervention faite le
+     JJ/MM"). Exception deliberee au Principe 1 ("la bordure appartient a l'element cliquable
+     le plus exterieur") : .cal-line (la carte) et .cal-line-fait-btn sont 2 CIBLES DE CLIC
+     INDEPENDANTES et deja distinctes avant cette session (calOpenClientCard vs calToggleFait,
+     stopPropagation) -- pas un enfant decoratif a l'interieur d'un seul bouton, mais une vraie
+     action secondaire nichee dans une ligne cliquable, un motif deja courant (ligne de liste +
+     action inline). Le bouton doit rester visuellement identifiable comme cliquable a lui
+     seul, d'ou son propre contour. */
+  html.mcs-theme .cal-line-fait-btn{background:#FFFFFF; border:2px solid var(--blue); color:var(--blue)}
+  html.mcs-theme .cal-line-fait-btn.fait{background:var(--blue); border-color:var(--blue); color:#fff}
   html.mcs-theme .carnet-lock,
   html.mcs-theme .cb-btn,
   html.mcs-theme .cf-couleur,
@@ -5632,7 +5719,7 @@
 
 <div id="carnetview">
   <div id="carnet-head">
-    <b id="carnet-title">📘 Carnet bleu</b>
+    <b id="carnet-title"><svg class="hicon-sm" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20"/><path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z"/></svg> Carnet bleu</b>
     <button id="carnet-close" type="button" aria-label="Fermer">✕</button>
   </div>
   <div id="carnet-search-wrap">
@@ -5899,7 +5986,7 @@
   </label>
   <a id="cf-waze" href="#" target="_blank" rel="noopener">🚗 Ouvrir dans Waze</a>
   <div id="cf-mcs-extra">
-    <label>Couleur<div id="cf-couleurs"></div></label>
+    <label>Couleur<div id="cf-couleurs"></div><span id="cf-couleur-nom">Aucune couleur choisie</span></label>
     <label>Description (optionnel) <textarea id="cf-description" rows="2" placeholder="Détails de l'intervention…"></textarea></label>
     <label>Téléphone du client (optionnel) <input id="cf-telephone" type="tel" placeholder="06 12 34 56 78"></label>
     <label class="cf-check"><input id="cf-invite-bruno" type="checkbox"> Inviter Bruno à ce rendez-vous</label>
@@ -6062,9 +6149,9 @@
          c'est ce qui supprime le conflit humain sur cette ligne precise. Sert aussi de cle
          unique de detection de mise a jour (voir checkUpdate ci-dessous), plus fiable qu'une
          comparaison de chaine de version par tenant. */
-  var APPV_MCS = '4.31';
+  var APPV_MCS = '4.32';
   var APPV_LABO = '1.00';
-  var BUILD = 9;
+  var BUILD = 10;
   // displayVersion()/displayVersionShort() lisent isMcsCode() (definie plus bas dans cette
   // meme IIFE -- declaration de fonction, donc disponible ici par hoisting) : le TENANT
   // affiche depend du code de connexion, jamais d'un simple "APPV" global qui ne dirait ni
@@ -10749,6 +10836,11 @@
   // (Bruno ET Mickael, cf. TYPES_LECTURE_SALARIE cote serveur), pas une validation. Jamais lie a
   // statutAffichage (la facturation) : ce toggle n'ecrit que dans mcs_contrats_interventions_faites,
   // une table dediee et separee, jamais dans le catalogue mcs_contrats_entretien.
+  function calFaitDateCourte(iso){
+    if (!iso) return '';
+    try { return new Date(iso).toLocaleDateString('fr-FR', { day:'2-digit', month:'2-digit' }); }
+    catch (e) { return ''; }
+  }
   function calToggleFait(item, bruno, e){
     e.stopPropagation();
     var nouveauFait = !item.fait;
@@ -10787,18 +10879,28 @@
       line.appendChild(prop);
     }
     var faitRow = document.createElement('div'); faitRow.className = 'cal-line-fait-row';
-    var faitPar = document.createElement('span'); faitPar.className = 'cal-line-fait-par';
+    // Section 2 (Session 5, 06/09/2026, retour Dorian mot pour mot : "on ne sait pas ce que ca
+    // veut dire cette case, peut-etre un bouton par carte serait plus adapte avec ecrit
+    // 'intervention faite' clairement") -- la case a cocher SVG (22px, sans texte) devient un
+    // vrai bouton en toutes lettres, pleine largeur, 44px de haut minimum. Reversible : le MEME
+    // bouton reste cliquable une fois "fait" et rebascule a "pas fait" (calToggleFait inverse
+    // simplement item.fait a chaque clic, deja le cas avant cette session) -- jamais un etat
+    // fige. "Fait par X" (qui a coche) reste affiche a part, sous le bouton, en plus de la date
+    // maintenant portee par le bouton lui-meme (ce que demandait Dorian), pas a la place.
+    var faitBtn = document.createElement('button'); faitBtn.type = 'button';
+    faitBtn.className = 'cal-line-fait-btn' + (item.fait ? ' fait' : '');
     var ICON_CHECK_FAIT = '<svg class="hicon-sm" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="9"/><polyline points="8,12.5 10.7,15.2 16,9.5"/></svg>';
-    faitPar.innerHTML = (item.fait && item.faitPar) ? (ICON_CHECK_FAIT + 'Fait par ' + escHtml(item.faitPar)) : '';
-    var faitBtn = document.createElement('button'); faitBtn.type = 'button'; faitBtn.className = 'cal-line-fait-btn';
-    // Case a cocher SVG (pas d'emoji ✅/⬜️) : pleine bleue = fait, contour = pas fait -- meme
-    // convention actif/inactif que le reste de l'app (fond plein bleu vs contour).
     faitBtn.innerHTML = item.fait
-      ? '<svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="3" y="3" width="18" height="18" rx="4" fill="currentColor"/><polyline points="7,12.5 10.3,16 17,8.5" stroke="var(--surface)"/></svg>'
-      : '<svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="3" y="3" width="18" height="18" rx="4"/></svg>';
-    faitBtn.setAttribute('aria-label', item.fait ? 'Marquer non fait' : 'Marquer fait');
+      ? (ICON_CHECK_FAIT + 'Intervention faite le ' + calFaitDateCourte(item.faitLe))
+      : 'Intervention faite ?';
+    faitBtn.setAttribute('aria-label', item.fait ? 'Marquer comme non faite (revenir en arrière)' : 'Marquer cette intervention comme faite');
     faitBtn.addEventListener('click', function(e){ calToggleFait(item, bruno, e); });
-    faitRow.appendChild(faitPar); faitRow.appendChild(faitBtn);
+    faitRow.appendChild(faitBtn);
+    if (item.fait && item.faitPar){
+      var faitPar = document.createElement('span'); faitPar.className = 'cal-line-fait-par';
+      faitPar.textContent = 'Par ' + item.faitPar;
+      faitRow.appendChild(faitPar);
+    }
     line.appendChild(faitRow);
     line.addEventListener('click', function(){ calOpenClientCard(item, bruno); });
     return line;
@@ -12984,6 +13086,11 @@
     { key:'notes', label:'Commentaire' },
   ];
   var CARNET_CHAMP_API = { notes:'notes' };
+  // Section 4 (Session 5, 06/09/2026) : icones SVG partagees (jeu deja etabli dans l'app,
+  // meme trace que le "Supprimer" du menu #msgDelete) -- remplacent les emoji poubelle/cadenas.
+  var ICON_TRASH = '<svg class="hicon-sm" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 7h16"/><path d="M9 7V4a1 1 0 0 1 1-1h4a1 1 0 0 1 1 1v3"/><path d="M6 7l1 13a2 2 0 0 0 2 2h6a2 2 0 0 0 2-2l1-13"/><line x1="10" y1="11" x2="10" y2="17"/><line x1="14" y1="11" x2="14" y2="17"/></svg>';
+  var ICON_LOCK_FERME = '<svg class="hicon-sm" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="5" y="11" width="14" height="9" rx="2"/><path d="M8 11V7a4 4 0 0 1 8 0v4"/></svg>';
+  var ICON_LOCK_OUVERT = '<svg class="hicon-sm" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="5" y="11" width="14" height="9" rx="2"/><path d="M8 11V7a4 4 0 0 1 7.5-2.6"/></svg>';
 
   function carnetNorm(s){ return String(s || '').toLowerCase().normalize('NFD').replace(/[̀-ͯ]/g, ''); }
 
@@ -13029,14 +13136,24 @@
       });
     });
     row.appendChild(main);
+    // Section 4e (Session 5, 06/09/2026, retour Dorian "que signifie le cadenas ? si elle porte
+    // une info, elle doit etre ecrite") : le cadenas protege ce commentaire contre une reecriture
+    // AUTOMATIQUE (un mail/chat detecte une info et mettrait a jour ce champ tout seul) -- avant
+    // cette session, seul l'aria-label (invisible a l'ecran) le disait. Mot ajoute en permanence
+    // a cote de l'icone (jamais la couleur/l'icone seule), + rappel explicite en toast au moment
+    // du clic (l'action qui vient de se produire, ecrite en toutes lettres).
     var lock = document.createElement('button'); lock.className = 'carnet-lock'; lock.type = 'button';
-    lock.textContent = isLocked ? '🔒' : '🔓';
-    lock.setAttribute('aria-label', isLocked ? 'Déverrouiller ce champ' : 'Verrouiller ce champ contre une modification automatique');
+    lock.innerHTML = (isLocked ? ICON_LOCK_FERME : ICON_LOCK_OUVERT) + (isLocked ? 'Verrouillé' : 'Non verrouillé');
+    lock.setAttribute('aria-label', isLocked ? 'Verrouillé contre une modification automatique — toucher pour déverrouiller' : 'Non verrouillé — toucher pour empêcher toute modification automatique');
     lock.addEventListener('click', function(){
       lock.disabled = true;
-      postCarnet({ type:'verrou', id:r.id, champ:apiChamp, valeur:!isLocked }, function(){
-        r.verrous = r.verrous || {}; r.verrous[apiChamp] = !isLocked;
+      var futurLocked = !isLocked;
+      postCarnet({ type:'verrou', id:r.id, champ:apiChamp, valeur:futurLocked }, function(){
+        r.verrous = r.verrous || {}; r.verrous[apiChamp] = futurLocked;
         carnetRender();
+        toast(futurLocked
+          ? '🔒 Verrouillé : ce commentaire ne sera plus jamais modifié automatiquement.'
+          : '🔓 Déverrouillé : un mail détecté pourra de nouveau compléter ce commentaire automatiquement.');
       }, function(err){ lock.disabled = false; toast(err); });
     });
     row.appendChild(lock);
@@ -13055,7 +13172,8 @@
       : 'Aucun commentaire encore renseigné';
     info.appendChild(sub);
     head.appendChild(info);
-    var del = document.createElement('button'); del.className = 'carnet-del'; del.type = 'button'; del.textContent = '🗑';
+    var del = document.createElement('button'); del.className = 'carnet-del'; del.type = 'button';
+    del.innerHTML = ICON_TRASH + 'Supprimer';
     del.setAttribute('aria-label', 'Supprimer cette résidence');
     head.appendChild(del);
     card.appendChild(head);
@@ -13076,7 +13194,7 @@
       confirmZone.appendChild(text);
       var row = document.createElement('div'); row.className = 'carnet-confirm-row';
       var cancel = document.createElement('button'); cancel.type = 'button'; cancel.className = 'carnet-confirm-cancel'; cancel.textContent = 'Annuler';
-      var yes = document.createElement('button'); yes.type = 'button'; yes.className = 'carnet-confirm-delete'; yes.textContent = '🗑 Supprimer';
+      var yes = document.createElement('button'); yes.type = 'button'; yes.className = 'carnet-confirm-delete'; yes.innerHTML = ICON_TRASH + 'Supprimer';
       row.appendChild(cancel); row.appendChild(yes);
       confirmZone.appendChild(row);
       cancel.addEventListener('click', function(){
@@ -15608,7 +15726,11 @@
 
     card.appendChild(body);
 
-    var del = document.createElement('button'); del.className = 'notes-del'; del.type = 'button'; del.textContent = '🗑';
+    var del = document.createElement('button'); del.className = 'notes-del'; del.type = 'button';
+    // Section 6 (Session 5, 06/09/2026) : icone poubelle nue -> icone SVG + mot "Supprimer" cote
+    // MCS uniquement (meme jeu ICON_TRASH que Carnet bleu) -- LABO garde le bouton rond emoji
+    // d'origine (pixel-identique, cf. CLAUDE.md de ce dossier).
+    if (isMcsCode()){ del.innerHTML = ICON_TRASH + 'Supprimer'; } else { del.textContent = '🗑'; }
     del.setAttribute('aria-label', 'Supprimer');
     del.addEventListener('click', function(){
       if (n.pending) return;
@@ -16451,21 +16573,31 @@
   var cfMcsExtra = document.getElementById('cf-mcs-extra');
   var cfCouleurs = document.getElementById('cf-couleurs');
   var cfCouleurChoisie = '';
-  // Palette Google Agenda (11 couleurs officielles, nom conserve en titre/accessibilite)
+  // Section 5 (Session 5, 06/09/2026) : "Lavande" (#7986CB) retiree -- mesure objective (formule
+  // de distance perceptuelle redmean) : Lavande/Myrtille etait la paire la PLUS proche des 55
+  // paires possibles (143,0), loin devant la 2e plus proche (150,4) -- "deux bleus jumeaux" de
+  // Dorian confirme par le calcul, pas suppose. Ce palette ne synchronise PAS un vrai Google
+  // Agenda cote MCS (backend maison mcs_rdv_terrain) : retirer une des 11 couleurs "officielles"
+  // ne casse aucune correspondance reelle.
   var CAL_PALETTE = [
-    {hex:'#7986CB', nom:'Lavande'}, {hex:'#33B679', nom:'Sauge'}, {hex:'#8E24AA', nom:'Raisin'},
+    {hex:'#33B679', nom:'Sauge'}, {hex:'#8E24AA', nom:'Raisin'},
     {hex:'#E67C73', nom:'Flamant'}, {hex:'#F6BF26', nom:'Banane'}, {hex:'#F4511E', nom:'Mandarine'},
     {hex:'#039BE5', nom:'Paon'}, {hex:'#616161', nom:'Graphite'}, {hex:'#3F51B5', nom:'Myrtille'},
     {hex:'#0B8043', nom:'Basilic'}, {hex:'#D50000', nom:'Tomate'}
   ];
+  var cfCouleurNomEl = document.getElementById('cf-couleur-nom');
   CAL_PALETTE.forEach(function(c){
     var b = document.createElement('button');
     b.type = 'button'; b.className = 'cf-couleur'; b.title = c.nom;
+    b.setAttribute('aria-label', 'Couleur ' + c.nom);
     b.style.background = c.hex;
     b.addEventListener('click', function(){
       cfCouleurChoisie = (cfCouleurChoisie === c.hex) ? '' : c.hex;
       cfCouleurs.querySelectorAll('.cf-couleur').forEach(function(el){ el.classList.remove('selected'); });
       if (cfCouleurChoisie) b.classList.add('selected');
+      // Section 5 : le nom (deja pose en `title`, invisible au toucher -- aucun hover sur
+      // mobile) devient un texte permanent sous la palette, mis a jour a chaque clic.
+      cfCouleurNomEl.textContent = cfCouleurChoisie ? ('Couleur choisie : ' + c.nom) : 'Aucune couleur choisie';
     });
     b.dataset.hex = c.hex;
     cfCouleurs.appendChild(b);
@@ -16825,9 +16957,15 @@
     var statutTxt = { attente: '⏳ En attente de réponse', confirme: '✅ Bruno a confirmé', decline: '❌ Bruno a décliné' };
     document.getElementById('cf-invite-statut').textContent = invBruno ? (statutTxt[invBruno.statut] || '') : '';
     cfCouleurChoisie = mode === 'edit' ? (ev.color || '') : '';
+    var couleurTrouvee = null;
     cfCouleurs.querySelectorAll('.cf-couleur').forEach(function(el){
-      el.classList.toggle('selected', el.dataset.hex === cfCouleurChoisie);
+      var estCelleLa = el.dataset.hex === cfCouleurChoisie;
+      el.classList.toggle('selected', estCelleLa);
+      if (estCelleLa) couleurTrouvee = el.title;
     });
+    // Section 5 : meme texte permanent que sur le clic, restaure a l'ouverture (nouveau RDV =
+    // aucune couleur, RDV existant = celle deja choisie).
+    cfCouleurNomEl.textContent = couleurTrouvee ? ('Couleur choisie : ' + couleurTrouvee) : 'Aucune couleur choisie';
     calFormBg.classList.add('open');
     calForm.classList.add('open');
   }
