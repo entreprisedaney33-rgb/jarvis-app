@@ -558,11 +558,17 @@
   @media (prefers-reduced-motion: reduce){.typing i{animation:none; opacity:.6}}
   /* ---------- Composer ---------- */
   #composer{
-    display:flex; align-items:flex-end; gap:9px; flex:0 0 auto;
-    padding:8px 12px max(8px, calc(env(safe-area-inset-bottom) - 6px));
+    display:flex; align-items:flex-end; gap:7px; flex:0 0 auto;
+    padding:8px 9px max(8px, calc(env(safe-area-inset-bottom) - 6px));
     background:var(--composer-bg,#17171B);
     border-top:0.5px solid var(--hairline);
   }
+  /* Section B (06/09/2026, deploiement v4.31) : mesure a 375px APRES la section 6 (Discussion/
+     Micro/Envoyer passes de 40 a 50px chacun) -- le champ de saisie etait tombe a 174px/375
+     (46%), fonctionnel (aucune troncature, texte tape s'enroule) mais nettement plus serre
+     qu'avant (~204px). Gap 9->7px + padding horizontal 12->9px (aucun bouton ne bouge en
+     dessous de 44px, ils restent a 50px) rendent ~13px au champ sans rien defaire de la
+     section 6. */
   /* Theme blanc MCS (05/09/2026) : le composer restait noir (litteral #17171B, choisi le
      16/07/2026 pour se distinguer du fond noir de la page -- meme raison d'etre ici, un ton
      legerement different de --bg pour lire "barre" plutot que "vide", mais en clair). Trouve en
@@ -6058,7 +6064,7 @@
          comparaison de chaine de version par tenant. */
   var APPV_MCS = '4.31';
   var APPV_LABO = '1.00';
-  var BUILD = 7;
+  var BUILD = 8;
   // displayVersion()/displayVersionShort() lisent isMcsCode() (definie plus bas dans cette
   // meme IIFE -- declaration de fonction, donc disponible ici par hoisting) : le TENANT
   // affiche depend du code de connexion, jamais d'un simple "APPV" global qui ne dirait ni
