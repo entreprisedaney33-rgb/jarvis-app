@@ -289,6 +289,13 @@
   .hbadge.on{display:flex}
   .hname{font-size:14px; font-weight:700; letter-spacing:.2em; text-transform:uppercase; padding-left:.2em}
   .dot{width:7px; height:7px; border-radius:50%; background:var(--ok)}
+  /* Session 3 bis (06/09/2026) : numero de version visible EN PERMANENCE dans l'en-tete, pas
+     seulement dans le menu (ancien #subline, planque dans le sheet) ni dans un toast fugace --
+     le PC de Dorian n'ayant jamais vu la maj passer (checkUpdate() jamais retente pendant que
+     l'onglet restait ouvert), c'est le seul moyen de VERIFIER a l'oeil, sans rien ouvrir, que
+     l'app en face de soi est a jour. Format court (juste le build : "b4") pour tenir dans une
+     en-tete deja dense -- le detail complet (MCS 4.28 · build 4) reste dans le menu (#subline). */
+  .hver{font-size:10px; font-weight:700; color:var(--muted); letter-spacing:0; text-transform:none; margin-left:-3px}
   #chat{
     flex:1; overflow-y:auto; padding:16px 14px 10px;
     display:flex; flex-direction:column; gap:8px;
@@ -672,6 +679,26 @@
     background:rgba(var(--gold-rgb),.13); color:var(--gold-a);
     display:flex; align-items:center; justify-content:center; font-size:21px;
   }
+  /* Session 3 bis (06/09/2026) : jeu d'icones SVG inline pour les 9 tuiles MCS (remplace les
+     emoji -- petits, pales, et certains sans rapport avec leur tuile : Rentabilite affichait un
+     graphique en YENS (💹), Agenda un calendrier fige au 17 juillet (rendu de reference de 📅
+     dans la plupart des polices d'emoji), Opportunites un chantier (🏗️, copie-collee de Site).
+     32px (borne basse de la fourchette demandee 32-40px) dans un conteneur de 44px : parite
+     visuelle avec le libelle, jamais en retrait. currentColor -> herite de .sh-tile-ic (bleu MCS
+     via html.mcs-theme .sh-tile-ic{color:var(--blue)}, deja pose plus haut), donc suit deja les
+     etats actif/inactif sans regle supplementaire. Perimetre strict : uniquement ces 9 tuiles de
+     navigation -- aucun emoji du chat, des toasts, des mails ou des factures n'est touche. */
+  .hicon{width:32px; height:32px}
+  /* Session 3 bis (06/09/2026, suite) : meme famille d'icones SVG (24x24, trait 2, currentColor)
+     mais en INLINE devant un libelle texte (onglets/sous-onglets), pas en tuile seule -- 14px,
+     alignee sur le milieu du texte. Perimetre : uniquement les sous-onglets de panneaux
+     REELLEMENT visibles cote MCS (Opportunites, Notes) -- jamais les classes .meute-tab/
+     .vitrine-tab/.cx-tab/.pf-tab/.rel-tab/.clients-tab elles-memes (partagees avec des panneaux
+     labo-only comme Meute/Site/Crypto x402/Portefeuille clients/Mes contacts, ces derniers
+     masques en permanence cote MCS depuis le 04-05/09 -- convertir leurs emoji n'aurait aucun
+     effet pour Mickael et risquerait une regression labo pour rien) : seuls les boutons HTML
+     concernes sont edites individuellement, jamais la regle CSS de la classe partagee. */
+  .hicon-sm{width:14px; height:14px; vertical-align:-2px; margin-right:3px}
   .sh-tile-label{font-size:11.5px; font-weight:600; line-height:1.25; text-wrap:balance}
   .sh-tile .badge-count{
     position:absolute; top:9px; right:12px; margin:0; min-width:17px; height:17px; padding:0 5px; font-size:10.5px;
@@ -4790,6 +4817,7 @@
     </div>
     <b class="hname">Jarvis</b>
     <i class="dot"></i>
+    <span class="hver" id="hver"></span>
     <svg id="hchev" width="13" height="13" viewBox="0 0 24 24" fill="none" aria-hidden="true"><path d="M5 8.5 12 15.5 19 8.5" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round"/></svg>
     <button id="hcallbtn" type="button" aria-label="Appeler Jarvis">
       <svg width="21" height="21" viewBox="0 0 24 24" fill="currentColor"><path d="M6.6 10.8c1.4 2.8 3.8 5.1 6.6 6.6l2.2-2.2c.3-.3.7-.4 1.1-.2 1.2.4 2.5.6 3.8.6.6 0 1 .5 1 1V20.5c0 .6-.4 1-1 1C11.5 21.5 2.5 12.5 2.5 1.7c0-.6.4-1 1-1H7c.6 0 1 .4 1 1 0 1.3.2 2.6.6 3.8.1.4 0 .8-.2 1.1L6.6 10.8Z"/></svg>
@@ -4900,27 +4928,28 @@
   <div class="sh-handle"></div>
   <div class="sh-grid">
     <button class="sh-tile" id="sh-emails" type="button" style="display:none"><span class="sh-tile-ic">✉️</span><span class="sh-tile-label">Emails</span><span class="badge-count" id="menu-email-badge" style="display:none"></span></button>
-    <button class="sh-tile" id="sh-calendar" type="button"><span class="sh-tile-ic">📅</span><span class="sh-tile-label">Agenda</span></button>
+    <button class="sh-tile" id="sh-calendar" type="button"><span class="sh-tile-ic"><svg class="hicon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="3" y="5" width="18" height="16" rx="2"/><line x1="8" y1="3" x2="8" y2="7"/><line x1="16" y1="3" x2="16" y2="7"/><line x1="3" y1="10" x2="21" y2="10"/></svg></span><span class="sh-tile-label">Agenda</span></button>
     <button class="sh-tile" id="sh-docs" type="button"><span class="sh-tile-ic">📄</span><span class="sh-tile-label">Mes documents</span></button>
     <button class="sh-tile" id="sh-couts" type="button"><span class="sh-tile-ic">💰</span><span class="sh-tile-label">Coûts</span></button>
     <button class="sh-tile" id="sh-crypto" type="button"><span class="sh-tile-ic">💰</span><span class="sh-tile-label">Crypto x402</span></button>
     <button class="sh-tile" id="sh-meute" type="button"><span class="sh-tile-ic">🐺</span><span class="sh-tile-label">Meute</span><span class="badge-count" id="menu-meute-badge" style="display:none"></span></button>
     <button class="sh-tile" id="sh-site" type="button"><span class="sh-tile-ic">🏗️</span><span class="sh-tile-label">Site</span></button>
-    <button class="sh-tile" id="sh-notes" type="button"><span class="sh-tile-ic">🧠</span><span class="sh-tile-label">Notes</span></button>
+    <button class="sh-tile" id="sh-notes" type="button"><span class="sh-tile-ic"><svg class="hicon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="4" y="6" width="16" height="15" rx="2"/><line x1="8" y1="3" x2="8" y2="8"/><line x1="12" y1="3" x2="12" y2="8"/><line x1="16" y1="3" x2="16" y2="8"/><line x1="7" y1="12" x2="17" y2="12"/><line x1="7" y1="16" x2="14" y2="16"/></svg></span><span class="sh-tile-label">Notes</span></button>
     <button class="sh-tile" id="sh-clients" type="button"><span class="sh-tile-ic">🏢</span><span class="sh-tile-label">Clients</span></button>
-    <button class="sh-tile" id="sh-devis-attente" type="button" style="display:none"><span class="sh-tile-ic">📝</span><span class="sh-tile-label">Devis et factures</span><span class="badge-count" id="menu-devis-badge" style="display:none"></span></button>
-    <button class="sh-tile" id="sh-rentabilite" type="button" style="display:none"><span class="sh-tile-ic">💹</span><span class="sh-tile-label">Rentabilité</span></button>
-    <button class="sh-tile" id="sh-contrats" type="button" style="display:none"><span class="sh-tile-ic">📋</span><span class="sh-tile-label">Contrats</span><span class="badge-count" id="menu-contrats-badge" style="display:none"></span></button>
-    <button class="sh-tile" id="sh-ik" type="button" style="display:none"><span class="sh-tile-ic">🚗</span><span class="sh-tile-label">Frais kilométriques</span></button>
-    <button class="sh-tile" id="sh-relances" type="button" style="display:none"><span class="sh-tile-ic">📨</span><span class="sh-tile-label">Relances clients</span><span class="badge-count" id="menu-relances-badge" style="display:none"></span></button>
-    <button class="sh-tile" id="sh-opportunites" type="button" style="display:none"><span class="sh-tile-ic">🏗️</span><span class="sh-tile-label">Opportunités</span><span class="badge-count" id="menu-opp-badge" style="display:none"></span></button>
-    <button class="sh-tile" id="sh-carnet" type="button" style="display:none"><span class="sh-tile-ic">📘</span><span class="sh-tile-label">Carnet bleu</span></button>
+    <button class="sh-tile" id="sh-devis-attente" type="button" style="display:none"><span class="sh-tile-ic"><svg class="hicon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><path d="M14 2v6h6"/><line x1="8" y1="13" x2="16" y2="13"/><line x1="8" y1="17" x2="16" y2="17"/><line x1="8" y1="9" x2="10" y2="9"/></svg></span><span class="sh-tile-label">Devis et factures</span><span class="badge-count" id="menu-devis-badge" style="display:none"></span></button>
+    <button class="sh-tile" id="sh-rentabilite" type="button" style="display:none"><span class="sh-tile-ic"><svg class="hicon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><polyline points="3,20 9,13 13,16 21,6"/><polyline points="15,6 21,6 21,12"/><text x="2.5" y="10" font-size="8" font-weight="800" stroke="none" fill="currentColor" font-family="inherit">€</text></svg></span><span class="sh-tile-label">Rentabilité</span></button>
+    <button class="sh-tile" id="sh-contrats" type="button" style="display:none"><span class="sh-tile-ic"><svg class="hicon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M13 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h7"/><path d="M13 2v5a1 1 0 0 0 1 1h4"/><line x1="7.5" y1="12" x2="12" y2="12"/><line x1="7.5" y1="16" x2="10.5" y2="16"/><circle cx="17.5" cy="17.5" r="4.5"/><polyline points="15.7,17.6 17,18.8 19.4,16.3"/></svg></span><span class="sh-tile-label">Contrats</span><span class="badge-count" id="menu-contrats-badge" style="display:none"></span></button>
+    <button class="sh-tile" id="sh-ik" type="button" style="display:none"><span class="sh-tile-ic"><svg class="hicon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 16V12l2.2-5.2A2 2 0 0 1 8 5.6h8a2 2 0 0 1 1.8 1.2L20 12v4"/><line x1="4" y1="16" x2="20" y2="16"/><path d="M4 16v2a1 1 0 0 0 1 1h1.5a1 1 0 0 0 1-1v-2"/><path d="M20 16v2a1 1 0 0 1-1 1h-1.5a1 1 0 0 1-1-1v-2"/><circle cx="7.5" cy="16" r="1.6"/><circle cx="16.5" cy="16" r="1.6"/></svg></span><span class="sh-tile-label">Frais kilométriques</span></button>
+    <button class="sh-tile" id="sh-relances" type="button" style="display:none"><span class="sh-tile-ic"><svg class="hicon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 6a1.5 1.5 0 0 1 1.5-1.5h13A1.5 1.5 0 0 1 19 6v10.5a1.5 1.5 0 0 1-1.5 1.5H8"/><path d="M3.5 6.2L11 12l7.5-5.8"/><path d="M17.5 15.5a3 3 0 0 0 3-3v-.5"/><polyline points="16,13.3 17.3,12 18.6,13.3"/></svg></span><span class="sh-tile-label">Relances clients</span><span class="badge-count" id="menu-relances-badge" style="display:none"></span></button>
+    <button class="sh-tile" id="sh-opportunites" type="button" style="display:none"><span class="sh-tile-ic"><svg class="hicon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="9"/><circle cx="12" cy="12" r="5"/><circle cx="12" cy="12" r="1" fill="currentColor" stroke="none"/></svg></span><span class="sh-tile-label">Opportunités</span><span class="badge-count" id="menu-opp-badge" style="display:none"></span></button>
+    <button class="sh-tile" id="sh-carnet" type="button" style="display:none"><span class="sh-tile-ic"><svg class="hicon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20"/><path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z"/></svg></span><span class="sh-tile-label">Carnet bleu</span></button>
     <button class="sh-tile" id="sh-bcal" type="button" style="display:none"><span class="sh-tile-ic">📅</span><span class="sh-tile-label">Mon calendrier</span></button>
     <button class="sh-tile" id="sh-portefeuille" type="button" style="display:none"><span class="sh-tile-ic">📇</span><span class="sh-tile-label">Portefeuille clients</span></button>
     <button class="sh-tile" id="sh-relations" type="button" style="display:none"><span class="sh-tile-ic">👥</span><span class="sh-tile-label">Mes contacts</span><span class="badge-count" id="menu-relations-badge" style="display:none"></span></button>
     <button class="sh-tile" id="sh-docref" type="button" style="display:none"><span class="sh-tile-ic">📎</span><span class="sh-tile-label">Documents de référence</span></button>
   </div>
   <div class="sh-footer-row">
+    <button class="sh-mini-item" id="sh-checkupdate" type="button">🔄 Vérifier la mise à jour<span class="sh-mini-check" id="sw-checkupdate" style="display:none"></span></button>
     <button class="sh-mini-item" id="sh-push" type="button">🔔 Notifications<span class="sh-mini-check" id="sw-push">✓</span></button>
     <button class="sh-mini-item" id="sh-tuto-toggle" type="button" style="display:none">🎓 Tutoriels<span class="sh-mini-check" id="sw-tuto">✓</span></button>
     <button class="sh-mini-item" id="sh-bug" type="button" style="display:none">⚠️ Signaler un bug / remarque</button>
@@ -5528,10 +5557,10 @@
   <p id="opp-status"></p>
   <p id="opp-enrichissement-banniere" style="display:none"></p>
   <div id="opp-tabs">
-    <button class="meute-tab active" data-tab="a_valider" type="button">🆕 À valider</button>
-    <button class="meute-tab" data-tab="contacte" type="button">📨 Contactés</button>
-    <button class="meute-tab" data-tab="clos" type="button">✅ Clos</button>
-    <button class="meute-tab" data-tab="en_recherche" type="button">🔍 En recherche</button>
+    <button class="meute-tab active" data-tab="a_valider" type="button"><svg class="hicon-sm" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 12h4l2 3h4l2-3h4"/><path d="M4 12l1.6-6.4A2 2 0 0 1 7.5 4h9a2 2 0 0 1 1.9 1.6L20 12v6a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2z"/></svg>À valider</button>
+    <button class="meute-tab" data-tab="contacte" type="button"><svg class="hicon-sm" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><line x1="21" y1="3" x2="10" y2="14"/><path d="M21 3l-7 18-4-8-8-4z"/></svg>Contactés</button>
+    <button class="meute-tab" data-tab="clos" type="button"><svg class="hicon-sm" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="9"/><polyline points="8,12.5 10.7,15.2 16,9.5"/></svg>Clos</button>
+    <button class="meute-tab" data-tab="en_recherche" type="button"><svg class="hicon-sm" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="10.5" cy="10.5" r="6.5"/><line x1="20" y1="20" x2="15.3" y2="15.3"/></svg>En recherche</button>
   </div>
   <div id="opp-list"></div>
 </div>
@@ -5583,13 +5612,13 @@
   </div>
   <div id="notes-tabs">
     <button class="notes-tab active" data-vue="tout" type="button">Tout</button>
-    <button class="notes-tab" data-vue="aujourdhui" type="button">📅 Aujourd'hui</button>
-    <button class="notes-tab" data-vue="retard" type="button">⏰ En retard</button>
+    <button class="notes-tab" data-vue="aujourdhui" type="button"><svg class="hicon-sm" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="3" y="5" width="18" height="16" rx="2"/><line x1="8" y1="3" x2="8" y2="7"/><line x1="16" y1="3" x2="16" y2="7"/><line x1="3" y1="10" x2="21" y2="10"/></svg>Aujourd'hui</button>
+    <button class="notes-tab" data-vue="retard" type="button"><svg class="hicon-sm" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="9"/><polyline points="12,7 12,12 15.5,14"/></svg>En retard</button>
     <button class="notes-tab" data-vue="mes_taches" type="button">✅ Mes tâches</button>
     <button class="notes-tab" data-vue="taches_autre" type="button">✅ Tâches de l'autre</button>
-    <button class="notes-tab" data-vue="objectif" type="button">🎯 Objectifs</button>
-    <button class="notes-tab" data-vue="idee" type="button">💡 Idées</button>
-    <button class="notes-tab" data-vue="fait" type="button">☑️ Fait</button>
+    <button class="notes-tab" data-vue="objectif" type="button"><svg class="hicon-sm" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 21V4"/><path d="M5 4h13l-3 4 3 4H5"/></svg>Objectifs</button>
+    <button class="notes-tab" data-vue="idee" type="button"><svg class="hicon-sm" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M9 18h6"/><path d="M10 21h4"/><path d="M12 3a6 6 0 0 0-3.5 10.9c.6.4 1 1.1 1 1.9v.2h5v-.2c0-.8.4-1.5 1-1.9A6 6 0 0 0 12 3z"/></svg>Idées</button>
+    <button class="notes-tab" data-vue="fait" type="button"><svg class="hicon-sm" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="3" y="3" width="18" height="18" rx="2"/><polyline points="7,12.5 10,15.5 17,8"/></svg>Fait</button>
   </div>
   <div id="notes-age-tabs">
     <button class="notes-age-tab active" data-age="tout" type="button">Tout</button>
@@ -5837,9 +5866,9 @@
          c'est ce qui supprime le conflit humain sur cette ligne precise. Sert aussi de cle
          unique de detection de mise a jour (voir checkUpdate ci-dessous), plus fiable qu'une
          comparaison de chaine de version par tenant. */
-  var APPV_MCS = '4.28';
+  var APPV_MCS = '4.29';
   var APPV_LABO = '1.00';
-  var BUILD = 4;
+  var BUILD = 5;
   // displayVersion()/displayVersionShort() lisent isMcsCode() (definie plus bas dans cette
   // meme IIFE -- declaration de fonction, donc disponible ici par hoisting) : le TENANT
   // affiche depend du code de connexion, jamais d'un simple "APPV" global qui ne dirait ni
@@ -5863,7 +5892,30 @@
   try { pushCibleInitiale = new URLSearchParams(location.search).get('cible') || null; } catch(e){}
 
   // ---- Mise à jour automatique (contourne le cache GitHub Pages) ----
-  function checkUpdate(){
+  // Session 3 bis (06/09/2026) : le PC de Dorian n'a JAMAIS vu passer les build 3/4, alors que
+  // son telephone les a pris tout seul. Diagnostic (pas suppose, verifie code en main) :
+  //   - Ce mecanisme ne depend d'AUCUN cache du Service Worker (sw.js n'a pas de handler
+  //     'fetch' -- aucun cache maison sur index.html/version.json, seul le cache HTTP standard
+  //     du navigateur/CDN GitHub Pages peut jouer, et cache:'no-store' + un ?t= different a
+  //     chaque appel le contournent deja).
+  //   - skipWaiting()+clients.claim() sont deja presents dans sw.js -- un nouveau Service
+  //     Worker n'attend PAS la fermeture d'un onglet pour s'activer. Mais activer un SW ne
+  //     recharge JAMAIS a lui seul le contenu d'un onglet deja ouvert : c'est TOUJOURS ce
+  //     mecanisme (checkUpdate) qui doit le faire, le SW ne peut rien y changer ici.
+  //   - Le vrai suspect : ce mecanisme ne se redeclenchait QUE sur 'visibilitychange'
+  //     (document.hidden). Sur telephone, l'app est plein ecran -- passer a une autre app la
+  //     rend TOUJOURS "hidden", donc le retour la reveille TOUJOURS. Sur PC, il est courant
+  //     d'avoir 2 fenetres visibles cote a cote (Jarvis + autre chose) : cliquer dans l'autre
+  //     fenetre PUIS revenir cliquer dans Jarvis ne change JAMAIS document.hidden (l'onglet est
+  //     reste visible tout du long) -- seul le FOCUS de la fenetre a change, un evenement que
+  //     'visibilitychange' ne capte pas. Corrige en ajoutant 'focus' comme 2e declencheur.
+  //   - Filet supplementaire, independant de tout timer/evenement : le bouton manuel
+  //     "Vérifier la mise à jour" du menu (voir sh-checkupdate plus bas), qui donne un resultat
+  //     EXPLICITE ('a jour' / 'nouvelle version installee') au lieu d'un silence qui ne prouve
+  //     rien -- c'est lui qui repond a "tu vois quoi en bas ?" en cas de doute, sans attendre
+  //     qu'un evenement navigateur (potentiellement throttle en arriere-plan, cf. hypothese
+  //     initiale du plan) daigne se declencher.
+  function checkUpdate(manuelCb){
     fetch('./version.json?t=' + Date.now(), { cache:'no-store' })
       .then(function(r){ return r.json(); })
       .then(function(j){
@@ -5871,17 +5923,24 @@
         // soit le tenant touche) remplace la comparaison de chaine "v4.xx" -- fiable meme
         // quand seul APPV_LABO (ou seul APPV_MCS) a change, ce qu'une comparaison sur le
         // seul tenant courant aurait pu manquer.
-        if (!j || j.build == null || Number(j.build) === BUILD) return;
+        if (!j || j.build == null || Number(j.build) === BUILD){
+          if (manuelCb) manuelCb({ ajour:true });
+          return;
+        }
+        if (manuelCb) manuelCb({ ajour:false, build:j.build });
         var tried = null;
         try { tried = sessionStorage.getItem('majTentee'); } catch(e){}
-        if (tried === String(j.build)) return; // déjà tenté (nouvelle version en cours de propagation)
+        // En mode manuel, on retente MEME si deja tente (l'utilisateur demande explicitement --
+        // pas de raison de lui taire un echec silencieux passe).
+        if (!manuelCb && tried === String(j.build)) return; // deja tente (mise a jour en cours de propagation)
         try { sessionStorage.setItem('majTentee', String(j.build)); } catch(e){}
         location.replace(location.pathname + '?u=' + Date.now());
-      }).catch(function(){});
+      }).catch(function(){ if (manuelCb) manuelCb({ erreur:true }); });
   }
   checkUpdate();
   setInterval(checkUpdate, 60000);
   document.addEventListener('visibilitychange', function(){ if (!document.hidden) checkUpdate(); });
+  window.addEventListener('focus', function(){ checkUpdate(); });
   // Routage par préfixe de code : un code "mcs-..." parle au workflow d'un tenant secondaire
   // (webhooks mcs-*, tables mcs_*, entièrement séparé) ; tout le reste parle au
   // workflow labo historique (webhooks jarvis-*). Voir clients/mcs/config-mcs.json.
@@ -7403,6 +7462,8 @@
     login.style.display = 'none';
     app.style.display = 'flex';
     subline.textContent = (nom ? ('Assistant de ' + nom + ' — en ligne') : 'en ligne') + ' · ' + displayVersion() + ' · H' + window.innerHeight + '/' + ((screen && screen.height) || '?');
+    var hverEl = document.getElementById('hver');
+    if (hverEl) hverEl.textContent = '· b' + BUILD;
     renderHistory(msgs, extras);
     if (forceModalTest) updOpen(true); else maybeOfferPushOnUpdate();
     // Un compte tenant secondaire n'a ni les outils métier du compte principal
@@ -8109,6 +8170,23 @@
   function siteSheetOpen(o){ siteSheet.classList.toggle('open', o); siteSheetbg.classList.toggle('open', o); }
   document.getElementById('sh-site').addEventListener('click', function(){ sheetOpen(false); siteSheetOpen(true); });
   siteSheetbg.addEventListener('click', function(){ siteSheetOpen(false); });
+  // ---- "Vérifier la mise à jour" (Session 3 bis, 06/09/2026) -- filet manuel EXPLICITE, pour
+  // ne plus dependre d'un evenement (focus/visibilitychange) ou d'un timer potentiellement
+  // throttle en arriere-plan par le navigateur. Reutilise checkUpdate() (mode manuel : le
+  // callback recoit toujours un resultat, meme "deja a jour", jamais un silence). ----
+  document.getElementById('sh-checkupdate').addEventListener('click', function(){
+    var ind = document.getElementById('sw-checkupdate');
+    ind.style.display = 'inline';
+    ind.textContent = '…';
+    checkUpdate(function(res){
+      if (res && res.erreur){ ind.textContent = ''; ind.style.display = 'none'; toast('Impossible de vérifier — pas de réseau ?'); return; }
+      if (res && res.ajour){ ind.textContent = '✓ à jour'; toast('✅ Déjà à jour (build ' + BUILD + ')'); setTimeout(function(){ ind.style.display = 'none'; }, 3000); return; }
+      // Sinon : une nouvelle version a ete detectee -- checkUpdate() a deja lance
+      // location.replace() en parallele de ce callback, le rechargement est en cours.
+      ind.textContent = '🆕 …';
+      toast('🆕 Nouvelle version installée — rechargement…', 3200);
+    });
+  });
   // ---- Notifications : interrupteur ON/OFF reflétant l'état RÉEL de l'appareil ----
   // pushManager.getSubscription() est l'API standard qui dit, de façon fiable et 100% locale
   // (pas besoin d'interroger le serveur), si CET appareil/navigateur a deja un abonnement actif.
