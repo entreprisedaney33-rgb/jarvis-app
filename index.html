@@ -340,6 +340,11 @@
     display:none; flex:0 0 auto; position:relative;
     max-height:46vh; overflow-y:auto; -webkit-overflow-scrolling:touch;
     background:var(--surface); border-bottom:0.5px solid var(--hairline);
+    /* Session 3 ter (06/09/2026) : sur grand ecran (PC), l'accueil MCS (cette carte + #homeGrid
+       juste apres) etait etire sur TOUTE la largeur -- une ligne de texte de recap sur 1800px,
+       illisible. Conteneur centre a largeur maximale, respire des 2 cotes au-dela de ~1180px ;
+       sans effet sur mobile/tablette (deja plus etroit que ce plafond). */
+    width:100%; max-width:1180px; margin-left:auto; margin-right:auto;
   }
   #mcsAccueil.on{display:block}
   #ma-body{
@@ -370,7 +375,10 @@
      l'emoji) devient un 2e cadre colore a l'interieur d'un bouton deja borde. La bordure/le fond
      appartiennent a l'element cliquable le plus exterieur (.ma-ligne) ; ses enfants n'en ont
      jamais. Neutralise ICI (mcs-theme uniquement, le labo garde son halo dore d'origine). */
-  html.mcs-theme .ma-ligne-ic{background:transparent; color:inherit}
+  /* Session 3 ter (06/09/2026) : color:inherit -> var(--blue) -- coherence avec la famille SVG
+     des 9 tuiles (toutes bleu MCS via .sh-tile-ic{color:var(--blue)}), au lieu d'heriter --ink
+     (plus sombre, aurait rendu ces 3 icones visuellement differentes des 9 juste en dessous). */
+  html.mcs-theme .ma-ligne-ic{background:transparent; color:var(--blue)}
   /* Turquoise sur l'accueil (25/08/2026) : meme traitement que .sh-tile-ic (pastille +
      rgba(var(--gold-rgb),.13)), volontairement plus petit (32px, pas 44) -- une tuile de menu
      grossit l'ecran d'accueil, pas la ligne du Point du jour. Compense le padding vertical de
@@ -402,17 +410,23 @@
      #chat{flex:1...} plus haut) tant que #app n'a pas la classe .home-mode -- jamais posee pour
      le tenant labo ni pour Bruno (cf. applyHomeMode), donc leur affichage reste au pixel celui
      d'avant ce chantier.
-     #homeGrid : flex:0 0 auto par defaut (les 11 tuiles toujours entieres, jamais coupees) --
-     SAUF .grow (carte Accueil masquee, hideAccueil) ou elle prend flex:1 pour que l'espace vide
-     soit sous les tuiles et non au-dessus (cas particulier demande). */
-  #homeGrid{display:none; flex:0 0 auto}
+     Session 3 ter (06/09/2026) : INVERSION du sens de la croissance, sur demande explicite de
+     Dorian ("le grand vide entre les recaps et les 9 tuiles -- on agrandit les tuiles, pas de
+     logo decoratif"). Avant cette session, c'etait #mcsAccueil (la carte des 3 recaps) qui
+     recevait flex:1 1 auto en mode home -- son contenu (3 courtes lignes) ne remplit jamais tout
+     l'espace disponible, laissant un vide a l'INTERIEUR de la carte, entre les recaps et le bas
+     de la carte, avant que #homeGrid (reste a taille naturelle, flex:0 0 auto) n'arrive avec ses
+     9 tuiles. Desormais #mcsAccueil retrouve son comportement PAR DEFAUT (flex:0 0 auto, cf.
+     regle de base #mcsAccueil{...} plus haut -- taille a son contenu, plafonnee a 46vh,
+     defilement interne si ca deborde quand meme sur un tres petit ecran) et c'est #homeGrid qui
+     absorbe tout l'espace restant : ses 9 tuiles grossissent pour occuper la hauteur disponible,
+     au lieu de laisser une zone morte au-dessus d'elles. Le cas .grow (carte Accueil masquee,
+     hideAccueil) devient un doublon inoffensif de ce nouveau comportement par defaut -- laisse
+     tel quel (JS non touche), sans effet visible different. */
+  #homeGrid{display:none; flex:0 0 auto; width:100%; max-width:1180px; margin-left:auto; margin-right:auto}
   #homeGrid.grow{flex:1 1 auto}
-  #app.home-mode #homeGrid{display:block}
+  #app.home-mode #homeGrid{display:flex; flex-direction:column; flex:1 1 auto; min-height:0}
   #app.home-mode #chat{display:none}
-  /* La carte prend tout ce qui reste et defile en interne si besoin (overflow-y:auto deja pose
-     sur #mcsAccueil plus haut, .ma-fade deja cable dessus) -- seule la hauteur allouee change,
-     aucun nouveau comportement de defilement code ici. */
-  #app.home-mode #mcsAccueil.on{flex:1 1 auto; min-height:0; max-height:none}
   /* Ordre des tuiles sur la home (uniquement quand la grille vit dans #homeGrid -- l'ordre du
      DOM lui-meme ne change jamais, donc rien ne bouge cote #sheet/tenant labo). */
   #homeGrid #sh-relances{order:1}
@@ -612,6 +626,14 @@
     box-shadow:0 -18px 50px rgba(0,0,0,.5), 0 -2px 0 rgba(255,255,255,.03) inset;
     padding:10px 14px calc(14px + env(safe-area-inset-bottom));
     transform:translateY(108%); transition:transform .38s cubic-bezier(.32,.72,0,1);
+    /* Session 3 ter (06/09/2026) : filet vertical -- pour Bruno (salarie) et le labo, .sh-grid
+       reste DANS #sheet (contrairement au patron MCS, dont la grille est deplacee vers
+       #homeGrid, cf. plus bas dans ce fichier) -- sur un ecran court (telephone en paysage,
+       petit modele), le contenu peut depasser la hauteur visible sans qu'aucun defilement ne
+       soit possible jusqu'ici (aucun max-height/overflow-y n'existait). max-height + overflow-y
+       garantissent qu'on peut TOUJOURS atteindre le bas de la feuille (dont "Se deconnecter"),
+       quel que soit le tenant/role et la hauteur reelle de l'ecran. */
+    max-height:92vh; overflow-y:auto; -webkit-overflow-scrolling:touch;
   }
   #sheet.open{transform:translateY(0)}
   @media (prefers-reduced-motion: reduce){#sheet{transition:none}#sheetbg{transition:none}}
@@ -666,6 +688,25 @@
      n'apporte rien pour 2 items. Tous les ids de boutons sont inchanges (sh-emails, sh-calendar,
      etc.) -- seuls les listeners par getElementById comptent, aucun n'est touche ici. */
   .sh-grid{display:grid; grid-template-columns:repeat(3,1fr); gap:9px; margin:2px 2px 16px}
+  /* Session 3 ter (06/09/2026) : grille QUAND elle vit dans #homeGrid (accueil MCS patron
+     uniquement -- jamais le tenant labo ni Bruno, dont la grille reste dans #sheet a sa taille
+     d'origine, cf. commentaire plus haut sur l'inversion #mcsAccueil/#homeGrid). grid-template-
+     rows:repeat(3,1fr) sur un conteneur de hauteur DEFINIE (#homeGrid est flex:1 1 auto dans la
+     colonne #app) force les 3 rangees a une hauteur EGALE -- c'est ce qui garantit que les 9
+     tuiles ont TOUJOURS la meme hauteur entre elles (demande explicite de Dorian, "pas de
+     hauteurs differentes"), quel que soit l'espace reellement disponible sur l'appareil : le
+     mecanisme grid lui-meme l'impose, pas un calcul JS fragile. Chaque .sh-tile s'etire pour
+     remplir sa cellule (align-items:stretch, comportement PAR DEFAUT d'un conteneur grid, aucune
+     regle supplementaire necessaire) ; l'icone/le libelle restent centres dedans
+     (justify-content:center deja sur .sh-tile) -- l'espace en plus devient de la respiration a
+     l'interieur d'une tuile bordee, plus une zone morte de fond uni derriere. */
+  #homeGrid .sh-grid{flex:1 1 auto; min-height:0; grid-template-rows:repeat(3,1fr); margin-bottom:8px}
+  /* Icone/libelle grossis en proportion de la tuile agrandie (contenu FIXE, pas un calcul fluide :
+     plus simple et plus sur qu'un scaling dynamique, l'espace en trop se repartit en respiration
+     verticale via le stretch grid ci-dessus). Libelle jamais sous 16px (regle explicite). */
+  #homeGrid .sh-tile-ic{width:56px; height:56px}
+  #homeGrid .hicon{width:40px; height:40px}
+  #homeGrid .sh-tile-label{font-size:16px}
   .sh-tile{
     position:relative; display:flex; flex-direction:column; align-items:center; justify-content:center; gap:8px;
     width:100%; font:inherit; color:var(--ink); text-align:center; background:rgba(255,255,255,.045);
@@ -699,15 +740,28 @@
      effet pour Mickael et risquerait une regression labo pour rien) : seuls les boutons HTML
      concernes sont edites individuellement, jamais la regle CSS de la classe partagee. */
   .hicon-sm{width:14px; height:14px; vertical-align:-2px; margin-right:3px}
+  /* Meme famille, taille intermediaire pour les icones de recap (.ma-ligne-ic, boite 32px) --
+     ni tuile pleine (.hicon, 32-40px) ni puce d'onglet (.hicon-sm, 14px). */
+  .hicon-md{width:20px; height:20px}
   .sh-tile-label{font-size:11.5px; font-weight:600; line-height:1.25; text-wrap:balance}
   .sh-tile .badge-count{
     position:absolute; top:9px; right:12px; margin:0; min-width:17px; height:17px; padding:0 5px; font-size:10.5px;
   }
   /* Notifications + Se deconnecter : reglages, pas des outils -- rangees en petite ligne
-     discrete sous la grille plutot qu'en tuile (demande Matheo, 2026-08-11). */
-  .sh-footer-row{display:flex; align-items:center; justify-content:center; gap:26px; padding:13px 8px 2px}
+     discrete sous la grille plutot qu'en tuile (demande Matheo, 2026-08-11).
+     Session 3 ter (06/09/2026) : BUG REEL trouve par Dorian (capture a l'appui) -- avec 5
+     boutons (patron MCS : Verifier la mise a jour/Notifications/Tutoriels/Signaler un bug/
+     Se deconnecter), le total depassait largement 320-414px avec le seul gap fixe de 26px et
+     AUCUN flex-wrap -- "Se deconnecter" se retrouvait coupe sur le bord droit, atteignable
+     seulement en balayant vers la droite (un utilisateur ne devine pas ce geste dans un menu de
+     reglages, contrairement a un bandeau d'onglets ou le defilement horizontal est un pattern
+     attendu). DANS UN MENU, tout doit etre visible et cliquable sans defiler : flex-wrap:wrap
+     (retour a la ligne) remplace le defilement implicite, gap reduit (26px etait pense pour une
+     seule ligne large, pas pour un retour a la ligne compact) et flex:0 0 auto empeche tout
+     retrecissement/troncature d'un libelle avant le retour a la ligne. */
+  .sh-footer-row{display:flex; flex-wrap:wrap; align-items:center; justify-content:center; gap:10px 18px; padding:13px 8px 2px}
   .sh-mini-item{
-    display:flex; align-items:center; gap:6px; background:none; border:none;
+    display:flex; flex:0 0 auto; align-items:center; gap:6px; background:none; border:none;
     font:inherit; font-size:13.5px; font-weight:600; color:var(--ink); cursor:pointer; padding:4px 2px;
   }
   .sh-mini-item:active{opacity:.6}
@@ -4831,15 +4885,15 @@
   </header>
   <div id="brunoClient">
     <div id="bc-summary">
-      <span id="bc-summary-ic">👤</span>
+      <span id="bc-summary-ic"><svg class="hicon-md" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="8" r="4"/><path d="M4 20c0-4 3.5-6 8-6s8 2 8 6"/></svg></span>
       <span id="bc-summary-txt">Aucun client sélectionné</span>
-      <button id="bc-new-btn" type="button">➕ Nouveau client</button>
+      <button id="bc-new-btn" type="button"><svg class="hicon-sm" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>Nouveau client</button>
       <button id="bc-clear-btn" type="button" style="display:none">✕ Changer</button>
     </div>
     <div id="bc-form">
       <div id="bc-type-toggle">
-        <button class="bc-type-btn active" id="bc-type-particulier" type="button">🏠 Particulier</button>
-        <button class="bc-type-btn" id="bc-type-pro" type="button">🏢 Professionnel</button>
+        <button class="bc-type-btn active" id="bc-type-particulier" type="button"><svg class="hicon-sm" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 11l8-7 8 7"/><path d="M6 10v9a1 1 0 0 0 1 1h3v-6h4v6h3a1 1 0 0 0 1-1v-9"/></svg>Particulier</button>
+        <button class="bc-type-btn" id="bc-type-pro" type="button"><svg class="hicon-sm" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="4" y="3" width="16" height="18" rx="1"/><line x1="4" y1="9" x2="20" y2="9"/><line x1="4" y1="14" x2="20" y2="14"/><line x1="9" y1="21" x2="9" y2="14"/></svg>Professionnel</button>
       </div>
       <label id="bc-nom-wrap"><span id="bc-nom-label-txt">Nom et prénom</span>
         <input id="bc-nom" type="text" placeholder="Ex : Jean Martin" autocomplete="off">
@@ -4898,7 +4952,7 @@
   <div id="composer">
     <!-- Refonte accueil MCS (29/08/2026) : bascule home<->conversation, MCS patron seulement
          (cf. updateHomeToggleBtn) -- a gauche du micro, sans coûter un pixel de hauteur. -->
-    <button id="homeToggleBtn" type="button" aria-label="Retour à l’accueil" style="display:none">🏠</button>
+    <button id="homeToggleBtn" type="button" aria-label="Retour à l’accueil" style="display:none"><svg class="hicon-md" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 11l8-7 8 7"/><path d="M6 10v9a1 1 0 0 0 1 1h3v-6h4v6h3a1 1 0 0 0 1-1v-9"/></svg></button>
     <button id="micbtn" type="button" aria-label="Message vocal">
       <svg width="18" height="22" viewBox="0 0 22 26" fill="currentColor"><rect x="7" y="1" width="8" height="14" rx="4"/><path d="M3 12a8 8 0 0 0 16 0M11 20v4M7 24.5h8" stroke="currentColor" stroke-width="2" fill="none" stroke-linecap="round"/></svg>
     </button>
@@ -4911,8 +4965,8 @@
     <div id="brunohint">Ou écris ici si le micro se trompe sur un nom</div>
     <div id="devis-ambigu-wrap">
       <span id="devis-ambigu-hint">Tu veux créer un nouveau devis, ou parler d’un devis existant ?</span>
-      <button id="devis-ambigu-creer" type="button" class="chat-sug-btn">📝 Nouveau devis</button>
-      <button id="devis-ambigu-continuer" type="button" class="chat-sug-btn">💬 Continuer la discussion</button>
+      <button id="devis-ambigu-creer" type="button" class="chat-sug-btn"><svg class="hicon-sm" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><path d="M14 2v6h6"/><line x1="8" y1="13" x2="16" y2="13"/><line x1="8" y1="17" x2="16" y2="17"/><line x1="8" y1="9" x2="10" y2="9"/></svg>Nouveau devis</button>
+      <button id="devis-ambigu-continuer" type="button" class="chat-sug-btn"><svg class="hicon-sm" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M21 11.5a8.4 8.4 0 0 1-.9 3.8 8.5 8.5 0 0 1-7.6 4.7 8.4 8.4 0 0 1-3.8-.9L3 21l1.9-5.7a8.4 8.4 0 0 1-.9-3.8 8.5 8.5 0 0 1 4.7-7.6 8.4 8.4 0 0 1 3.8-.9h.5a8.48 8.48 0 0 1 8 8v.5z"/></svg>Continuer la discussion</button>
     </div>
     <div class="composer-row2">
       <textarea id="textin" rows="1" placeholder="Écrire à Jarvis…"></textarea>
@@ -5175,8 +5229,8 @@
     <button class="devis-tab" data-tab="calendrier" type="button">Calendrier</button>
   </div>
   <p id="contrats-testmode-banniere" class="testmode-banniere" style="display:none">🧪 Mode test : les factures de contrat partent chez Altaestima, jamais chez le client.</p>
-  <button id="contrats-designations-groupe-btn" type="button">🏷️ Désignations à confirmer</button>
-  <button id="contrats-tva-vmc-revue-btn" type="button">💶 TVA VMC — contrats à 20 %</button>
+  <button id="contrats-designations-groupe-btn" type="button"><svg class="hicon-sm" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 2h7a1 1 0 0 1 1 1v7a1 1 0 0 1-.3.7l-9 9a1 1 0 0 1-1.4 0l-7-7a1 1 0 0 1 0-1.4l9-9A1 1 0 0 1 12 2z"/><circle cx="16.5" cy="7.5" r="1.5" fill="currentColor" stroke="none"/></svg>Désignations à confirmer</button>
+  <button id="contrats-tva-vmc-revue-btn" type="button"><svg class="hicon-sm" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="9"/><text x="7.8" y="16" font-size="11" font-weight="800" stroke="none" fill="currentColor" font-family="inherit">€</text></svg>TVA VMC — contrats à 20 %</button>
   <div id="contrats-mois-selector" style="display:none">
     <select id="contrats-mois-select" aria-label="Mois"></select>
     <select id="contrats-annee-select" aria-label="Année"></select>
@@ -5186,9 +5240,9 @@
     <button class="df-chip" data-statut="envoyee" type="button">✅ Facture envoyée</button>
     <button class="df-chip" data-statut="skip" type="button">⏭️ Pas cette année</button>
   </div>
-  <button id="contrats-tva-lot-btn" type="button" style="display:none">⚖️ Choisir le taux de TVA pour tout le lot VMC</button>
+  <button id="contrats-tva-lot-btn" type="button" style="display:none"><svg class="hicon-sm" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 3v18"/><path d="M5 8l-2 5a3 3 0 0 0 6 0l-2-5"/><path d="M19 8l-2 5a3 3 0 0 0 6 0l-2-5"/><path d="M5 8h14"/><path d="M8 21h8"/></svg>Choisir le taux de TVA pour tout le lot VMC</button>
   <p id="contrats-previsionnel-banniere" style="display:none">🔮 Rien n'est encore généré pour ce mois — aperçu de ce qui sera facturé automatiquement le 1<sup>er</sup> (prix indicatifs, peuvent encore changer d'ici là).</p>
-  <button id="contrats-generer-btn" type="button" style="display:none">🚀 Générer les brouillons de ce mois maintenant</button>
+  <button id="contrats-generer-btn" type="button" style="display:none"><svg class="hicon-sm" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><polygon points="13,2 4,14 11,14 10,22 20,9 13,9"/></svg>Générer les brouillons de ce mois maintenant</button>
   <div id="contrats-search-wrap">
     <input id="contrats-search" type="search" inputmode="search" placeholder="🔍 Rechercher un client…" autocomplete="off" autocapitalize="off" autocorrect="off">
   </div>
@@ -5222,7 +5276,7 @@
   <p id="cal-client-sous"></p>
   <div id="cal-client-actions">
     <a id="cal-client-tel" href="#"><span>📞</span><span>Appeler</span></a>
-    <button id="cal-client-tel-manque" type="button">📞 Ajouter un téléphone</button>
+    <button id="cal-client-tel-manque" type="button"><svg class="hicon-sm" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M6.6 10.8c1.4 2.8 3.8 5.2 6.6 6.6l2.2-2.2c.3-.3.7-.4 1-.2 1.1.4 2.3.6 3.6.6.6 0 1 .4 1 1V20c0 .6-.4 1-1 1C10.6 21 3 13.4 3 4c0-.6.4-1 1-1h3.4c.6 0 1 .4 1 1 0 1.3.2 2.5.6 3.6.1.4 0 .8-.2 1z"/></svg>Ajouter un téléphone</button>
     <button id="cal-client-mail" type="button"><span>✉️</span><span>Écrire (Jarvis)</span></button>
     <a id="cal-client-mail-secours" href="#"><span>✉️</span><span>Écrire (app mail)</span></a>
     <a id="cal-client-waze" href="#" target="_blank" rel="noopener"><span>🚗</span><span>Itinéraire</span></a>
@@ -5232,15 +5286,15 @@
     <button id="cal-client-tel-go" type="button">OK</button>
   </div>
   <div id="cal-client-decalage-zone">
-    <button id="cal-client-decaler" type="button">↔️ Décaler ce passage (2026)</button>
-    <button id="cal-client-changer-def" type="button">✏️ Changer le mois du contrat (définitif)</button>
+    <button id="cal-client-decaler" type="button"><svg class="hicon-sm" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><line x1="4" y1="12" x2="20" y2="12"/><polyline points="9,7 4,12 9,17"/><polyline points="15,7 20,12 15,17"/></svg>Décaler ce passage (2026)</button>
+    <button id="cal-client-changer-def" type="button"><svg class="hicon-sm" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 20h4L20 8l-4-4L4 16z"/><line x1="14" y1="6" x2="18" y2="10"/></svg>Changer le mois du contrat (définitif)</button>
     <!-- Point 1 (31/08/2026 soir) : bouton "Décaler aussi la facture" retiré de l'affichage --
          voir cal-client-facture-note ci-dessous et le commentaire sur decalerFactureBtn dans le
          script. Le nœud/la route serveur restent en place, inertes, tracés -- rien supprimé. -->
-    <button id="cal-client-decaler-facture" type="button" style="display:none">🧾 Décaler aussi la facture</button>
+    <button id="cal-client-decaler-facture" type="button" style="display:none"><svg class="hicon-sm" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M6 2h12v19l-2-1.2L14 21l-2-1.2L10 21l-2-1.2L6 21z"/><line x1="8.5" y1="7" x2="15.5" y2="7"/><line x1="8.5" y1="11" x2="15.5" y2="11"/></svg>Décaler aussi la facture</button>
     <p id="cal-client-facture-note" style="display:none">Ce décalage ne change PAS le mois de facturation : la facture reste prévue comme avant. Jarvis te la redemandera au moment de facturer.</p>
   </div>
-  <button id="cal-client-signaler" type="button" style="display:none">📣 Signaler un report</button>
+  <button id="cal-client-signaler" type="button" style="display:none"><svg class="hicon-sm" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 9v6h3l10 5V4L6 9H3z"/><path d="M18 10a3 3 0 0 1 0 4"/></svg>Signaler un report</button>
   <div id="cal-signaler-inline" style="display:none">
     <label>Reporter à quel mois</label>
     <select id="cal-signaler-mois"></select>
@@ -5254,7 +5308,7 @@
     <p id="cal-client-proposition-txt"></p>
     <div class="cal-decaler-row">
       <button id="cal-client-proposition-refuser" type="button">✕ Refuser</button>
-      <button id="cal-client-proposition-valider" type="button">✅ Valider le report</button>
+      <button id="cal-client-proposition-valider" type="button"><svg class="hicon-sm" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="9"/><polyline points="8,12.5 10.7,15.2 16,9.5"/></svg>Valider le report</button>
     </div>
     <div id="cal-refuser-inline" style="display:none">
       <label>Motif du refus (optionnel)</label>
@@ -5319,10 +5373,10 @@
     <label>Email de facturation</label><input id="cf-email" type="email">
     <label>Renouvellement</label><input id="cf-renouv" type="text" placeholder="tacite / 3 ans / ...">
     <div class="cf-actions">
-      <button class="vc-ok" id="ctf-save" type="button">✅ Enregistrer</button>
+      <button class="vc-ok" id="ctf-save" type="button"><svg class="hicon-sm" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="9"/><polyline points="8,12.5 10.7,15.2 16,9.5"/></svg>Enregistrer</button>
       <button class="vc-no" id="ctf-cancel" type="button">Annuler</button>
     </div>
-    <button class="vc-no" id="ctf-delete" type="button" style="width:100%;margin-top:8px;display:none">🗑 Retirer ce contrat</button>
+    <button class="vc-no" id="ctf-delete" type="button" style="width:100%;margin-top:8px;display:none"><svg class="hicon-sm" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 7h16"/><path d="M9 7V4a1 1 0 0 1 1-1h4a1 1 0 0 1 1 1v3"/><path d="M6 7l1 13a2 2 0 0 0 2 2h6a2 2 0 0 0 2-2l1-13"/><line x1="10" y1="11" x2="10" y2="17"/><line x1="14" y1="11" x2="14" y2="17"/></svg>Retirer ce contrat</button>
   </div>
 </div>
 
@@ -5335,7 +5389,7 @@
     <p id="designations-groupe-intro" style="font-size:13px;color:var(--muted);margin:0 0 10px">Écris, pour chaque libellé tel qu'il apparaît dans ton classeur, le texte exact qui doit s'imprimer sur la facture. Un champ laissé vide reste « à confirmer » et bloque l'envoi.</p>
     <div id="designations-groupe-list"></div>
     <div class="cf-actions">
-      <button class="vc-ok" id="dg-save" type="button">✅ Enregistrer tout</button>
+      <button class="vc-ok" id="dg-save" type="button"><svg class="hicon-sm" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="9"/><polyline points="8,12.5 10.7,15.2 16,9.5"/></svg>Enregistrer tout</button>
       <button class="vc-no" id="dg-cancel" type="button">Fermer</button>
     </div>
   </div>
@@ -5350,7 +5404,7 @@
     <p style="font-size:13px;color:var(--muted);margin:0 0 10px">Rappel légal : le taux réduit (10 %) dépend du LOCAL (habitation de plus de 2 ans + attestation du client), jamais de la prestation elle-même. Ces contrats sont à 20 % parce que ton classeur le dit — bascule ceux qui devraient être à 10 %, ou tout d'un coup.</p>
     <div id="tva-vmc-revue-list"></div>
     <div class="cf-actions">
-      <button class="vc-no" id="tva-vmc-revue-tout10" type="button">⬇️ Tout passer à 10 %</button>
+      <button class="vc-no" id="tva-vmc-revue-tout10" type="button"><svg class="hicon-sm" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><line x1="12" y1="4" x2="12" y2="18"/><polyline points="6,13 12,19 18,13"/></svg>Tout passer à 10 %</button>
       <button class="vc-no" id="tva-vmc-revue-fermer" type="button">Fermer</button>
     </div>
   </div>
@@ -5389,12 +5443,12 @@
     <label>Km aller <span id="ikf-km-auto" style="color:var(--gold-a); font-weight:400">— calculé automatiquement dès que les 2 villes sont saisies</span></label>
     <input id="ikf-km" type="number" step="1" min="0">
     <p id="ikf-calc-result" style="display:none"></p>
-    <button class="vc-no" id="ikf-calc" type="button">🔄 Recalculer la distance</button>
+    <button class="vc-no" id="ikf-calc" type="button"><svg class="hicon-sm" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M20 11a8 8 0 0 0-14.6-4.6M4 13a8 8 0 0 0 14.6 4.6"/><polyline points="4.5,4.5 5,8.5 9,8"/><polyline points="19.5,19.5 19,15.5 15,16"/></svg>Recalculer la distance</button>
     <div class="cf-actions">
-      <button class="vc-ok" id="ikf-save" type="button">✅ Enregistrer</button>
+      <button class="vc-ok" id="ikf-save" type="button"><svg class="hicon-sm" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="9"/><polyline points="8,12.5 10.7,15.2 16,9.5"/></svg>Enregistrer</button>
       <button class="vc-no" id="ikf-cancel" type="button">Annuler</button>
     </div>
-    <button class="vc-no" id="ikf-delete" type="button" style="width:100%;margin-top:8px;display:none">🗑 Supprimer ce trajet</button>
+    <button class="vc-no" id="ikf-delete" type="button" style="width:100%;margin-top:8px;display:none"><svg class="hicon-sm" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 7h16"/><path d="M9 7V4a1 1 0 0 1 1-1h4a1 1 0 0 1 1 1v3"/><path d="M6 7l1 13a2 2 0 0 0 2 2h6a2 2 0 0 0 2-2l1-13"/><line x1="10" y1="11" x2="10" y2="17"/><line x1="14" y1="11" x2="14" y2="17"/></svg>Supprimer ce trajet</button>
   </div>
 </div>
 
@@ -5421,7 +5475,7 @@
          client a repondu). -->
     <button class="devis-tab" data-tab="termines" type="button">Relancées 2×</button>
   </div>
-  <div id="relances-fraicheur"><span id="relances-fraicheur-txt"></span><button id="relances-fraicheur-copy" type="button" style="display:none">📋 Copier pour l’équipe</button></div>
+  <div id="relances-fraicheur"><span id="relances-fraicheur-txt"></span><button id="relances-fraicheur-copy" type="button" style="display:none"><svg class="hicon-sm" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="7" y="4" width="10" height="16" rx="1.5"/><rect x="9" y="2" width="6" height="3" rx="1"/></svg>Copier pour l’équipe</button></div>
   <div id="relances-search-wrap">
     <input id="relances-search" type="search" inputmode="search" placeholder="🔍 Rechercher un client…" autocomplete="off" autocapitalize="off" autocorrect="off">
   </div>
@@ -5522,7 +5576,7 @@
     <textarea id="bugf-message" rows="5" placeholder="Ex : quand j'appuie sur Enregistrer, rien ne se passe…"></textarea>
     <p id="bugf-err"></p>
     <div class="cf-actions">
-      <button class="vc-ok" id="bugf-save" type="button">✅ Envoyer</button>
+      <button class="vc-ok" id="bugf-save" type="button"><svg class="hicon-sm" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="9"/><polyline points="8,12.5 10.7,15.2 16,9.5"/></svg>Envoyer</button>
       <button class="vc-no" id="bugf-cancel" type="button">Annuler</button>
     </div>
   </div>
@@ -5720,7 +5774,7 @@
   </div>
   <div id="cf-err"></div>
   <div id="cf-row">
-    <button id="cf-delete" type="button" class="vc-no" style="display:none">🗑 Supprimer</button>
+    <button id="cf-delete" type="button" class="vc-no" style="display:none"><svg class="hicon-sm" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 7h16"/><path d="M9 7V4a1 1 0 0 1 1-1h4a1 1 0 0 1 1 1v3"/><path d="M6 7l1 13a2 2 0 0 0 2 2h6a2 2 0 0 0 2-2l1-13"/><line x1="10" y1="11" x2="10" y2="17"/><line x1="14" y1="11" x2="14" y2="17"/></svg>Supprimer</button>
     <button id="cf-save" type="button" class="ed-send">Valider</button>
   </div>
   <button id="cf-cancel" type="button" class="vc-edit">Annuler</button>
@@ -5731,8 +5785,8 @@
   <b>Fiche client — devis</b>
   <p class="dfhint">Le client est enregistré. Décris ensuite ses besoins (à l'oral ou par écrit) pour générer son devis.</p>
   <div id="df-type-toggle">
-    <button class="bc-type-btn active" id="df-type-particulier" type="button">🏠 Particulier</button>
-    <button class="bc-type-btn" id="df-type-pro" type="button">🏢 Professionnel</button>
+    <button class="bc-type-btn active" id="df-type-particulier" type="button"><svg class="hicon-sm" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 11l8-7 8 7"/><path d="M6 10v9a1 1 0 0 0 1 1h3v-6h4v6h3a1 1 0 0 0 1-1v-9"/></svg>Particulier</button>
+    <button class="bc-type-btn" id="df-type-pro" type="button"><svg class="hicon-sm" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="4" y="3" width="16" height="18" rx="1"/><line x1="4" y1="9" x2="20" y2="9"/><line x1="4" y1="14" x2="20" y2="14"/><line x1="9" y1="21" x2="9" y2="14"/></svg>Professionnel</button>
   </div>
   <label id="df-nom-wrap"><span id="df-nom-label-txt">Nom et prénom</span>
     <input id="df-nom" type="text" placeholder="Ex : Jean Martin" autocomplete="off">
@@ -5847,8 +5901,8 @@
 <div id="msgSheetbg"></div>
 <div id="msgSheet">
   <div class="sh-handle"></div>
-  <button class="sh-item" id="msgCopy" type="button">📋&nbsp; Copier le texte</button>
-  <button class="sh-item danger" id="msgDelete" type="button">🗑&nbsp; Supprimer</button>
+  <button class="sh-item" id="msgCopy" type="button"><svg class="hicon-sm" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="7" y="4" width="10" height="16" rx="1.5"/><rect x="9" y="2" width="6" height="3" rx="1"/></svg>&nbsp;Copier le texte</button>
+  <button class="sh-item danger" id="msgDelete" type="button"><svg class="hicon-sm" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 7h16"/><path d="M9 7V4a1 1 0 0 1 1-1h4a1 1 0 0 1 1 1v3"/><path d="M6 7l1 13a2 2 0 0 0 2 2h6a2 2 0 0 0 2-2l1-13"/><line x1="10" y1="11" x2="10" y2="17"/><line x1="14" y1="11" x2="14" y2="17"/></svg>&nbsp;Supprimer</button>
   <button class="sh-item" id="msgCancel" type="button">Annuler</button>
 </div>
 <div id="toast"></div>
@@ -5866,9 +5920,9 @@
          c'est ce qui supprime le conflit humain sur cette ligne precise. Sert aussi de cle
          unique de detection de mise a jour (voir checkUpdate ci-dessous), plus fiable qu'une
          comparaison de chaine de version par tenant. */
-  var APPV_MCS = '4.29';
+  var APPV_MCS = '4.30';
   var APPV_LABO = '1.00';
-  var BUILD = 5;
+  var BUILD = 6;
   // displayVersion()/displayVersionShort() lisent isMcsCode() (definie plus bas dans cette
   // meme IIFE -- declaration de fonction, donc disponible ici par hoisting) : le TENANT
   // affiche depend du code de connexion, jamais d'un simple "APPV" global qui ne dirait ni
@@ -7688,11 +7742,15 @@
     if (mcsHomeMode){
       var hasMsg = !!(chat && chat.children.length > 0);
       homeToggleBtn.style.display = hasMsg ? '' : 'none';
-      homeToggleBtn.textContent = '💬';
+      // Session 3 ter (06/09/2026) : innerHTML (pas textContent) -- ces 2 pictogrammes sont
+      // desormais des SVG de la meme famille que le reste de l'app (24x24, trait 2, currentColor),
+      // coherents avec le bouton "Continuer la discussion" (meme bulle de discussion) et la
+      // tuile Carnet bleu (meme silhouette de maison).
+      homeToggleBtn.innerHTML = '<svg class="hicon-md" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M21 11.5a8.4 8.4 0 0 1-.9 3.8 8.5 8.5 0 0 1-7.6 4.7 8.4 8.4 0 0 1-3.8-.9L3 21l1.9-5.7a8.4 8.4 0 0 1-.9-3.8 8.5 8.5 0 0 1 4.7-7.6 8.4 8.4 0 0 1 3.8-.9h.5a8.48 8.48 0 0 1 8 8v.5z"/></svg>';
       homeToggleBtn.setAttribute('aria-label', 'Reprendre la conversation');
     } else {
       homeToggleBtn.style.display = '';
-      homeToggleBtn.textContent = '🏠';
+      homeToggleBtn.innerHTML = '<svg class="hicon-md" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 11l8-7 8 7"/><path d="M6 10v9a1 1 0 0 0 1 1h3v-6h4v6h3a1 1 0 0 0 1-1v-9"/></svg>';
       homeToggleBtn.setAttribute('aria-label', 'Retour à l’accueil');
     }
   }
@@ -7796,6 +7854,30 @@
     devis: '📝', contrats: '📋', relances: '📨', rdv: '📅',
     observations: '👥', prospects: '🏗️', nuit: '🌙', propositions: '📣'
   };
+  // Session 3 ter (06/09/2026) : les 3 tuiles de recap juste au-dessus des 9 tuiles (memes SVG
+  // depuis la section 3 bis precedente) gardaient des emoji -- incoherence visuelle directe,
+  // l'une au-dessus de l'autre. Reprend LE MEME trace SVG que la tuile de destination
+  // correspondante (contrats/relances/prospects->Opportunites/devis/rdv->Agenda) pour une
+  // vraie coherence, pas juste un "style similaire" : coller un exemple aide a le verifier.
+  // nuit/propositions/observations n'ont pas de tuile equivalente (nuit n'est en pratique jamais
+  // rendue comme ligne a part entiere, cf. commentaire juste au-dessus ; observations est
+  // "retire" depuis le 01/09 mais l'entree reste dans la table par prudence) -- nouvelles icones
+  // de la meme famille (24x24, trait 2, currentColor) plutot que les laisser en emoji.
+  var ACCUEIL_ICONES_SVG = {
+    contrats: '<path d="M13 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h7"/><path d="M13 2v5a1 1 0 0 0 1 1h4"/><line x1="7.5" y1="12" x2="12" y2="12"/><line x1="7.5" y1="16" x2="10.5" y2="16"/><circle cx="17.5" cy="17.5" r="4.5"/><polyline points="15.7,17.6 17,18.8 19.4,16.3"/>',
+    relances: '<path d="M3 6a1.5 1.5 0 0 1 1.5-1.5h13A1.5 1.5 0 0 1 19 6v10.5a1.5 1.5 0 0 1-1.5 1.5H8"/><path d="M3.5 6.2L11 12l7.5-5.8"/><path d="M17.5 15.5a3 3 0 0 0 3-3v-.5"/><polyline points="16,13.3 17.3,12 18.6,13.3"/>',
+    prospects: '<circle cx="12" cy="12" r="9"/><circle cx="12" cy="12" r="5"/><circle cx="12" cy="12" r="1" fill="currentColor" stroke="none"/>',
+    devis: '<path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><path d="M14 2v6h6"/><line x1="8" y1="13" x2="16" y2="13"/><line x1="8" y1="17" x2="16" y2="17"/><line x1="8" y1="9" x2="10" y2="9"/>',
+    rdv: '<rect x="3" y="5" width="18" height="16" rx="2"/><line x1="8" y1="3" x2="8" y2="7"/><line x1="16" y1="3" x2="16" y2="7"/><line x1="3" y1="10" x2="21" y2="10"/>',
+    nuit: '<path d="M20 14.5A8.5 8.5 0 1 1 9.5 4a7 7 0 0 0 10.5 10.5z"/>',
+    propositions: '<path d="M3 9v6h3l10 5V4L6 9H3z"/><path d="M18 10a3 3 0 0 1 0 4"/>',
+    observations: '<circle cx="9" cy="8" r="3"/><path d="M3 20c0-3 2.5-5 6-5s6 2 6 5"/><circle cx="17" cy="9" r="2.5"/><path d="M15 20c.3-2 1.8-3.5 4-3.8"/>'
+  };
+  function accueilIconeSvg(type){
+    var d = ACCUEIL_ICONES_SVG[type];
+    if (!d) return null;
+    return '<svg class="hicon-md" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">' + d + '</svg>';
+  }
 
   // Les 6 panneaux que la carte peut ouvrir. Point 1 (21/08/2026) : la carte ferme elle-meme le
   // trou carte -> panneau -> retour (ex : valider 3 devis, fermer, la carte affichait encore
@@ -7846,7 +7928,8 @@
     row.className = 'ma-ligne';
     var ic = document.createElement('span');
     ic.className = 'ma-ligne-ic';
-    ic.textContent = ACCUEIL_ICONES[l.type] || '•';
+    var icSvg = accueilIconeSvg(l.type);
+    if (icSvg) ic.innerHTML = icSvg; else ic.textContent = ACCUEIL_ICONES[l.type] || '•';
     var txt = document.createElement('span');
     txt.className = 'ma-ligne-txt';
     txt.textContent = accueilTexteCourt(l);
