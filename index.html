@@ -2844,6 +2844,19 @@
     color:var(--ink); font-size:13px; font-weight:700; cursor:pointer; -webkit-tap-highlight-color:transparent; margin-bottom:8px;
   }
   .opp-prepare-btn:disabled{opacity:.5}
+  /* Fenêtre 3 (07/09/2026), point 3 : adresse + provenance affichées SUR LA FICHE avant tout clic
+     -- l'adresse vient d'un appel modèle (Enrichir contact (recherche)) donc jamais présentée
+     comme une donnée sûre sans dire d'où elle vient (règle du projet assouplie UNIQUEMENT pour la
+     prospection, à cette condition stricte). 14px direct (pas besoin d'une entrée dans les listes
+     html.mcs-theme{font-size:14px} plus haut -- ce panneau n'est jamais visible côté labo). */
+  .opp-adresse-info{font-size:14px; color:var(--muted); margin:2px 0 8px; line-height:1.4}
+  .opp-adresse-info b{color:var(--ink)}
+  .opp-adresse-source{color:var(--gold-a)}
+  .opp-adresse-manquante{color:var(--no); font-weight:600}
+  /* Point 2a : "sur chaque fiche, deux boutons et rien d'autre" -- Envoyer le mail / Pas
+     intéressé, remplace l'ancienne rangée à 4 boutons (Contacté/Gagné/Perdu/Ignorer). */
+  .opp-actions{display:flex; gap:8px; margin-top:2px}
+  .opp-actions .vc-ok, .opp-actions .vc-no{padding:9px; font-size:14px}
   /* Panneau plein ecran "Sites Vitrine" — COCKPIT DE VENTE (etape 2 du plan, 2026-07-25) : au-dela
      de la consultation, appel en 1 tap + mail pre-redige envoyable d'1 clic + suivi de statut de
      vente + commande unique "lancer une recherche" (decouverte+generation chainees). Backend
@@ -6154,11 +6167,17 @@
   </div>
   <p id="opp-status"></p>
   <p id="opp-enrichissement-banniere" style="display:none"></p>
+  <!-- Fenêtre 3 (07/09/2026) : "Clos" et "En recherche" retirés de l'interface -- décision de
+       Dorian après retour de Mickael sur le RDV enregistré ("il faudrait le simplifier"). Ce
+       panneau n'est JAMAIS visible côté LABO (gate mcs&&role==='patron' plus bas dans le JS,
+       aucune autre entrée n'existe) donc il n'y a personne à qui "garder ces vues côté LABO" --
+       elles ne servaient qu'à Mickael, qui n'en veut plus. Rien n'est supprimé côté données
+       (mcs_prospects garde tous les statuts, y compris gagne/perdu/ignore) : seul l'onglet
+       disparaît. Les fonctions JS OPP_TABS.clos/en_recherche restent (le bandeau "en cours de
+       qualification" au-dessus des onglets lit toujours en_recherche). -->
   <div id="opp-tabs">
     <button class="meute-tab active" data-tab="a_valider" type="button"><svg class="hicon-sm" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 12h4l2 3h4l2-3h4"/><path d="M4 12l1.6-6.4A2 2 0 0 1 7.5 4h9a2 2 0 0 1 1.9 1.6L20 12v6a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2z"/></svg>À valider</button>
     <button class="meute-tab" data-tab="contacte" type="button"><svg class="hicon-sm" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><line x1="21" y1="3" x2="10" y2="14"/><path d="M21 3l-7 18-4-8-8-4z"/></svg>Contactés</button>
-    <button class="meute-tab" data-tab="clos" type="button"><svg class="hicon-sm" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="9"/><polyline points="8,12.5 10.7,15.2 16,9.5"/></svg>Clos</button>
-    <button class="meute-tab" data-tab="en_recherche" type="button"><svg class="hicon-sm" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="10.5" cy="10.5" r="6.5"/><line x1="20" y1="20" x2="15.3" y2="15.3"/></svg>En recherche</button>
   </div>
   <div id="opp-list"></div>
 </div>
@@ -6464,9 +6483,9 @@
          c'est ce qui supprime le conflit humain sur cette ligne precise. Sert aussi de cle
          unique de detection de mise a jour (voir checkUpdate ci-dessous), plus fiable qu'une
          comparaison de chaine de version par tenant. */
-  var APPV_MCS = '4.35';
+  var APPV_MCS = '4.36';
   var APPV_LABO = '1.00';
-  var BUILD = 13;
+  var BUILD = 14;
   // displayVersion()/displayVersionShort() lisent isMcsCode() (definie plus bas dans cette
   // meme IIFE -- declaration de fonction, donc disponible ici par hoisting) : le TENANT
   // affiche depend du code de connexion, jamais d'un simple "APPV" global qui ne dirait ni
@@ -6833,14 +6852,14 @@
     opportunites: {
       head: 'opp-head', close: 'opp-close',
       steps: [
-        { selector: '#opp-tabs', title: 'Les 4 onglets',
-          text: '« À valider » = les nouveaux syndics/copropriétés trouvés par la recherche hebdomadaire. « Contactés », « Clos » et « En recherche » gardent l’historique.' },
+        { selector: '#opp-tabs', title: 'Les 2 onglets',
+          text: '« À valider » = les nouveaux syndics/copropriétés trouvés par la recherche hebdomadaire, avec une adresse de contact trouvée. « Contactés » garde l’historique des mails déjà envoyés.' },
         { selector: '#opp-relancer', title: 'Chercher maintenant',
           text: 'Lance une nouvelle recherche tout de suite, sans attendre le passage automatique de la semaine.' },
         { selector: '#opp-list', title: 'Une fiche prospect',
-          text: 'Coordonnées trouvées automatiquement, une note libre, et un message déjà rédigé — à relire avant tout envoi.' },
-        { selector: '.opp-msg-label', title: 'Relisez avant d’envoyer',
-          text: 'Le message est une proposition, jamais envoyée toute seule : relisez-le, régénérez-le si besoin, puis validez l’envoi vous-même.' }
+          text: 'L’adresse trouvée (et sa provenance) est affichée sur la fiche, avec un message déjà rédigé — à relire avant tout envoi.' },
+        { selector: '.opp-msg-label', title: 'Relisez avant d’envoyer, ou passez',
+          text: '« Envoyer le mail » part avec le message affiché (modifiable). « Pas intéressé » retire ce prospect définitivement — il ne reviendra plus jamais.' }
       ]
     }
   };
@@ -15001,18 +15020,18 @@
   // B5 (21/08/2026) : 'a_enrichir'/'sans_contact' ne tombaient dans AUCUN onglet -- 96 fiches
   // reelles invisibles, badge muet, empty-state "aucun prospect" mensonger. Le serveur (type:list)
   // renvoie deja tout (verifie en reel) ; le filtrage est purement cote client.
+  // Fenêtre 3 (07/09/2026), point 3 : "à valider" exige désormais une adresse email connue --
+  // "si l'adresse ou sa source manquent, ... la fiche ne s'affiche pas chez Mickael" (décision
+  // Dorian). Sans ce garde-fou, une fiche legacy `!p.statut` (créée avant le mécanisme
+  // d'enrichissement du 18/08/2026) sans email pourrait quand même apparaître avec un bouton
+  // "Envoyer le mail" trompeur. clos/en_recherche restent définies (le bandeau de qualification
+  // et la logique interne les utilisent encore) même si leur onglet a disparu de l'interface.
   var OPP_TABS = {
-    a_valider: function(p){ return !p.statut || p.statut === 'a_valider'; },
+    a_valider: function(p){ return (!p.statut || p.statut === 'a_valider') && !!String(p.email || '').trim(); },
     contacte: function(p){ return p.statut === 'contacte'; },
     clos: function(p){ return p.statut === 'gagne' || p.statut === 'perdu' || p.statut === 'ignore'; },
     en_recherche: function(p){ return p.statut === 'a_enrichir' || p.statut === 'sans_contact'; },
   };
-  var OPP_STATUTS = [
-    { v:'contacte', label:'Contacté' },
-    { v:'gagne', label:'Gagné' },
-    { v:'perdu', label:'Perdu' },
-    { v:'ignore', label:'Ignorer' },
-  ];
 
   function oppCard(p){
     var card = document.createElement('div'); card.className = 'meute-card';
@@ -15033,12 +15052,31 @@
       card.appendChild(meta);
     }
 
-    // Email + téléphone : renseignés par Mickael, jamais fournis par la recherche (SIRENE ne
-    // donne aucun contact direct) -- toujours soumis ENSEMBLE (jamais un seul champ isolé), pour
-    // ne jamais risquer d'effacer l'autre valeur côté serveur.
+    // Fenêtre 3 (07/09/2026), point 3 -- adresse + provenance affichées EN CLAIR avant tout clic.
+    // Condition stricte à laquelle la règle du projet ("une adresse ne vient jamais d'un modèle")
+    // est assouplie POUR LA SEULE PROSPECTION : ici un modèle propose (Enrichir contact
+    // (recherche), source_contact = le site où il l'a trouvée), Mickael valide en cliquant
+    // "Envoyer le mail" -- ce n'est plus le modèle qui choisit un destinataire, c'est un humain.
+    var emailConnu = String(p.email || '').trim();
+    var sourceConnue = String(p.source_contact || '').trim();
+    var adresseInfo = document.createElement('p'); adresseInfo.className = 'opp-adresse-info';
+    if (emailConnu && sourceConnue){
+      adresseInfo.innerHTML = '📧 <b>' + escHtml(emailConnu) + '</b> — trouvé sur ' + escHtml(sourceConnue);
+    } else if (emailConnu){
+      adresseInfo.innerHTML = '📧 <b>' + escHtml(emailConnu) + '</b> — saisi à la main';
+    } else {
+      adresseInfo.className = 'opp-adresse-info opp-adresse-manquante';
+      adresseInfo.textContent = '✕ Aucune adresse trouvée pour l’instant.';
+    }
+    card.appendChild(adresseInfo);
+
+    // Correction manuelle de l'adresse (Mickael connaît parfois un contact direct) : reste
+    // possible, mais n'est plus l'un des "deux boutons" de la fiche (point 2a) -- simple champ +
+    // enregistrement discret, comme les notes juste en dessous. Toujours soumis ENSEMBLE (jamais
+    // un seul champ isolé), pour ne jamais risquer d'effacer l'autre valeur côté serveur.
     var contactRow = document.createElement('div'); contactRow.className = 'meute-email-row';
     var emailInput = document.createElement('input'); emailInput.className = 'meute-email-input';
-    emailInput.type = 'email'; emailInput.placeholder = 'Email'; emailInput.value = p.email || ''; emailInput.style.marginBottom = '0';
+    emailInput.type = 'email'; emailInput.placeholder = 'Corriger l’email'; emailInput.value = p.email || ''; emailInput.style.marginBottom = '0';
     var telInput = document.createElement('input'); telInput.className = 'meute-email-input';
     telInput.type = 'tel'; telInput.placeholder = 'Téléphone'; telInput.value = p.telephone || ''; telInput.style.marginBottom = '0';
     var contactSave = document.createElement('button'); contactSave.className = 'meute-email-send'; contactSave.type = 'button'; contactSave.textContent = '💾';
@@ -15078,54 +15116,82 @@
     });
     card.appendChild(notesArea); card.appendChild(notesSave);
 
-    // Message de prise de contact : PRÉPARÉ (Claude) -> relu/édité -> ENVOYÉ seulement sur clic
-    // explicite, et seulement si un email est renseigné. Jamais de devis ici, jamais d'envoi
-    // automatique -- même règle que partout ailleurs dans Jarvis MCS.
+    // Fenêtre 3 (07/09/2026), point 2a -- message PRÉPARÉ AUTOMATIQUEMENT dès l'ouverture de la
+    // fiche (plus de bouton "Préparer" séparé : "Envoyer le mail" envoie le message déjà prêt,
+    // relu/édité au besoin). Jamais d'envoi automatique -- même règle que partout ailleurs dans
+    // Jarvis MCS, le clic sur "Envoyer le mail" reste le seul déclencheur.
     var msgBox = document.createElement('div'); msgBox.className = 'opp-msg-box';
-    var prepBtn = document.createElement('button'); prepBtn.className = 'opp-prepare-btn'; prepBtn.type = 'button';
-    prepBtn.textContent = p.message_prepare ? '🔄 Regénérer le message' : '✍️ Préparer un message de prise de contact';
-    // Point 4 (session suite, 29/08/2026) : label explicite + classe manquante (le textarea etait
-    // cree SANS classe -- fond blanc du navigateur, aucun style ne s'appliquait). Meme esprit que
-    // le brouillon de Relances (.rl-brouillon-label) : dire ce que c'est, avant de le montrer.
     var msgLabel = document.createElement('div'); msgLabel.className = 'opp-msg-label';
-    msgLabel.textContent = 'Message préparé — relis-le avant d’envoyer';
-    msgLabel.style.display = p.message_prepare ? '' : 'none';
-    var msgArea = document.createElement('textarea'); msgArea.rows = 6; msgArea.style.display = p.message_prepare ? '' : 'none';
-    if (p.message_prepare) msgArea.value = p.message_prepare;
-    var sendBtn = document.createElement('button'); sendBtn.className = 'meute-email-send'; sendBtn.type = 'button';
-    sendBtn.textContent = '✉️ Envoyer'; sendBtn.style.display = p.message_prepare ? '' : 'none'; sendBtn.style.width = '100%';
-    sendBtn.disabled = !emailInput.value.trim();
-    emailInput.addEventListener('input', function(){ sendBtn.disabled = !emailInput.value.trim(); });
-    prepBtn.addEventListener('click', function(){
-      prepBtn.disabled = true; prepBtn.textContent = 'Préparation…';
-      postOpportunites({ type:'preparer_message', id:p.id }, function(j){
-        p.message_prepare = j.message || '';
-        msgArea.value = p.message_prepare; msgArea.style.display = ''; msgLabel.style.display = '';
-        sendBtn.style.display = ''; sendBtn.disabled = !emailInput.value.trim();
-        prepBtn.disabled = false; prepBtn.textContent = '🔄 Regénérer le message';
-        toast('✍️ Message préparé — relis-le avant d’envoyer');
-      }, function(err){ prepBtn.disabled = false; prepBtn.textContent = '✍️ Préparer un message de prise de contact'; toast(err); });
-    });
-    sendBtn.addEventListener('click', function(){
-      var em = emailInput.value.trim();
-      if (!em){ toast('Renseigne un email d’abord.'); return; }
-      sendBtn.disabled = true; sendBtn.textContent = '…';
-      postOpportunites({ type:'envoyer_message', id:p.id, email:em, objet:'MCS — prise de contact', corps:msgArea.value }, function(){
-        toast('✅ Message envoyé'); p.statut = 'contacte'; oppRefresh();
-      }, function(err){ sendBtn.disabled = false; sendBtn.textContent = '✉️ Envoyer'; toast(err); });
-    });
-    msgBox.appendChild(prepBtn); msgBox.appendChild(msgLabel); msgBox.appendChild(msgArea); msgBox.appendChild(sendBtn);
+    var msgArea = document.createElement('textarea'); msgArea.rows = 6;
+    msgBox.appendChild(msgLabel); msgBox.appendChild(msgArea);
     card.appendChild(msgBox);
 
-    var actions = document.createElement('div'); actions.className = 'meute-actions';
-    OPP_STATUTS.forEach(function(st){
-      var btn = document.createElement('button'); btn.className = 'meute-act-btn' + (p.statut === st.v ? ' active' : '');
-      btn.type = 'button'; btn.textContent = st.label;
-      btn.addEventListener('click', function(){
-        postOpportunites({ type:'statut', id:p.id, statut:st.v }, function(){ oppRefresh(); }, function(err){ toast(err); });
+    // Point 2a -- "sur chaque fiche, deux boutons et rien d'autre" : Envoyer le mail / Pas
+    // intéressé. Remplace l'ancienne rangée à 4 boutons (Contacté/Gagné/Perdu/Ignorer) -- les
+    // données déjà enregistrées sous ces statuts restent en base (mcs_prospects), rien n'est
+    // effacé, seul l'affichage change. "Envoyer" reprend le style .vc-envoi-reel (icône avion en
+    // papier, couleur --warn) déjà réservé aux boutons qui déclenchent un envoi réel immédiat
+    // sans autre confirmation après (cf. commentaire de règle plus haut dans ce fichier).
+    var actions = document.createElement('div'); actions.className = 'opp-actions';
+    var ICON_PLANE_OPP = '<svg class="hicon-sm" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><line x1="22" y1="2" x2="11" y2="13"/><polygon points="22 2 15 22 11 13 2 9 22 2"/></svg>';
+    var ICON_X_OPP = '<svg class="hicon-sm" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>';
+    var envoyerBtn = document.createElement('button'); envoyerBtn.className = 'vc-ok vc-envoi-reel'; envoyerBtn.type = 'button';
+    envoyerBtn.innerHTML = ICON_PLANE_OPP + 'Envoyer le mail';
+    var pasInteresseBtn = document.createElement('button'); pasInteresseBtn.className = 'vc-no'; pasInteresseBtn.type = 'button';
+    pasInteresseBtn.innerHTML = ICON_X_OPP + 'Pas intéressé';
+    var messagePret = false;
+    function majEnvoyerDisabled(){ envoyerBtn.disabled = !emailInput.value.trim() || !messagePret; }
+    emailInput.addEventListener('input', majEnvoyerDisabled);
+
+    if (!emailConnu){
+      // Ne devrait plus arriver dans l'onglet "à valider" (OPP_TABS.a_valider exige déjà un
+      // email) -- garde défensive conservée pour "Contactés"/un cas legacy.
+      msgLabel.textContent = 'Aucune adresse — rien à préparer pour l’instant.';
+      msgArea.style.display = 'none';
+      majEnvoyerDisabled();
+    } else if (p.message_prepare){
+      msgLabel.textContent = 'Message préparé — relis-le avant d’envoyer';
+      msgArea.value = p.message_prepare;
+      messagePret = true; majEnvoyerDisabled();
+    } else {
+      msgLabel.textContent = 'Préparation du message…';
+      msgArea.style.display = 'none';
+      majEnvoyerDisabled();
+      postOpportunites({ type:'preparer_message', id:p.id }, function(j){
+        p.message_prepare = j.message || '';
+        msgArea.style.display = '';
+        msgLabel.textContent = p.message_prepare
+          ? 'Message préparé — relis-le avant d’envoyer'
+          : 'Message non généré — écris-le toi-même ci-dessous.';
+        msgArea.value = p.message_prepare || '';
+        messagePret = true; majEnvoyerDisabled();
+      }, function(err){
+        msgArea.style.display = '';
+        msgLabel.textContent = 'Message non généré (' + err + ') — écris-le toi-même ci-dessous.';
+        messagePret = true; majEnvoyerDisabled();
       });
-      actions.appendChild(btn);
+    }
+
+    envoyerBtn.addEventListener('click', function(){
+      var em = emailInput.value.trim();
+      if (!em){ toast('Aucune adresse email pour ce prospect.'); return; }
+      envoyerBtn.disabled = true; pasInteresseBtn.disabled = true; envoyerBtn.innerHTML = '…';
+      postOpportunites({ type:'envoyer_message', id:p.id, email:em, objet:'MCS — prise de contact', corps:msgArea.value }, function(){
+        toast('✅ Message envoyé'); p.statut = 'contacte'; oppRefresh();
+      }, function(err){
+        envoyerBtn.disabled = false; pasInteresseBtn.disabled = false;
+        envoyerBtn.innerHTML = ICON_PLANE_OPP + 'Envoyer le mail'; toast(err);
+      });
     });
+    pasInteresseBtn.addEventListener('click', function(){
+      askConfirm('Pas intéressé ?', 'Vous ne reverrez plus jamais ce prospect.', function(){
+        envoyerBtn.disabled = true; pasInteresseBtn.disabled = true;
+        postOpportunites({ type:'statut', id:p.id, statut:'ignore' }, function(){
+          toast('Prospect masqué — vous ne le reverrez plus.'); oppRefresh();
+        }, function(err){ envoyerBtn.disabled = false; pasInteresseBtn.disabled = false; toast(err); });
+      }, 'Pas intéressé');
+    });
+    actions.appendChild(envoyerBtn); actions.appendChild(pasInteresseBtn);
     card.appendChild(actions);
     return card;
   }
