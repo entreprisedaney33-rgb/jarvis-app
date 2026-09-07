@@ -1442,6 +1442,17 @@
     border:2px solid var(--blue); border-radius:10px; padding:10px 14px; font-size:14px; font-weight:700;
     min-height:44px; box-sizing:border-box;
   }
+  /* Session 11 (07/09/2026), Point 5 -- meme style que .ct-toggle (contour, jamais de fond
+     plein rouge/vert, 44px min -- Principe 3 : action non destructive et reversible). */
+  #ctf-derat-wrap{margin:10px 0}
+  .ctf-derat-info{font-size:13px; color:var(--muted); margin:0 0 6px}
+  .ctf-derat-btn{
+    display:block; width:100%; background:none; border:2px solid var(--blue); color:var(--blue);
+    border-radius:10px; padding:10px 14px; font:inherit; font-size:14px; font-weight:700;
+    min-height:44px; box-sizing:border-box; cursor:pointer; -webkit-tap-highlight-color:transparent;
+  }
+  #ctf-derat-confirm{margin-top:10px; padding-top:10px; border-top:0.5px solid var(--hairline)}
+  #ctf-derat-confirm-txt{font-size:13px; color:var(--ink); margin:0 0 8px}
   .ct-detail{display:none; flex-direction:column; gap:8px; margin-top:6px; padding-top:10px; border-top:0.5px solid var(--hairline)}
   .ct-detail.open{display:flex}
   .ct-detail label{font-size:12px; color:var(--muted)}
@@ -2143,6 +2154,52 @@
     border:0.5px solid var(--hairline); border-radius:10px; padding:9px 11px; box-sizing:border-box;
   }
   #caf-err{color:#FF453A; font-size:12.5px; min-height:1em; margin:0}
+  /* Panneau plein ecran "Adresses manquantes" (Session 11, 07/09/2026, Point 2 -- urgent).
+     Meme structure de coquille que #carnetview/#portefeuilleview, prefixe adr- pour ses
+     specificites. Patron MCS uniquement. */
+  #adressesview{
+    position:fixed; inset:0; z-index:50; background:var(--bg);
+    display:none; flex-direction:column;
+    transform:translateY(100%); transition:transform .28s cubic-bezier(.2,.9,.25,1);
+  }
+  #adressesview.open{display:flex; transform:translateY(0)}
+  @media (prefers-reduced-motion: reduce){#adressesview{transition:none}}
+  #adresses-head{
+    flex:0 0 auto; display:flex; align-items:center; gap:10px;
+    padding:calc(10px + env(safe-area-inset-top)) 14px 12px;
+    border-bottom:0.5px solid var(--hairline);
+  }
+  #adresses-head b{font-size:16px; flex:1}
+  #adresses-close{
+    width:44px; height:44px; border-radius:50%; border:0; flex:0 0 auto;
+    font-size:18px; font-weight:700;
+    display:flex; align-items:center; justify-content:center; cursor:pointer;
+    -webkit-tap-highlight-color:transparent;
+  }
+  #adresses-summary{flex:0 0 auto; padding:10px 14px 0; font-size:13px; color:var(--muted); line-height:1.4}
+  #adresses-list{flex:1; overflow-y:auto; -webkit-overflow-scrolling:touch; padding:10px 14px calc(20px + env(safe-area-inset-bottom))}
+  #adresses-empty, #adresses-loading{color:var(--muted); text-align:center; padding:40px 20px; font-size:14px}
+  .adr-card{background:var(--surface); border-radius:14px; padding:14px; margin-bottom:12px}
+  .adr-card.adr-done{opacity:.55}
+  .adr-nom{font-size:15.5px; font-weight:700; display:block; margin-bottom:2px}
+  .adr-sub{font-size:11.5px; color:var(--muted); display:block; margin-bottom:8px}
+  .adr-hint{font-size:12px; color:var(--gold-a); display:block; margin-bottom:8px; line-height:1.4}
+  .adr-row{display:flex; gap:8px; align-items:center}
+  .adr-input{
+    flex:1; min-width:0; box-sizing:border-box; border:0.5px solid var(--hairline); border-radius:10px;
+    background:var(--field-bg); color:var(--ink); font:inherit; font-size:15px; padding:11px 11px;
+    min-height:44px; -webkit-appearance:none;
+  }
+  .adr-save{
+    height:44px; padding:0 16px; border-radius:22px; border:0; flex:0 0 auto;
+    background:var(--blue); color:#fff; font:inherit; font-size:14px; font-weight:700;
+    cursor:pointer; -webkit-tap-highlight-color:transparent; white-space:nowrap;
+  }
+  .adr-save[disabled]{opacity:.6}
+  .adr-msg{font-size:12.5px; margin-top:6px; min-height:1em; display:block}
+  .adr-msg.ok{color:var(--ok)}
+  .adr-msg.err{color:var(--no)}
+
   /* Panneau plein ecran "Portefeuille clients" (chantier 10 audit -- compte patron d'un tenant
      secondaire uniquement). Memes classes de base que Relances (#relancesview) pour rester
      coherent visuellement, prefixe pf- pour ses specificites. */
@@ -5223,6 +5280,10 @@
     <button class="sh-tile" id="sh-rentabilite" type="button" style="display:none"><span class="sh-tile-ic"><svg class="hicon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><polyline points="3,20 9,13 13,16 21,6"/><polyline points="15,6 21,6 21,12"/><text x="2.5" y="10" font-size="8" font-weight="800" stroke="none" fill="currentColor" font-family="inherit">€</text></svg></span><span class="sh-tile-label">Rentabilité</span></button>
     <button class="sh-tile" id="sh-contrats" type="button" style="display:none"><span class="sh-tile-ic"><svg class="hicon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M13 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h7"/><path d="M13 2v5a1 1 0 0 0 1 1h4"/><line x1="7.5" y1="12" x2="12" y2="12"/><line x1="7.5" y1="16" x2="10.5" y2="16"/><circle cx="17.5" cy="17.5" r="4.5"/><polyline points="15.7,17.6 17,18.8 19.4,16.3"/></svg></span><span class="sh-tile-label">Contrats</span><span class="badge-count" id="menu-contrats-badge" style="display:none"></span></button>
     <button class="sh-tile" id="sh-ik" type="button" style="display:none"><span class="sh-tile-ic"><svg class="hicon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 16V12l2.2-5.2A2 2 0 0 1 8 5.6h8a2 2 0 0 1 1.8 1.2L20 12v4"/><line x1="4" y1="16" x2="20" y2="16"/><path d="M4 16v2a1 1 0 0 0 1 1h1.5a1 1 0 0 0 1-1v-2"/><path d="M20 16v2a1 1 0 0 1-1 1h-1.5a1 1 0 0 1-1-1v-2"/><circle cx="7.5" cy="16" r="1.6"/><circle cx="16.5" cy="16" r="1.6"/></svg></span><span class="sh-tile-label">Frais kilométriques</span></button>
+    <!-- Session 11 (07/09/2026), Point 2 -- urgent avant les envois de mercredi soir : liste des
+         contrats du mois sans destinataire resolu, saisie manuelle une par une (jamais depuis un
+         modele -- backend deja existant, action destinataire-manuel-enregistrer). -->
+    <button class="sh-tile" id="sh-adresses" type="button" style="display:none"><span class="sh-tile-ic">📍</span><span class="sh-tile-label">Adresses manquantes</span><span class="badge-count" id="menu-adresses-badge" style="display:none"></span></button>
     <button class="sh-tile" id="sh-relances" type="button" style="display:none"><span class="sh-tile-ic"><svg class="hicon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 6a1.5 1.5 0 0 1 1.5-1.5h13A1.5 1.5 0 0 1 19 6v10.5a1.5 1.5 0 0 1-1.5 1.5H8"/><path d="M3.5 6.2L11 12l7.5-5.8"/><path d="M17.5 15.5a3 3 0 0 0 3-3v-.5"/><polyline points="16,13.3 17.3,12 18.6,13.3"/></svg></span><span class="sh-tile-label">Relances clients</span><span class="badge-count" id="menu-relances-badge" style="display:none"></span></button>
     <button class="sh-tile" id="sh-opportunites" type="button" style="display:none"><span class="sh-tile-ic"><svg class="hicon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="9"/><circle cx="12" cy="12" r="5"/><circle cx="12" cy="12" r="1" fill="currentColor" stroke="none"/></svg></span><span class="sh-tile-label">Opportunités</span><span class="badge-count" id="menu-opp-badge" style="display:none"></span></button>
     <button class="sh-tile" id="sh-carnet" type="button" style="display:none"><span class="sh-tile-ic"><svg class="hicon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20"/><path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z"/></svg></span><span class="sh-tile-label">Carnet bleu</span></button>
@@ -5606,6 +5667,22 @@
       <div><label>Prix HT (€)</label><input id="cf-prix" type="number" step="0.01"></div>
       <div><label>TVA</label><select id="cf-tva"><option value="0.2">20%</option><option value="0.1">10%</option></select></div>
     </div>
+    <!-- Session 11 (07/09/2026), Point 5 -- bouton de reindexation deratisation, backend deja
+         existant (catalogue-derat-reindex, Session 10). Jamais en lot, jamais sans clic explicite,
+         ancien/nouveau prix affiches avant validation (estimation locale, montant exact confirme
+         par le serveur juste apres), reversion possible via le meme bouton (annuler). Visible
+         uniquement en edition d'un contrat de deratisation (jamais VMC, jamais a la creation). -->
+    <div id="ctf-derat-wrap" style="display:none">
+      <p id="ctf-derat-info" class="ctf-derat-info"></p>
+      <button id="ctf-derat-btn" type="button" class="ctf-derat-btn"></button>
+      <div id="ctf-derat-confirm" style="display:none">
+        <p id="ctf-derat-confirm-txt"></p>
+        <div class="cf-actions">
+          <button class="vc-ok" id="ctf-derat-confirm-ok" type="button">Confirmer</button>
+          <button class="vc-no" id="ctf-derat-confirm-no" type="button">Annuler</button>
+        </div>
+      </div>
+    </div>
     <label>Email de facturation</label><input id="cf-email" type="email">
     <label>Renouvellement</label><input id="cf-renouv" type="text" placeholder="tacite / 3 ans / ...">
     <div class="cf-actions">
@@ -5734,6 +5811,19 @@
   </div>
   <div id="carnet-list"></div>
   <button id="carnet-add" type="button" aria-label="Ajouter une résidence">＋ Ajouter une résidence</button>
+</div>
+
+<!-- Session 11 (07/09/2026), Point 2 : ecran de saisie des adresses manquantes -- une par une,
+     sauvegarde immediate, compteur du reste. Aucune adresse n'est jamais pre-remplie depuis un
+     modele : destinataire_candidat/destinataire_preuve ne sont qu'un indice affiche a cote du
+     champ, jamais dans le champ lui-meme. -->
+<div id="adressesview">
+  <div id="adresses-head">
+    <b>📍 Adresses manquantes</b>
+    <button id="adresses-close" type="button" aria-label="Fermer">✕</button>
+  </div>
+  <p id="adresses-summary"></p>
+  <div id="adresses-list"></div>
 </div>
 
 <div id="portefeuilleview">
@@ -6156,9 +6246,9 @@
          c'est ce qui supprime le conflit humain sur cette ligne precise. Sert aussi de cle
          unique de detection de mise a jour (voir checkUpdate ci-dessous), plus fiable qu'une
          comparaison de chaine de version par tenant. */
-  var APPV_MCS = '4.33';
+  var APPV_MCS = '4.34';
   var APPV_LABO = '1.00';
-  var BUILD = 11;
+  var BUILD = 12;
   // displayVersion()/displayVersionShort() lisent isMcsCode() (definie plus bas dans cette
   // meme IIFE -- declaration de fonction, donc disponible ici par hoisting) : le TENANT
   // affiche depend du code de connexion, jamais d'un simple "APPV" global qui ne dirait ni
@@ -7890,6 +7980,11 @@
     // tenant secondaire uniquement, jamais Bruno, jamais le compte principal.
     var ikBtn = document.getElementById('sh-ik');
     if (ikBtn) ikBtn.style.display = (mcs && role === 'patron') ? '' : 'none';
+    // "Adresses manquantes" (Session 11, 07/09/2026, Point 2) : meme garde -- patron d'un tenant
+    // secondaire uniquement, jamais Bruno, jamais le compte principal.
+    var adressesBtn = document.getElementById('sh-adresses');
+    if (adressesBtn) adressesBtn.style.display = (mcs && role === 'patron') ? '' : 'none';
+    if (mcs && role === 'patron') adressesCheckBadge(); else if (adressesMenuBadge) adressesMenuBadge.style.display = 'none';
     // "Relances clients" (chantier 3 audit MCS) : même garde — patron d'un tenant secondaire
     // uniquement, jamais Bruno, jamais le compte principal.
     var relancesBtn = document.getElementById('sh-relances');
@@ -11244,8 +11339,59 @@
     // en édition on affiche les vraies valeurs du contrat, jamais une suggestion de mémoire par-dessus.
     delete document.getElementById('cf-email').dataset.memValeur;
     contratFormBg.querySelectorAll('.mem-badge').forEach(function(b){ b.style.display = 'none'; });
+    contratFormDeratContrat = c;
+    contratDeratRender();
     contratFormBg.classList.add('open');
   }
+  // Session 11 (07/09/2026), Point 5 -- bouton "reindexer +3% (deratisation)" sur la fiche d'un
+  // contrat de deratisation existant. Visible uniquement en edition (jamais a la creation) et
+  // jamais pour la VMC (deja automatique, cf. Calculer derat reindex (contrats) qui refuse la VMC).
+  var contratFormDeratContrat = null;
+  function contratDeratRender(){
+    var wrap = document.getElementById('ctf-derat-wrap');
+    var c = contratFormDeratContrat;
+    document.getElementById('ctf-derat-confirm').style.display = 'none';
+    if (!c || c.type_contrat === 'VMC'){ wrap.style.display = 'none'; return; }
+    wrap.style.display = '';
+    var actif = !!c.derat_reindex_actif;
+    document.getElementById('ctf-derat-info').textContent = actif
+      ? 'Réindexation dératisation +3 % déjà appliquée sur ce contrat.'
+      : 'Réindexation dératisation +3 % pas encore appliquée sur ce contrat (catalogue déjà à jour ou pas encore réindexé -- à toi de juger).';
+    document.getElementById('ctf-derat-btn').textContent = actif ? 'Annuler la réindexation (+3 %)' : 'Appliquer +3 % (dératisation)';
+  }
+  document.getElementById('ctf-derat-btn').addEventListener('click', function(){
+    var c = contratFormDeratContrat;
+    if (!c) return;
+    var actif = !!c.derat_reindex_actif;
+    var ancienAffiche = Number(document.getElementById('cf-prix').value) || Number(c.prix_ht) || 0;
+    // Estimation LOCALE seulement -- le montant exact (surtout pour "annuler", qui revient au prix
+    // d'avant réindexation) est renvoyé par le serveur juste après validation et affiché alors.
+    var nouveauEstime = actif
+      ? Math.round((ancienAffiche / 1.03) * 100) / 100
+      : Math.round(ancienAffiche * 1.03 * 100) / 100;
+    document.getElementById('ctf-derat-confirm-txt').textContent = actif
+      ? ('Revenir à environ ' + nouveauEstime.toFixed(2) + ' € HT (au lieu de ' + ancienAffiche.toFixed(2) + ' € HT) ? Montant exact confirmé après validation.')
+      : ('Passer de ' + ancienAffiche.toFixed(2) + ' € HT à environ ' + nouveauEstime.toFixed(2) + ' € HT (+3 %) ? Réversible à tout moment via ce même bouton.');
+    document.getElementById('ctf-derat-confirm').style.display = '';
+  });
+  document.getElementById('ctf-derat-confirm-no').addEventListener('click', function(){
+    document.getElementById('ctf-derat-confirm').style.display = 'none';
+  });
+  document.getElementById('ctf-derat-confirm-ok').addEventListener('click', function(){
+    var c = contratFormDeratContrat;
+    if (!c) return;
+    var actif = !!c.derat_reindex_actif;
+    var okBtn = this; okBtn.disabled = true;
+    postContrats({ type: 'catalogue-derat-reindex', contratId: c.id, mode: actif ? 'annuler' : 'appliquer' }, function(j){
+      okBtn.disabled = false;
+      c.derat_reindex_actif = !actif;
+      c.prix_ht = j.nouveau;
+      document.getElementById('cf-prix').value = j.nouveau;
+      contratDeratRender();
+      toast('✅ Prix ' + (actif ? 'ramené à' : 'réindexé à') + ' ' + Number(j.nouveau).toFixed(2) + ' € HT');
+      contratsLoadTab();
+    }, function(err){ okBtn.disabled = false; toast(err); });
+  });
   // Listeners posés UNE SEULE FOIS (pas à chaque ouverture, pour ne jamais empiler les écouteurs) --
   // `contratFormEditingId` distingue création (mémoire active) et édition (jamais de suggestion
   // par-dessus une vraie valeur de contrat déjà enregistrée).
@@ -13273,6 +13419,108 @@
       carnetAddCloseForm();
     }, function(err){ btn.disabled = false; cafErr.textContent = err; });
   });
+
+  // ---- Adresses manquantes (Session 11, 07/09/2026, Point 2 -- urgent avant les envois de
+  // mercredi soir) ----
+  // Backend deja existant (Session 10) : liste = reutilise l'action 'mois-liste' deja construite
+  // pour l'ecran Facturation, filtre local sur destinataire_email vide. Ecriture = action
+  // 'destinataire-manuel-enregistrer' {cleClient, email}, upsert dans
+  // mcs_relances_destinataire_override, cle_client = EXACTEMENT le champ 'client' (ou 'residence'
+  // a defaut), compare SANS normalisation par resoudreDestinataire() -- envoye tel quel.
+  // Regle absolue : une adresse ne vient JAMAIS d'un modele -- destinataire_candidat/
+  // destinataire_preuve restent un simple indice affiche a cote du champ, jamais pre-rempli dedans.
+  var adressesview = document.getElementById('adressesview');
+  var adressesList = document.getElementById('adresses-list');
+  var adressesSummaryEl = document.getElementById('adresses-summary');
+  var adressesAll = [];
+  var adressesSaved = {}; // id (ligne mois-liste) -> email enregistre cette session
+
+  function adressesRemaining(){
+    return adressesAll.filter(function(f){ return !f.destinataire_email && !adressesSaved[f.id]; }).length;
+  }
+  function adressesRenderSummary(){
+    var restant = adressesRemaining();
+    var total = adressesAll.length;
+    adressesSummaryEl.textContent = !total ? ''
+      : (restant === 0 ? ('✅ Les ' + total + ' contrats ont une adresse.')
+        : (restant + ' sur ' + total + ' contrat' + (total > 1 ? 's' : '') + ' sans adresse — saisis-les une par une ci-dessous.'));
+  }
+  function adressesCard(f){
+    var card = document.createElement('div'); card.className = 'adr-card';
+    var dejaEnvoye = f.destinataire_email || adressesSaved[f.id];
+    if (dejaEnvoye) card.classList.add('adr-done');
+    var nom = document.createElement('span'); nom.className = 'adr-nom';
+    nom.textContent = (f.type_contrat === 'VMC' ? (f.residence || f.client) : (f.client || f.residence)) || '(sans nom)';
+    card.appendChild(nom);
+    var sub = document.createElement('span'); sub.className = 'adr-sub';
+    var bits = [f.type_contrat === 'VMC' ? 'VMC' : 'Dératisation'];
+    if (f.prix_ttc != null) bits.push(Number(f.prix_ttc).toFixed(2).replace('.', ',') + ' € TTC');
+    if (f.adresse) bits.push(f.adresse);
+    sub.textContent = bits.join(' · ');
+    card.appendChild(sub);
+    if (dejaEnvoye){
+      var okLine = document.createElement('span'); okLine.className = 'adr-msg ok';
+      okLine.textContent = '✓ ' + dejaEnvoye;
+      card.appendChild(okLine);
+      return card;
+    }
+    if (f.destinataire_candidat || f.destinataire_preuve){
+      var hint = document.createElement('span'); hint.className = 'adr-hint';
+      hint.innerHTML = '<b>Indice, à vérifier — jamais une adresse fiable :</b> ' + escHtml(f.destinataire_candidat || '') + (f.destinataire_preuve ? ' — ' + escHtml(f.destinataire_preuve) : '');
+      card.appendChild(hint);
+    }
+    var row = document.createElement('div'); row.className = 'adr-row';
+    var input = document.createElement('input'); input.type = 'email'; input.className = 'adr-input';
+    input.placeholder = 'adresse@exemple.fr'; input.autocomplete = 'off'; input.autocapitalize = 'off'; input.autocorrect = 'off';
+    row.appendChild(input);
+    var btn = document.createElement('button'); btn.type = 'button'; btn.className = 'adr-save'; btn.textContent = 'Enregistrer';
+    row.appendChild(btn);
+    card.appendChild(row);
+    var msg = document.createElement('span'); msg.className = 'adr-msg';
+    card.appendChild(msg);
+    btn.addEventListener('click', function(){
+      var email = input.value.trim();
+      if (!email || email.indexOf('@') < 0 || email.indexOf('.') < 0){ msg.className = 'adr-msg err'; msg.textContent = 'Adresse invalide.'; return; }
+      var cleClient = (f.client && f.client.trim()) || (f.residence && f.residence.trim()) || '';
+      if (!cleClient){ msg.className = 'adr-msg err'; msg.textContent = "Ce contrat n'a ni client ni résidence — impossible d'enregistrer."; return; }
+      btn.disabled = true; input.disabled = true; msg.className = 'adr-msg'; msg.textContent = 'Enregistrement…';
+      postContrats({ type: 'destinataire-manuel-enregistrer', cleClient: cleClient, email: email }, function(){
+        adressesSaved[f.id] = email;
+        adressesRenderSummary();
+        adressesCheckBadge();
+        card.replaceWith(adressesCard(f));
+      }, function(err){ btn.disabled = false; input.disabled = false; msg.className = 'adr-msg err'; msg.textContent = err; });
+    });
+    return card;
+  }
+  function adressesRender(){
+    adressesList.innerHTML = '';
+    adressesRenderSummary();
+    if (!adressesAll.length){ adressesList.innerHTML = '<p id="adresses-empty">Aucun contrat ce mois-ci.</p>'; return; }
+    adressesAll.forEach(function(f){ adressesList.appendChild(adressesCard(f)); });
+  }
+  function adressesOpen(){
+    adressesview.classList.add('open');
+    adressesSaved = {};
+    adressesList.innerHTML = '<p id="adresses-loading">Chargement…</p>';
+    var now = new Date();
+    postContrats({ type: 'mois-liste', annee: now.getFullYear(), mois: now.getMonth() + 1 }, function(j){
+      adressesAll = j.factures || [];
+      adressesRender();
+    }, function(err){ adressesList.innerHTML = '<p id="adresses-empty">' + escHtml(err) + '</p>'; });
+  }
+  function adressesClose(){ adressesview.classList.remove('open'); }
+  document.getElementById('adresses-close').addEventListener('click', adressesClose);
+  document.getElementById('sh-adresses').addEventListener('click', function(){ sheetOpen(false); adressesOpen(); });
+  var adressesMenuBadge = document.getElementById('menu-adresses-badge');
+  function adressesCheckBadge(){
+    var now = new Date();
+    postContrats({ type: 'mois-liste', annee: now.getFullYear(), mois: now.getMonth() + 1 }, function(j){
+      var restant = (j.factures || []).filter(function(f){ return !f.destinataire_email; }).length;
+      if (restant > 0){ adressesMenuBadge.textContent = restant; adressesMenuBadge.style.display = ''; } else { adressesMenuBadge.style.display = 'none'; }
+      updateAppBadgeTotal();
+    }, function(){});
+  }
 
   // ---- Portefeuille clients (chantier 10 audit, 2026-08-02) ----
   // Croise la vraie liste clients MEG avec les vraies ventes -- calculé à la main
