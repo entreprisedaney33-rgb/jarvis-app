@@ -1658,32 +1658,28 @@
     align-items:center; justify-content:center; gap:8px; -webkit-tap-highlight-color:transparent;
   }
   @media (min-width: 900px){ #fcf-apercu-toggle-mobile{display:none} }
-  /* Reproduction fidele de la facture (ANATOMIE-FACTURE-MEG_1.md), en HTML/CSS pur -- feuille A4
-     proportionnelle (595x842pt), jamais un appel serveur : voir fcfRenderApercu() dans le JS. */
+  /* Session 16, Point 1 -- reproduction PIXEL-PRES du PDF reellement genere par
+     "Construire facture contrat envoi (web)" (buildFacturePdf), PAS un gabarit approximatif :
+     memes coordonnees (595x842pt = 1pt CSS px), memes largeurs de colonnes, memes gris,
+     memes tailles de texte. Positionnement ABSOLU calque sur les coordonnees PDF -- voir
+     fcfRenderApercu() dans le JS, qui reprend les memes constantes que le generateur
+     (cols, ML, MR, LOGO_W, fbW, etc). Feuille a taille FIXE (jamais responsive) : #fcf-apercu-scroll
+     la fait defiler/reduire proportionnellement (transform:scale) sur les petits ecrans. */
   #fcf-apercu-page{
-    width:100%; max-width:620px; background:#fff; color:#000; box-shadow:0 4px 24px rgba(0,0,0,.18);
-    font-family:Helvetica,Arial,sans-serif; font-size:12.6px; line-height:1.35; padding:26px 24px;
-    box-sizing:border-box; align-self:flex-start;
+    width:595px; height:842px; position:relative; background:#fff; color:#000;
+    box-shadow:0 4px 24px rgba(0,0,0,.18); font-family:Helvetica,Arial,sans-serif;
+    flex:0 0 auto; overflow:hidden;
   }
-  .fcf-ap-row{display:flex; justify-content:space-between; gap:14px}
-  .fcf-ap-right{text-align:right}
-  .fcf-ap-titre{font-size:19px; font-weight:700; letter-spacing:.04em}
-  .fcf-ap-petit{font-size:11px; color:#333}
-  .fcf-ap-sep{border:none; border-top:1px solid #000; margin:10px 0}
-  .fcf-ap-bloc{margin:10px 0; white-space:pre-line}
-  .fcf-ap-ref{margin:10px 0; font-size:12px}
-  table.fcf-ap-table{width:100%; border-collapse:collapse; margin:10px 0; font-size:11.5px}
-  table.fcf-ap-table th{background:#E5E5EA; text-align:left; padding:5px 6px; border:1px solid #000; font-weight:700}
-  table.fcf-ap-table td{padding:5px 6px; border:1px solid #000; vertical-align:top}
-  table.fcf-ap-table td.fcf-ap-num{text-align:right; white-space:nowrap}
-  .fcf-ap-souslignes{font-size:11px; color:#222; margin:6px 0; white-space:pre-line}
-  .fcf-ap-cols{display:flex; gap:14px; margin:12px 0}
-  .fcf-ap-cols > div{flex:1; border:1px solid #000; padding:6px 8px; font-size:11px}
-  .fcf-ap-cols .fcf-ap-boxtitre{font-weight:700; text-align:center; border-bottom:1px solid #000; margin:-6px -8px 6px; padding:4px 0; background:#E5E5EA}
-  .fcf-ap-mention{font-size:9.5px; color:#333; margin:8px 0}
-  .fcf-ap-totaux{display:flex; justify-content:space-between; margin:12px 0; font-size:11.5px; font-weight:700}
-  .fcf-ap-lettres{font-size:11.5px; margin:8px 0}
-  .fcf-ap-footer{font-size:8.5px; color:#333; border-top:1px solid #000; padding-top:6px; margin-top:14px}
+  .fcf-ap-t{position:absolute; white-space:pre; line-height:1}
+  .fcf-ap-b{font-weight:700}
+  .fcf-ap-gray{color:#808080}
+  .fcf-ap-darkgray{color:#4d4d4d}
+  .fcf-ap-rect{position:absolute; background:#fff}
+  .fcf-ap-rect.fcf-ap-headbg{background:#e6e6e6}
+  .fcf-ap-hline{position:absolute; border-top:1px solid #000; height:0}
+  .fcf-ap-vline{position:absolute; border-left:1px solid #000; width:0}
+  .fcf-ap-strokerect{position:absolute; border:1px solid #000; box-sizing:border-box; background:transparent}
+  .fcf-ap-logo{position:absolute; width:335.7px; height:100.8px; object-fit:contain}
   /* Point 4 (Session 15) -- +3%/-3% en un clic, ancien/nouveau prix affiches avant validation. */
   .fcf-reindex-row{display:flex; gap:8px; margin-top:8px}
   .fcf-reindex-btn{
@@ -2091,10 +2087,23 @@
      ici, pas plein largeur comme dans le carnet). */
   .rl-facture-actrow{display:flex; flex-wrap:wrap; gap:8px; margin:6px 0 10px; opacity:1}
   .rl-facture-actbtn{flex:0 0 auto !important; padding:8px 13px !important; font-size:13px !important}
+  /* Point 7 (07/09/2026, retour Dorian) : "Supprimer" (reversible, retire une ligne) et "Mise en
+     demeure" (courrier legal reel, engage Mickael face a un syndic) partageaient jusqu'ici la
+     meme classe .carnet-confirm-delete -- meme rouge, meme contour, meme taille, cote a cote,
+     alors que leurs consequences n'ont rien a voir. margin-left:auto pousse Mise en demeure a
+     l'extreme droite de la rangee (separation nettement superieure aux 8px de gap standard) ;
+     le fond plein la rend visuellement dominante, "Supprimer" reste dans son contour discret. */
+  html.mcs-theme .rl-facture-actbtn-med{
+    background:#FF453A; color:#fff; border:0; font-weight:800; margin-left:auto;
+  }
+  html.mcs-theme .rl-facture-actbtn-del{opacity:.82}
   /* Fenêtre 3 (07/09/2026), point 4b/4c/4e : case de sélection par facture (granularité), et
      pastilles factuelles "déjà relancée le X" / "promesse du Y non tenue". */
   .rl-facture-check{display:inline-flex; margin-right:6px; vertical-align:middle}
   .rl-facture-check input{width:18px; height:18px; margin:0}
+  /* Point 2 (07/09/2026) : phrase explicite au-dessus des cases, en toutes lettres -- sans elle
+     Dorian n'avait jamais compris que la selection par facture existait. */
+  .rl-choisir-label{font-size:12.5px; font-weight:700; color:var(--ink); opacity:.75; margin-bottom:6px}
   .rl-pastille-relance, .rl-pastille-promesse{
     display:block; font-size:11.5px; margin:2px 0 0 24px; padding:2px 8px; border-radius:99px;
     width:fit-content; opacity:1;
@@ -2172,13 +2181,18 @@
   /* E7 (26/08/2026) : la hierarchie visuelle etait inversee -- [Je l'ai relance moi-meme] en
      vert vif et plein (donc l'action la plus attirante de l'ecran) alors que c'est une
      DECLARATION invérifiable (9 declarations ont deja sorti 4 270 € de creances du circuit sans
-     qu'aucun mail ne parte). [Envoyer] devient l'action principale visuellement -- le cadenas
-     suffit a dire qu'elle ne part pas encore, pas besoin d'un style terne en plus. Le vert reste
-     reserve a ce qui est reellement acquis (cf. .rl-btn-fait, gardee UNIQUEMENT pour "Reprendre
-     les relances" -- une vraie reprise de suivi, pas une declaration). */
+     qu'aucun mail ne parte). Le vert reste reserve a ce qui est reellement acquis (cf.
+     .rl-btn-fait, gardee UNIQUEMENT pour "Reprendre les relances" -- une vraie reprise de suivi,
+     pas une declaration).
+     Fenêtre 4 (07/09/2026), point 3 -- 2e inversion, dans l'autre sens cette fois : [Envoyer] ne
+     FAIT rien, il ouvre juste la confirmation (cf. E2 plus bas) -- ce n'etait PAS a lui d'avoir
+     le poids visuel le plus fort de la carte. Redevient une ouverture discrete (contour, pas de
+     fond plein) ; c'est desormais .rl-confirm.vc-envoi-reel (juste en dessous, DANS
+     .rl-envoyer-explication) qui porte le poids visuel maximum -- coherent avec la regle deja
+     posee ailleurs dans l'app : le bouton qui declenche un envoi reel est visuellement unique. */
   .rl-btn-envoyer{
-    padding:13px; font-size:15px; font-weight:700; border-radius:12px; border:0; cursor:pointer;
-    background:var(--gold-a); color:var(--gold-ink);
+    padding:13px; font-size:15px; font-weight:700; border-radius:12px; cursor:pointer;
+    background:transparent; color:var(--ink); border:1.5px solid rgba(var(--gold-rgb),.55);
     -webkit-tap-highlight-color:transparent; display:flex; align-items:center; justify-content:center; gap:6px;
   }
   .rl-btn-row2{display:flex; gap:8px}
@@ -2200,6 +2214,19 @@
     background:var(--edit-box-bg); color:var(--ink); border:0.5px solid rgba(255,255,255,.16);
   }
   .rl-envoyer-explication.open{display:block}
+  /* Fenêtre 4 (07/09/2026), point 3 -- LE bouton qui engage reellement (envoi immediat, sans
+     autre confirmation apres) merite le poids visuel le plus fort de la carte, pas l'inverse
+     (avant ce chantier : gros bouton bleu "Envoyer" qui n'ouvrait qu'une confirmation, puis un
+     petit bouton par defaut du navigateur pour l'action reelle -- rien ne stylait
+     .rl-confirm.vc-envoi-reel en dehors de sa couleur de fond ici, cf. .rl-form .rl-confirm
+     juste au-dessus qui ne s'applique qu'a un AUTRE contexte, celui du formulaire de suspension).
+     Couleur --warn deja posee ailleurs (html.mcs-theme .rl-confirm.vc-envoi-reel), ici seule la
+     TAILLE change -- pleine largeur, meme poids que .rl-btn-envoyer avait avant ce chantier. */
+  .rl-envoyer-explication .rl-confirm.vc-envoi-reel{
+    display:flex; width:100%; box-sizing:border-box; align-items:center; justify-content:center; gap:6px;
+    margin-top:10px; padding:15px; font-size:16px; font-weight:800; border-radius:12px; border:0; cursor:pointer;
+    -webkit-tap-highlight-color:transparent;
+  }
   /* Point 3 (28/08/2026) : lien facture par ligne (jamais un bouton mort, present seulement si
      f.pdfUrl existe) + case a cocher duplicata dans l'encadre de confirmation d'envoi. */
   .rl-facture-pdf{font-size:12px; color:var(--blue); text-decoration:none; margin-left:6px}
@@ -6610,7 +6637,7 @@
          comparaison de chaine de version par tenant. */
   var APPV_MCS = '4.37';
   var APPV_LABO = '1.00';
-  var BUILD = 15;
+  var BUILD = 16;
   // displayVersion()/displayVersionShort() lisent isMcsCode() (definie plus bas dans cette
   // meme IIFE -- declaration de fonction, donc disponible ici par hoisting) : le TENANT
   // affiche depend du code de connexion, jamais d'un simple "APPV" global qui ne dirait ni
@@ -10729,10 +10756,14 @@
     return texte;
   }
 
-  // Point 2 (Session 15) -- reproduction fidèle de la facture en HTML/CSS pur (jamais d'appel
-  // serveur ici : c'est justement ce qui a mis n8n à genoux fin août). Structure suit
-  // ANATOMIE-FACTURE-MEG_1.md bloc par bloc. Lit l'état ACTUEL des champs directement dans le
-  // DOM, appelée à chaque frappe pertinente -- jamais de dépendance à une génération serveur.
+  // Session 16, Point 1 -- reproduction PIXEL-PRES du PDF REELLEMENT genere par
+  // "Construire facture contrat envoi (web)" (buildFacturePdf) -- memes constantes de mise en
+  // page (cols, ML, MR, LOGO_W, fbW, boxW, etc, copiees a l'identique du generateur cote n8n), jamais
+  // un gabarit approximatif. Coordonnees PDF (origine bas-gauche) converties en CSS (origine
+  // haut-gauche) via cssTop = PAGE_H - pdfY. Jamais d'appel serveur ici -- c'est justement ce
+  // qui a mis n8n a genoux fin aout ; un bouton separe ("Voir le vrai PDF") appelle le serveur,
+  // a la demande seulement.
+  var FCF_LOGO_DATA_URI = 'data:image/jpeg;base64,/9j/4AAQSkZJRgABAQAAAQABAAD/2wBDAAMCAgICAgMCAgIDAwMDBAYEBAQEBAgGBgUGCQgKCgkICQkKDA8MCgsOCwkJDRENDg8QEBEQCgwSExIQEw8QEBD/2wBDAQMDAwQDBAgEBAgQCwkLEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBD/wAARCAFQBF8DASIAAhEBAxEB/8QAHwAAAQUBAQEBAQEAAAAAAAAAAAECAwQFBgcICQoL/8QAtRAAAgEDAwIEAwUFBAQAAAF9AQIDAAQRBRIhMUEGE1FhByJxFDKBkaEII0KxwRVS0fAkM2JyggkKFhcYGRolJicoKSo0NTY3ODk6Q0RFRkdISUpTVFVWV1hZWmNkZWZnaGlqc3R1dnd4eXqDhIWGh4iJipKTlJWWl5iZmqKjpKWmp6ipqrKztLW2t7i5usLDxMXGx8jJytLT1NXW19jZ2uHi4+Tl5ufo6erx8vP09fb3+Pn6/8QAHwEAAwEBAQEBAQEBAQAAAAAAAAECAwQFBgcICQoL/8QAtREAAgECBAQDBAcFBAQAAQJ3AAECAxEEBSExBhJBUQdhcRMiMoEIFEKRobHBCSMzUvAVYnLRChYkNOEl8RcYGRomJygpKjU2Nzg5OkNERUZHSElKU1RVVldYWVpjZGVmZ2hpanN0dXZ3eHl6goOEhYaHiImKkpOUlZaXmJmaoqOkpaanqKmqsrO0tba3uLm6wsPExcbHyMnK0tPU1dbX2Nna4uPk5ebn6Onq8vP09fb3+Pn6/9oADAMBAAIRAxEAPwD9U6KKKACiiigAooooAKKKKACiiigAooooAKKKKACiiigAooooAKKKKACiiigAooooAKKKKACiiigAooooAKKKKACiiigAooooAKKKKACiiigAooooAKKKKACiiigAooooAKKKKACiiigAooooAKKKKACiiigAooooAKKKKACiiigAooooAKKKKACikoz9PzoAWikz9Pzoz9PzoAWiiigAooooAKKKKACiiigAooooAKKKKACiiigAooooAKKKKACiiigAooooAKKKKACiiigAooooAKKKKACiiigAooooAKKKKACiiigAooooAKKKKACiiigAooooAKKKKACiiigAooooAKKKKACiiigAooooAKKKKACi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';
   function fcfRenderApercu(){
     var page = document.getElementById('fcf-apercu-page');
     if (!page) return;
@@ -10741,38 +10772,244 @@
     var adresse = val('fcf-adresse'), ville = val('fcf-ville'), dest = val('fcf-dest');
     var designation = val('fcf-designation') || 'Prestation';
     var designationLignes = designation.split('\n').filter(Boolean);
-    var sousLignes = val('fcf-souslignes').split('\n').filter(Boolean);
+    var sousLignesTexte = val('fcf-souslignes').split('\n').filter(Boolean);
     var quantite = parseFloat(val('fcf-quantite')) || 1;
     var unite = val('fcf-unite') || 'U';
     var prixHt = parseFloat(val('fcf-prix')) || 0;
     var numeroContrat = val('fcf-numero'), annee = val('fcf-annee');
     var echeance = val('fcf-echeance'); var echeanceFr = '';
-    if (echeance){ var p = echeance.split('-'); if (p.length === 3) echeanceFr = p[2] + '/' + p[1] + '/' + p[0]; }
+    if (echeance){ var pdate = echeance.split('-'); if (pdate.length === 3) echeanceFr = pdate[2] + '/' + pdate[1] + '/' + pdate[0]; }
     var conditions = val('fcf-conditions-reglement') || 'Règlement par virement';
     var tvaRadio = document.querySelector('#fcf-tva-wrap input[type=radio]:checked');
     var tva = tvaRadio ? parseFloat(tvaRadio.value) : 0.2;
     var totalHt = quantite * prixHt, tvaMontant = totalHt * tva, totalTtc = totalHt + tvaMontant;
-    var nomAffiche = residence || client || adresse || '(non identifié)';
+    var nomAffiche = client || residence || adresse || '(non identifié)';
     var dateFr = new Date().toLocaleDateString('fr-FR');
 
-    var html = '';
-    html += '<div class="fcf-ap-row"><div class="fcf-ap-titre">FACTURE</div><div class="fcf-ap-right fcf-ap-petit">N° : (attribué à l’envoi)<br>Date : ' + dateFr + '<br>N° TVA : FR30500685391</div></div>';
-    html += '<hr class="fcf-ap-sep">';
-    html += '<div class="fcf-ap-row"><div class="fcf-ap-petit">MCS<br>2 Chemin de Belle Étoile<br>33370 TRESSES<br>Tél. : 06 09 16 47 30<br>Mail : mickael.chantereau@orange.fr</div>'
-      + '<div class="fcf-ap-right fcf-ap-petit">' + escHtml(nomAffiche) + (gestionnaire ? ('<br>Représenté par ' + escHtml(gestionnaire)) : '') + '<br>' + escHtml([adresse, ville].filter(Boolean).join(', ')) + (dest ? ('<br>Email : ' + escHtml(dest)) : '') + '</div></div>';
-    html += '<div class="fcf-ap-ref"><b>Réf. :</b> ' + escHtml(nomAffiche) + '<br>' + (numeroContrat ? ('Contrat n° ' + escHtml(numeroContrat) + '<br>') : '') + 'Année ' + escHtml(annee || '') + '</div>';
-    html += '<table class="fcf-ap-table"><thead><tr><th>Désignation</th><th>Qté</th><th>Unité</th><th>P.U. HT</th><th>Total HT</th></tr></thead><tbody>'
-      + '<tr><td>' + escHtml(designationLignes[0]||'Prestation') + '</td><td class="fcf-ap-num">' + quantite + '</td><td>' + escHtml(unite) + '</td><td class="fcf-ap-num">' + prixHt.toFixed(2) + ' €</td><td class="fcf-ap-num">' + totalHt.toFixed(2) + ' €</td></tr>'
-      + '</tbody></table>';
-    var toutesSousLignes = designationLignes.slice(1).concat(sousLignes);
-    if (toutesSousLignes.length) html += '<div class="fcf-ap-souslignes">' + escHtml(toutesSousLignes.join('\n')) + '</div>';
-    html += '<div class="fcf-ap-cols"><div><div class="fcf-ap-boxtitre">Conditions de règlement</div>' + escHtml(conditions) + '<br>Aucun escompte pour règlement anticipé.' + (echeanceFr ? ('<br>Échéance : ' + echeanceFr) : '') + '</div>'
-      + '<div><div class="fcf-ap-boxtitre">RIB</div>Nom : CIC SUD OUEST<br>IBAN : FR76 1005 7190 7500 0208 3880 168<br>BIC : CMCIFRPP</div></div>';
-    html += '<div class="fcf-ap-lettres">Le montant total s’élève à ' + nombreEnLettresFr(totalTtc) + '.</div>';
-    html += '<div class="fcf-ap-mention">CLAUSE DE RÉSERVE DE PROPRIÉTÉ : conformément à la loi 80.335 du 12 mai 1980, MCS conserve la propriété des prestations et marchandises jusqu’au paiement intégral du prix et de ses accessoires.<br>Pénalité de retard : 3 fois le taux d’intérêt légal après l’échéance (art. L.441-10). Escompte pour règlement anticipé : 0 %.<br>Indemnité forfaitaire pour frais de recouvrement (art. D.441-5) : 40 € en cas de retard de paiement.</div>';
-    html += '<div class="fcf-ap-totaux"><span>Total HT<br>' + totalHt.toFixed(2) + ' €</span><span>TVA (' + (tva*100).toFixed(0) + ' %)<br>' + tvaMontant.toFixed(2) + ' €</span><span>Total TTC<br>' + totalTtc.toFixed(2) + ' €</span><span>Net à payer<br>' + totalTtc.toFixed(2) + ' €</span></div>';
-    html += '<div class="fcf-ap-footer">SARL MCS - 2 Chemin de Belle Étoile 33370 TRESSES - Tél. : 06 09 16 47 30 - Email : mickael.chantereau@orange.fr - IBAN FR76 1005 7190 7500 0208 3880 168 - Code APE 8122Z - N° RCS : 500 685 391 R.C.S. Bordeaux - SARL au capital social de 5 000 € - Siret : 50068539100046 - N° TVA FR30500685391</div>';
-    page.innerHTML = html;
+    // ---- constantes de mise en page, copiees a l'identique de buildFacturePdf (n8n) ----
+    var PAGE_W = 595, PAGE_H = 842, ML = 18, MR = 577;
+    var LOGO_W = 335.7, LOGO_H = 100.8, LOGO_TOP = 819;
+    var els = [];
+    function css(top, cssExtra){ return 'top:' + top.toFixed(2) + 'px;' + (cssExtra||''); }
+    // Session 16, Point 1 -- le vrai generateur (buildFacturePdf, cote n8n) ne centre/aligne PAS
+    // a droite selon la largeur REELLE des glyphes (le navigateur, lui, mesure sa propre police
+    // Arial-substituee) : il utilise ses propres formules d'APPROXIMATION par caractere
+    // (numWidth pour textRight, une autre table pour textCenter -- copiees ici A L'IDENTIQUE,
+    // bug pour bug) puis positionne le texte en LEFT-ALIGNED a la position calculee. Utiliser le
+    // text-align CSS du navigateur au lieu de reproduire ce calcul donnait un leger decalage a
+    // l'overlay pixel-a-pixel (trouve en comparant le vrai PDF a l'apercu), plus visible sur les
+    // textes en gras et les chaines longues (largeur cumulee qui derive de l'approximation).
+    function numWidthApprox(str, size){
+      var w = 0; str = String(str||'');
+      for (var i=0; i<str.length; i++){
+        var ch = str.charAt(i);
+        if (ch>='0'&&ch<='9') w += 556;
+        else if (ch===' ') w += 278;
+        else if (ch==='.') w += 278;
+        else if (ch===',') w += 278;
+        else if (ch==='€') w += 556;
+        else if (ch==='%') w += 889;
+        else w += 556;
+      }
+      return w * size / 1000;
+    }
+    function centerWidthApprox(str, size){
+      var w = 0; str = String(str||'');
+      for (var i=0; i<str.length; i++){
+        var ch = str.charAt(i);
+        w += (ch>='0'&&ch<='9') ? 556 : ch===' ' ? 278 : (ch>='A'&&ch<='Z') ? 660 : 520;
+      }
+      return w * size / 1000;
+    }
+    // text(xPdf, yPdf, size, bold, txt, colorClass, align, maxWidth) -- align: 'left'|'right'|'center'
+    // (maxWidth n'est plus utilise pour 'right'/'center', garde uniquement pour compatibilite d'appel)
+    function T(xPdf, yPdf, size, bold, txt, colorClass, align, maxWidth){
+      var topCss = PAGE_H - yPdf - size * 0.86;
+      var leftPos = xPdf;
+      if (align === 'right') leftPos = xPdf - numWidthApprox(txt, size);
+      else if (align === 'center') leftPos = xPdf - centerWidthApprox(txt, size) / 2;
+      var style = 'left:' + leftPos.toFixed(2) + 'px;top:' + topCss.toFixed(2) + 'px;font-size:' + size.toFixed(2) + 'px;';
+      els.push('<div class="fcf-ap-t' + (bold?' fcf-ap-b':'') + (colorClass?(' '+colorClass):'') + '" style="' + style + '">' + escHtml(txt) + '</div>');
+    }
+    function RECT(xPdf, yPdfBottom, w, h, headbg){
+      els.push('<div class="fcf-ap-rect' + (headbg?' fcf-ap-headbg':'') + '" style="left:' + xPdf.toFixed(2) + 'px;top:' + (PAGE_H-yPdfBottom-h).toFixed(2) + 'px;width:' + w.toFixed(2) + 'px;height:' + h.toFixed(2) + 'px;"></div>');
+    }
+    function STROKERECT(xPdf, yPdfBottom, w, h){
+      els.push('<div class="fcf-ap-strokerect" style="left:' + xPdf.toFixed(2) + 'px;top:' + (PAGE_H-yPdfBottom-h).toFixed(2) + 'px;width:' + w.toFixed(2) + 'px;height:' + h.toFixed(2) + 'px;"></div>');
+    }
+    function HLINE(x1, x2, yPdf){
+      els.push('<div class="fcf-ap-hline" style="left:' + x1.toFixed(2) + 'px;top:' + (PAGE_H-yPdf).toFixed(2) + 'px;width:' + (x2-x1).toFixed(2) + 'px;"></div>');
+    }
+    function VLINE(xPdf, y1, y2){
+      els.push('<div class="fcf-ap-vline" style="left:' + xPdf.toFixed(2) + 'px;top:' + (PAGE_H-y2).toFixed(2) + 'px;height:' + (y2-y1).toFixed(2) + 'px;"></div>');
+    }
+    els.push('<img class="fcf-ap-logo" src="' + FCF_LOGO_DATA_URI + '" style="left:' + ML + 'px;top:' + (PAGE_H-LOGO_TOP) + 'px;">');
+
+    // ---- cadre FACTURE (haut droite) ----
+    var fbW = 179, fbX = MR - fbW, fbTop = LOGO_TOP, fbRowH = 16.03, fbH = fbRowH * 4;
+    RECT(fbX, fbTop - fbH, fbW, fbH, true);
+    STROKERECT(fbX, fbTop - fbH, fbW, fbH);
+    T(fbX + 6, fbTop - 12, 10, true, 'FACTURE');
+    HLINE(fbX, fbX + fbW, fbTop - fbRowH);
+    // "[APERÇU -- PAS ENCORE ENVOYÉ]" -- exactement le texte que le vrai generateur affiche sur
+    // cette ligne pour un apercu (Preparer apercu pdf (contrats), numeroComplet), distinct du
+    // placeholder "[n° attribué à l'envoi]" qui lui n'apparait que DANS l'objet/corps du mail.
+    T(fbX + 6, fbTop - fbRowH - 11, 8.5, false, 'N°'); T(fbX + fbW - 6, fbTop - fbRowH - 11, 8.5, false, '[APERÇU -- PAS ENCORE ENVOYÉ]', null, 'right');
+    HLINE(fbX, fbX + fbW, fbTop - 2*fbRowH);
+    T(fbX + 6, fbTop - 2*fbRowH - 11, 8.5, false, 'Date'); T(fbX + fbW - 6, fbTop - 2*fbRowH - 11, 8.5, false, dateFr, null, 'right', 90);
+    HLINE(fbX, fbX + fbW, fbTop - 3*fbRowH);
+    T(fbX + 6, fbTop - 3*fbRowH - 11, 8.5, false, 'N° TVA'); T(fbX + fbW - 6, fbTop - 3*fbRowH - 11, 8.5, false, 'FR30500685391', null, 'right', 110);
+
+    // ---- bloc MCS (gauche) / bloc client (droite) ----
+    var blockTop = LOGO_TOP - LOGO_H - 16, cx = 370, LH = 11.2;
+    T(ML, blockTop, 10, true, 'MCS');
+    T(ML, blockTop - LH, 8.5, false, '2 Chemin de Belle Etoile');
+    T(ML, blockTop - 2*LH, 8.5, false, '33370 TRESSES');
+    T(ML, blockTop - 3*LH, 8.5, false, 'Mobile : 06.09.16.47.30');
+    T(ML, blockTop - 4*LH, 8.5, false, 'Mail : mickael.chantereau@orange.fr');
+    // Session 16, Point 1 -- le vrai generateur (drawLabelValue) aligne ce bloc a GAUCHE a partir
+    // de cx (jamais cale sur la marge droite MR) : etait a tort en align:'right' ici, ce qui
+    // decalait tout le bloc client par rapport au vrai PDF (trouve par overlay pixel-a-pixel).
+    var cy = blockTop;
+    T(cx, cy, 10, true, nomAffiche); cy -= LH;
+    if (gestionnaire){ T(cx, cy, 8.5, false, 'Représenté par ' + gestionnaire); cy -= LH; }
+    var adresseClientTxt = [adresse, ville].filter(Boolean).join(', ');
+    if (adresseClientTxt){ T(cx, cy, 8.5, false, adresseClientTxt); cy -= LH; }
+    T(cx, cy, 8.5, false, 'Email : ' + (dest||'NC')); cy -= LH;
+
+    var mcsBlockBottom = blockTop - 4*LH;
+    var y = Math.min(cy, mcsBlockBottom) - 20;
+
+    // ---- Nom de la Residence / Adresse / Nature de la Prestation ----
+    var valX = ML + 112;
+    T(ML, y, 9, false, 'Nom de la Résidence'); T(valX, y, 9, false, residence || '-'); y -= LH;
+    T(ML, y, 9, false, 'Adresse'); T(valX, y, 9, false, adresseClientTxt || '-'); y -= LH;
+    T(ML, y, 9, false, 'Nature de la Prestation'); T(valX, y, 9, false, designationLignes[0] || '-'); y -= LH;
+    y -= 8.8;
+    if (residence){ T(ML, y, 8.5, false, 'Réf. : ' + residence); y -= 13; }
+    if (numeroContrat){ T(ML, y, 8.5, false, 'Contrat n° ' + numeroContrat); y -= 13; T(ML, y, 8.5, false, 'Année ' + (annee || new Date().getFullYear())); y -= 13; }
+
+    // ---- tableau Designation / Qte / Ute / P.U. / Total HT ----
+    var cols = [ML, 370.7, 415.5, 443.4, 510.5, MR], headH = 19.5;
+    RECT(cols[0], y - headH, cols[5]-cols[0], headH, true);
+    var headY = y - headH + 6.5;
+    T(cols[0]+6, headY, 8.5, true, 'Désignation');
+    T((cols[1]+cols[2])/2, headY, 8.5, true, 'Qté.', null, 'center', cols[2]-cols[1]);
+    T((cols[2]+cols[3])/2, headY, 8.5, true, 'Uté.', null, 'center', cols[3]-cols[2]);
+    T(cols[4]-6, headY, 8.5, true, 'P.U.', null, 'right', cols[4]-cols[3]-12);
+    T(cols[5]-6, headY, 8.5, true, 'Total HT.', null, 'right', cols[5]-cols[4]-12);
+    var tabTop = y, ry = y - headH;
+    var rowH = Math.max(19, designationLignes.length > 1 ? (designationLignes.length-0)*10.6+8.5 : 19);
+    var rowTop = ry; ry -= rowH;
+    var firstLineY = rowTop - 9;
+    T(cols[0]+6, firstLineY, 9, false, designationLignes[0] || '');
+    for (var dli = 1; dli < designationLignes.length; dli++) T(cols[0]+6, firstLineY - dli*10.6, 9, false, designationLignes[dli]);
+    T((cols[1]+cols[2])/2, firstLineY, 9, false, String(quantite), null, 'center', cols[2]-cols[1]);
+    T((cols[2]+cols[3])/2, firstLineY, 9, false, unite, null, 'center', cols[3]-cols[2]);
+    T(cols[4]-6, firstLineY, 9, false, prixHt.toFixed(2).replace('.',',') + ' €', null, 'right', cols[4]-cols[3]-12);
+    T(cols[5]-6, firstLineY, 9, false, totalHt.toFixed(2).replace('.',',') + ' €', null, 'right', cols[5]-cols[4]-12);
+    var tabBottom = ry;
+    STROKERECT(cols[0], tabBottom, cols[5]-cols[0], tabTop-tabBottom);
+    HLINE(cols[0], cols[5], tabTop-headH);
+    for (var ci=1; ci<5; ci++) VLINE(cols[ci], tabBottom, tabTop);
+    y = tabBottom - 18;
+
+    // ---- sous-lignes (designation multi-ligne + texte libre), petit, gris ----
+    var toutesSousLignes = designationLignes.slice(1).concat(sousLignesTexte);
+    if (toutesSousLignes.length){
+      y -= 3;
+      for (var sli=0; sli<toutesSousLignes.length; sli++){ T(cols[0]+2, y, 8, false, toutesSousLignes[sli], 'fcf-ap-gray'); y -= 10.5; }
+    }
+
+    // ---- Conditions de reglement (gauche) / RIB (droite) ----
+    var boxGap = 3, boxW = (cols[5]-cols[0]-boxGap)/2, boxHeadH = 13.7, boxH = 52.3;
+    var leftX = cols[0], rightX = cols[0]+boxW+boxGap;
+    STROKERECT(leftX, y-boxH, boxW, boxH);
+    RECT(leftX, y-boxHeadH, boxW, boxHeadH, true);
+    HLINE(leftX, leftX+boxW, y-boxHeadH);
+    T(leftX+boxW/2, y-11, 9, true, 'Conditions de règlement', null, 'center', boxW);
+    T(leftX+4, y-boxHeadH-11.8, 8.5, false, conditions);
+    T(leftX+4, y-boxHeadH-23.7, 8.5, false, 'Aucun escompte pour règlement anticipé');
+    if (echeanceFr){ T(leftX+4, y-boxHeadH-35.6, 8.5, false, 'Échéance : ' + echeanceFr); }
+    STROKERECT(rightX, y-boxH, boxW, boxH);
+    RECT(rightX, y-boxHeadH, boxW, boxHeadH, true);
+    HLINE(rightX, rightX+boxW, y-boxHeadH);
+    T(rightX+boxW/2, y-11, 9, true, 'RIB', null, 'center', boxW);
+    T(rightX+4, y-boxHeadH-11.8, 8.5, false, 'NOM :'); T(rightX+57, y-boxHeadH-11.8, 8.5, false, 'CIC SUD OUEST');
+    T(rightX+4, y-boxHeadH-23.7, 8.5, false, 'IBAN :'); T(rightX+57, y-boxHeadH-23.7, 8.5, false, 'FR76 1005 7190 7500 0208 3880 168');
+    T(rightX+4, y-boxHeadH-36.1, 8.5, false, 'BIC :'); T(rightX+57, y-boxHeadH-36.1, 8.5, false, 'CMCIFRPP');
+    y -= boxH + 22;
+
+    T(ML, y, 8.5, false, "Le montant total s'élève à " + nombreEnLettresFr(totalTtc)); y -= 11;
+
+    // ---- clause legale, petit, gris ----
+    var clauseParagraphes = [
+      "CLAUSE DE RÉSERVE DE PROPRIÉTÉ : conformément à la loi 80.335 du 12 mai 1980, MCS conserve la propriété",
+      "des prestations et marchandises jusqu'au paiement intégral du prix et de ses accessoires.",
+      "Pénalité de retard : 3 fois le taux d'intérêt légal après l'échéance (art. L.441-10). Escompte pour règlement anticipé : 0 %.",
+      "Indemnité forfaitaire pour frais de recouvrement (art. D.441-5) : 40 € en cas de retard de paiement.",
+    ];
+    for (var cpi=0; cpi<clauseParagraphes.length; cpi++){ T(ML, y, 7.3, false, clauseParagraphes[cpi], 'fcf-ap-gray'); y -= 9.5; }
+
+    // ---- Detail TVA + TOTAL HT/TVA/TOTAL TTC + Net a payer -- ancres en bas de page fixe,
+    // exactement comme le generateur (boxTopY=114.9 depuis le bas) ----
+    var dW = 145.8, H1 = 10.8, H2 = 8.6, H3 = 33.9, dH = H1+H2+H3, boxTopY = 114.9;
+    var yTitleBot = boxTopY-H1, ySubBot = boxTopY-H1-H2, yValBot = boxTopY-dH;
+    STROKERECT(ML, yValBot, dW, dH);
+    RECT(ML, yTitleBot, dW, H1, true);
+    T(ML+dW/2, boxTopY-8, 7.5, true, 'Détail de la T.V.A', null, 'center', dW);
+    HLINE(ML, ML+dW, yTitleBot);
+    T(ML+4, yTitleBot-8, 7, false, 'Base HT'); T(ML+59, yTitleBot-8, 7, false, 'Taux'); T(ML+99, yTitleBot-8, 7, false, 'Montant T.V.A');
+    HLINE(ML, ML+dW, ySubBot);
+    T(ML+58, ySubBot-11, 8, false, totalHt.toFixed(2).replace('.',',') + ' €', null, 'right', 54);
+    T(ML+95, ySubBot-11, 8, false, (tva*100).toFixed(0) + ' %', null, 'right', 34);
+    T(ML+dW-4, ySubBot-11, 8, false, tvaMontant.toFixed(2).replace('.',',') + ' €', null, 'right', 40);
+
+    var totBoxX = ML+dW, totBoxW = cols[5]-totBoxX, totColW = totBoxW/3, totHeadH = H1+H2;
+    STROKERECT(totBoxX, yValBot, totBoxW, dH);
+    RECT(totBoxX, ySubBot, totBoxW, totHeadH, true);
+    T(totBoxX+totColW*0.5, boxTopY-13, 9.5, true, 'TOTAL HT', null, 'center', totColW);
+    T(totBoxX+totColW*1.5, boxTopY-13, 9.5, true, 'TVA', null, 'center', totColW);
+    T(totBoxX+totColW*2.5, boxTopY-13, 9.5, true, 'TOTAL TTC', null, 'center', totColW);
+    VLINE(totBoxX+totColW, yValBot, boxTopY); VLINE(totBoxX+totColW*2, yValBot, boxTopY);
+    HLINE(totBoxX, totBoxX+totBoxW, ySubBot);
+    T(totBoxX+totColW-6, yValBot+8, 9.5, false, totalHt.toFixed(2).replace('.',',') + ' €', null, 'right', totColW-12);
+    T(totBoxX+totColW*2-6, yValBot+8, 9.5, false, tvaMontant.toFixed(2).replace('.',',') + ' €', null, 'right', totColW-12);
+    T(totBoxX+totColW*3-6, yValBot+8, 10.5, true, totalTtc.toFixed(2).replace('.',',') + ' €', null, 'right', totColW-12);
+    T(cols[5], yValBot-8, 8.5, true, 'Net à payer : ' + totalTtc.toFixed(2).replace('.',',') + ' €', null, 'right', 200);
+
+    // ---- pied de page + pagination ----
+    // Repartition en lignes IDENTIQUE au vrai generateur (wrapText/textWidthApprox de
+    // buildFacturePdf, cote n8n) -- un simple slice(0,118) par nombre de caracteres derivait du
+    // vrai decoupage par largeur reelle du texte, cause du leger decalage constate a l'overlay.
+    function textWidthApprox(str, size){
+      var w = 0;
+      for (var ci=0; ci<str.length; ci++){
+        var ch = str.charAt(ci);
+        w += (ch>='0'&&ch<='9') ? 556 : ch===' ' ? 278 : (ch>='A'&&ch<='Z') ? 660 : 520;
+      }
+      return w * size / 1000;
+    }
+    function wrapText(str, maxWidthPt, size){
+      var rawWords = String(str||'').trim().split(/\s+/).filter(Boolean);
+      if (!rawWords.length) return [''];
+      var lines = []; var cur = '';
+      for (var wi=0; wi<rawWords.length; wi++){
+        var w = rawWords[wi];
+        var test = cur ? cur+' '+w : w;
+        if (textWidthApprox(test, size) <= maxWidthPt) cur = test;
+        else { if (cur) lines.push(cur); cur = w; }
+      }
+      if (cur) lines.push(cur);
+      return lines;
+    }
+    var footerTxt = 'SARL MCS - 2 Chemin de Belle Etoile - 33370 TRESSES au capital de 5 000€ / SIRET: 50068539100046 / Code APE: 8122Z / N° Intra: FR30500685391 / N° RCS: 500 685 391 R.C.S. Bordeaux';
+    var footerLignes = wrapText(footerTxt, MR-ML, 7);
+    var fy = yValBot-21;
+    for (var fli=0; fli<footerLignes.length; fli++){ T(ML, fy, 7, false, footerLignes[fli], 'fcf-ap-gray'); fy -= 8.5; }
+    T(PAGE_W/2, 18, 9, false, '1 / 1', 'fcf-ap-darkgray', 'center', 60);
+
+    page.innerHTML = els.join('');
   }
 
   function factureContratFormOpen(f, bloque){
@@ -10833,12 +11070,32 @@
     var numeroInput = document.getElementById('fcf-numero'); numeroInput.value = f.numero_contrat || '';
     var anneeInput = document.getElementById('fcf-annee'); anneeInput.value = f.annee || '';
     // Point 6a -- échéance pré-remplie (émission + 30 jours, comme MEG), modifiable.
-    var echeanceInput = document.getElementById('fcf-echeance'); echeanceInput.value = f.date_echeance || f.echeance_defaut || '';
+    // Session 16, Point 3 -- TOUJOURS aujourd'hui + 30 jours calendaires, calculé ICI côté
+    // navigateur au moment de l'ouverture (jamais dépendant d'un cache serveur qui pourrait
+    // dater) -- c'est cette valeur qui part réellement à l'envoi si Mickael ne la retouche pas.
+    var echeanceInput = document.getElementById('fcf-echeance');
+    if (f.date_echeance) { echeanceInput.value = f.date_echeance; }
+    else {
+      var echJour = new Date(); echJour.setDate(echJour.getDate() + 30);
+      echeanceInput.value = echJour.getFullYear() + '-' + String(echJour.getMonth()+1).padStart(2,'0') + '-' + String(echJour.getDate()).padStart(2,'0');
+    }
     // Point 6b -- conditions de règlement désormais un champ EDITABLE (plus un texte fixe).
     var conditionsInput = document.getElementById('fcf-conditions-reglement');
     conditionsInput.value = f.conditions_reglement || 'Règlement par virement';
-    var objetInput = document.getElementById('fcf-objet'); objetInput.value = f.objet_mail || f.objet_mail_defaut || '';
-    var corpsInput = document.getElementById('fcf-corps'); corpsInput.value = f.corps_mail || f.corps_mail_defaut || '';
+    // Session 16, Point 3 -- le brouillon (stocké ou calculé côté serveur) porte des
+    // placeholders de date/échéance (jamais une date figée depuis la génération mensuelle).
+    // Substitués ICI, à l'affichage, par les vraies valeurs du jour — Mickael voit la date
+    // réelle, jamais un texte cryptique entre crochets (contrairement au numéro de facture,
+    // structurellement inconnu avant l'envoi, qui reste affiché tel quel).
+    var echJourAffiche = new Date();
+    var dateEmissionFr = String(echJourAffiche.getDate()).padStart(2,'0') + '/' + String(echJourAffiche.getMonth()+1).padStart(2,'0') + '/' + echJourAffiche.getFullYear();
+    var echDateAffiche = new Date(echJourAffiche); echDateAffiche.setDate(echDateAffiche.getDate() + 30);
+    var echeanceFrAffiche = String(echDateAffiche.getDate()).padStart(2,'0') + '/' + String(echDateAffiche.getMonth()+1).padStart(2,'0') + '/' + echDateAffiche.getFullYear();
+    function fcfSubstituerDatesAffichage(texte){
+      return String(texte || '').split("[date d'émission]").join(dateEmissionFr).split('[échéance]').join(echeanceFrAffiche);
+    }
+    var objetInput = document.getElementById('fcf-objet'); objetInput.value = fcfSubstituerDatesAffichage(f.objet_mail || f.objet_mail_defaut || '');
+    var corpsInput = document.getElementById('fcf-corps'); corpsInput.value = fcfSubstituerDatesAffichage(f.corps_mail || f.corps_mail_defaut || '');
     var garderInput = document.getElementById('fcf-garder'); garderInput.checked = false;
 
     // Point 3d -- sous-lignes et corps du mail montrent TOUT leur contenu, jamais une fenêtre à
@@ -12992,7 +13249,10 @@
       relancesFraicheurMessage = 'Peux-tu déposer un export MEG frais pour les relances MCS ? Le dernier date du ' + dStr + ' (' + joursEcoulesExport + ' j).';
       if (relancesFraicheurCopyBtn) relancesFraicheurCopyBtn.style.display = '';
     } else if (relancesFraicheurEtat === 'a_verifier'){
-      relancesFraicheurTxt.textContent = 'Données MEG du ' + dStr + ' (' + joursEcoulesExport + ' j) — vérifie avant d’envoyer une relance.';
+      // Point 6a (07/09/2026) : vouvoiement -- "vérifie" (imperatif tutoiement) corrige en
+      // "vérifiez", ce texte est affiche directement a Mickael (contrairement au message de
+      // relancesFraicheurMessage juste au-dessus, qu'il copie lui-meme vers son equipe).
+      relancesFraicheurTxt.textContent = 'Données MEG du ' + dStr + ' (' + joursEcoulesExport + ' j) — vérifiez avant d’envoyer une relance.';
       relancesFraicheur.classList.add('stale');
     } else {
       relancesFraicheurTxt.textContent = 'Relances au ' + dStr + (joursEcoulesExport > 0 ? ' (' + joursEcoulesExport + ' j)' : '');
@@ -13022,8 +13282,12 @@
   }
   var RL_SOURCE_INFO = {
     confirme_deux_sources: { badge: 'confirme', ic: '✓✓', txt: 'Confirmé par MEG et les mails' },
-    confirme_manuel: { badge: 'manuel', ic: '✓', txt: 'Réponse que tu as déjà donnée' },
-    meg_seule: { badge: 'meg', ic: 'MEG', txt: 'Adresse MEG seule — jamais confirmée par un autre échange' },
+    // Fenêtre 4 (07/09/2026), point 6 -- vouvoiement (ce panneau tutoyait Mickael par endroits) +
+    // "Adresse MEG seule" etait un constat technique interne montre tel quel au client : reecrit
+    // pour dire ce qu'il doit EN FAIRE (verifier avant d'envoyer), pas juste le mecanisme qui l'a
+    // produit.
+    confirme_manuel: { badge: 'manuel', ic: '✓', txt: 'Réponse que vous avez déjà donnée' },
+    meg_seule: { badge: 'meg', ic: 'MEG', txt: 'Adresse trouvée uniquement dans votre logiciel de facturation — à vérifier avant d’envoyer' },
   };
   function relancesAppendSourceLigne(card, b){
     var info = RL_SOURCE_INFO[b.verdict];
@@ -13049,21 +13313,33 @@
   function relancesAppendFactureList(card, b){
     var list = document.createElement('div'); list.className = 'rl-facture-list';
     // Point 4b (07/09/2026) : granularite par facture -- "Azura a 5 factures, si Mickael n'en
-    // relance qu'une, SEULE celle-la passe dans Relances faites". La case a cocher n'a de sens
-    // qu'a partir de 2 factures (rien a choisir sur un groupe d'une seule) ; cochee par defaut
-    // (comportement inchange si rien n'est decoche : envoyer = tout le groupe, comme avant ce
-    // chantier). b._selection est initialise dans relancesBuildCard, lu par relancesAppendActions
-    // au moment du clic sur Envoyer.
+    // relance qu'une, SEULE celle-la passe dans Relances faites". Cochee par defaut (comportement
+    // inchange si rien n'est decoche : envoyer = tout le groupe, comme avant ce chantier).
+    // b._selection est initialise dans relancesBuildCard, lu par relancesAppendActions au moment
+    // du clic sur Envoyer.
+    // Point 2 (07/09/2026, retour Dorian) : la case a cocher est desormais TOUJOURS affichee,
+    // meme sur un groupe d'une seule facture -- avant ce chantier elle n'apparaissait qu'a partir
+    // de 2 factures, ce qui rendait le mecanisme de selection invisible/incomprehensible pour
+    // Mickael ("je ne savais meme pas que je pouvais choisir"). Le comportement (case cochee =
+    // incluse dans l'envoi) est desormais visuellement identique partout, qu'il y ait 1 ou
+    // plusieurs factures. Seule la phrase d'en-tete ci-dessous reste conditionnelle : elle n'a de
+    // sens que s'il y a un vrai choix a faire.
     var multiple = b.factures.length > 1;
+    if (multiple){
+      var choisirLbl = document.createElement('div'); choisirLbl.className = 'rl-choisir-label';
+      choisirLbl.textContent = 'Choisissez les factures à relancer';
+      list.appendChild(choisirLbl);
+    }
     b.factures.forEach(function(f, i){
       if (i > 0) list.appendChild(document.createElement('br'));
-      if (multiple){
-        var cbLabel = document.createElement('label'); cbLabel.className = 'rl-facture-check';
-        var cb = document.createElement('input'); cb.type = 'checkbox'; cb.checked = true;
-        cb.addEventListener('change', function(){ b._selection[f.numero] = cb.checked; });
-        cbLabel.appendChild(cb);
-        list.appendChild(cbLabel);
-      }
+      var cbLabel = document.createElement('label'); cbLabel.className = 'rl-facture-check';
+      var cb = document.createElement('input'); cb.type = 'checkbox'; cb.checked = true;
+      cb.addEventListener('change', function(){
+        b._selection[f.numero] = cb.checked;
+        if (typeof b._updateEnvoyerLabel === 'function') b._updateEnvoyerLabel();
+      });
+      cbLabel.appendChild(cb);
+      list.appendChild(cbLabel);
       list.appendChild(document.createTextNode(f.numero + ' du ' + fmtRelanceDateFr(f.date) + ' — ' + fmtEuros(f.montant)));
       // Point 4c/4d/4e : pastilles factuelles, jamais affichees tant qu'aucun evenement reel
       // n'existe pour cette facture (donc invisibles tant que TEST_MODE couvre tous les envois --
@@ -13090,38 +13366,53 @@
       var actRow = document.createElement('div'); actRow.className = 'rl-facture-actrow';
       // A2 : "supprimer" = DESACTIVER AVEC TRACE, jamais un vrai DELETE (rien n'est perdu, la
       // ligne reste en base avec qui/quand). Dit en clair a Mickael, pas en jargon technique.
+      // Point 7 (07/09/2026, retour Dorian) : "Supprimer" (retire une ligne, reversible avec
+      // trace) et "Mise en demeure" (courrier legal reel, engage Mickael face a un syndic) ne
+      // peuvent plus se ressembler -- avant ce chantier, memes couleur/contour/taille, cote a
+      // cote. Classe dediee "rl-facture-actbtn-del" en plus de la classe partagee, stylee plus
+      // bas (sobre/discrete, coherente avec son statut d'action reversible).
       var delBtn = relancesFactureActionBtn('Supprimer', ICON_TRASH_SM, function(){
         askConfirm('Supprimer ' + f.numero + ' ?',
           'Elle disparaîtra des relances. Rien n’est perdu : l’action reste enregistrée avec la date.',
           function(){
-            delBtn.disabled = true;
+            // Point 4 (07/09/2026) : jamais un bouton qui devient juste grise sans un MOT --
+            // meme regle deja appliquee au bouton Envoyer principal.
+            delBtn.disabled = true; delBtn.textContent = 'Suppression…';
             postRelancesAction({ numero: f.numero, action: 'desactiver' }, function(r){
-              if (r && r.ok){ toast('🗑 ' + f.numero + ' retirée des relances.'); relancesOpen(true); }
-              else { delBtn.disabled = false; toast('❌ ' + ((r && r.error) || 'Échec.')); }
-            }, function(err){ delBtn.disabled = false; toast('❌ ' + err); });
+              if (r && r.ok){ toast('🗑 ' + f.numero + ' retirée des relances.', 3200); relancesOpen(true); }
+              else { delBtn.disabled = false; delBtn.innerHTML = ICON_TRASH_SM + 'Supprimer'; toast('❌ ' + ((r && r.error) || 'Échec.')); }
+            }, function(err){ delBtn.disabled = false; delBtn.innerHTML = ICON_TRASH_SM + 'Supprimer'; toast('❌ ' + err); });
           }, 'Supprimer');
       });
+      delBtn.classList.add('rl-facture-actbtn-del');
       actRow.appendChild(delBtn);
       // A3 : mise en demeure -- action la plus engageante de l'ecran (courrier legal reel, au nom
       // de MCS/Mickael), jamais confondue avec une simple relance. Necessite un destinataire
       // resolu (meme condition que le bouton Envoyer principal) ; le texte legal est RECALCULE
       // cote serveur (jamais transmis d'ici), donc toujours la version officielle.
+      // Point 7 : classe dediee "rl-facture-actbtn-med" -- fond rouge PLEIN (au lieu du contour
+      // partage avec Supprimer), et poussee a l'extreme droite de la rangee (margin-left:auto)
+      // pour une separation visuelle nette, pas seulement les 8px de gap standard entre 2 actions.
       if (b.destinataire){
         var medBtn = relancesFactureActionBtn('Mise en demeure', ICON_MED_SM, function(){
           askConfirm('Mise en demeure — ' + f.numero,
             'Envoie un VRAI courrier légal de mise en demeure à ' + b.destinataire + ', au nom de MCS. Ce n’est pas une simple relance : c’est une étape officielle et engageante.',
             function(){
-              medBtn.disabled = true;
+              // Point 4 (07/09/2026) : loading avec un MOT explicite pendant l'envoi reel, et
+              // toast laisse assez longtemps pour etre lu (une mise en demeure est l'action la
+              // plus engageante de l'ecran -- pas question qu'elle passe inapercue).
+              medBtn.disabled = true; medBtn.textContent = 'Envoi en cours…';
               postRelancesAction({ numero: f.numero, action: 'mise_en_demeure' }, function(r){
+                medBtn.disabled = false; medBtn.innerHTML = ICON_MED_SM + 'Mise en demeure';
                 if (r && r.ok){
                   toast(r.testMode
                     ? ('🧪 Test envoyé à ' + (r.destinataireReel || b.destinataire) + ' — redirigé, n’a pas atteint le client.')
-                    : ('⚠️ Mise en demeure envoyée à ' + (r.destinataireReel || b.destinataire)));
-                  medBtn.disabled = false;
-                } else { medBtn.disabled = false; toast('❌ ' + ((r && r.error) || 'Échec.')); }
-              }, function(err){ medBtn.disabled = false; toast('❌ ' + err); });
+                    : ('⚠️ Mise en demeure envoyée à ' + (r.destinataireReel || b.destinataire)), 4000);
+                } else { toast('❌ ' + ((r && r.error) || 'Échec.')); }
+              }, function(err){ medBtn.disabled = false; medBtn.innerHTML = ICON_MED_SM + 'Mise en demeure'; toast('❌ ' + err); });
             }, 'Envoyer la mise en demeure');
         });
+        medBtn.classList.add('rl-facture-actbtn-med');
         actRow.appendChild(medBtn);
       }
       list.appendChild(actRow);
@@ -13183,7 +13474,9 @@
     var d = rm.derniereDateMs ? new Date(rm.derniereDateMs).toLocaleDateString('fr-FR') : '';
     var box = document.createElement('div'); box.className = 'rl-echange-argent';
     var titre = document.createElement('b');
-    titre.textContent = '📤 Tu l’as déjà relancé — ' + rm.nombre + ' fois' + (d ? ', la dernière le ' + d : '');
+    // Point 6a (07/09/2026) : vouvoiement -- dernier residu de tutoiement trouve dans le panneau
+    // Relances (le reste avait deja ete corrige plus tot dans cette session).
+    titre.textContent = '📤 Vous l’avez déjà relancé — ' + rm.nombre + ' fois' + (d ? ', la dernière le ' + d : '');
     box.appendChild(titre);
     relancesAppendTexteSource(box, rm.citation, rm.resume);
     var avert = document.createElement('div'); avert.className = 'rl-source-label-resume';
@@ -13278,7 +13571,7 @@
     if (b.editeManuellement && b.donneesChangeesDepuisEdition){
       var perime = document.createElement('div'); perime.className = 'rl-perime';
       var perimeTxt = document.createElement('span'); perimeTxt.className = 'rl-perime-txt';
-      perimeTxt.textContent = '⚠️ Les montants ont changé depuis ta version.';
+      perimeTxt.textContent = '⚠️ Les montants ont changé depuis votre version.';
       perime.appendChild(perimeTxt);
       var perimeBtn = document.createElement('button'); perimeBtn.type = 'button'; perimeBtn.className = 'rl-perime-btn';
       perimeBtn.textContent = 'Revenir au gabarit';
@@ -13328,7 +13621,7 @@
     // validee par Mickael (tutoiement, coherent avec le reste de l'app) : la 2e phrase compte
     // autant que la 1ere, elle dit que les reponses reviennent chez LUI, pas chez Caroline.
     var signataire = document.createElement('div'); signataire.className = 'rl-brouillon-signataire';
-    signataire.textContent = '✉️ Ce message part au nom de Caroline Benitez (comptabilité), depuis ta boîte. Les réponses te reviendront.';
+    signataire.textContent = '✉️ Ce message part au nom de Caroline Benitez (comptabilité), depuis votre boîte. Les réponses vous reviendront.';
     content.appendChild(signataire);
     // E3 (26/08/2026) : l'objet etait un <input> une ligne, donc tronque visuellement des qu'il
     // depassait la largeur de la carte ("Factures MCS en attente de règleme…"). Un textarea
@@ -13345,7 +13638,7 @@
     corpsIn.addEventListener('input', function(){ autoGrow(corpsIn); });
     var editeInfo = document.createElement('span'); editeInfo.className = 'rl-brouillon-edite';
     editeInfo.style.display = b.editeManuellement ? '' : 'none';
-    editeInfo.textContent = '✎ Modifié — ta version est conservée.';
+    editeInfo.textContent = '✎ Modifié — votre version est conservée.';
     content.appendChild(editeInfo);
     wrap.appendChild(content);
     function sauvegarder(){
@@ -13373,7 +13666,18 @@
       // Cote serveur, le brouillon est RECALCULE via `cle` (Preparer envoi relance (ok)) --
       // jamais un texte transmis d'ici, donc toujours "sa version" telle qu'affichee/editee.
       var envBtn = document.createElement('button'); envBtn.type = 'button'; envBtn.className = 'rl-btn-envoyer';
-      envBtn.innerHTML = '<svg class="hicon-sm" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="3" y="5" width="18" height="14" rx="2"/><polyline points="3,7 12,13 21,7"/></svg>Envoyer';
+      var envBtnIcon = '<svg class="hicon-sm" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="3" y="5" width="18" height="14" rx="2"/><polyline points="3,7 12,13 21,7"/></svg>';
+      // Point 2 (07/09/2026) : le bouton dit CE QU'IL VA FAIRE, pas juste "Envoyer" -- Dorian
+      // avait conclu que la selection par facture etait invisible/inutilisable faute de retour.
+      // Se met a jour EN DIRECT a chaque coche/decoche (b._updateEnvoyerLabel, appelee par le
+      // listener 'change' de chaque case dans relancesAppendFactureList). Sur un groupe d'une
+      // seule facture, pas de decompte a afficher (rien a choisir) -- libelle simple conserve.
+      b._updateEnvoyerLabel = function(){
+        if (b.factures.length <= 1){ envBtn.innerHTML = envBtnIcon + 'Envoyer'; return; }
+        var n = b.factures.filter(function(f){ return b._selection[f.numero] !== false; }).length;
+        envBtn.innerHTML = envBtnIcon + 'Envoyer la relance (' + n + ' facture' + (n > 1 ? 's' : '') + ' sur ' + b.factures.length + ')';
+      };
+      b._updateEnvoyerLabel();
       var envExpl = document.createElement('div'); envExpl.className = 'rl-envoyer-explication';
       var envTxt = document.createElement('div');
       envTxt.textContent = 'Envoyer ce message à ' + b.destinataire + ' ?';
@@ -13425,8 +13729,11 @@
         envExpl.classList.toggle('open');
       });
       envConfirmBtn.addEventListener('click', function(){
+        // Point 4 (07/09/2026, retour Dorian « le pop-up qui dit que l'action est faite apparait
+        // une demi-seconde, trop subtil ») : "Envoi en cours…" (un mot complet, jamais un rond
+        // qui tourne seul) + bouton non cliquable pour eviter un double-envoi.
         envConfirmBtn.disabled = true; envBtn.disabled = true;
-        envConfirmBtn.textContent = 'Envoi…';
+        envConfirmBtn.textContent = 'Envoi en cours…';
         var numerosEnvoi = b.factures.filter(function(f){ return b._selection[f.numero] !== false; }).map(function(f){ return f.numero; });
         var payloadEnvoi = { cle: b.cle, action: 'envoyer' };
         if (numerosEnvoi.length && numerosEnvoi.length < b.factures.length) payloadEnvoi.numeros = numerosEnvoi;
@@ -13436,9 +13743,12 @@
             // V2 (27/08/2026) : en mode test, le serveur ne fait plus avancer le niveau
             // (Preparer historique envoi (ok)) -- le message le dit explicitement, pas de
             // "envoyé" ambigu qui laisserait croire que la relance a progressé.
+            // Point 4 (07/09/2026) : duree du toast allongee (4s au lieu des 1,6s par defaut) --
+            // la vraie preuve reste le changement d'etat de la carte (elle quitte "A relancer"),
+            // mais ce message doit rester assez longtemps pour etre lu, pas juste entraperçu.
             toast(r.testMode
               ? ('🧪 Test envoyé à ' + (r.destinataireReel || b.destinataire) + ' — redirigé, n’a pas atteint le client, niveau inchangé.')
-              : ('✅ Envoyé à ' + (r.destinataireReel || b.destinataire)));
+              : ('✅ Envoyé à ' + (r.destinataireReel || b.destinataire)), 4000);
             // Sujet 1.2 (02/09/2026) : ecran a jour tout de suite (retire localement CE
             // brouillon/ces factures), PUIS un recalcul frais est quand meme lance en tache de
             // fond pour re-synchroniser -- jamais de "Calcul en cours…" affiche puisque le cache
@@ -13490,7 +13800,7 @@
     // suspendue jusqu'a un clic explicite sur "Reprendre les relances" (plus de mecanisme
     // "tu t'en occupes" a cote, c'est desormais le seul geste pour un retrait sans echeance).
     var dateLabel = document.createElement('span'); dateLabel.className = 'rl-form-label';
-    dateLabel.textContent = 'Date de reprise (optionnelle — laisse vide pour suspendre sans échéance)';
+    dateLabel.textContent = 'Date de reprise (optionnelle — laissez vide pour suspendre sans échéance)';
     var dateIn = document.createElement('input'); dateIn.type = 'date';
     var noteIn = document.createElement('textarea'); noteIn.placeholder = 'Pourquoi (ex : le syndic dit qu’il règle en septembre)…'; noteIn.rows = 2;
     form.appendChild(dateLabel); form.appendChild(dateIn); form.appendChild(noteIn);
@@ -13620,7 +13930,7 @@
     var noteLabel = document.createElement('span'); noteLabel.className = 'rl-termine-note-label'; noteLabel.textContent = 'Note';
     bloc.appendChild(noteLabel);
     var noteIn = document.createElement('textarea'); noteIn.className = 'rl-termine-note'; noteIn.value = f.note || '';
-    noteIn.placeholder = 'Ce que tu as décidé (ex : appelé le 3/09, il rappelle fin du mois)…';
+    noteIn.placeholder = 'Ce que vous avez décidé (ex : appelé le 3/09, il rappelle fin du mois)…';
     bloc.appendChild(noteIn);
     function autoGrowNote(){ noteIn.style.height = 'auto'; noteIn.style.height = noteIn.scrollHeight + 'px'; }
     setTimeout(autoGrowNote, 0);
@@ -13668,7 +13978,7 @@
       susBtn.textContent = '⏸ Suspendre';
       var form = document.createElement('div'); form.className = 'rl-form';
       var dateLabel2 = document.createElement('span'); dateLabel2.className = 'rl-form-label';
-      dateLabel2.textContent = 'Date de reprise (optionnelle — laisse vide pour suspendre sans échéance)';
+      dateLabel2.textContent = 'Date de reprise (optionnelle — laissez vide pour suspendre sans échéance)';
       var dateIn = document.createElement('input'); dateIn.type = 'date';
       var noteIn2 = document.createElement('textarea'); noteIn2.placeholder = 'Pourquoi (ex : le syndic dit qu’il règle en septembre)…'; noteIn2.rows = 2;
       form.appendChild(dateLabel2); form.appendChild(dateIn); form.appendChild(noteIn2);
@@ -15458,6 +15768,13 @@
   // d'enrichissement du 18/08/2026) sans email pourrait quand même apparaître avec un bouton
   // "Envoyer le mail" trompeur. clos/en_recherche restent définies (le bandeau de qualification
   // et la logique interne les utilisent encore) même si leur onglet a disparu de l'interface.
+  // Point 5c (07/09/2026, retour Dorian) : "MCS — prise de contact" ne donne aucune raison
+  // d'ouvrir le mail. Remplace par un objet personnalise (le nom reel du prospect, connu de
+  // toute facon), factuel et sans rien promettre ni exagerer -- jamais de formule racoleuse.
+  function oppSujetProspect(p){
+    var nom = (p.nom || '').trim();
+    return nom ? ('MCS — dératisation, désinsectisation et VMC pour ' + nom) : 'MCS — dératisation, désinsectisation et VMC';
+  }
   var OPP_TABS = {
     a_valider: function(p){ return (!p.statut || p.statut === 'a_valider') && !!String(p.email || '').trim(); },
     contacte: function(p){ return p.statut === 'contacte'; },
@@ -15594,12 +15911,12 @@
         msgArea.style.display = '';
         msgLabel.textContent = p.message_prepare
           ? 'Message préparé — relis-le avant d’envoyer'
-          : 'Message non généré — écris-le toi-même ci-dessous.';
+          : 'Message non généré — écrivez-le vous-même ci-dessous.';
         msgArea.value = p.message_prepare || '';
         messagePret = true; majEnvoyerDisabled();
       }, function(err){
         msgArea.style.display = '';
-        msgLabel.textContent = 'Message non généré (' + err + ') — écris-le toi-même ci-dessous.';
+        msgLabel.textContent = 'Message non généré (' + err + ') — écrivez-le vous-même ci-dessous.';
         messagePret = true; majEnvoyerDisabled();
       });
     }
@@ -15607,8 +15924,10 @@
     envoyerBtn.addEventListener('click', function(){
       var em = emailInput.value.trim();
       if (!em){ toast('Aucune adresse email pour ce prospect.'); return; }
-      envoyerBtn.disabled = true; pasInteresseBtn.disabled = true; envoyerBtn.innerHTML = '…';
-      postOpportunites({ type:'envoyer_message', id:p.id, email:em, objet:'MCS — prise de contact', corps:msgArea.value }, function(){
+      // Point 4 (07/09/2026) : jamais un rond/point qui tourne seul -- un mot complet pendant
+      // le chargement, meme regle deja appliquee sur le panneau Relances.
+      envoyerBtn.disabled = true; pasInteresseBtn.disabled = true; envoyerBtn.textContent = 'Envoi en cours…';
+      postOpportunites({ type:'envoyer_message', id:p.id, email:em, objet:oppSujetProspect(p), corps:msgArea.value }, function(){
         toast('✅ Message envoyé'); p.statut = 'contacte'; oppRefresh();
       }, function(err){
         envoyerBtn.disabled = false; pasInteresseBtn.disabled = false;
