@@ -2195,6 +2195,11 @@
     background:transparent; color:var(--ink); border:1.5px solid rgba(var(--gold-rgb),.55);
     -webkit-tap-highlight-color:transparent; display:flex; align-items:center; justify-content:center; gap:6px;
   }
+  /* Tache 4 (mission Session 16 bis, 08/09/2026) : bordure a 55% mesuree a 2,49:1 contre le fond
+     de carte MCS (echec du seuil 3:1). Opacite montee a .75 -- verifie par calcul WCAG (luminance
+     relative), ~3,9:1 sur blanc/--card-bg-2 -- CSS pur, jamais touche a MCS · Relances clients
+     (n8n) ni a sa logique metier. */
+  html.mcs-theme .rl-btn-envoyer{ border-color:rgba(var(--gold-rgb),.75); }
   .rl-btn-row2{display:flex; gap:8px}
   /* "Je l'ai relance moi-meme" -- desormais discret, au meme niveau que Suspendre (meme style,
      jamais le vert "c'est acquis" pour une donnee qu'on ne peut pas verifier). */
@@ -6635,9 +6640,9 @@
          c'est ce qui supprime le conflit humain sur cette ligne precise. Sert aussi de cle
          unique de detection de mise a jour (voir checkUpdate ci-dessous), plus fiable qu'une
          comparaison de chaine de version par tenant. */
-  var APPV_MCS = '4.37';
+  var APPV_MCS = '4.38';
   var APPV_LABO = '1.00';
-  var BUILD = 17;
+  var BUILD = 18;
   // displayVersion()/displayVersionShort() lisent isMcsCode() (definie plus bas dans cette
   // meme IIFE -- declaration de fonction, donc disponible ici par hoisting) : le TENANT
   // affiche depend du code de connexion, jamais d'un simple "APPV" global qui ne dirait ni
@@ -8371,9 +8376,16 @@
     if (ikBtn) ikBtn.style.display = (mcs && role === 'patron') ? '' : 'none';
     // "Adresses manquantes" (Session 11, 07/09/2026, Point 2) : meme garde -- patron d'un tenant
     // secondaire uniquement, jamais Bruno, jamais le compte principal.
+    // Session 16 bis (07/09/2026, Point 1) : outil de DIAGNOSTIC pour Dorian (retrouve les
+    // contrats sans adresse email avant un envoi), pas une fonctionnalite du produit vendu a
+    // Mickael -- n'a plus sa place dans son accueil (10e tuile en trop, casse le 3x3). Retiree
+    // de la grille pour TOUT compte patron (Mickael inclus, pas seulement masquee "en plus" pour
+    // lui) ; la fonction reste entierement en place et joignable par Dorian via la route directe
+    // deja utilisee pour les notifications push (?cible=adresses, voir ACCUEIL_CIBLES un peu plus
+    // bas) -- jamais decouvrable par Mickael, jamais supprimee.
     var adressesBtn = document.getElementById('sh-adresses');
-    if (adressesBtn) adressesBtn.style.display = (mcs && role === 'patron') ? '' : 'none';
-    if (mcs && role === 'patron') adressesCheckBadge(); else if (adressesMenuBadge) adressesMenuBadge.style.display = 'none';
+    if (adressesBtn) adressesBtn.style.display = 'none';
+    if (adressesMenuBadge) adressesMenuBadge.style.display = 'none';
     // "Relances clients" (chantier 3 audit MCS) : même garde — patron d'un tenant secondaire
     // uniquement, jamais Bruno, jamais le compte principal.
     var relancesBtn = document.getElementById('sh-relances');
@@ -8681,7 +8693,11 @@
     calendrier: { open: calendarOpen },
     relations: { open: relationsOpen },
     opportunites: { open: oppOpen },
-    propositions: { open: accueilOuvrirPropositions, avecLigne: true }
+    propositions: { open: accueilOuvrirPropositions, avecLigne: true },
+    // Session 16 bis (07/09/2026, Point 1) : "Adresses manquantes" n'a plus de tuile visible
+    // (outil de diagnostic Dorian, retire de l'accueil de Mickael) -- seule route directe encore
+    // possible : ?c=<code>&cible=adresses, jamais un lien montre a Mickael.
+    adresses: { open: adressesOpen }
   };
   [
     'devis-close', 'contrats-close', 'relances-close',
@@ -11818,7 +11834,7 @@
     var ICON_CHECK_FAIT = '<svg class="hicon-sm" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="9"/><polyline points="8,12.5 10.7,15.2 16,9.5"/></svg>';
     faitBtn.innerHTML = item.fait
       ? (ICON_CHECK_FAIT + 'Intervention faite le ' + calFaitDateCourte(item.faitLe))
-      : 'Intervention faite ?';
+      : 'Intervention faite';
     faitBtn.setAttribute('aria-label', item.fait ? 'Marquer comme non faite (revenir en arrière)' : 'Marquer cette intervention comme faite');
     faitBtn.addEventListener('click', function(e){ calToggleFait(item, bruno, e); });
     faitRow.appendChild(faitBtn);
