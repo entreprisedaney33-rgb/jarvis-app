@@ -1499,8 +1499,31 @@
   .ct-mois-chevron{color:var(--gold-a); font-size:13px}
   .ct-mois-section.replie .ct-mois-head{opacity:.75}
   .ct-mois-body{padding:0 0 4px}
-  #contrat-catalogue-form-bg{position:fixed; inset:0; z-index:55; background:rgba(0,0,0,.55); display:none}
-  #contrat-catalogue-form-bg.open{display:block}
+  /* Session 13 (07/09/2026), Point 4 -- la fiche contrat devient un VRAI ecran plein ecran
+     (avant : une fenetre modale exigue en feuille du bas, max 480px de large, police 12-15px
+     sous le minimum de 16px acquis) -- meme famille visuelle que #adressesview/#ikview. */
+  #contrat-catalogue-form-bg{
+    position:fixed; inset:0; z-index:55; background:var(--bg);
+    display:none; flex-direction:column;
+    transform:translateY(100%); transition:transform .28s cubic-bezier(.2,.9,.25,1);
+  }
+  #contrat-catalogue-form-bg.open{display:flex; transform:translateY(0)}
+  @media (prefers-reduced-motion: reduce){#contrat-catalogue-form-bg{transition:none}}
+  #ctf-head{
+    flex:0 0 auto; display:flex; align-items:center; gap:10px;
+    padding:calc(10px + env(safe-area-inset-top)) 14px 12px;
+    border-bottom:0.5px solid var(--hairline);
+  }
+  #ctf-head #ctf-titre{font-size:17px; flex:1; margin:0}
+  #ctf-close{
+    width:44px; height:44px; border-radius:50%; border:0; flex:0 0 auto;
+    font-size:18px; font-weight:700;
+    display:flex; align-items:center; justify-content:center; cursor:pointer;
+    -webkit-tap-highlight-color:transparent;
+  }
+  #ctf-body{flex:1; overflow-y:auto; -webkit-overflow-scrolling:touch; padding:14px 16px calc(20px + env(safe-area-inset-bottom))}
+  .ctf-section{margin-bottom:22px}
+  .ctf-section-titre{font-size:13px; font-weight:700; color:var(--muted); text-transform:uppercase; letter-spacing:.03em; margin:0 0 10px}
   #designations-groupe-form-bg{position:fixed; inset:0; z-index:55; background:rgba(0,0,0,.55); display:none}
   #designations-groupe-form-bg.open{display:block}
   .dg-row{margin-bottom:12px; padding-bottom:12px; border-bottom:0.5px solid var(--hairline)}
@@ -1520,22 +1543,88 @@
   .tvr-row .tvr-toggle.tvr-10{background:rgba(52,199,89,.15); color:#34C759}
   #bug-form-bg{position:fixed; inset:0; z-index:55; background:rgba(0,0,0,.55); display:none}
   #bug-form-bg.open{display:block}
-  .contrat-form{
+  /* Session 13 (07/09/2026), Point 4 -- la fiche contrat (#contrat-catalogue-form-bg) devient un
+     ecran plein ecran (regle CSS plus haut) et ne doit plus dependre du positionnement "feuille
+     du bas" de .contrat-form -- ce positionnement est deplace ICI, scope au SEUL panneau qui en
+     a encore besoin (#designations-groupe-form, gabarit inchange), pour ne rien casser. */
+  #designations-groupe-form{
     position:fixed; left:50%; bottom:0; transform:translateX(-50%); width:min(480px,100%);
     max-height:88vh; overflow-y:auto; background:var(--bg); border-radius:20px 20px 0 0;
     padding:18px 18px calc(18px + env(safe-area-inset-bottom)); box-sizing:border-box;
   }
-  .contrat-form h3{margin:0 0 12px; font-size:17px}
-  .contrat-form label{display:block; font-size:12px; color:var(--muted); margin:10px 0 4px}
+  #designations-groupe-form h3{margin:0 0 12px; font-size:17px}
+  .contrat-form{max-width:640px; margin:0 auto}
+  .contrat-form label{display:block; font-size:14px; color:var(--muted); margin:14px 0 6px}
   .contrat-form input, .contrat-form select, .contrat-form textarea{
     width:100%; box-sizing:border-box; border:0.5px solid rgba(255,255,255,.18); border-radius:10px;
-    background:var(--field-bg); color:var(--ink); font-size:14px; padding:9px 10px; font:inherit;
+    background:var(--field-bg); color:var(--ink); font-size:16px; padding:11px 12px; font:inherit;
+    min-height:44px;
   }
   .contrat-form textarea{resize:vertical}
   .contrat-form .cf-row{display:flex; gap:8px}
   .contrat-form .cf-row > *{flex:1}
-  .contrat-form .cf-actions{display:flex; gap:8px; margin-top:16px}
-  .contrat-form .cf-actions .vc-ok, .contrat-form .cf-actions .vc-no{padding:11px; font-size:15px}
+  .contrat-form .cf-actions{display:flex; gap:8px; margin-top:18px}
+  .contrat-form .cf-actions .vc-ok, .contrat-form .cf-actions .vc-no{padding:13px; font-size:16px; min-height:44px}
+  /* Session 13, Point 4c -- "actif" : un etat metier reel (contrat resilie ou pas), jamais un
+     rouge/vert (Principe 3) -- pilule a 2 positions, la position choisie en plein bleu MCS,
+     l'autre en contour neutre, meme esprit que .rl-btn-suspendre2/.tvr-toggle deja dans ce fichier. */
+  .ctf-actif-row{display:flex; gap:8px; margin-top:6px}
+  .ctf-actif-opt{
+    flex:1; min-height:44px; border-radius:10px; border:1.5px solid var(--hairline);
+    background:none; color:var(--ink); font:inherit; font-size:16px; font-weight:700; cursor:pointer;
+    -webkit-tap-highlight-color:transparent;
+  }
+  html.mcs-theme .ctf-actif-opt.on{background:var(--blue); border-color:var(--blue); color:#fff}
+  /* Session 13, Point 4b -- historique des modifications, lecture seule, meme famille visuelle
+     que les cartes de contrat (fond plein, texte a 2 niveaux). */
+  #ctf-historique-liste{display:flex; flex-direction:column; gap:10px}
+  .ctf-histo-ligne{background:var(--surface); border-radius:12px; padding:12px 14px}
+  .ctf-histo-meta{font-size:13px; color:var(--muted); margin-bottom:6px}
+  .ctf-histo-champ{font-size:15px; margin:3px 0}
+  .ctf-histo-champ b{font-weight:700}
+  #ctf-historique-vide{font-size:14px; color:var(--muted); padding:6px 0}
+  /* Session 13, Point 4c -- "Retirer ce contrat" est une action DESTRUCTIVE (Principe 3 : le
+     rouge lui est reserve) -- vc-no est desormais le bouton NEUTRE des paires confirmer/annuler
+     (Session 3), il ne doit plus porter cette suppression reelle. Rouge seul, jamais en face
+     d'un vert -- meme esprit que #delModalConfirm. */
+  #ctf-delete{
+    background:none; border:1.5px solid #FF453A; color:#FF453A; border-radius:12px;
+    min-height:44px; font-size:16px; font-weight:700; cursor:pointer; -webkit-tap-highlight-color:transparent;
+    display:flex; align-items:center; justify-content:center; gap:8px;
+  }
+  /* Session 13 (07/09/2026), Point 4 CORRIGE -- ecran "Modifier et traiter" de Contrats ->
+     Facturation (PAS le catalogue) : meme gabarit plein ecran que #contrat-catalogue-form-bg,
+     reutilise les classes generiques .ctf-section/.ctf-section-titre/.contrat-form (pas scopees
+     par id, deja partagees), ids propres (#fcf-*) pour ne jamais entrer en collision avec le
+     panneau catalogue existant. */
+  #facture-contrat-form-bg{
+    position:fixed; inset:0; z-index:56; background:var(--bg);
+    display:none; flex-direction:column;
+    transform:translateY(100%); transition:transform .28s cubic-bezier(.2,.9,.25,1);
+  }
+  #facture-contrat-form-bg.open{display:flex; transform:translateY(0)}
+  @media (prefers-reduced-motion: reduce){#facture-contrat-form-bg{transition:none}}
+  #fcf-head{
+    flex:0 0 auto; display:flex; align-items:center; gap:10px;
+    padding:calc(10px + env(safe-area-inset-top)) 14px 12px;
+    border-bottom:0.5px solid var(--hairline);
+  }
+  #fcf-head #fcf-titre{font-size:17px; flex:1; margin:0}
+  #fcf-close{
+    width:44px; height:44px; border-radius:50%; border:0; flex:0 0 auto;
+    font-size:18px; font-weight:700;
+    display:flex; align-items:center; justify-content:center; cursor:pointer;
+    -webkit-tap-highlight-color:transparent;
+  }
+  #fcf-body{flex:1; overflow-y:auto; -webkit-overflow-scrolling:touch; padding:14px 16px calc(20px + env(safe-area-inset-bottom))}
+  /* Decision 1 (Session 13) -- "garder aussi pour les prochaines fois" : une case a cocher
+     EXPLICITE, jamais un report automatique/silencieux vers le contrat catalogue. */
+  .fcf-checkbox-row{display:flex; align-items:center; gap:10px; margin-top:16px; min-height:44px}
+  .fcf-checkbox-row input[type=checkbox]{width:22px; height:22px; flex:0 0 auto; margin:0}
+  .fcf-checkbox-row label{margin:0; font-size:15px; color:var(--ink)}
+  /* Decision 3 (Session 13) -- trace des modifications, lecture seule, meme famille visuelle que
+     l'historique du catalogue (.ctf-histo-*, deja generique). */
+  #fcf-historique-vide{font-size:14px; color:var(--muted); padding:6px 0}
   /* Panneau plein ecran "IK" (chantier 6 réaffecté 11/08/2026 : frais kilométriques intelligents,
      patron d'un tenant secondaire uniquement -- même famille visuelle que Contrats/Coûts). */
   #ikview{
@@ -1897,6 +1986,12 @@
   .rl-source-badge.manuel{background:rgba(48,209,88,.15); color:var(--ok)}
   .rl-source-txt{color:var(--muted)}
   .rl-facture-list{font-size:12.5px; color:var(--ink); opacity:.85; margin-top:4px; line-height:1.5}
+  /* F2 (07/09/2026), A2/A3 : ligne d'actions par facture -- gap 8px entre 2 actions distinctes
+     (regle app), .rl-facture-actbtn etend .carnet-confirm-delete (deja min-height:44px, deja
+     contraste-verifie en theme MCS) sans lui redonner flex:1 (bouton de la taille de son texte
+     ici, pas plein largeur comme dans le carnet). */
+  .rl-facture-actrow{display:flex; flex-wrap:wrap; gap:8px; margin:6px 0 10px; opacity:1}
+  .rl-facture-actbtn{flex:0 0 auto !important; padding:8px 13px !important; font-size:13px !important}
   .rl-jamais{font-size:11.5px; color:var(--muted); font-style:italic; margin-top:2px}
   .rl-echange-argent{
     font-size:12.5px; line-height:1.4; margin-top:8px; padding:9px 11px; border-radius:10px;
@@ -1998,8 +2093,9 @@
   /* Point 3 (28/08/2026) : lien facture par ligne (jamais un bouton mort, present seulement si
      f.pdfUrl existe) + case a cocher duplicata dans l'encadre de confirmation d'envoi. */
   .rl-facture-pdf{font-size:12px; color:var(--blue); text-decoration:none; margin-left:6px}
-  .rl-duplicata-check{display:flex; align-items:center; gap:8px; margin:8px 0; font-size:12.5px; color:var(--ink); cursor:pointer}
-  .rl-duplicata-check input{width:16px; height:16px; flex-shrink:0}
+  /* A4 (07/09/2026) : remplace .rl-duplicata-check (case a cocher -- retiree, la piece jointe
+     n'est plus optionnelle) -- simple ligne d'info, jamais interactive. */
+  .rl-duplicata-info{margin:8px 0; font-size:12.5px; color:var(--muted); line-height:1.4}
   /* Cartes-question (a_confirmer / conflit / aucune) -- pas une erreur, une conversation. */
   .rl-question{
     margin-top:8px; padding:12px; border-radius:12px; background:rgba(var(--gold-rgb),.08);
@@ -4272,7 +4368,7 @@
   html.mcs-theme .rl-perime,
   html.mcs-theme .rl-perime-btn,
   html.mcs-theme .rl-envoyer-explication,
-  html.mcs-theme .rl-duplicata-check
+  html.mcs-theme .rl-duplicata-info
   {font-size:14px}
   html.mcs-theme .rl-conflit-opt-btn,
   html.mcs-theme #caf-err,
@@ -4734,7 +4830,6 @@
   html.mcs-theme .rl-brouillon-toggle,
   html.mcs-theme .rl-btn-row2,
   html.mcs-theme .rl-card .dv-actions button,
-  html.mcs-theme .rl-duplicata-check,
   html.mcs-theme .rl-form .rl-form-actions button,
   html.mcs-theme .rl-perime-btn,
   html.mcs-theme .rl-source-badge
@@ -5649,47 +5744,170 @@
   <div id="bcal-list"></div>
 </div>
 
+<!-- Session 13 (07/09/2026), Point 4 -- ecran plein ecran (avant : fenetre modale exigue en
+     feuille du bas). 100% des champs du catalogue sont desormais modifiables ici (ajoutes cette
+     session : mois de passage 2/3/4, N° contrat, date de signature, actif) + historique des
+     modifications en lecture seule (qui/quand/quoi). -->
 <div id="contrat-catalogue-form-bg">
+  <div id="ctf-head">
+    <b id="ctf-titre">Nouveau contrat</b>
+    <button id="ctf-close" type="button" aria-label="Fermer">✕</button>
+  </div>
+  <div id="ctf-body">
   <div class="contrat-form" id="contrat-catalogue-form">
-    <h3 id="ctf-titre">Nouveau contrat</h3>
-    <label>Type</label>
-    <select id="cf-type"><option value="BRUNO">Dératisation / désinsectisation</option><option value="VMC">VMC</option></select>
-    <label>Client (syndic/société)</label><input id="cf-client" type="text">
-    <label>Résidence</label><input id="cf-residence" type="text">
-    <label>Adresse</label><input id="cf-adresse" type="text">
-    <label>Ville</label><input id="cf-ville" type="text">
-    <label>Prestation</label><input id="cf-prestation" type="text">
-    <div class="cf-row">
-      <div><label>Passages/an</label><input id="cf-passages" type="number" min="1" value="1"></div>
-      <div><label>Mois du 1er passage</label><input id="cf-passage1" type="text" placeholder="ex : Mars"></div>
+    <div class="ctf-section">
+      <p class="ctf-section-titre">Identité</p>
+      <label>Type</label>
+      <select id="cf-type"><option value="BRUNO">Dératisation / désinsectisation</option><option value="VMC">VMC</option></select>
+      <label>Client (syndic/société)</label><input id="cf-client" type="text">
+      <label>Résidence</label><input id="cf-residence" type="text">
     </div>
-    <div class="cf-row">
-      <div><label>Prix HT (€)</label><input id="cf-prix" type="number" step="0.01"></div>
-      <div><label>TVA</label><select id="cf-tva"><option value="0.2">20%</option><option value="0.1">10%</option></select></div>
+    <div class="ctf-section">
+      <p class="ctf-section-titre">Adresse</p>
+      <label>Adresse</label><input id="cf-adresse" type="text">
+      <label>Ville</label><input id="cf-ville" type="text">
     </div>
-    <!-- Session 11 (07/09/2026), Point 5 -- bouton de reindexation deratisation, backend deja
-         existant (catalogue-derat-reindex, Session 10). Jamais en lot, jamais sans clic explicite,
-         ancien/nouveau prix affiches avant validation (estimation locale, montant exact confirme
-         par le serveur juste apres), reversion possible via le meme bouton (annuler). Visible
-         uniquement en edition d'un contrat de deratisation (jamais VMC, jamais a la creation). -->
-    <div id="ctf-derat-wrap" style="display:none">
-      <p id="ctf-derat-info" class="ctf-derat-info"></p>
-      <button id="ctf-derat-btn" type="button" class="ctf-derat-btn"></button>
-      <div id="ctf-derat-confirm" style="display:none">
-        <p id="ctf-derat-confirm-txt"></p>
-        <div class="cf-actions">
-          <button class="vc-ok" id="ctf-derat-confirm-ok" type="button">Confirmer</button>
-          <button class="vc-no" id="ctf-derat-confirm-no" type="button">Annuler</button>
+    <div class="ctf-section">
+      <p class="ctf-section-titre">Prestation</p>
+      <label>Prestation</label><input id="cf-prestation" type="text">
+      <div class="cf-row">
+        <div><label>Passages/an</label><input id="cf-passages" type="number" min="1" value="1"></div>
+        <div><label>Mois passage 1</label><input id="cf-passage1" type="text" placeholder="ex : Mars"></div>
+      </div>
+      <div class="cf-row">
+        <div><label>Mois passage 2</label><input id="cf-passage2" type="text" placeholder="ex : Juin"></div>
+        <div><label>Mois passage 3</label><input id="cf-passage3" type="text" placeholder="ex : Septembre"></div>
+      </div>
+      <label>Mois passage 4</label><input id="cf-passage4" type="text" placeholder="ex : Décembre">
+    </div>
+    <div class="ctf-section">
+      <p class="ctf-section-titre">Tarification</p>
+      <div class="cf-row">
+        <div><label>Prix HT (€)</label><input id="cf-prix" type="number" step="0.01"></div>
+        <div><label>TVA</label><select id="cf-tva"><option value="0.2">20%</option><option value="0.1">10%</option></select></div>
+      </div>
+      <!-- Session 11 (07/09/2026), Point 5 -- bouton de reindexation deratisation, backend deja
+           existant (catalogue-derat-reindex, Session 10). Jamais en lot, jamais sans clic explicite,
+           ancien/nouveau prix affiches avant validation (estimation locale, montant exact confirme
+           par le serveur juste apres), reversion possible via le meme bouton (annuler). Visible
+           uniquement en edition d'un contrat de deratisation (jamais VMC, jamais a la creation). -->
+      <div id="ctf-derat-wrap" style="display:none">
+        <p id="ctf-derat-info" class="ctf-derat-info"></p>
+        <button id="ctf-derat-btn" type="button" class="ctf-derat-btn"></button>
+        <div id="ctf-derat-confirm" style="display:none">
+          <p id="ctf-derat-confirm-txt"></p>
+          <div class="cf-actions">
+            <button class="vc-ok" id="ctf-derat-confirm-ok" type="button">Confirmer</button>
+            <button class="vc-no" id="ctf-derat-confirm-no" type="button">Annuler</button>
+          </div>
         </div>
       </div>
     </div>
-    <label>Email de facturation</label><input id="cf-email" type="email">
-    <label>Renouvellement</label><input id="cf-renouv" type="text" placeholder="tacite / 3 ans / ...">
+    <div class="ctf-section">
+      <p class="ctf-section-titre">Contrat administratif</p>
+      <label>N° contrat</label><input id="cf-numero" type="text">
+      <div class="cf-row">
+        <div><label>Date de signature</label><input id="cf-datesign" type="date"></div>
+        <div><label>Renouvellement</label><input id="cf-renouv" type="text" placeholder="tacite / 3 ans / ..."></div>
+      </div>
+      <label>Contrat actif</label>
+      <div class="ctf-actif-row">
+        <button type="button" class="ctf-actif-opt" id="cf-actif-oui">Oui</button>
+        <button type="button" class="ctf-actif-opt" id="cf-actif-non">Non (résilié)</button>
+      </div>
+    </div>
+    <div class="ctf-section">
+      <p class="ctf-section-titre">Contact</p>
+      <label>Email de facturation</label><input id="cf-email" type="email">
+    </div>
+    <div class="ctf-section" id="ctf-historique-section" style="display:none">
+      <p class="ctf-section-titre">Historique des modifications</p>
+      <div id="ctf-historique-liste"></div>
+      <p id="ctf-historique-vide" style="display:none">Aucune modification enregistrée pour ce contrat.</p>
+    </div>
     <div class="cf-actions">
       <button class="vc-ok" id="ctf-save" type="button"><svg class="hicon-sm" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="9"/><polyline points="8,12.5 10.7,15.2 16,9.5"/></svg>Enregistrer</button>
       <button class="vc-no" id="ctf-cancel" type="button">Annuler</button>
     </div>
-    <button class="vc-no" id="ctf-delete" type="button" style="width:100%;margin-top:8px;display:none"><svg class="hicon-sm" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 7h16"/><path d="M9 7V4a1 1 0 0 1 1-1h4a1 1 0 0 1 1 1v3"/><path d="M6 7l1 13a2 2 0 0 0 2 2h6a2 2 0 0 0 2-2l1-13"/><line x1="10" y1="11" x2="10" y2="17"/><line x1="14" y1="11" x2="14" y2="17"/></svg>Retirer ce contrat</button>
+    <button id="ctf-delete" type="button" style="width:100%;margin-top:10px;display:none"><svg class="hicon-sm" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 7h16"/><path d="M9 7V4a1 1 0 0 1 1-1h4a1 1 0 0 1 1 1v3"/><path d="M6 7l1 13a2 2 0 0 0 2 2h6a2 2 0 0 0 2-2l1-13"/><line x1="10" y1="11" x2="10" y2="17"/><line x1="14" y1="11" x2="14" y2="17"/></svg>Retirer ce contrat</button>
+  </div>
+  </div>
+</div>
+
+<!-- Session 13 (07/09/2026), Point 4 CORRIGE -- "Modifier et traiter" (Contrats -> Facturation).
+     Modifie LA FACTURE en cours d'emission, a 100% (jamais le contrat catalogue, sauf case
+     "garder aussi pour les prochaines fois" cochee explicitement -- decision 1). Accessible
+     UNIQUEMENT sur une facture au statut "a_traiter" (decision 2 -- deja garanti par
+     contratsBuildMoisCard qui ne pose ce bouton que dans cette branche). Chaque modification est
+     tracee (decision 3, section Historique plus bas). -->
+<div id="facture-contrat-form-bg">
+  <div id="fcf-head">
+    <b id="fcf-titre">Facture à traiter</b>
+    <button id="fcf-close" type="button" aria-label="Fermer">✕</button>
+  </div>
+  <div id="fcf-body">
+  <div class="contrat-form" id="facture-contrat-form">
+    <div class="ctf-section">
+      <p class="ctf-section-titre">Identité</p>
+      <label>Nom de la résidence</label><input id="fcf-residence" type="text">
+      <label>Client facturé (syndic/société)</label><input id="fcf-client" type="text">
+      <label>Représenté par</label><input id="fcf-gestionnaire" type="text" placeholder="ex : M. Dupont">
+    </div>
+    <div class="ctf-section">
+      <p class="ctf-section-titre">Adresse</p>
+      <label>Adresse</label><input id="fcf-adresse" type="text">
+      <label>Ville</label><input id="fcf-ville" type="text">
+      <label id="fcf-dest-label">Destinataire (email)</label><input id="fcf-dest" type="text">
+      <p id="fcf-dest-preuve" class="ct-motif-blocage" style="display:none"></p>
+    </div>
+    <div class="ctf-section">
+      <p class="ctf-section-titre">Prestation</p>
+      <label id="fcf-designation-label">Désignation (verbatim MEG)</label>
+      <textarea id="fcf-designation"></textarea>
+      <button id="fcf-confirm-designation" type="button" class="ct-toggle ct-confirm-designation" style="display:none"></button>
+      <label>Sous-lignes de détail (une par ligne)</label>
+      <textarea id="fcf-souslignes"></textarea>
+      <div class="cf-row">
+        <div><label>Quantité</label><input id="fcf-quantite" type="number" step="1" min="0"></div>
+        <div><label>Unité</label><input id="fcf-unite" type="text" placeholder="U"></div>
+      </div>
+      <label>Passages / an</label><input id="fcf-passages" type="number" step="1" min="1">
+    </div>
+    <div class="ctf-section">
+      <p class="ctf-section-titre">Tarification</p>
+      <label id="fcf-prix-label">Prix unitaire HT (€)</label><input id="fcf-prix" type="number" step="0.01">
+      <div class="ct-tva-choix" id="fcf-tva-wrap"></div>
+      <span class="dv-meta" id="fcf-ttc-preview"></span>
+    </div>
+    <div class="ctf-section">
+      <p class="ctf-section-titre">Contrat</p>
+      <div class="cf-row">
+        <div><label>N° contrat</label><input id="fcf-numero" type="text"></div>
+        <div><label>Année</label><input id="fcf-annee" type="number" step="1"></div>
+      </div>
+      <label>Conditions de règlement</label>
+      <p style="font-size:14px;color:var(--muted);margin:6px 0">Virement à réception de facture (fixe, non modifiable).</p>
+      <label>Échéance</label><input id="fcf-echeance" type="date">
+    </div>
+    <div class="ctf-section">
+      <p class="ctf-section-titre">Message</p>
+      <label>Objet</label><input id="fcf-objet" type="text">
+      <label>Corps du mail</label><textarea id="fcf-corps"></textarea>
+    </div>
+    <div class="fcf-checkbox-row">
+      <input id="fcf-garder" type="checkbox">
+      <label for="fcf-garder">Garder aussi pour les prochaines fois (modifie le contrat)</label>
+    </div>
+    <div class="ctf-section" id="fcf-historique-section" style="display:none">
+      <p class="ctf-section-titre">Historique des modifications</p>
+      <div id="fcf-historique-liste"></div>
+      <p id="fcf-historique-vide" style="display:none">Aucune modification enregistrée pour cette facture.</p>
+    </div>
+    <div class="cf-actions">
+      <button class="vc-ok vc-envoi-reel" id="fcf-envoyer" type="button"><svg class="hicon-sm" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><line x1="22" y1="2" x2="11" y2="13"/><polygon points="22 2 15 22 11 13 2 9 22 2"/></svg>Envoyer</button>
+      <button class="vc-no" id="fcf-skip" type="button"><svg class="hicon-sm" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><polyline points="7,5 13,12 7,19"/><polyline points="13,5 19,12 13,19"/></svg>Pas cette année</button>
+    </div>
+  </div>
   </div>
 </div>
 
@@ -6246,9 +6464,9 @@
          c'est ce qui supprime le conflit humain sur cette ligne precise. Sert aussi de cle
          unique de detection de mise a jour (voir checkUpdate ci-dessous), plus fiable qu'une
          comparaison de chaine de version par tenant. */
-  var APPV_MCS = '4.34';
+  var APPV_MCS = '4.35';
   var APPV_LABO = '1.00';
-  var BUILD = 12;
+  var BUILD = 13;
   // displayVersion()/displayVersionShort() lisent isMcsCode() (definie plus bas dans cette
   // meme IIFE -- declaration de fonction, donc disponible ici par hoisting) : le TENANT
   // affiche depend du code de connexion, jamais d'un simple "APPV" global qui ne dirait ni
@@ -10296,7 +10514,8 @@
       return card;
     }
 
-    // ---- Statut "a_traiter" (par défaut) : formulaire éditable + Envoyer/Pas cette année ----
+    // ---- Statut "a_traiter" (par défaut) : bouton -> ouvre l'écran plein écran de Facturation
+    // (Session 13, Point 4 corrigé) -- l'édition détaillée ne vit plus inline dans la carte. ----
     if (bloque){
       var motifP = document.createElement('p'); motifP.className = 'ct-motif-blocage';
       motifP.textContent = f.motif_blocage || 'Aucune désignation MEG vérifiée pour cette prestation.';
@@ -10306,37 +10525,55 @@
     // Session 4 (06/09/2026) : innerHTML (pas textContent) -- meme icone crayon que
     // "cal-client-changer-def" (famille SVG 24x24/trait 2/currentColor), au lieu de l'emoji ✏️.
     toggleBtn.innerHTML = '<svg class="hicon-sm" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 20h4L20 8l-4-4L4 16z"/><line x1="14" y1="6" x2="18" y2="10"/></svg>' + (bloque ? 'Saisir la désignation et traiter' : 'Modifier et traiter');
+    toggleBtn.addEventListener('click', function(){ factureContratFormOpen(f, bloque); });
     card.appendChild(toggleBtn);
+    return card;
+  }
 
-    var detail = document.createElement('div'); detail.className = 'ct-detail';
-    // 30/08/2026 : si aucun destinataire confirme mais qu'un CANDIDAT existe (syndic retrouve via
-    // la memoire relationnelle ou les mails de la boite MCS, ou adresse MEG en conflit avec une
-    // variante proche) -- on PRE-REMPLIT le champ pour que Mickael n'ait qu'a verifier/valider,
-    // avec la preuve juste en dessous. Jamais ecrit dans destinataire_email tant que Mickael n'a
-    // pas lui-meme valide (le champ reste un simple <input>, editable, rien n'est pre-valide).
-    var destInput = contratField(detail, 'Destinataire (email) — "à renseigner" si aucune correspondance trouvée dans l\'export MEG', 'input', f.destinataire_email || f.destinataire_candidat); destInput.type = 'text';
-    if (!f.destinataire_email && f.destinataire_candidat) {
-      var destPreuve = document.createElement('p'); destPreuve.className = 'ct-motif-blocage';
+  // Session 13 (07/09/2026), Point 4 CORRIGE -- écran plein écran "Modifier et traiter" (facture,
+  // pas contrat). Remplit tous les champs depuis la ligne facture `f`, charge l'historique
+  // (Décision 3), et envoie TOUT (y compris les champs jusqu'ici non éditables : résidence,
+  // client, "représenté par", adresse/ville, quantité, unité, N° contrat, année, échéance,
+  // sous-lignes) au moment de "Envoyer". "Garder aussi pour les prochaines fois" (Décision 1)
+  // est une case EXPLICITE, décochée par défaut à chaque ouverture -- jamais un report
+  // automatique/silencieux vers le contrat catalogue.
+  var fcfBg = document.getElementById('facture-contrat-form-bg');
+  var fcfClose = document.getElementById('fcf-close');
+  if (fcfClose) fcfClose.addEventListener('click', function(){ fcfBg.classList.remove('open'); });
+  if (fcfBg) fcfBg.addEventListener('click', function(e){ if (e.target === fcfBg) fcfBg.classList.remove('open'); });
+
+  function factureContratFormOpen(f, bloque){
+    document.getElementById('fcf-titre').textContent = contratNomAffiche(f);
+    document.getElementById('fcf-residence').value = f.residence || '';
+    document.getElementById('fcf-client').value = f.client || '';
+    document.getElementById('fcf-gestionnaire').value = f.gestionnaire_meg || '';
+    document.getElementById('fcf-adresse').value = f.adresse || '';
+    document.getElementById('fcf-ville').value = f.ville || '';
+    var destInput = document.getElementById('fcf-dest');
+    destInput.value = f.destinataire_email || f.destinataire_candidat || '';
+    var destLabel = document.getElementById('fcf-dest-label');
+    destLabel.textContent = 'Destinataire (email) — "à renseigner" si aucune correspondance trouvée dans l\'export MEG';
+    var destPreuve = document.getElementById('fcf-dest-preuve');
+    if (!f.destinataire_email && f.destinataire_candidat){
+      destPreuve.style.display = '';
       destPreuve.innerHTML = '<svg class="hicon-sm" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="10.5" cy="10.5" r="6.5"/><line x1="20" y1="20" x2="15.3" y2="15.3"/></svg>À confirmer — ' + escHtml(f.destinataire_preuve || 'candidat trouvé, à vérifier.');
-      detail.appendChild(destPreuve);
-    }
-    var designationInput = contratField(detail,
-      bloque ? 'Désignation (verbatim MEG) — à saisir avant tout envoi, aucune n\'a pu être vérifiée automatiquement' : 'Désignation (verbatim MEG)',
-      'textarea', f.designation);
-    // 31/08/2026 (chantier A) : confirmer ICI ne corrige pas QUE cette facture -- ça écrit dans
-    // mcs_designations (statut 'confirme') et se propage IMMEDIATEMENT, sans rechargement, à
-    // toutes les factures "à traiter" qui partagent le même libellé brut (ex. toutes les "MS3D").
-    // Réutilise le mécanisme "Jarvis demande -> mémorise -> ne redemande jamais" déjà construit
-    // pour mcs_memoire_champs, adapté à la table dédiée mcs_designations demandée pour ce chantier.
+    } else { destPreuve.style.display = 'none'; }
+
+    var designationInput = document.getElementById('fcf-designation');
+    designationInput.value = f.designation || '';
+    document.getElementById('fcf-designation-label').textContent = bloque
+      ? 'Désignation (verbatim MEG) — à saisir avant tout envoi, aucune n\'a pu être vérifiée automatiquement'
+      : 'Désignation (verbatim MEG)';
+    // 31/08/2026 (chantier A), conservé tel quel : confirmer ICI écrit dans mcs_designations
+    // (statut 'confirme') et se propage IMMEDIATEMENT à toutes les factures "à traiter" qui
+    // partagent le même libellé brut.
+    var confirmBtn = document.getElementById('fcf-confirm-designation');
+    var ICON_CHECK_CT = '<svg class="hicon-sm" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="9"/><polyline points="8,12.5 10.7,15.2 16,9.5"/></svg>';
     if (f.famille_prestation){
-      var confirmBtn = document.createElement('button'); confirmBtn.type = 'button'; confirmBtn.className = 'ct-toggle ct-confirm-designation';
-      // Session 4 (06/09/2026) : innerHTML (pas textContent) -- meme coche SVG que partout
-      // ailleurs (checkmark-cercle 24x24/trait 2/currentColor) au lieu de l'emoji ✅.
-      var ICON_CHECK_CT = '<svg class="hicon-sm" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="9"/><polyline points="8,12.5 10.7,15.2 16,9.5"/></svg>';
-      confirmBtn.innerHTML = ICON_CHECK_CT + (bloque
-        ? ('Confirmer « ' + escHtml(designationInput.value || '(à écrire ci-dessus)') + ' » pour toutes les factures de ce type')
-        : 'Reconfirmer cette désignation pour toutes les factures de ce type');
-      confirmBtn.addEventListener('click', function(){
+      confirmBtn.style.display = '';
+      confirmBtn.innerHTML = ICON_CHECK_CT + (bloque ? 'Confirmer pour toutes les factures de ce type' : 'Reconfirmer pour toutes les factures de ce type');
+      confirmBtn.disabled = false;
+      confirmBtn.onclick = function(){
         var valeur = String(designationInput.value || '').trim();
         if (!valeur){ toast('Écris la désignation avant de confirmer.'); designationInput.focus(); return; }
         confirmBtn.disabled = true; confirmBtn.textContent = '…';
@@ -10344,39 +10581,36 @@
           toast('✅ Désignation confirmée, appliquée à toutes les factures « ' + (f.prestation_resolue || f.prestation || '') + ' »');
           contratsAppliquerDesignationPartout(f.famille_prestation, valeur);
         }, function(err){ confirmBtn.disabled = false; confirmBtn.innerHTML = ICON_CHECK_CT + 'Confirmer'; toast(err); });
-      });
-      detail.appendChild(confirmBtn);
-    }
-    var passagesInput = contratField(detail, 'Passages / an', 'input', f.passages_an != null ? f.passages_an : 1);
-    passagesInput.type = 'number'; passagesInput.step = '1'; passagesInput.min = '1';
-    var prixInput = contratField(detail, 'Montant HT (€) — réindexation ' + (f.type_contrat === 'VMC' ? 'automatique +3 % déjà appliquée' : 'libre, à toi de choisir'), 'input', f.prix_ht);
-    prixInput.type = 'number'; prixInput.step = '0.01';
+      };
+    } else { confirmBtn.style.display = 'none'; }
 
-    // ---- TVA : Sujet 3 (02/09/2026), refonte complete -- VRAI BUG signale par Dorian (tel et
-    // PC) : quand une seule des deux sources (tva_meg_reel/tva_tableur) etait connue,
-    // tvaOptions.length===1 -> UN SEUL radio affiche -- un radio HTML seul dans son groupe ne
-    // peut JAMAIS etre decoche par un clic (comportement natif du navigateur, pas un bug CSS) :
-    // "un point coche qui ne se decoche pas" exactement comme decrit. Fix : TOUJOURS 2 choix
-    // fixes 10% et 20%, jamais conditionnes a la presence des deux sources. Coche par defaut =
-    // celui du REGISTRE (f.tva_tableur, le classeur que Mickael tient a jour -- la source de
-    // verite, deja etablie dans ce projet), jamais tva_meg_reel qui n'est qu'une information.
-    var tvaWrap = document.createElement('div'); tvaWrap.className = 'ct-tva-choix';
+    document.getElementById('fcf-souslignes').value = f.sous_lignes_defaut || '';
+    var quantiteInput = document.getElementById('fcf-quantite'); quantiteInput.value = f.quantite != null ? f.quantite : 1;
+    var uniteInput = document.getElementById('fcf-unite'); uniteInput.value = f.unite || 'U';
+    var passagesInput = document.getElementById('fcf-passages'); passagesInput.value = f.passages_an != null ? f.passages_an : 1;
+    var prixInput = document.getElementById('fcf-prix'); prixInput.value = f.prix_ht;
+    document.getElementById('fcf-prix-label').textContent = 'Prix unitaire HT (€) — réindexation ' + (f.type_contrat === 'VMC' ? 'automatique +3 % déjà appliquée' : 'libre, à toi de choisir');
+    var numeroInput = document.getElementById('fcf-numero'); numeroInput.value = f.numero_contrat || '';
+    var anneeInput = document.getElementById('fcf-annee'); anneeInput.value = f.annee || '';
+    var echeanceInput = document.getElementById('fcf-echeance'); echeanceInput.value = '';
+    var objetInput = document.getElementById('fcf-objet'); objetInput.value = f.objet_mail || '';
+    var corpsInput = document.getElementById('fcf-corps'); corpsInput.value = f.corps_mail || '';
+    var garderInput = document.getElementById('fcf-garder'); garderInput.checked = false;
+
+    // ---- TVA : mêmes 2 choix fixes 10%/20% que l'ancien inline (Sujet 3, 02/09/2026). ----
+    var tvaWrap = document.getElementById('fcf-tva-wrap');
+    tvaWrap.innerHTML = '';
     var tvaLabel = document.createElement('label'); tvaLabel.className = 'ct-tva-titre'; tvaLabel.textContent = 'Taux de TVA';
     tvaWrap.appendChild(tvaLabel);
-    var radioName = 'ct-tva-' + f.id;
+    var radioName = 'fcf-tva-' + f.id;
     var registreVal = (f.tva_tableur != null) ? f.tva_tableur : Number(f.tva);
     var TVA_FIXES = [0.10, 0.20];
     var radiosRow = document.createElement('div'); radiosRow.className = 'ct-tva-radios';
-    // Sujet 3.3 : fallback JS pour la mise en evidence visuelle (independant de :has(), au cas ou
-    // un navigateur plus ancien ne le supporterait pas -- le CHOIX lui-meme reste un vrai radio
-    // HTML natif, toujours fonctionnel, ce fallback n'est que cosmetique).
     var tvaLabels = [];
     function tvaSyncSelected(){ tvaLabels.forEach(function(l){ l.classList.toggle('ct-tva-opt-selected', l.querySelector('input').checked); }); }
     var tvaRadios = TVA_FIXES.map(function(valeur){
       var lab = document.createElement('label'); lab.className = 'ct-tva-opt';
       var radio = document.createElement('input'); radio.type = 'radio'; radio.name = radioName; radio.value = String(valeur);
-      // Sujet 3.2 : le taux du registre est coche par defaut -- comparaison a 1 centieme pres
-      // (les valeurs viennent parfois de calculs flottants, jamais une egalite stricte fragile).
       if (Math.abs(registreVal - valeur) < 0.005) radio.checked = true;
       var span = document.createElement('span'); span.className = 'ct-tva-pct'; span.textContent = (valeur*100).toFixed(0) + ' %';
       lab.appendChild(radio); lab.appendChild(span);
@@ -10387,43 +10621,54 @@
     });
     tvaSyncSelected();
     tvaWrap.appendChild(radiosRow);
-    // Sujet 3.6 : d'ou vient la valeur par defaut, toujours affiche, jamais silencieux.
     var tvaSource = document.createElement('p'); tvaSource.className = 'ct-tva-source-txt';
     tvaSource.textContent = 'Ton classeur dit ' + (registreVal*100).toFixed(0) + ' %.' + (f.tva_meg_reel != null ? (' (Tes factures réelles : ' + (f.tva_meg_reel*100).toFixed(0) + ' %.)') : '');
     tvaWrap.appendChild(tvaSource);
-    detail.appendChild(tvaWrap);
 
-    var ttcPreview = document.createElement('span'); ttcPreview.className = 'dv-meta';
+    var ttcPreview = document.getElementById('fcf-ttc-preview');
     function recalcPreview(){
       var ht = parseFloat(prixInput.value) || 0;
+      var qte = parseFloat(quantiteInput.value) || 1;
       var checked = tvaRadios.find(function(r){ return r.checked; });
       var tva = checked ? parseFloat(checked.value) : Number(f.tva) || 0.2;
-      ttcPreview.textContent = 'Recalcul : ' + (ht*(1+tva)).toFixed(2) + ' € TTC (' + ht.toFixed(2) + ' € HT + ' + (tva*100).toFixed(0) + ' % TVA)';
+      var totalHt = ht * qte;
+      ttcPreview.textContent = 'Recalcul : ' + (totalHt*(1+tva)).toFixed(2) + ' € TTC (' + totalHt.toFixed(2) + ' € HT + ' + (tva*100).toFixed(0) + ' % TVA)';
     }
-    prixInput.addEventListener('input', recalcPreview);
+    prixInput.oninput = recalcPreview; quantiteInput.oninput = recalcPreview;
     tvaRadios.forEach(function(r){ r.addEventListener('change', recalcPreview); });
     recalcPreview();
-    detail.appendChild(ttcPreview);
 
-    var objetInput = contratField(detail, 'Objet', 'input', f.objet_mail); objetInput.type = 'text';
-    var corpsInput = contratField(detail, 'Corps du mail', 'textarea', f.corps_mail);
+    // ---- Historique (Décision 3) ----
+    var histoSection = document.getElementById('fcf-historique-section');
+    var histoListe = document.getElementById('fcf-historique-liste');
+    var histoVide = document.getElementById('fcf-historique-vide');
+    histoSection.style.display = '';
+    histoListe.innerHTML = '<p style="color:var(--muted);font-size:13px">Chargement…</p>';
+    histoVide.style.display = 'none';
+    postContrats({ type: 'facture-historique', id: f.id }, function(j){
+      var histo = j.historique || [];
+      histoListe.innerHTML = '';
+      if (!histo.length){ histoVide.style.display = ''; return; }
+      histo.forEach(function(h){
+        var ligne = document.createElement('div'); ligne.className = 'ctf-histo-ligne';
+        var meta = document.createElement('div'); meta.className = 'ctf-histo-meta';
+        meta.textContent = fmtDevisDateSimple(h.horodatage) + ' — ' + (h.modifiePar || '');
+        ligne.appendChild(meta);
+        (h.changements || []).forEach(function(c){
+          var champ = document.createElement('p'); champ.className = 'ctf-histo-champ';
+          champ.innerHTML = '<b>' + escHtml(c.champ) + '</b> : ' + escHtml(c.ancien) + ' → ' + escHtml(c.nouveau);
+          ligne.appendChild(champ);
+        });
+        histoListe.appendChild(ligne);
+      });
+    }, function(){ histoListe.innerHTML = ''; histoVide.style.display = ''; });
 
-    var actions = document.createElement('div'); actions.className = 'ct-actions';
-    // Section 7 (06/09/2026, dernier point) : SEUL bouton de ce panneau a declencher une
-    // emission reelle immediate (postContrats choix:'envoyer', sans autre confirmation apres) --
-    // classe vc-envoi-reel + icone avion en papier (au lieu de la coche generique de vc-ok
-    // partagee par ~25 boutons de confirmation interne). Voir CSS html.mcs-theme .vc-envoi-reel.
-    var okBtn = document.createElement('button'); okBtn.className = 'vc-ok vc-envoi-reel'; okBtn.type = 'button';
-    okBtn.innerHTML = '<svg class="hicon-sm" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><line x1="22" y1="2" x2="11" y2="13"/><polygon points="22 2 15 22 11 13 2 9 22 2"/></svg>Envoyer';
-    var skipBtn = document.createElement('button'); skipBtn.className = 'vc-no'; skipBtn.type = 'button';
-    skipBtn.innerHTML = '<svg class="hicon-sm" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><polyline points="7,5 13,12 7,19"/><polyline points="13,5 19,12 13,19"/></svg>Pas cette année';
-    okBtn.addEventListener('click', function(){
+    // ---- Actions ----
+    var okBtn = document.getElementById('fcf-envoyer');
+    var skipBtn = document.getElementById('fcf-skip');
+    okBtn.disabled = false; skipBtn.disabled = false;
+    okBtn.onclick = function(){
       var checked = tvaRadios.find(function(r){ return r.checked; });
-      // Sujet 3 (02/09/2026) : provenance deduite de la valeur choisie (les 2 radios sont
-      // desormais fixes 10%/20%, plus de dataset.provenance dedie) -- 'meg_reel'/'tableur' si ca
-      // correspond a une source connue, 'manuel' sinon (Mickael a choisi un taux qui ne
-      // correspond a aucune des 2 sources affichees). Le tracage (mcs_tva_vmc_historique,
-      // sujet 3.7) continue de recevoir exactement le meme genre de valeur qu'avant.
       var tvaChoisie = checked ? parseFloat(checked.value) : undefined;
       var tvaProvenance;
       if (tvaChoisie != null){
@@ -10439,42 +10684,39 @@
         prix_ht: parseFloat(prixInput.value) || 0,
         designation: designationInput.value.trim(),
         passages_an: parseInt(passagesInput.value, 10) || 1,
-        tva: tvaChoisie,
-        tva_provenance: tvaProvenance,
+        tva: tvaChoisie, tva_provenance: tvaProvenance,
+        client: document.getElementById('fcf-client').value.trim(),
+        residence: document.getElementById('fcf-residence').value.trim(),
+        adresse: document.getElementById('fcf-adresse').value.trim(),
+        ville: document.getElementById('fcf-ville').value.trim(),
+        gestionnaire: document.getElementById('fcf-gestionnaire').value.trim(),
+        numero_contrat: numeroInput.value.trim(),
+        annee: parseInt(anneeInput.value, 10) || f.annee,
+        quantite: parseFloat(quantiteInput.value) || 1,
+        unite: uniteInput.value.trim() || 'U',
+        date_echeance: echeanceInput.value || '',
+        sous_lignes: document.getElementById('fcf-souslignes').value,
+        garder_pour_prochaine_fois: garderInput.checked,
       }, function(j){
         toast(j.testMode ? '✅ Facture envoyée (mode test → Altaestima)' : '✅ Facture envoyée');
         f.statut = 'envoyee'; f.destinataire_email = destInput.value.trim(); f.date_envoi = new Date().toISOString();
+        fcfBg.classList.remove('open');
         contratsApplyFilter();
       }, function(err){ okBtn.disabled = false; skipBtn.disabled = false; toast(err); });
-    });
-    skipBtn.addEventListener('click', function(){
+    };
+    skipBtn.onclick = function(){
       var motif = prompt('Pourquoi ne pas facturer ce contrat ce mois-ci ? (ex : moteur changé il y a 3 mois, pas d\'entretien cette année)', '');
       if (motif === null) return;
       okBtn.disabled = true; skipBtn.disabled = true;
       postContrats({ type: 'mois-action', id: f.id, choix: 'skip', motif: motif }, function(){
         toast('⏭️ Contrat marqué "pas cette année"');
         f.statut = 'skip'; f.motif_skip = motif;
+        fcfBg.classList.remove('open');
         contratsApplyFilter();
       }, function(err){ okBtn.disabled = false; skipBtn.disabled = false; toast(err); });
-    });
-    actions.appendChild(okBtn); actions.appendChild(skipBtn);
-    detail.appendChild(actions);
-    card.appendChild(detail);
-    // Auto-agrandissement du corps du mail (même mécanisme que la carte docsend). Depuis le
-    // 17/08/2026 ce corps porte aussi la demande d'avis Google + la mise en relation : Mickael
-    // doit pouvoir le relire d'un coup d'œil et retirer le bloc avant d'envoyer, pas scroller
-    // dans une fenêtre de 3 lignes. Calculé à l'ouverture (scrollHeight vaut 0 tant que le bloc
-    // est display:none) et à chaque frappe.
-    function corpsAutoGrow(){
-      corpsInput.style.height = 'auto';
-      corpsInput.style.height = corpsInput.scrollHeight + 'px';
-    }
-    corpsInput.addEventListener('input', corpsAutoGrow);
-    toggleBtn.addEventListener('click', function(){
-      detail.classList.toggle('open');
-      if (detail.classList.contains('open')) setTimeout(corpsAutoGrow, 0);
-    });
-    return card;
+    };
+
+    fcfBg.classList.add('open');
   }
 
   function contratsRowValue(c, key){
@@ -11319,6 +11561,44 @@
   // ---- Formulaire catalogue (ajouter/modifier/retirer un contrat) ----
   var contratFormBg = document.getElementById('contrat-catalogue-form-bg');
   var contratFormEditingId = null;
+  // Session 13 (07/09/2026), Point 4c -- "actif" : pilule 2 positions, jamais rouge/vert
+  // (Principe 3) -- la position choisie est en plein bleu MCS, l'autre en contour neutre.
+  function contratActifGet(){
+    return document.getElementById('cf-actif-non').classList.contains('on') ? 'non' : 'oui';
+  }
+  function contratActifSet(val){
+    var estOui = String(val || 'oui') !== 'non';
+    document.getElementById('cf-actif-oui').classList.toggle('on', estOui);
+    document.getElementById('cf-actif-non').classList.toggle('on', !estOui);
+  }
+  document.getElementById('cf-actif-oui').addEventListener('click', function(){ contratActifSet('oui'); });
+  document.getElementById('cf-actif-non').addEventListener('click', function(){ contratActifSet('non'); });
+
+  // Session 13, Point 4b -- historique des modifications (lecture seule), charge uniquement en
+  // edition d'un contrat existant (jamais a la creation, rien a montrer).
+  function contratHistoriqueRender(historique){
+    var section = document.getElementById('ctf-historique-section');
+    var liste = document.getElementById('ctf-historique-liste');
+    var vide = document.getElementById('ctf-historique-vide');
+    liste.innerHTML = '';
+    section.style.display = '';
+    if (!historique || !historique.length){ vide.style.display = ''; return; }
+    vide.style.display = 'none';
+    historique.forEach(function(entree){
+      var ligne = document.createElement('div'); ligne.className = 'ctf-histo-ligne';
+      var meta = document.createElement('div'); meta.className = 'ctf-histo-meta';
+      var d = new Date(entree.horodatage);
+      var dateAffichee = isNaN(d.getTime()) ? entree.horodatage : d.toLocaleString('fr-FR', { dateStyle: 'medium', timeStyle: 'short' });
+      meta.textContent = dateAffichee + ' — ' + (entree.modifiePar || 'inconnu');
+      ligne.appendChild(meta);
+      (entree.changements || []).forEach(function(ch){
+        var p = document.createElement('p'); p.className = 'ctf-histo-champ';
+        p.innerHTML = '<b>' + escHtml(ch.champ) + '</b> : ' + escHtml(ch.ancien) + ' → ' + escHtml(ch.nouveau);
+        ligne.appendChild(p);
+      });
+      liste.appendChild(ligne);
+    });
+  }
   function contratFormOpen(c){
     contratFormEditingId = c ? c.id : null;
     document.getElementById('ctf-titre').textContent = c ? 'Modifier le contrat' : 'Nouveau contrat';
@@ -11330,10 +11610,16 @@
     document.getElementById('cf-prestation').value = c ? c.prestation : '';
     document.getElementById('cf-passages').value = c ? (c.passages_an || 1) : 1;
     document.getElementById('cf-passage1').value = c ? c.passage_1 : '';
+    document.getElementById('cf-passage2').value = c ? c.passage_2 : '';
+    document.getElementById('cf-passage3').value = c ? c.passage_3 : '';
+    document.getElementById('cf-passage4').value = c ? c.passage_4 : '';
     document.getElementById('cf-prix').value = c ? c.prix_ht : '';
     document.getElementById('cf-tva').value = c ? String(c.tva) : '0.2';
     document.getElementById('cf-email').value = c ? c.email : '';
     document.getElementById('cf-renouv').value = c ? c.renouvellement : '';
+    document.getElementById('cf-numero').value = c ? (c.numero_contrat || '') : '';
+    document.getElementById('cf-datesign').value = c && c.date_signature ? String(c.date_signature).slice(0, 10) : '';
+    contratActifSet(c ? c.actif : 'oui');
     document.getElementById('ctf-delete').style.display = c ? '' : 'none';
     // Point 2 (session suite, 29/08/2026) : mémoire commune -- uniquement à la CRÉATION (c===null) ;
     // en édition on affiche les vraies valeurs du contrat, jamais une suggestion de mémoire par-dessus.
@@ -11341,6 +11627,12 @@
     contratFormBg.querySelectorAll('.mem-badge').forEach(function(b){ b.style.display = 'none'; });
     contratFormDeratContrat = c;
     contratDeratRender();
+    if (c){
+      contratHistoriqueRender([]);
+      postContrats({ type: 'catalogue-historique', id: c.id }, function(j){ contratHistoriqueRender(j.historique); }, function(){ contratHistoriqueRender([]); });
+    } else {
+      document.getElementById('ctf-historique-section').style.display = 'none';
+    }
     contratFormBg.classList.add('open');
   }
   // Session 11 (07/09/2026), Point 5 -- bouton "reindexer +3% (deratisation)" sur la fiche d'un
@@ -11410,6 +11702,7 @@
   })();
   function contratFormClose(){ contratFormBg.classList.remove('open'); }
   document.getElementById('ctf-cancel').addEventListener('click', contratFormClose);
+  document.getElementById('ctf-close').addEventListener('click', contratFormClose);
   contratFormBg.addEventListener('click', function(e){ if (e.target === this) contratFormClose(); });
   document.getElementById('ctf-save').addEventListener('click', function(){
     var contrat = {
@@ -11421,10 +11714,16 @@
       prestation: document.getElementById('cf-prestation').value.trim(),
       passages_an: parseInt(document.getElementById('cf-passages').value, 10) || 1,
       passage_1: document.getElementById('cf-passage1').value.trim(),
+      passage_2: document.getElementById('cf-passage2').value.trim(),
+      passage_3: document.getElementById('cf-passage3').value.trim(),
+      passage_4: document.getElementById('cf-passage4').value.trim(),
       prix_ht: parseFloat(document.getElementById('cf-prix').value) || 0,
       tva: parseFloat(document.getElementById('cf-tva').value),
       email: document.getElementById('cf-email').value.trim(),
       renouvellement: document.getElementById('cf-renouv').value.trim(),
+      numero_contrat: document.getElementById('cf-numero').value.trim(),
+      date_signature: document.getElementById('cf-datesign').value.trim(),
+      actif: contratActifGet(),
     };
     if (!contrat.client && !contrat.residence){ toast('Indique au moins un client ou une résidence.'); return; }
     var payload = contratFormEditingId
@@ -12410,6 +12709,18 @@
     wrap.appendChild(badge); wrap.appendChild(txt);
     card.appendChild(wrap);
   }
+  // F2 (07/09/2026), A2/A3 : action PAR FACTURE (pas par groupe) -- "voir chacune, decider pour
+  // chacune, agir sur chacune". Reutilise le modal de confirmation generique deja utilise ~25
+  // fois dans l'app (askConfirm, rouge reserve au destructif/engageant -- Principe 3), jamais
+  // de nouveau mecanisme de confirmation invente.
+  function relancesFactureActionBtn(label, iconSvg, onClick){
+    var btn = document.createElement('button'); btn.type = 'button'; btn.className = 'carnet-confirm-delete rl-facture-actbtn';
+    btn.innerHTML = iconSvg + label;
+    btn.addEventListener('click', onClick);
+    return btn;
+  }
+  var ICON_TRASH_SM = '<svg class="hicon-sm" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><polyline points="3,6 5,6 21,6"/><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/></svg>';
+  var ICON_MED_SM = '<svg class="hicon-sm" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M10.29 3.86 1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg>';
   function relancesAppendFactureList(card, b){
     var list = document.createElement('div'); list.className = 'rl-facture-list';
     b.factures.forEach(function(f, i){
@@ -12423,6 +12734,44 @@
         pdfL.href = 'https://n8n-self-hosted-t0pz.onrender.com' + f.pdfUrl + '&code=' + encodeURIComponent(String(read('jarvisCode') || '').trim());
         list.appendChild(pdfL);
       }
+      var actRow = document.createElement('div'); actRow.className = 'rl-facture-actrow';
+      // A2 : "supprimer" = DESACTIVER AVEC TRACE, jamais un vrai DELETE (rien n'est perdu, la
+      // ligne reste en base avec qui/quand). Dit en clair a Mickael, pas en jargon technique.
+      var delBtn = relancesFactureActionBtn('Supprimer', ICON_TRASH_SM, function(){
+        askConfirm('Supprimer ' + f.numero + ' ?',
+          'Elle disparaîtra des relances. Rien n’est perdu : l’action reste enregistrée avec la date.',
+          function(){
+            delBtn.disabled = true;
+            postRelancesAction({ numero: f.numero, action: 'desactiver' }, function(r){
+              if (r && r.ok){ toast('🗑 ' + f.numero + ' retirée des relances.'); relancesOpen(true); }
+              else { delBtn.disabled = false; toast('❌ ' + ((r && r.error) || 'Échec.')); }
+            }, function(err){ delBtn.disabled = false; toast('❌ ' + err); });
+          }, 'Supprimer');
+      });
+      actRow.appendChild(delBtn);
+      // A3 : mise en demeure -- action la plus engageante de l'ecran (courrier legal reel, au nom
+      // de MCS/Mickael), jamais confondue avec une simple relance. Necessite un destinataire
+      // resolu (meme condition que le bouton Envoyer principal) ; le texte legal est RECALCULE
+      // cote serveur (jamais transmis d'ici), donc toujours la version officielle.
+      if (b.destinataire){
+        var medBtn = relancesFactureActionBtn('Mise en demeure', ICON_MED_SM, function(){
+          askConfirm('Mise en demeure — ' + f.numero,
+            'Envoie un VRAI courrier légal de mise en demeure à ' + b.destinataire + ', au nom de MCS. Ce n’est pas une simple relance : c’est une étape officielle et engageante.',
+            function(){
+              medBtn.disabled = true;
+              postRelancesAction({ numero: f.numero, action: 'mise_en_demeure' }, function(r){
+                if (r && r.ok){
+                  toast(r.testMode
+                    ? ('🧪 Test envoyé à ' + (r.destinataireReel || b.destinataire) + ' — redirigé, n’a pas atteint le client.')
+                    : ('⚠️ Mise en demeure envoyée à ' + (r.destinataireReel || b.destinataire)));
+                  medBtn.disabled = false;
+                } else { medBtn.disabled = false; toast('❌ ' + ((r && r.error) || 'Échec.')); }
+              }, function(err){ medBtn.disabled = false; toast('❌ ' + err); });
+            }, 'Envoyer la mise en demeure');
+        });
+        actRow.appendChild(medBtn);
+      }
+      list.appendChild(actRow);
     });
     card.appendChild(list);
   }
@@ -12522,7 +12871,7 @@
         }
         clearTimeout(armeTimer);
         envBtn2.disabled = true; if (attBtn) attBtn.disabled = true; envBtn2.textContent = 'Envoi…';
-        postRelancesAction({ cle: b.cle, action: 'envoyer', avecDuplicata: false }, function(r){
+        postRelancesAction({ cle: b.cle, action: 'envoyer' }, function(r){
           if (r && r.ok){
             toast(r.testMode
               ? ('🧪 Test envoyé à ' + (r.destinataireReel || b.destinataire) + ' — redirigé, n’a pas atteint le client, niveau inchangé.')
@@ -12679,25 +13028,24 @@
       var envConfirmBtn = document.createElement('button'); envConfirmBtn.type = 'button'; envConfirmBtn.className = 'rl-confirm vc-envoi-reel';
       envConfirmBtn.textContent = 'Confirmer l’envoi';
       envExpl.appendChild(envTxt);
-      // Point 3 (28/08/2026) : le gabarit dit déjà "si vous avez besoin d'un duplicata,
-      // dites-le-moi" -- jamais joint automatiquement, Mickael décide en un geste. Visible
-      // seulement si au moins une facture du groupe a un PDF archivé.
+      // A4 (07/09/2026, Fenetre 2) : la piece jointe n'est PLUS une case a cocher -- elle part
+      // desormais TOUJOURS des lors qu'un PDF est archive pour au moins une facture du groupe
+      // (garde-fou serveur, cf. Preparer envoi relance (ok)/Preparer duplicata relance (ok)).
+      // L'ancienne case "Joindre le duplicata" mentait par omission (decochee, le PDF partait
+      // quand meme) -- remplacee par une simple ligne d'info, jamais un controle qui ne controle
+      // plus rien.
       var facturesAvecPdf = b.factures.filter(function(f){ return !!f.pdfUrl; });
-      var dupCheck = null;
       if (facturesAvecPdf.length){
-        var dupWrap = document.createElement('label'); dupWrap.className = 'rl-duplicata-check';
-        dupCheck = document.createElement('input'); dupCheck.type = 'checkbox';
-        var dupTxt = document.createElement('span');
-        dupTxt.textContent = 'Joindre le duplicata (' + facturesAvecPdf.map(function(f){ return f.numero; }).join(', ') + ')';
-        dupWrap.appendChild(dupCheck); dupWrap.appendChild(dupTxt);
-        envExpl.appendChild(dupWrap);
+        var dupInfo = document.createElement('div'); dupInfo.className = 'rl-duplicata-info';
+        dupInfo.textContent = '📎 La facture sera jointe automatiquement (' + facturesAvecPdf.map(function(f){ return f.numero; }).join(', ') + ').';
+        envExpl.appendChild(dupInfo);
       }
       envExpl.appendChild(envConfirmBtn);
       envBtn.addEventListener('click', function(){ envExpl.classList.toggle('open'); });
       envConfirmBtn.addEventListener('click', function(){
         envConfirmBtn.disabled = true; envBtn.disabled = true;
         envConfirmBtn.textContent = 'Envoi…';
-        postRelancesAction({ cle: b.cle, action: 'envoyer', avecDuplicata: !!(dupCheck && dupCheck.checked) }, function(r){
+        postRelancesAction({ cle: b.cle, action: 'envoyer' }, function(r){
           envExpl.classList.remove('open');
           if (r && r.ok){
             // V2 (27/08/2026) : en mode test, le serveur ne fait plus avancer le niveau
@@ -13039,6 +13387,12 @@
   }
   function relancesApplyFilter(){
     var q = normDoc(relancesSearchInput.value.trim());
+    // A5 (07/09/2026, Fenetre 2) : reconstruire la liste (innerHTML='' plus bas) remet le scroll
+    // du conteneur a 0 -- sans ca, toute action sur une carte (envoyer/suspendre/desactiver/mise
+    // en demeure, qui rappellent toutes relancesOpen(true) -> relancesApplyData ->
+    // relancesApplyFilter) fait "sauter" l'ecran en haut au milieu d'une longue liste. Capture
+    // avant reconstruction, restaure a CHAQUE sortie de fonction (les 3 chemins ci-dessous).
+    var scrollAvant = relancesList.scrollTop;
     // A (26/08/2026) : l'onglet "Relancées 2×" lit une source SEPAREE (relancesTermines, jamais
     // relancesBrouillons -- ces factures ont quitte "dues" pour de bon, cf. Construire termines
     // (ok)) et utilise son propre constructeur de carte (pas de brouillon a editer/envoyer ici).
@@ -13051,9 +13405,11 @@
       relancesSetSummary(itemsT.length ? fmtEuros(totalT) : '', 'en suivi · ' + nbClientsT + ' client' + (nbClientsT>1?'s':'') + ' relancé' + (nbClientsT>1?'s':'') + ' 2 fois');
       if (!itemsT.length){
         relancesList.innerHTML = '<p id="relances-empty">Aucune facture relancée 2 fois pour l’instant.</p>';
+        relancesList.scrollTop = scrollAvant;
         return;
       }
       itemsT.forEach(function(t){ relancesList.appendChild(relancesBuildCarteTerminee(t)); });
+      relancesList.scrollTop = scrollAvant;
       return;
     }
     var items;
@@ -13091,6 +13447,7 @@
         msgVide = 'Aucune facture impayée.';
       }
       relancesList.innerHTML = '<p id="relances-empty">' + msgVide + '</p>';
+      relancesList.scrollTop = scrollAvant;
       return;
     }
     // Audit perf 28/08 : le bandeau de fraicheur (relancesAppliquerFraicheur, appele juste
@@ -13101,6 +13458,10 @@
     // l'ordre d'une frame, ~16ms) -- pas de mensonge sur l'avancement, juste un ordre de peinture.
     requestAnimationFrame(function(){
       items.forEach(function(b){ relancesList.appendChild(relancesBuildCard(b)); });
+      // A5 : restaure APRES l'ajout reel des cartes (le scroll n'a d'effet que si le contenu
+      // scrollable existe deja) -- sinon le rAF differe le rendu d'une frame et le scroll
+      // resterait a 0 pendant cette frame-la.
+      relancesList.scrollTop = scrollAvant;
     });
   }
   function relancesUpdateBadge(){
