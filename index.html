@@ -1616,7 +1616,85 @@
     display:flex; align-items:center; justify-content:center; cursor:pointer;
     -webkit-tap-highlight-color:transparent;
   }
-  #fcf-body{flex:1; overflow-y:auto; -webkit-overflow-scrolling:touch; padding:14px 16px calc(20px + env(safe-area-inset-bottom))}
+  /* Session 15 (07/09/2026), Point 2 -- ecran coupe en deux sur ordinateur : formulaire a
+     gauche, apercu HTML/CSS de la facture a droite, mis a jour en direct SANS aucun appel
+     serveur (jamais de regeneration du vrai PDF a chaque frappe -- c'est ce qui a mis n8n a
+     genoux fin aout). Sous 900px (mobile/tablette), une seule colonne (le formulaire) ; l'apercu
+     devient un panneau plein ecran ouvert par un bouton, jamais superpose au formulaire. */
+  #fcf-body{flex:1; display:flex; flex-direction:column; overflow:hidden; min-height:0}
+  #fcf-form-col{flex:1; overflow-y:auto; -webkit-overflow-scrolling:touch; padding:14px 16px calc(20px + env(safe-area-inset-bottom))}
+  #fcf-apercu-col{
+    display:none; flex-direction:column; background:#F2F2F5;
+  }
+  #fcf-apercu-col.open{
+    display:flex; position:fixed; inset:0; z-index:57; padding-top:env(safe-area-inset-top);
+  }
+  @media (min-width: 900px){
+    #fcf-body{flex-direction:row}
+    #fcf-form-col{flex:0 0 460px; border-right:1px solid var(--hairline)}
+    #fcf-apercu-col{display:flex; flex:1; position:static; inset:auto; z-index:auto; padding-top:0}
+    #fcf-apercu-mobile-close{display:none}
+  }
+  #fcf-apercu-toolbar{
+    flex:0 0 auto; display:flex; align-items:center; gap:8px; padding:10px 14px;
+    border-bottom:0.5px solid var(--hairline); background:var(--bg);
+  }
+  #fcf-apercu-toolbar b{flex:1; font-size:15px; margin:0}
+  #fcf-apercu-mobile-close{
+    width:44px; height:44px; border-radius:50%; border:0; background:var(--blue); color:#fff;
+    font-size:16px; font-weight:700; cursor:pointer; flex:0 0 auto;
+  }
+  #fcf-voir-vrai-pdf{
+    min-height:44px; padding:0 14px; border-radius:12px; border:1.5px solid var(--blue);
+    background:none; color:var(--blue); font-size:14px; font-weight:700; cursor:pointer;
+    white-space:nowrap; -webkit-tap-highlight-color:transparent;
+  }
+  #fcf-apercu-scroll{flex:1; overflow:auto; -webkit-overflow-scrolling:touch; padding:18px; display:flex; justify-content:center}
+  /* Bouton mobile "Voir l'apercu", pose EN BAS du formulaire (jamais en superposition) -- caché
+     sur desktop puisque l'apercu y est deja visible en permanence a droite. */
+  #fcf-apercu-toggle-mobile{
+    display:flex; width:100%; margin-top:16px; min-height:44px; border-radius:12px; border:1.5px solid var(--blue);
+    background:none; color:var(--blue); font-size:15px; font-weight:700; cursor:pointer;
+    align-items:center; justify-content:center; gap:8px; -webkit-tap-highlight-color:transparent;
+  }
+  @media (min-width: 900px){ #fcf-apercu-toggle-mobile{display:none} }
+  /* Reproduction fidele de la facture (ANATOMIE-FACTURE-MEG_1.md), en HTML/CSS pur -- feuille A4
+     proportionnelle (595x842pt), jamais un appel serveur : voir fcfRenderApercu() dans le JS. */
+  #fcf-apercu-page{
+    width:100%; max-width:620px; background:#fff; color:#000; box-shadow:0 4px 24px rgba(0,0,0,.18);
+    font-family:Helvetica,Arial,sans-serif; font-size:12.6px; line-height:1.35; padding:26px 24px;
+    box-sizing:border-box; align-self:flex-start;
+  }
+  .fcf-ap-row{display:flex; justify-content:space-between; gap:14px}
+  .fcf-ap-right{text-align:right}
+  .fcf-ap-titre{font-size:19px; font-weight:700; letter-spacing:.04em}
+  .fcf-ap-petit{font-size:11px; color:#333}
+  .fcf-ap-sep{border:none; border-top:1px solid #000; margin:10px 0}
+  .fcf-ap-bloc{margin:10px 0; white-space:pre-line}
+  .fcf-ap-ref{margin:10px 0; font-size:12px}
+  table.fcf-ap-table{width:100%; border-collapse:collapse; margin:10px 0; font-size:11.5px}
+  table.fcf-ap-table th{background:#E5E5EA; text-align:left; padding:5px 6px; border:1px solid #000; font-weight:700}
+  table.fcf-ap-table td{padding:5px 6px; border:1px solid #000; vertical-align:top}
+  table.fcf-ap-table td.fcf-ap-num{text-align:right; white-space:nowrap}
+  .fcf-ap-souslignes{font-size:11px; color:#222; margin:6px 0; white-space:pre-line}
+  .fcf-ap-cols{display:flex; gap:14px; margin:12px 0}
+  .fcf-ap-cols > div{flex:1; border:1px solid #000; padding:6px 8px; font-size:11px}
+  .fcf-ap-cols .fcf-ap-boxtitre{font-weight:700; text-align:center; border-bottom:1px solid #000; margin:-6px -8px 6px; padding:4px 0; background:#E5E5EA}
+  .fcf-ap-mention{font-size:9.5px; color:#333; margin:8px 0}
+  .fcf-ap-totaux{display:flex; justify-content:space-between; margin:12px 0; font-size:11.5px; font-weight:700}
+  .fcf-ap-lettres{font-size:11.5px; margin:8px 0}
+  .fcf-ap-footer{font-size:8.5px; color:#333; border-top:1px solid #000; padding-top:6px; margin-top:14px}
+  /* Point 4 (Session 15) -- +3%/-3% en un clic, ancien/nouveau prix affiches avant validation. */
+  .fcf-reindex-row{display:flex; gap:8px; margin-top:8px}
+  .fcf-reindex-btn{
+    flex:1; min-height:44px; border-radius:10px; border:1.5px solid var(--blue); background:none;
+    color:var(--blue); font-size:14px; font-weight:700; cursor:pointer; -webkit-tap-highlight-color:transparent;
+  }
+  .fcf-reindex-apercu{font-size:14px; color:var(--ink); background:var(--surface); border-radius:10px; padding:10px 12px; margin-top:8px}
+  .fcf-reindex-apercu .fcf-reindex-actions{display:flex; gap:8px; margin-top:10px}
+  /* Point 5 (Session 15) -- message d'AVERTISSEMENT (pas de blocage reel), distinct de
+     .ct-motif-blocage qui reste rouge pour un VRAI blocage d'envoi. Ambre, jamais rouge. */
+  .fcf-avertissement{font-size:14px; color:#B25E00; line-height:1.4; background:rgba(255,159,10,.12); border-radius:10px; padding:8px 10px; margin:6px 0}
   /* Decision 1 (Session 13) -- "garder aussi pour les prochaines fois" : une case a cocher
      EXPLICITE, jamais un report automatique/silencieux vers le contrat catalogue. */
   .fcf-checkbox-row{display:flex; align-items:center; gap:10px; margin-top:16px; min-height:44px}
@@ -1625,6 +1703,27 @@
   /* Decision 3 (Session 13) -- trace des modifications, lecture seule, meme famille visuelle que
      l'historique du catalogue (.ctf-histo-*, deja generique). */
   #fcf-historique-vide{font-size:14px; color:var(--muted); padding:6px 0}
+  /* Point 3 (Session 15) -- reprise visuelle : bordure MCS visible sur CHAQUE champ modifiable
+     (regle posee samedi, jamais appliquee sur cet ecran), et chaque section devient une carte
+     visuellement separee (fond blanc, cadre leger) au lieu d'un simple titre dans un flux
+     continu. mcs-theme UNIQUEMENT -- le labo garde sa bordure fine d'origine, pixel-identique. */
+  html.mcs-theme #facture-contrat-form input,
+  html.mcs-theme #facture-contrat-form select,
+  html.mcs-theme #facture-contrat-form textarea{
+    border:2px solid var(--blue); background:#fff;
+  }
+  html.mcs-theme #facture-contrat-form input:disabled,
+  html.mcs-theme #facture-contrat-form textarea:disabled{
+    border-color:var(--hairline); color:var(--muted);
+  }
+  html.mcs-theme #facture-contrat-form .ctf-section{
+    background:#fff; border:1px solid rgba(10,132,255,.25); border-radius:14px;
+    padding:14px 14px 16px; box-shadow:0 1px 3px rgba(0,0,0,.06);
+  }
+  /* Point 3d -- "Sous-lignes de detail" et "Corps du mail" doivent montrer TOUT leur contenu
+     d'un coup, jamais une petite fenetre a faire defiler -- auto-grandissant (voir fcfAutoGrow
+     dans le JS, applique aux 2 champs desormais, plus seulement au corps). */
+  #fcf-souslignes, #fcf-corps{resize:none; overflow:hidden}
   /* Panneau plein ecran "IK" (chantier 6 réaffecté 11/08/2026 : frais kilométriques intelligents,
      patron d'un tenant secondaire uniquement -- même famille visuelle que Contrats/Coûts). */
   #ikview{
@@ -1992,6 +2091,17 @@
      ici, pas plein largeur comme dans le carnet). */
   .rl-facture-actrow{display:flex; flex-wrap:wrap; gap:8px; margin:6px 0 10px; opacity:1}
   .rl-facture-actbtn{flex:0 0 auto !important; padding:8px 13px !important; font-size:13px !important}
+  /* Fenêtre 3 (07/09/2026), point 4b/4c/4e : case de sélection par facture (granularité), et
+     pastilles factuelles "déjà relancée le X" / "promesse du Y non tenue". */
+  .rl-facture-check{display:inline-flex; margin-right:6px; vertical-align:middle}
+  .rl-facture-check input{width:18px; height:18px; margin:0}
+  .rl-pastille-relance, .rl-pastille-promesse{
+    display:block; font-size:11.5px; margin:2px 0 0 24px; padding:2px 8px; border-radius:99px;
+    width:fit-content; opacity:1;
+  }
+  .rl-pastille-relance{background:rgba(120,120,128,.18); color:var(--muted)}
+  .rl-pastille-relance.retour{background:rgba(var(--gold-rgb),.18); color:var(--gold-a)}
+  .rl-pastille-promesse{background:rgba(255,69,58,.15); color:var(--no)}
   .rl-jamais{font-size:11.5px; color:var(--muted); font-style:italic; margin-top:2px}
   .rl-echange-argent{
     font-size:12.5px; line-height:1.4; margin-top:8px; padding:9px 11px; border-radius:10px;
@@ -5859,6 +5969,7 @@
     <button id="fcf-close" type="button" aria-label="Fermer">✕</button>
   </div>
   <div id="fcf-body">
+  <div id="fcf-form-col">
   <div class="contrat-form" id="facture-contrat-form">
     <div class="ctf-section">
       <p class="ctf-section-titre">Identité</p>
@@ -5871,7 +5982,7 @@
       <label>Adresse</label><input id="fcf-adresse" type="text">
       <label>Ville</label><input id="fcf-ville" type="text">
       <label id="fcf-dest-label">Destinataire (email)</label><input id="fcf-dest" type="text">
-      <p id="fcf-dest-preuve" class="ct-motif-blocage" style="display:none"></p>
+      <p id="fcf-dest-preuve" class="fcf-avertissement" style="display:none"></p>
     </div>
     <div class="ctf-section">
       <p class="ctf-section-titre">Prestation</p>
@@ -5889,6 +6000,11 @@
     <div class="ctf-section">
       <p class="ctf-section-titre">Tarification</p>
       <label id="fcf-prix-label">Prix unitaire HT (€)</label><input id="fcf-prix" type="number" step="0.01">
+      <div class="fcf-reindex-row">
+        <button id="fcf-reindex-plus" type="button" class="fcf-reindex-btn">Appliquer +3 %</button>
+        <button id="fcf-reindex-moins" type="button" class="fcf-reindex-btn">Retirer les 3 %</button>
+      </div>
+      <div id="fcf-reindex-apercu" style="display:none"></div>
       <div class="ct-tva-choix" id="fcf-tva-wrap"></div>
       <span class="dv-meta" id="fcf-ttc-preview"></span>
     </div>
@@ -5898,8 +6014,7 @@
         <div><label>N° contrat</label><input id="fcf-numero" type="text"></div>
         <div><label>Année</label><input id="fcf-annee" type="number" step="1"></div>
       </div>
-      <label>Conditions de règlement</label>
-      <p style="font-size:14px;color:var(--muted);margin:6px 0">Virement à réception de facture (fixe, non modifiable).</p>
+      <label>Conditions de règlement</label><input id="fcf-conditions-reglement" type="text" placeholder="ex : Règlement par virement">
       <label>Échéance</label><input id="fcf-echeance" type="date">
     </div>
     <div class="ctf-section">
@@ -5920,6 +6035,16 @@
       <button class="vc-ok vc-envoi-reel" id="fcf-envoyer" type="button"><svg class="hicon-sm" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><line x1="22" y1="2" x2="11" y2="13"/><polygon points="22 2 15 22 11 13 2 9 22 2"/></svg>Envoyer</button>
       <button class="vc-no" id="fcf-skip" type="button"><svg class="hicon-sm" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><polyline points="7,5 13,12 7,19"/><polyline points="13,5 19,12 13,19"/></svg>Pas cette année</button>
     </div>
+    <button id="fcf-apercu-toggle-mobile" type="button"><svg class="hicon-sm" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M1 12s4-7 11-7 11 7 11 7-4 7-11 7-11-7-11-7z"/><circle cx="12" cy="12" r="3"/></svg>Voir l'aperçu de la facture</button>
+  </div>
+  </div>
+  <div id="fcf-apercu-col">
+    <div id="fcf-apercu-toolbar">
+      <button id="fcf-apercu-mobile-close" type="button" aria-label="Fermer l'aperçu">✕</button>
+      <b>Aperçu de la facture</b>
+      <button id="fcf-voir-vrai-pdf" type="button">Voir le vrai PDF</button>
+    </div>
+    <div id="fcf-apercu-scroll"><div id="fcf-apercu-page"></div></div>
   </div>
   </div>
 </div>
@@ -6009,15 +6134,15 @@
     <b id="relances-title"><svg class="hicon-sm" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 6a1.5 1.5 0 0 1 1.5-1.5h13A1.5 1.5 0 0 1 19 6v10.5a1.5 1.5 0 0 1-1.5 1.5H8"/><path d="M3.5 6.2L11 12l7.5-5.8"/><path d="M17.5 15.5a3 3 0 0 0 3-3v-.5"/><polyline points="16,13.3 17.3,12 18.6,13.3"/></svg>Relances clients</b>
     <button id="relances-close" type="button" aria-label="Fermer">✕</button>
   </div>
+  <!-- Fenêtre 3 (07/09/2026), point 4a -- "À relancer" / "Relances faites" / "Suspendues" ;
+       "Toutes" retiré (redondant avec "À relancer" -- cf. commentaire mort sur ce sujet dans
+       relancesApplyFilter, jamais vraiment distinct) et "Relancées 2×" renommé "Relances faites"
+       (le nom ne mentait pas avant, mais ne dit plus vrai depuis que "Construire termines (ok)"
+       couvre TOUTE facture relancée et pas actuellement due, pas seulement celles a niveau r2). -->
   <div id="relances-tabs">
     <button class="devis-tab active" data-tab="arelancer" type="button">À relancer</button>
+    <button class="devis-tab" data-tab="termines" type="button">Relances faites</button>
     <button class="devis-tab" data-tab="suspendues" type="button">Suspendues</button>
-    <button class="devis-tab" data-tab="toutes" type="button">Toutes</button>
-    <!-- A (26/08/2026) : le cul-de-sac apres R2 -- une facture a niveau r2 ne redevient jamais
-         "due" (rang deja au maximum), donc ne rejoignait plus AUCUN onglet. Terminologie choisie
-         par Mickael : honnete sur ce qu'on sait ("relancee 2 fois") vs ce qu'on ne sait pas (si le
-         client a repondu). -->
-    <button class="devis-tab" data-tab="termines" type="button">Relancées 2×</button>
   </div>
   <div id="relances-fraicheur"><span id="relances-fraicheur-txt"></span><button id="relances-fraicheur-copy" type="button" style="display:none"><svg class="hicon-sm" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="7" y="4" width="10" height="16" rx="1.5"/><rect x="9" y="2" width="6" height="3" rx="1"/></svg>Copier pour l’équipe</button></div>
   <div id="relances-search-wrap">
@@ -6483,9 +6608,9 @@
          c'est ce qui supprime le conflit humain sur cette ligne precise. Sert aussi de cle
          unique de detection de mise a jour (voir checkUpdate ci-dessous), plus fiable qu'une
          comparaison de chaine de version par tenant. */
-  var APPV_MCS = '4.36';
+  var APPV_MCS = '4.37';
   var APPV_LABO = '1.00';
-  var BUILD = 14;
+  var BUILD = 15;
   // displayVersion()/displayVersionShort() lisent isMcsCode() (definie plus bas dans cette
   // meme IIFE -- declaration de fonction, donc disponible ici par hoisting) : le TENANT
   // affiche depend du code de connexion, jamais d'un simple "APPV" global qui ne dirait ni
@@ -6758,7 +6883,7 @@
       head: 'relances-head', close: 'relances-close',
       steps: [
         { selector: '#relances-tabs', title: 'Les 3 onglets',
-          text: '« À relancer » = les clients à recontacter maintenant. « Suspendues » = les relances mises en pause. « Toutes » = l’historique complet.' },
+          text: '« À relancer » = les clients à recontacter maintenant. « Relances faites » = ce qui a déjà été relancé (date et type). « Suspendues » = les relances mises en pause — une facture revient automatiquement dans « À relancer » 30 jours après la dernière relance, ou dès qu’une promesse de règlement expire.' },
         { selector: '#relances-search-wrap', title: 'Rechercher',
           text: 'Tapez le nom d’un client pour retrouver sa fiche de relance.' },
         { selector: '#relances-summary', title: 'Résumé',
@@ -10561,6 +10686,95 @@
   if (fcfClose) fcfClose.addEventListener('click', function(){ fcfBg.classList.remove('open'); });
   if (fcfBg) fcfBg.addEventListener('click', function(e){ if (e.target === fcfBg) fcfBg.classList.remove('open'); });
 
+  // Point 3d (Session 15) -- un textarea qui montre TOUT son contenu, jamais une fenêtre à
+  // faire défiler : grandit avec le texte (même mécanisme que corpsAutoGrow déjà en place
+  // ailleurs dans ce fichier, factorisé ici pour être réutilisé sur 2 champs).
+  function fcfAutoGrow(el){ if (!el) return; el.style.height = 'auto'; el.style.height = el.scrollHeight + 'px'; }
+
+  // Conversion nombre -> lettres françaises, pour l'aperçu uniquement (le vrai PDF a sa propre
+  // conversion déjà testée en Session 12/13, inchangée) -- couvre le cas réel des montants de
+  // factures MCS (jusqu'à quelques dizaines de milliers d'euros).
+  function nombreEnLettresFr(montant){
+    var entier = Math.floor(Math.abs(montant) || 0);
+    var centimes = Math.round((Math.abs(montant) - entier) * 100);
+    var UNITES = ['zéro','un','deux','trois','quatre','cinq','six','sept','huit','neuf','dix','onze','douze','treize','quatorze','quinze','seize','dix-sept','dix-huit','dix-neuf'];
+    function dizaines(n){
+      if (n < 20) return UNITES[n];
+      var d = Math.floor(n/10), u = n%10;
+      if (d === 7 || d === 9){ return (d===7?'soixante':'quatre-vingt') + '-' + UNITES[10+u]; }
+      if (d === 8){ return 'quatre-vingt' + (u === 0 ? 's' : '-' + UNITES[u]); }
+      var noms = {2:'vingt',3:'trente',4:'quarante',5:'cinquante',6:'soixante'};
+      var base = noms[d];
+      if (u === 0) return base;
+      if (u === 1) return base + ' et un';
+      return base + '-' + UNITES[u];
+    }
+    function centainesFn(n){
+      if (n < 100) return dizaines(n);
+      var c = Math.floor(n/100), r = n%100;
+      var prefix = (c === 1 ? 'cent' : UNITES[c] + ' cent' + (r === 0 && c > 1 ? 's' : ''));
+      if (r === 0) return prefix;
+      return prefix + ' ' + dizaines(r);
+    }
+    function milliersFn(n){
+      if (n < 1000) return centainesFn(n);
+      var m = Math.floor(n/1000), r = n%1000;
+      var prefix = (m === 1 ? 'mille' : centainesFn(m) + ' mille');
+      if (r === 0) return prefix;
+      return prefix + ' ' + centainesFn(r);
+    }
+    var texte = entier === 0 ? 'zéro' : milliersFn(entier);
+    texte += ' euro' + (entier === 1 ? '' : 's');
+    if (centimes > 0) texte += ' et ' + (centimes < 20 ? UNITES[centimes] : dizaines(centimes)) + ' centime' + (centimes === 1 ? '' : 's');
+    return texte;
+  }
+
+  // Point 2 (Session 15) -- reproduction fidèle de la facture en HTML/CSS pur (jamais d'appel
+  // serveur ici : c'est justement ce qui a mis n8n à genoux fin août). Structure suit
+  // ANATOMIE-FACTURE-MEG_1.md bloc par bloc. Lit l'état ACTUEL des champs directement dans le
+  // DOM, appelée à chaque frappe pertinente -- jamais de dépendance à une génération serveur.
+  function fcfRenderApercu(){
+    var page = document.getElementById('fcf-apercu-page');
+    if (!page) return;
+    var val = function(id){ var el = document.getElementById(id); return el ? el.value.trim() : ''; };
+    var residence = val('fcf-residence'), client = val('fcf-client'), gestionnaire = val('fcf-gestionnaire');
+    var adresse = val('fcf-adresse'), ville = val('fcf-ville'), dest = val('fcf-dest');
+    var designation = val('fcf-designation') || 'Prestation';
+    var designationLignes = designation.split('\n').filter(Boolean);
+    var sousLignes = val('fcf-souslignes').split('\n').filter(Boolean);
+    var quantite = parseFloat(val('fcf-quantite')) || 1;
+    var unite = val('fcf-unite') || 'U';
+    var prixHt = parseFloat(val('fcf-prix')) || 0;
+    var numeroContrat = val('fcf-numero'), annee = val('fcf-annee');
+    var echeance = val('fcf-echeance'); var echeanceFr = '';
+    if (echeance){ var p = echeance.split('-'); if (p.length === 3) echeanceFr = p[2] + '/' + p[1] + '/' + p[0]; }
+    var conditions = val('fcf-conditions-reglement') || 'Règlement par virement';
+    var tvaRadio = document.querySelector('#fcf-tva-wrap input[type=radio]:checked');
+    var tva = tvaRadio ? parseFloat(tvaRadio.value) : 0.2;
+    var totalHt = quantite * prixHt, tvaMontant = totalHt * tva, totalTtc = totalHt + tvaMontant;
+    var nomAffiche = residence || client || adresse || '(non identifié)';
+    var dateFr = new Date().toLocaleDateString('fr-FR');
+
+    var html = '';
+    html += '<div class="fcf-ap-row"><div class="fcf-ap-titre">FACTURE</div><div class="fcf-ap-right fcf-ap-petit">N° : (attribué à l’envoi)<br>Date : ' + dateFr + '<br>N° TVA : FR30500685391</div></div>';
+    html += '<hr class="fcf-ap-sep">';
+    html += '<div class="fcf-ap-row"><div class="fcf-ap-petit">MCS<br>2 Chemin de Belle Étoile<br>33370 TRESSES<br>Tél. : 06 09 16 47 30<br>Mail : mickael.chantereau@orange.fr</div>'
+      + '<div class="fcf-ap-right fcf-ap-petit">' + escHtml(nomAffiche) + (gestionnaire ? ('<br>Représenté par ' + escHtml(gestionnaire)) : '') + '<br>' + escHtml([adresse, ville].filter(Boolean).join(', ')) + (dest ? ('<br>Email : ' + escHtml(dest)) : '') + '</div></div>';
+    html += '<div class="fcf-ap-ref"><b>Réf. :</b> ' + escHtml(nomAffiche) + '<br>' + (numeroContrat ? ('Contrat n° ' + escHtml(numeroContrat) + '<br>') : '') + 'Année ' + escHtml(annee || '') + '</div>';
+    html += '<table class="fcf-ap-table"><thead><tr><th>Désignation</th><th>Qté</th><th>Unité</th><th>P.U. HT</th><th>Total HT</th></tr></thead><tbody>'
+      + '<tr><td>' + escHtml(designationLignes[0]||'Prestation') + '</td><td class="fcf-ap-num">' + quantite + '</td><td>' + escHtml(unite) + '</td><td class="fcf-ap-num">' + prixHt.toFixed(2) + ' €</td><td class="fcf-ap-num">' + totalHt.toFixed(2) + ' €</td></tr>'
+      + '</tbody></table>';
+    var toutesSousLignes = designationLignes.slice(1).concat(sousLignes);
+    if (toutesSousLignes.length) html += '<div class="fcf-ap-souslignes">' + escHtml(toutesSousLignes.join('\n')) + '</div>';
+    html += '<div class="fcf-ap-cols"><div><div class="fcf-ap-boxtitre">Conditions de règlement</div>' + escHtml(conditions) + '<br>Aucun escompte pour règlement anticipé.' + (echeanceFr ? ('<br>Échéance : ' + echeanceFr) : '') + '</div>'
+      + '<div><div class="fcf-ap-boxtitre">RIB</div>Nom : CIC SUD OUEST<br>IBAN : FR76 1005 7190 7500 0208 3880 168<br>BIC : CMCIFRPP</div></div>';
+    html += '<div class="fcf-ap-lettres">Le montant total s’élève à ' + nombreEnLettresFr(totalTtc) + '.</div>';
+    html += '<div class="fcf-ap-mention">CLAUSE DE RÉSERVE DE PROPRIÉTÉ : conformément à la loi 80.335 du 12 mai 1980, MCS conserve la propriété des prestations et marchandises jusqu’au paiement intégral du prix et de ses accessoires.<br>Pénalité de retard : 3 fois le taux d’intérêt légal après l’échéance (art. L.441-10). Escompte pour règlement anticipé : 0 %.<br>Indemnité forfaitaire pour frais de recouvrement (art. D.441-5) : 40 € en cas de retard de paiement.</div>';
+    html += '<div class="fcf-ap-totaux"><span>Total HT<br>' + totalHt.toFixed(2) + ' €</span><span>TVA (' + (tva*100).toFixed(0) + ' %)<br>' + tvaMontant.toFixed(2) + ' €</span><span>Total TTC<br>' + totalTtc.toFixed(2) + ' €</span><span>Net à payer<br>' + totalTtc.toFixed(2) + ' €</span></div>';
+    html += '<div class="fcf-ap-footer">SARL MCS - 2 Chemin de Belle Étoile 33370 TRESSES - Tél. : 06 09 16 47 30 - Email : mickael.chantereau@orange.fr - IBAN FR76 1005 7190 7500 0208 3880 168 - Code APE 8122Z - N° RCS : 500 685 391 R.C.S. Bordeaux - SARL au capital social de 5 000 € - Siret : 50068539100046 - N° TVA FR30500685391</div>';
+    page.innerHTML = html;
+  }
+
   function factureContratFormOpen(f, bloque){
     document.getElementById('fcf-titre').textContent = contratNomAffiche(f);
     document.getElementById('fcf-residence').value = f.residence || '';
@@ -10572,10 +10786,13 @@
     destInput.value = f.destinataire_email || f.destinataire_candidat || '';
     var destLabel = document.getElementById('fcf-dest-label');
     destLabel.textContent = 'Destinataire (email) — "à renseigner" si aucune correspondance trouvée dans l\'export MEG';
+    // Point 5 (Session 15) -- avertissement (ambre), jamais une alerte (rouge) : rien n'est
+    // détruit ni engagé ici, c'est une adresse à vérifier avant l'envoi. Le texte lui-même est
+    // déjà réécrit en français simple côté serveur (Prep generation contrats), sans jargon.
     var destPreuve = document.getElementById('fcf-dest-preuve');
     if (!f.destinataire_email && f.destinataire_candidat){
       destPreuve.style.display = '';
-      destPreuve.innerHTML = '<svg class="hicon-sm" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="10.5" cy="10.5" r="6.5"/><line x1="20" y1="20" x2="15.3" y2="15.3"/></svg>À confirmer — ' + escHtml(f.destinataire_preuve || 'candidat trouvé, à vérifier.');
+      destPreuve.innerHTML = '<svg class="hicon-sm" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="10.5" cy="10.5" r="6.5"/><line x1="20" y1="20" x2="15.3" y2="15.3"/></svg>' + escHtml(f.destinataire_preuve || 'Cette adresse n’a jamais servi à un envoi réel — vérifiez-la avant d’envoyer.');
     } else { destPreuve.style.display = 'none'; }
 
     var designationInput = document.getElementById('fcf-designation');
@@ -10594,7 +10811,7 @@
       confirmBtn.disabled = false;
       confirmBtn.onclick = function(){
         var valeur = String(designationInput.value || '').trim();
-        if (!valeur){ toast('Écris la désignation avant de confirmer.'); designationInput.focus(); return; }
+        if (!valeur){ toast('Écrivez la désignation avant de confirmer.'); designationInput.focus(); return; }
         confirmBtn.disabled = true; confirmBtn.textContent = '…';
         postContrats({ type: 'designations-ecrire', cleNormalisee: f.famille_prestation, designationFacture: valeur }, function(){
           toast('✅ Désignation confirmée, appliquée à toutes les factures « ' + (f.prestation_resolue || f.prestation || '') + ' »');
@@ -10603,18 +10820,31 @@
       };
     } else { confirmBtn.style.display = 'none'; }
 
-    document.getElementById('fcf-souslignes').value = f.sous_lignes_defaut || '';
+    // Point 1c (Session 15) -- objet/corps/sous-lignes/echeance TOUJOURS pre-remplis a
+    // l'ouverture : repli sur le brouillon deja stocke, sinon sur le brouillon calcule a la
+    // volee cote serveur (_defaut), jamais un champ vide au premier affichage.
+    var souslignesInput = document.getElementById('fcf-souslignes');
+    souslignesInput.value = f.sous_lignes_defaut || '';
     var quantiteInput = document.getElementById('fcf-quantite'); quantiteInput.value = f.quantite != null ? f.quantite : 1;
     var uniteInput = document.getElementById('fcf-unite'); uniteInput.value = f.unite || 'U';
     var passagesInput = document.getElementById('fcf-passages'); passagesInput.value = f.passages_an != null ? f.passages_an : 1;
     var prixInput = document.getElementById('fcf-prix'); prixInput.value = f.prix_ht;
-    document.getElementById('fcf-prix-label').textContent = 'Prix unitaire HT (€) — réindexation ' + (f.type_contrat === 'VMC' ? 'automatique +3 % déjà appliquée' : 'libre, à toi de choisir');
+    document.getElementById('fcf-prix-label').textContent = 'Prix unitaire HT (€)';
     var numeroInput = document.getElementById('fcf-numero'); numeroInput.value = f.numero_contrat || '';
     var anneeInput = document.getElementById('fcf-annee'); anneeInput.value = f.annee || '';
-    var echeanceInput = document.getElementById('fcf-echeance'); echeanceInput.value = '';
-    var objetInput = document.getElementById('fcf-objet'); objetInput.value = f.objet_mail || '';
-    var corpsInput = document.getElementById('fcf-corps'); corpsInput.value = f.corps_mail || '';
+    // Point 6a -- échéance pré-remplie (émission + 30 jours, comme MEG), modifiable.
+    var echeanceInput = document.getElementById('fcf-echeance'); echeanceInput.value = f.date_echeance || f.echeance_defaut || '';
+    // Point 6b -- conditions de règlement désormais un champ EDITABLE (plus un texte fixe).
+    var conditionsInput = document.getElementById('fcf-conditions-reglement');
+    conditionsInput.value = f.conditions_reglement || 'Règlement par virement';
+    var objetInput = document.getElementById('fcf-objet'); objetInput.value = f.objet_mail || f.objet_mail_defaut || '';
+    var corpsInput = document.getElementById('fcf-corps'); corpsInput.value = f.corps_mail || f.corps_mail_defaut || '';
     var garderInput = document.getElementById('fcf-garder'); garderInput.checked = false;
+
+    // Point 3d -- sous-lignes et corps du mail montrent TOUT leur contenu, jamais une fenêtre à
+    // faire défiler (même mécanisme, étendu au 2 champs).
+    souslignesInput.oninput = function(){ fcfAutoGrow(souslignesInput); fcfRenderApercu(f); };
+    corpsInput.oninput = function(){ fcfAutoGrow(corpsInput); };
 
     // ---- TVA : mêmes 2 choix fixes 10%/20% que l'ancien inline (Sujet 3, 02/09/2026). ----
     var tvaWrap = document.getElementById('fcf-tva-wrap');
@@ -10633,15 +10863,16 @@
       if (Math.abs(registreVal - valeur) < 0.005) radio.checked = true;
       var span = document.createElement('span'); span.className = 'ct-tva-pct'; span.textContent = (valeur*100).toFixed(0) + ' %';
       lab.appendChild(radio); lab.appendChild(span);
-      radio.addEventListener('change', tvaSyncSelected);
+      radio.addEventListener('change', function(){ tvaSyncSelected(); recalcPreview(); });
       radiosRow.appendChild(lab);
       tvaLabels.push(lab);
       return radio;
     });
     tvaSyncSelected();
     tvaWrap.appendChild(radiosRow);
+    // Point 6c -- vouvoiement + vocabulaire de Mickael ("votre tableau", pas "ton classeur").
     var tvaSource = document.createElement('p'); tvaSource.className = 'ct-tva-source-txt';
-    tvaSource.textContent = 'Ton classeur dit ' + (registreVal*100).toFixed(0) + ' %.' + (f.tva_meg_reel != null ? (' (Tes factures réelles : ' + (f.tva_meg_reel*100).toFixed(0) + ' %.)') : '');
+    tvaSource.textContent = 'Votre tableau indique ' + (registreVal*100).toFixed(0) + ' %.' + (f.tva_meg_reel != null ? (' (Vos factures réelles : ' + (f.tva_meg_reel*100).toFixed(0) + ' %.)') : '');
     tvaWrap.appendChild(tvaSource);
 
     var ttcPreview = document.getElementById('fcf-ttc-preview');
@@ -10652,10 +10883,72 @@
       var tva = checked ? parseFloat(checked.value) : Number(f.tva) || 0.2;
       var totalHt = ht * qte;
       ttcPreview.textContent = 'Recalcul : ' + (totalHt*(1+tva)).toFixed(2) + ' € TTC (' + totalHt.toFixed(2) + ' € HT + ' + (tva*100).toFixed(0) + ' % TVA)';
+      fcfRenderApercu(f);
     }
     prixInput.oninput = recalcPreview; quantiteInput.oninput = recalcPreview;
-    tvaRadios.forEach(function(r){ r.addEventListener('change', recalcPreview); });
     recalcPreview();
+
+    // Point 4 (Session 15) -- +3 %/-3 % en un clic, ancien/nouveau prix avant validation,
+    // réversible. Le vrai prix HT n'est modifié QUE si Mickael confirme.
+    var reindexApercu = document.getElementById('fcf-reindex-apercu');
+    function fcfReindexProposer(pourcent){
+      var ancien = parseFloat(prixInput.value) || 0;
+      var nouveau = Math.round(ancien * (1 + pourcent/100) * 100) / 100;
+      reindexApercu.style.display = '';
+      reindexApercu.innerHTML = '';
+      var texte = document.createElement('p'); texte.style.margin = '0';
+      texte.textContent = (pourcent > 0 ? 'Appliquer +3 % ' : 'Retirer les 3 % ') + ': ' + ancien.toFixed(2) + ' € HT → ' + nouveau.toFixed(2) + ' € HT.';
+      reindexApercu.appendChild(texte);
+      var actions = document.createElement('div'); actions.className = 'fcf-reindex-actions';
+      var okB = document.createElement('button'); okB.type = 'button'; okB.className = 'vc-ok'; okB.textContent = 'Confirmer';
+      var noB = document.createElement('button'); noB.type = 'button'; noB.className = 'vc-no'; noB.textContent = 'Annuler';
+      okB.addEventListener('click', function(){ prixInput.value = nouveau.toFixed(2); recalcPreview(); reindexApercu.style.display = 'none'; });
+      noB.addEventListener('click', function(){ reindexApercu.style.display = 'none'; });
+      actions.appendChild(okB); actions.appendChild(noB);
+      reindexApercu.appendChild(actions);
+    }
+    document.getElementById('fcf-reindex-plus').onclick = function(){ fcfReindexProposer(3); };
+    document.getElementById('fcf-reindex-moins').onclick = function(){ fcfReindexProposer(-3); };
+
+    // ---- Aperçu (Point 2) : rendu fidèle, mis à jour à chaque frappe pertinente ----
+    [document.getElementById('fcf-residence'), document.getElementById('fcf-client'), document.getElementById('fcf-gestionnaire'),
+     document.getElementById('fcf-adresse'), document.getElementById('fcf-ville'), destInput, designationInput,
+     quantiteInput, uniteInput, numeroInput, anneeInput, echeanceInput, conditionsInput].forEach(function(el){
+      el.addEventListener('input', function(){ fcfRenderApercu(f); });
+    });
+    fcfRenderApercu(f);
+
+    // ---- Bascule mobile / bouton "Voir le vrai PDF" ----
+    var apercuCol = document.getElementById('fcf-apercu-col');
+    apercuCol.classList.remove('open');
+    var toggleMobile = document.getElementById('fcf-apercu-toggle-mobile');
+    toggleMobile.onclick = function(){ apercuCol.classList.add('open'); };
+    document.getElementById('fcf-apercu-mobile-close').onclick = function(){ apercuCol.classList.remove('open'); };
+    var voirVraiPdfBtn = document.getElementById('fcf-voir-vrai-pdf');
+    voirVraiPdfBtn.onclick = function(){
+      voirVraiPdfBtn.disabled = true; voirVraiPdfBtn.textContent = 'Génération…';
+      // Même piège déjà documenté pour contratsBuildThumb : la fenêtre doit s'ouvrir de façon
+      // SYNCHRONE au clic (geste utilisateur exigé par le bloqueur de popup) puis être redirigée
+      // une fois le PDF reçu -- jamais un window.open() dans le callback asynchrone, qui serait
+      // silencieusement bloqué.
+      var popup = window.open('', '_blank');
+      var payload = fcfPayloadActuel(f);
+      payload.type = 'mois-apercu-pdf';
+      postContrats(payload, function(j){
+        voirVraiPdfBtn.disabled = false; voirVraiPdfBtn.textContent = 'Voir le vrai PDF';
+        try {
+          var bytes = atob(j.dataB64); var arr = new Uint8Array(bytes.length);
+          for (var i = 0; i < bytes.length; i++) arr[i] = bytes.charCodeAt(i);
+          var blob = new Blob([arr], { type: 'application/pdf' });
+          var blobUrl = URL.createObjectURL(blob);
+          if (popup && !popup.closed) popup.location = blobUrl; else window.open(blobUrl, '_blank');
+        } catch (e) { if (popup && !popup.closed) popup.close(); toast('Impossible d’ouvrir le PDF pour le moment.'); }
+      }, function(err){
+        voirVraiPdfBtn.disabled = false; voirVraiPdfBtn.textContent = 'Voir le vrai PDF';
+        if (popup && !popup.closed) popup.close();
+        toast(err);
+      });
+    };
 
     // ---- Historique (Décision 3) ----
     var histoSection = document.getElementById('fcf-historique-section');
@@ -10682,11 +10975,9 @@
       });
     }, function(){ histoListe.innerHTML = ''; histoVide.style.display = ''; });
 
-    // ---- Actions ----
-    var okBtn = document.getElementById('fcf-envoyer');
-    var skipBtn = document.getElementById('fcf-skip');
-    okBtn.disabled = false; skipBtn.disabled = false;
-    okBtn.onclick = function(){
+    // Rassemble le payload d'envoi COMPLET a partir de l'etat actuel des champs -- reutilise
+    // pour l'envoi reel ET pour l'apercu du vrai PDF (Point 2), un seul endroit a maintenir.
+    function fcfPayloadActuel(f){
       var checked = tvaRadios.find(function(r){ return r.checked; });
       var tvaChoisie = checked ? parseFloat(checked.value) : undefined;
       var tvaProvenance;
@@ -10695,10 +10986,8 @@
         else if (f.tva_tableur != null && Math.abs(tvaChoisie - f.tva_tableur) < 0.005) tvaProvenance = 'tableur';
         else tvaProvenance = 'manuel';
       }
-      if (bloque && !designationInput.value.trim()){ toast('Saisis une désignation avant d\'envoyer.'); return; }
-      okBtn.disabled = true; skipBtn.disabled = true;
-      postContrats({
-        type: 'mois-action', id: f.id, choix: 'envoyer',
+      return {
+        id: f.id,
         destinataire: destInput.value.trim(), objet: objetInput.value.trim(), corps: corpsInput.value.trim(),
         prix_ht: parseFloat(prixInput.value) || 0,
         designation: designationInput.value.trim(),
@@ -10714,9 +11003,22 @@
         quantite: parseFloat(quantiteInput.value) || 1,
         unite: uniteInput.value.trim() || 'U',
         date_echeance: echeanceInput.value || '',
-        sous_lignes: document.getElementById('fcf-souslignes').value,
+        conditions_reglement: conditionsInput.value.trim(),
+        sous_lignes: souslignesInput.value,
         garder_pour_prochaine_fois: garderInput.checked,
-      }, function(j){
+      };
+    }
+
+    // ---- Actions ----
+    var okBtn = document.getElementById('fcf-envoyer');
+    var skipBtn = document.getElementById('fcf-skip');
+    okBtn.disabled = false; skipBtn.disabled = false;
+    okBtn.onclick = function(){
+      if (bloque && !designationInput.value.trim()){ toast('Saisissez une désignation avant d\'envoyer.'); return; }
+      okBtn.disabled = true; skipBtn.disabled = true;
+      var payload = fcfPayloadActuel(f);
+      payload.type = 'mois-action'; payload.choix = 'envoyer';
+      postContrats(payload, function(j){
         toast(j.testMode ? '✅ Facture envoyée (mode test → Altaestima)' : '✅ Facture envoyée');
         f.statut = 'envoyee'; f.destinataire_email = destInput.value.trim(); f.date_envoi = new Date().toISOString();
         fcfBg.classList.remove('open');
@@ -10736,6 +11038,10 @@
     };
 
     fcfBg.classList.add('open');
+    // fcfAutoGrow calcule scrollHeight -- vaut 0 tant que le panneau est display:none, donc
+    // appelé APRÈS l'ouverture (même piège déjà documenté pour corpsAutoGrow ailleurs dans ce
+    // fichier), avec un setTimeout(0) pour laisser le navigateur poser le layout avant de mesurer.
+    setTimeout(function(){ fcfAutoGrow(souslignesInput); fcfAutoGrow(corpsInput); }, 0);
   }
 
   function contratsRowValue(c, key){
@@ -12742,9 +13048,37 @@
   var ICON_MED_SM = '<svg class="hicon-sm" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M10.29 3.86 1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg>';
   function relancesAppendFactureList(card, b){
     var list = document.createElement('div'); list.className = 'rl-facture-list';
+    // Point 4b (07/09/2026) : granularite par facture -- "Azura a 5 factures, si Mickael n'en
+    // relance qu'une, SEULE celle-la passe dans Relances faites". La case a cocher n'a de sens
+    // qu'a partir de 2 factures (rien a choisir sur un groupe d'une seule) ; cochee par defaut
+    // (comportement inchange si rien n'est decoche : envoyer = tout le groupe, comme avant ce
+    // chantier). b._selection est initialise dans relancesBuildCard, lu par relancesAppendActions
+    // au moment du clic sur Envoyer.
+    var multiple = b.factures.length > 1;
     b.factures.forEach(function(f, i){
       if (i > 0) list.appendChild(document.createElement('br'));
+      if (multiple){
+        var cbLabel = document.createElement('label'); cbLabel.className = 'rl-facture-check';
+        var cb = document.createElement('input'); cb.type = 'checkbox'; cb.checked = true;
+        cb.addEventListener('change', function(){ b._selection[f.numero] = cb.checked; });
+        cbLabel.appendChild(cb);
+        list.appendChild(cbLabel);
+      }
       list.appendChild(document.createTextNode(f.numero + ' du ' + fmtRelanceDateFr(f.date) + ' — ' + fmtEuros(f.montant)));
+      // Point 4c/4d/4e : pastilles factuelles, jamais affichees tant qu'aucun evenement reel
+      // n'existe pour cette facture (donc invisibles tant que TEST_MODE couvre tous les envois --
+      // cf. le garde-fou dans "Formater relances (ok)").
+      if (f.derniereRelanceLe){
+        var pastilleR = document.createElement('span'); pastilleR.className = 'rl-pastille-relance' + (f.relanceDueRetour ? ' retour' : '');
+        var typeTxt = f.derniereRelanceType === 'mise_en_demeure' ? 'mise en demeure' : 'relance';
+        pastilleR.textContent = (f.relanceDueRetour ? '↩ Revient — ' : '✓ ') + 'Déjà ' + typeTxt + ' le ' + fmtRelanceDateFr(String(f.derniereRelanceLe).slice(0, 10));
+        list.appendChild(pastilleR);
+      }
+      if (f.promesseExpiree){
+        var pastilleP = document.createElement('span'); pastilleP.className = 'rl-pastille-promesse';
+        pastilleP.textContent = '⏰ Promesse du ' + fmtRelanceDateFr(f.promesseExpiree.suspenduJusquau) + ' non tenue' + (f.promesseExpiree.note ? (' — ' + f.promesseExpiree.note) : '');
+        list.appendChild(pastilleP);
+      }
       // Point 3 (28/08/2026) : bouton present UNIQUEMENT si le PDF existe (50 factures impayees
       // archivees depuis MEG) -- jamais un bouton mort qui ne mene nulle part.
       if (f.pdfUrl){
@@ -12896,9 +13230,12 @@
               ? ('🧪 Test envoyé à ' + (r.destinataireReel || b.destinataire) + ' — redirigé, n’a pas atteint le client, niveau inchangé.')
               : ('✅ Envoyé à ' + (r.destinataireReel || b.destinataire)));
             // Sujet 1.2 (02/09/2026) : 2e chemin d'envoi reel (le signal "prochaine echeance"),
-            // meme action serveur 'envoyer' que le bouton principal -- meme traitement.
+            // meme action serveur 'envoyer' que le bouton principal -- meme traitement. Point 2
+            // (07/09/2026) : relancesOpen(true) remplace par relancesResynchroniser() -- evite le
+            // double appel synchrone a relancesApplyData qui cassait le scroll (cf. commentaire
+            // de relancesResynchroniser).
             relancesApplyerEnvoiLocal(b);
-            relancesOpen(true);
+            relancesResynchroniser();
           } else {
             arme = false; envBtn2.disabled = false; if (attBtn) attBtn.disabled = false; envBtn2.textContent = 'Envoyer maintenant';
             toast('❌ ' + ((r && r.error) || 'Échec de l’envoi.'));
@@ -13047,24 +13384,53 @@
       var envConfirmBtn = document.createElement('button'); envConfirmBtn.type = 'button'; envConfirmBtn.className = 'rl-confirm vc-envoi-reel';
       envConfirmBtn.textContent = 'Confirmer l’envoi';
       envExpl.appendChild(envTxt);
+      // Point 4b (07/09/2026) : rappelle EXPLICITEMENT, au moment de confirmer, si l'envoi ne
+      // couvrira qu'une partie du groupe -- jamais un envoi partiel silencieux.
+      var envPartielInfo = document.createElement('div'); envPartielInfo.className = 'rl-duplicata-info';
+      envExpl.appendChild(envPartielInfo);
       // A4 (07/09/2026, Fenetre 2) : la piece jointe n'est PLUS une case a cocher -- elle part
       // desormais TOUJOURS des lors qu'un PDF est archive pour au moins une facture du groupe
       // (garde-fou serveur, cf. Preparer envoi relance (ok)/Preparer duplicata relance (ok)).
       // L'ancienne case "Joindre le duplicata" mentait par omission (decochee, le PDF partait
       // quand meme) -- remplacee par une simple ligne d'info, jamais un controle qui ne controle
       // plus rien.
-      var facturesAvecPdf = b.factures.filter(function(f){ return !!f.pdfUrl; });
-      if (facturesAvecPdf.length){
-        var dupInfo = document.createElement('div'); dupInfo.className = 'rl-duplicata-info';
-        dupInfo.textContent = '📎 La facture sera jointe automatiquement (' + facturesAvecPdf.map(function(f){ return f.numero; }).join(', ') + ').';
-        envExpl.appendChild(dupInfo);
-      }
+      // Point 4b (07/09/2026) : cree TOUJOURS le bloc (meme vide) -- son contenu est recalcule a
+      // chaque ouverture, jamais fige a la construction de la carte (une facture decochee ne doit
+      // pas rester listee ici, cf. bug trouve en testant : le texte annoncait encore la facture
+      // qui vient d'etre decochee juste au-dessus).
+      var dupInfo = document.createElement('div'); dupInfo.className = 'rl-duplicata-info';
+      envExpl.appendChild(dupInfo);
       envExpl.appendChild(envConfirmBtn);
-      envBtn.addEventListener('click', function(){ envExpl.classList.toggle('open'); });
+      envBtn.addEventListener('click', function(){
+        // Point 4b : recalcule a CHAQUE ouverture (les cases ont pu changer depuis le dernier
+        // tap) -- jamais un texte fige au moment de la construction de la carte.
+        var numerosCoches = b.factures.filter(function(f){ return b._selection[f.numero] !== false; }).map(function(f){ return f.numero; });
+        if (numerosCoches.length < b.factures.length){
+          envPartielInfo.style.display = '';
+          envPartielInfo.textContent = numerosCoches.length
+            ? ('☑️ Seule' + (numerosCoches.length > 1 ? 's' : '') + ' ' + numerosCoches.join(', ') + ' sera' + (numerosCoches.length > 1 ? 'ont' : '') + ' relancée' + (numerosCoches.length > 1 ? 's' : '') + ' — les autres restent à relancer.')
+            : 'Décoche au moins une facture pour pouvoir envoyer.';
+          envConfirmBtn.disabled = !numerosCoches.length;
+        } else {
+          envPartielInfo.style.display = 'none';
+          envConfirmBtn.disabled = false;
+        }
+        var facturesEnvoyeesAvecPdf = b.factures.filter(function(f){ return f.pdfUrl && numerosCoches.indexOf(f.numero) !== -1; });
+        if (facturesEnvoyeesAvecPdf.length){
+          dupInfo.style.display = '';
+          dupInfo.textContent = '📎 La facture sera jointe automatiquement (' + facturesEnvoyeesAvecPdf.map(function(f){ return f.numero; }).join(', ') + ').';
+        } else {
+          dupInfo.style.display = 'none';
+        }
+        envExpl.classList.toggle('open');
+      });
       envConfirmBtn.addEventListener('click', function(){
         envConfirmBtn.disabled = true; envBtn.disabled = true;
         envConfirmBtn.textContent = 'Envoi…';
-        postRelancesAction({ cle: b.cle, action: 'envoyer' }, function(r){
+        var numerosEnvoi = b.factures.filter(function(f){ return b._selection[f.numero] !== false; }).map(function(f){ return f.numero; });
+        var payloadEnvoi = { cle: b.cle, action: 'envoyer' };
+        if (numerosEnvoi.length && numerosEnvoi.length < b.factures.length) payloadEnvoi.numeros = numerosEnvoi;
+        postRelancesAction(payloadEnvoi, function(r){
           envExpl.classList.remove('open');
           if (r && r.ok){
             // V2 (27/08/2026) : en mode test, le serveur ne fait plus avancer le niveau
@@ -13075,10 +13441,12 @@
               : ('✅ Envoyé à ' + (r.destinataireReel || b.destinataire)));
             // Sujet 1.2 (02/09/2026) : ecran a jour tout de suite (retire localement CE
             // brouillon/ces factures), PUIS un recalcul frais est quand meme lance en tache de
-            // fond pour re-synchroniser (relancesOpen(true) -- jamais de "Calcul en cours…"
-            // affiche puisque le cache vient d'etre repatche juste au-dessus).
-            relancesApplyerEnvoiLocal(b);
-            relancesOpen(true);
+            // fond pour re-synchroniser -- jamais de "Calcul en cours…" affiche puisque le cache
+            // vient d'etre repatche juste au-dessus. Point 2 (07/09/2026) : relancesResynchroniser()
+            // remplace relancesOpen(true) ici (cf. son commentaire -- evite le double appel
+            // synchrone a relancesApplyData qui cassait le scroll, la vraie cause du bug).
+            relancesApplyerEnvoiLocal(b, payloadEnvoi.numeros);
+            relancesResynchroniser();
           } else {
             envConfirmBtn.disabled = false; envBtn.disabled = false; envConfirmBtn.textContent = 'Confirmer l’envoi';
             toast('❌ ' + ((r && r.error) || 'Échec de l’envoi.'));
@@ -13240,7 +13608,11 @@
       var ligne = document.createElement('div'); ligne.className = 'rl-termine-histo-ligne';
       var niv = document.createElement('span'); niv.className = 'rl-termine-histo-niveau'; niv.textContent = RL_NIVEAU_LABEL[h.niveau] || h.niveau;
       var d = h.date ? new Date(h.date).toLocaleDateString('fr-FR') : '?';
-      var txt = document.createElement('span'); txt.textContent = 'le ' + d + ' — ' + (RL_SOURCE_LABEL[h.source] || h.source || '?');
+      // Point 4c (07/09/2026) : distingue amiable/mise en demeure -- h.type absent sur les
+      // evenements anterieurs a ce chantier (toujours une relance amiable a l'epoque, jamais
+      // affiche pour ne pas sur-qualifier une donnee qu'on n'a pas).
+      var typeTxt = h.type === 'mise_en_demeure' ? ' (mise en demeure)' : '';
+      var txt = document.createElement('span'); txt.textContent = 'le ' + d + ' — ' + (RL_SOURCE_LABEL[h.source] || h.source || '?') + typeTxt;
       ligne.appendChild(niv); ligne.appendChild(txt);
       histo.appendChild(ligne);
     });
@@ -13330,6 +13702,11 @@
   // chemin, cf. relancesGroupeSuspendu/le formulaire de suspension plus haut.
   function relancesBuildCard(b){
     var card = document.createElement('div'); card.className = 'devis-card rl-card';
+    // Point 4b (07/09/2026) : etat de selection par facture pour CETTE carte -- reinitialise a
+    // "tout coche" a chaque rendu (coherent avec le reste de l'ecran, qui repart de zero a
+    // chaque rechargement, ex. le formulaire de suspension replie par defaut).
+    b._selection = {};
+    b.factures.forEach(function(f){ b._selection[f.numero] = true; });
     var suspendu = relancesGroupeSuspendu(b);
     // 1) Client(s), jamais fondus
     var clientsWrap = document.createElement('div'); clientsWrap.className = 'rl-clients';
@@ -13421,9 +13798,12 @@
       relancesList.innerHTML = '';
       var totalT = itemsT.reduce(function(s,t){ return s + (Number(t.totalTTC)||0); }, 0);
       var nbClientsT = relancesCompterClients(itemsT);
-      relancesSetSummary(itemsT.length ? fmtEuros(totalT) : '', 'en suivi · ' + nbClientsT + ' client' + (nbClientsT>1?'s':'') + ' relancé' + (nbClientsT>1?'s':'') + ' 2 fois');
+      // Fenêtre 3 (07/09/2026), point 4c : "relancé 2 fois" ne dit plus vrai depuis que cet
+      // onglet couvre TOUTE facture relancée au moins une fois et pas actuellement due (une
+      // seule relance suffit desormais a y figurer, cf. Construire termines (ok)).
+      relancesSetSummary(itemsT.length ? fmtEuros(totalT) : '', 'en suivi · ' + nbClientsT + ' client' + (nbClientsT>1?'s':'') + ' déjà relancé' + (nbClientsT>1?'s':''));
       if (!itemsT.length){
-        relancesList.innerHTML = '<p id="relances-empty">Aucune facture relancée 2 fois pour l’instant.</p>';
+        relancesList.innerHTML = '<p id="relances-empty">Aucune relance faite pour l’instant.</p>';
         relancesList.scrollTop = scrollAvant;
         return;
       }
@@ -13433,13 +13813,14 @@
     }
     var items;
     // V5 (27/08/2026) : une facture suspendue (avec ou sans date de reprise) n'est plus "a
-    // relancer" -- exclue de cet onglet, mais jamais de "Toutes" (son montant doit rester visible,
-    // demande explicite de Mickael : "le montant reste compte dans le total du").
+    // relancer" -- exclue de cet onglet. Fenêtre 3 (07/09/2026), point 4a : l'onglet "Toutes" a
+    // été retiré de l'interface (il coïncidait déjà avec "À relancer" hors suspensions, cf.
+    // l'ancien commentaire ici) -- seuls 'arelancer'/'suspendues' atteignent ce point
+    // ('termines' est déjà retourné plus haut), le repli ci-dessous ne sert plus qu'à ne jamais
+    // planter si un état inattendu se présentait.
     if (relancesActiveTab === 'suspendues') items = relancesBrouillons.filter(relancesGroupeSuspendu);
     else if (relancesActiveTab === 'arelancer') items = relancesBrouillons.filter(function(b){ return !relancesGroupeSuspendu(b); });
-    else items = relancesBrouillons.slice(); // "Toutes" -- brouillons ne contient QUE les factures deja dues (cf. Construire
-    // brouillons (ok)) : il n'existe pas de notion de facture "pas encore due" a ce niveau, donc
-    // "Toutes" et "A relancer" coincident aujourd'hui hors suspensions -- simplification assumee.
+    else items = relancesBrouillons.slice();
     items = items.filter(function(b){ return !q || normDoc(b.clientsDistincts.join(' ')).indexOf(q) !== -1; });
     items.sort(function(a, c){
       return relancesTri === 'anciennete' ? (c.joursRetardMax - a.joursRetardMax) : (c.totalTTC - a.totalTTC);
@@ -13527,16 +13908,55 @@
   // (envoi)" cote n8n, jamais touche -- ceci ne fait qu'accelerer l'AFFICHAGE du resultat deja
   // acquis (sujet 1.4). Repli silencieux si relancesLastJ est absent (jamais vu en pratique
   // puisqu'un envoi ne peut avoir lieu qu'apres un premier relancesOpen reussi).
-  function relancesApplyerEnvoiLocal(b){
+  // Point 4b (07/09/2026) : numerosPartiel optionnel -- si l'envoi ne couvrait qu'un
+  // sous-ensemble du groupe, seules CES factures disparaissent localement (les autres restent
+  // affichees, comme avant l'envoi) ; le brouillon du groupe entier n'est retire QUE si la
+  // selection couvrait tout le groupe (comportement d'origine, inchange dans ce cas).
+  function relancesApplyerEnvoiLocal(b, numerosPartiel){
     if (!relancesLastJ) return;
+    var facturesEnvoyees = (numerosPartiel && numerosPartiel.length) ? b.factures.filter(function(f){ return numerosPartiel.indexOf(f.numero) !== -1; }) : b.factures;
+    var estPartiel = facturesEnvoyees.length < (b.factures || []).length;
     var numerosEnvoyes = {};
-    (b.factures || []).forEach(function(f){ if (f && f.numero != null) numerosEnvoyes[f.numero] = true; });
+    (facturesEnvoyees || []).forEach(function(f){ if (f && f.numero != null) numerosEnvoyes[f.numero] = true; });
     var patched = Object.assign({}, relancesLastJ);
     patched.lignes = (relancesLastJ.lignes || []).filter(function(l){ return !numerosEnvoyes[l.numero]; });
-    patched.brouillons = (relancesLastJ.brouillons || []).filter(function(x){ return x.cle !== b.cle; });
+    if (estPartiel){
+      // Le groupe reste affiche, mais amputé des factures envoyées -- reconstruit localement à
+      // partir du MÊME brouillon (montant/joursRetardMax recalculés), jamais un texte figé.
+      patched.brouillons = (relancesLastJ.brouillons || []).map(function(x){
+        if (x.cle !== b.cle) return x;
+        var facturesRestantes = x.factures.filter(function(f){ return !numerosEnvoyes[f.numero]; });
+        var totalRestant = facturesRestantes.reduce(function(s, f){ return s + Number(f.montant || 0); }, 0);
+        return Object.assign({}, x, { factures: facturesRestantes, totalTTC: Math.round(totalRestant * 100) / 100 });
+      }).filter(function(x){ return x.cle !== b.cle || x.factures.length > 0; });
+    } else {
+      patched.brouillons = (relancesLastJ.brouillons || []).filter(function(x){ return x.cle !== b.cle; });
+    }
     // termines/fraicheur inchanges par un envoi -- seules lignes/brouillons bougent.
     panelCacheSave('relances', patched);
     relancesApplyData(patched);
+  }
+  // Fenêtre 3 (07/09/2026), point 2 -- LA VRAIE CAUSE du "scroll qui remonte" (déclarée traitée
+  // 4 fois sans jamais avoir été vue fonctionner) : après un envoi, relancesApplyerEnvoiLocal(b)
+  // appelle déjà relancesApplyData (donc relancesApplyFilter) pour afficher tout de suite le
+  // résultat local ; l'appel qui suivait juste après, relancesOpen(true), retombe TOUJOURS sur la
+  // branche "cached" (panelCacheSave venant d'écrire EXACTEMENT ce même contenu) et appelle
+  // relancesApplyData UNE SECONDE FOIS, de façon synchrone, dans le MÊME tick JS. Or
+  // relancesApplyFilter vide la liste par innerHTML='' -- ce qui remet scrollTop à 0
+  // IMMÉDIATEMENT -- puis restaure sa valeur via requestAnimationFrame (donc en différé). Le 2e
+  // appel capture son "scrollAvant" AVANT que le rAF du 1er appel n'ait eu la moindre chance de
+  // s'exécuter : il capture donc 0 (déjà remis à 0 par le 1er appel), et son propre rAF -- exécuté
+  // APRÈS celui du 1er, puisqu'il a été programmé après -- écrase la restauration avec cette
+  // valeur fausse. Aucun rapport avec le bandeau de cache corrigé plus haut (présent lui aussi,
+  // mais insuffisant seul) : reproduit et confirmé en conditions réelles (capture avant/après),
+  // y compris après ce premier correctif. Fix : après un envoi, ne JAMAIS repasser par la branche
+  // "cached" de relancesOpen (déjà affichée à l'instant par relancesApplyerEnvoiLocal) -- se
+  // contenter du recalcul frais en arrière-plan, un seul appel à relancesApplyData au lieu de deux.
+  function relancesResynchroniser(){
+    relancesChargerCalcul(function(j){
+      panelCacheSave('relances', j);
+      relancesApplyData(j);
+    }, function(){}, true);
   }
   function relancesOpen(keepOpen){
     if (!keepOpen) relancesview.classList.add('open');
@@ -13547,7 +13967,19 @@
     var cached = panelCacheLoad('relances');
     if (cached){
       relancesApplyData(cached.data);
-      relancesList.insertBefore(panelCacheBanner(cached.savedAt), relancesList.firstChild);
+      // Fenêtre 3 (07/09/2026), point 2 -- VRAIE CAUSE du "scroll qui remonte" (la 4e fois que ce
+      // point est déclaré traité) : ce n'était PAS relancesApplyFilter (son A5 du 07/09 matin
+      // préserve bien scrollTop, vérifié) mais CE bandeau, inséré ICI, APRÈS coup, à chaque appel
+      // de relancesOpen(true) déclenché après une action (envoyer/suspendre/marquer/désactiver...).
+      // Or relancesApplyerEnvoiLocal() vient de sauvegarder EXACTEMENT ce même contenu dans le
+      // cache juste avant d'appeler relancesOpen(true) -- panelCacheLoad('relances') retombe donc
+      // TOUJOURS sur la branche "cached" à ce moment précis, et ce bandeau (jamais présent avant
+      // l'action) s'ajoute en haut de la liste SANS que scrollTop soit corrigé de sa hauteur --
+      // le contenu visible se décale vers le bas du montant de cette hauteur, perçu comme "la
+      // page qui remonte". keepOpen===true = exactement ce rechargement en arrière-plan après une
+      // action (jamais une vraie 1ère ouverture à froid) : le bandeau "affiché depuis le cache"
+      // n'y a de toute façon aucun sens (l'action vient d'être confirmée par le serveur).
+      if (!keepOpen) relancesList.insertBefore(panelCacheBanner(cached.savedAt), relancesList.firstChild);
     } else {
       // Audit perf 28/08 : "Chargement..." nu remplace par un mot qui decrit ce qui se passe
       // reellement (le calcul serveur, ~3s) -- pas une promesse de sous-etapes qu'on ne peut
