@@ -1373,6 +1373,26 @@
   }
   .ct-head{display:flex; gap:12px; align-items:flex-start}
   .ct-main{flex:1; min-width:0; display:flex; flex-direction:column; gap:6px}
+  /* Fenetre 1 (08/09/2026 soir), point 3 -- refonte de la carte "A traiter" (demande verbatim de
+     Mickael, TRANSCRIPTION-RDV-MICKAEL-04-09-2026.txt : "il me faut les infos qui sont la...
+     l'adresse d'Aquitanis... Montesquieu... passage 1 sur 4... la designation aussi de quoi il
+     s'agit" / "je vois Acta, en dessous l'adresse, limite le numero de contrat"). Colonne de
+     droite dediee (montant + action), la vignette PDF (.ct-thumb, gardee mais plus jamais
+     appelee depuis contratsBuildMoisCard -- l'apercu se voit desormais en temps reel dans
+     "Modifier et traiter", Point 2 anterieur) laisse la place a cette colonne. */
+  .ct-right{flex:0 0 auto; display:flex; flex-direction:column; align-items:flex-end; gap:8px; text-align:right}
+  .ct-right .dv-montant{font-size:19px}
+  .ct-adresse-ville{font-size:13px; color:var(--muted)}
+  .ct-gestionnaire{font-size:13px; color:var(--muted)}
+  /* Point 1b -- une carte reste TOUJOURS affichee, meme avec des donnees manquantes/aberrantes :
+     jamais un repli silencieux (contratNomAffiche() bascule deja sur un autre champ sans le
+     dire -- c'est ce silence, pas le repli lui-meme, qui a rendu "Arborescence" introuvable par
+     son nom le 08/09 -- residence videe, bascule sur "CITYA" sans aucun signal). Bandeau rouge
+     explicite, jamais une simple omission. */
+  .ct-champ-manquant-alerte{
+    display:flex; align-items:center; gap:6px; font-size:12.5px; font-weight:700; color:#FF453A;
+    background:rgba(255,69,58,.12); border-radius:8px; padding:5px 9px; width:fit-content;
+  }
   /* Miniature carrée de la facture (aperçu visuel, pas le vrai PDF rendu -- juste assez pour
      reconnaître "c'est un document" + voir le montant d'un coup d'oeil) -- clique = ouvre le
      vrai PDF. Remplace le lien texte "Voir la facture" qui était caché dans le panneau
@@ -1778,6 +1798,17 @@
   /* Decision 3 (Session 13) -- trace des modifications, lecture seule, meme famille visuelle que
      l'historique du catalogue (.ctf-histo-*, deja generique). */
   #fcf-historique-vide{font-size:14px; color:var(--muted); padding:6px 0}
+  /* Point 5.1 (Fenetre 1, 08/09/2026 soir) : accordeon replie par defaut -- bouton pleine
+     largeur, chevron qui pivote a l'ouverture (meme mecanisme que le menu du haut, deja
+     eprouve). Jamais un fond/une bordure propre a l'icone (Principe 1 -- l'element cliquable
+     est le bouton entier). */
+  .fcf-historique-toggle-btn{
+    display:flex; align-items:center; justify-content:space-between; width:100%;
+    background:none; border:0; padding:0; margin:0 0 8px; cursor:pointer; color:var(--ink);
+    -webkit-tap-highlight-color:transparent; min-height:32px;
+  }
+  .fcf-historique-chevron{transition:transform .2s ease; flex:0 0 auto}
+  .fcf-historique-toggle-btn.open .fcf-historique-chevron{transform:rotate(180deg)}
   /* Point 3 (Session 15) -- reprise visuelle : bordure MCS visible sur CHAQUE champ modifiable
      (regle posee samedi, jamais appliquee sur cet ecran), et chaque section devient une carte
      visuellement separee (fond blanc, cadre leger) au lieu d'un simple titre dans un flux
@@ -6166,14 +6197,33 @@
       <label>Objet</label><input id="fcf-objet" type="text">
       <label>Corps du mail</label><textarea id="fcf-corps"></textarea>
     </div>
+    <!-- Point 4 (Fenetre 1, 08/09/2026 soir) : commentaire libre demande verbatim par Mickael
+         (TRANSCRIPTION-RDV-MICKAEL-04-09-2026.txt : "meme le commentaire. Remettre un
+         commentaire. Parce que je peux tres bien mettre un commentaire supplementaire, meme si
+         c'est un contrat."). N'apparait NULLE PART sur la facture ni dans le mail -- note
+         interne MCS uniquement, visible en rouvrant "Modifier et traiter" -- decision a
+         confirmer avec Dorian si un autre emplacement est voulu (cf. rapport de session). -->
+    <div class="ctf-section">
+      <p class="ctf-section-titre">Commentaire (interne, jamais sur la facture ni dans le mail)</p>
+      <textarea id="fcf-commentaire" placeholder="Note libre, ex : reglement toujours en retard, appeler avant"></textarea>
+    </div>
     <div class="fcf-checkbox-row">
       <input id="fcf-garder" type="checkbox">
       <label for="fcf-garder">Garder aussi pour les prochaines fois (modifie le contrat)</label>
     </div>
+    <!-- Point 5.1 (Fenetre 1, 08/09/2026 soir) : accordeon replie par defaut -- l'historique
+         complet des modifications prenait trop de place affiche en entier (retour explicite).
+         Le bouton bascule .open sur la section, jamais plus qu'un simple toggle CSS (voir JS,
+         fcfHistoriqueToggle). -->
     <div class="ctf-section" id="fcf-historique-section" style="display:none">
-      <p class="ctf-section-titre">Historique des modifications</p>
-      <div id="fcf-historique-liste"></div>
-      <p id="fcf-historique-vide" style="display:none">Aucune modification enregistrée pour cette facture.</p>
+      <button type="button" class="fcf-historique-toggle-btn" id="fcf-historique-toggle">
+        <span class="ctf-section-titre" style="margin:0">Historique des modifications</span>
+        <svg class="hicon-sm fcf-historique-chevron" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><polyline points="6,9 12,15 18,9"/></svg>
+      </button>
+      <div id="fcf-historique-corps" style="display:none">
+        <div id="fcf-historique-liste"></div>
+        <p id="fcf-historique-vide" style="display:none">Aucune modification enregistrée pour cette facture.</p>
+      </div>
     </div>
     <!-- Fenetre 1 (08/09/2026), Point 4 : "Enregistrer" persiste les corrections SANS emettre
          (aucun numero reserve, aucun PDF, aucun email, statut inchange) -- pour Mickael au
@@ -6255,13 +6305,13 @@
     <h3 id="ikf-titre">Nouveau trajet</h3>
     <label>Date</label><input id="ikf-date" type="date">
     <label>Motif</label>
+    <!-- Point 5.2 (Fenetre 1, 08/09/2026 soir) : 6 entrees -> 3, decision explicite de Mickael
+         (ordre impose : Devis, Rendez-vous client, Chantier, puis Autre). "Chantier" tranche le
+         debat "Passage residence" vs "Chantier" laisse ouvert en session precedente. -->
     <select id="ikf-motif-select">
-      <option value="VMC">VMC</option>
       <option value="Devis">Devis</option>
-      <option value="Passage résidence">Passage résidence</option>
-      <option value="Dératisation">Dératisation</option>
       <option value="Rendez-vous client">Rendez-vous client</option>
-      <option value="Désinsectisation">Désinsectisation</option>
+      <option value="Chantier">Chantier</option>
       <option value="__autre__">Autre…</option>
     </select>
     <input id="ikf-motif" type="text" placeholder="Précise le motif…" style="display:none; margin-top:8px">
@@ -6772,9 +6822,9 @@
          c'est ce qui supprime le conflit humain sur cette ligne precise. Sert aussi de cle
          unique de detection de mise a jour (voir checkUpdate ci-dessous), plus fiable qu'une
          comparaison de chaine de version par tenant. */
-  var APPV_MCS = '4.42';
+  var APPV_MCS = '4.43';
   var APPV_LABO = '1.00';
-  var BUILD = 22;
+  var BUILD = 23;
   // displayVersion()/displayVersionShort() lisent isMcsCode() (definie plus bas dans cette
   // meme IIFE -- declaration de fonction, donc disponible ici par hoisting) : le TENANT
   // affiche depend du code de connexion, jamais d'un simple "APPV" global qui ne dirait ni
@@ -10735,6 +10785,24 @@
 
   // Ecran de revue des factures de contrats (29/08/2026). Desormais base sur famille_prestation
   // (jamais la colonne "prestation" brute) : voir clients/mcs/INVENTAIRE-SOURCES-CONTRATS-29-08-2026.md.
+  // Point 1b (Fenetre 1, 08/09/2026 soir) : liste des champs CRITIQUES pour l'affichage/la
+  // facturation -- si l'un manque, la carte doit le CRIER, jamais se taire. Trouve en
+  // reproduisant a l'ecran ce qui est arrive a Arborescence : residence videe (1er champ du
+  // formulaire) + Envoyer -- rien n'a bloque (residence/client etaient des ALTERNATIVES, client
+  // restait rempli), puis contratNomAffiche() a bascule SILENCIEUSEMENT sur "CITYA" -- la carte
+  // existait toujours (verifie dans l'onglet Facture envoyee), mais devenait introuvable par
+  // recherche du nom "Arborescence" (0 resultat, confirme a l'ecran) : c'est ce silence, pas le
+  // repli en lui-meme, qui a produit "une facture disparue".
+  function contratsChampsManquants(f){
+    var manquants = [];
+    if (!f.residence && !f.client) manquants.push('résidence/client');
+    if (!f.adresse) manquants.push('adresse');
+    if (!f.ville) manquants.push('ville');
+    if (!f.numero_contrat) manquants.push('numéro de contrat');
+    if (!f.designation) manquants.push('désignation');
+    return manquants;
+  }
+
   function contratsBuildMoisCard(f){
     // 31/08/2026 (chantier A, vocabulaire des prestations) : "bloque" reflete desormais
     // designation_confirmee (booleen ecrit par le serveur depuis mcs_designations, statut
@@ -10753,87 +10821,99 @@
       card.appendChild(metaEC);
       return card;
     }
+
+    var ICON_CHECK_CT = '<svg class="hicon-sm" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="9"/><polyline points="8,12.5 10.7,15.2 16,9.5"/></svg>';
+    var ICON_SKIP_CT = '<svg class="hicon-sm" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><polyline points="7,5 13,12 7,19"/><polyline points="13,5 19,12 13,19"/></svg>';
+    var ICON_UNDO_CT = '<svg class="hicon-sm" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M9 14l-4-4 4-4"/><path d="M5 10h9a5 5 0 0 1 5 5v1"/></svg>';
+    var ICON_ALERT_CT = '<svg class="hicon-sm" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 3l10 18H2z"/><line x1="12" y1="9" x2="12" y2="14"/><circle cx="12" cy="17" r="1" fill="currentColor" stroke="none"/></svg>';
+
+    // ---- Point 3 (Fenetre 1, 08/09/2026 soir) -- refonte demandee verbatim par Mickael :
+    // "il me faut les infos qui sont la... l'adresse... passage 1 sur 4, la designation aussi" /
+    // "je vois Acta, en dessous l'adresse, limite le numero de contrat". Gauche : residence en
+    // titre, adresse+ville, gestionnaire, ligne technique discrete. Droite : montant TTC +
+    // action. La vignette PDF (contratsBuildThumb) n'est plus appelee ici -- l'apercu se voit
+    // deja en temps reel dans "Modifier et traiter" (fonction gardee, jamais supprimee).
     var head = document.createElement('div'); head.className = 'ct-head';
     var main = document.createElement('div'); main.className = 'ct-main';
     var nom = document.createElement('span'); nom.className = 'dv-nom'; nom.textContent = contratNomAffiche(f);
     main.appendChild(nom);
-    // Point 2.1 (05/09/2026) : le syndic (discret) sous la résidence -- jamais l'inverse.
-    var sousTitre = contratSousTitre(f);
-    if (sousTitre){
-      var sousNom = document.createElement('span'); sousNom.className = 'dv-sous-nom'; sousNom.textContent = sousTitre;
-      main.appendChild(sousNom);
+
+    var manquants = contratsChampsManquants(f);
+    if (manquants.length){
+      var alerte = document.createElement('span'); alerte.className = 'ct-champ-manquant-alerte';
+      alerte.innerHTML = ICON_ALERT_CT + 'Donnée manquante : ' + escHtml(manquants.join(', '));
+      main.appendChild(alerte);
     }
-    var ICON_TAG_BADGE = '<svg class="hicon-sm" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 2h7a1 1 0 0 1 1 1v7a1 1 0 0 1-.3.7l-9 9a1 1 0 0 1-1.4 0l-7-7a1 1 0 0 1 0-1.4l9-9A1 1 0 0 1 12 2z"/><circle cx="16.5" cy="7.5" r="1.5" fill="currentColor" stroke="none"/></svg>';
-    var ICON_INFO_BADGE = '<svg class="hicon-sm" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="9"/><line x1="12" y1="11" x2="12" y2="16"/><circle cx="12" cy="8" r="1" fill="currentColor" stroke="none"/></svg>';
-    var badge = document.createElement('span');
-    badge.className = 'ct-badge' + (bloque ? ' bloque' : (f.type_contrat === 'VMC' ? ' vmc' : ''));
-    // Badge lisible : montre le libellé brut tel que Mickael l'a écrit dans son classeur (ex.
-    // "MS3D"), jamais un texte générique -- c'est lui qui doit reconnaître ce qu'il a tapé.
-    var libelleBrutBadge = (f.prestation_resolue || f.prestation || '').trim();
-    badge.innerHTML = bloque
-      ? (ICON_TAG_BADGE + 'Désignation à confirmer' + (libelleBrutBadge ? (' : « ' + escHtml(libelleBrutBadge) + ' »') : ''))
-      : (f.type_contrat === 'VMC' ? 'VMC · +3 % auto' : 'Dératisation / désinsectisation');
-    main.appendChild(badge);
-    // Fenetre 1 (08/09/2026) : la pastille "Deduit par Jarvis" retiree -- outil de production
-    // affiche au client, meme decision que la ligne de resume et les 2 puces ci-dessus.
-    // Sujet 2.4 (01/09/2026) : mention discrete (pas une alerte) quand le taux applique vient du
-    // registre a 20% -- pour que Mickael se souvienne que son classeur dit 20% sans que ca bloque
-    // ni n'alarme (voir aussi l'ecran de revue groupe, contratsOuvrirRevueTvaVmc).
-    if (f.type_contrat === 'VMC' && Number(f.tva) === 0.2 && String(f.tva_provenance) === 'registre'){
-      var mentionTva = document.createElement('span'); mentionTva.className = 'ct-badge ct-badge-tva-info';
-      mentionTva.innerHTML = ICON_INFO_BADGE + 'ton classeur dit 20 %';
-      main.appendChild(mentionTva);
+
+    var adrVille = [f.adresse, f.ville].filter(Boolean).join(' · ');
+    if (adrVille){
+      var adrEl = document.createElement('span'); adrEl.className = 'ct-adresse-ville'; adrEl.textContent = adrVille;
+      main.appendChild(adrEl);
     }
-    var meta = document.createElement('span'); meta.className = 'dv-meta';
-    // 30/08/2026 : la valeur RESOLUE (celle qui sert reellement a la facture, apres cascade des
-    // "idem"), jamais le texte brut du tableur -- avant ce fix, "idem" ou "derat/desin" (une
-    // categorie, pas une designation) pouvaient s'afficher ici alors que la facture generee etait
-    // deja correcte. prestation_resolue peut manquer sur une tres vieille ligne jamais regeneree
-    // depuis -- repli sur le brut dans ce seul cas, jamais l'inverse.
-    meta.textContent = (f.prestation_resolue || f.prestation || '') + ' · ' + f.annee + (f.prix_ht_n1 != null ? (' · N-1 : ' + Number(f.prix_ht_n1).toFixed(2) + ' € HT') : '');
-    main.appendChild(meta);
-    // Point 2.1 (05/09/2026) : numéro de contrat + désignation (le texte exact qui sort sur la
-    // facture, distinct de prestation_resolue qui n'est qu'une courte catégorie) + "passage X/Y" --
-    // la facturation se déclenche toujours au mois du passage 1 (règle actée, cf. contratsBuildCatalogueParMois),
-    // Y = passages_an réel du contrat (pas un 4 générique).
+
+    // Meme resolution que factureContratFormOpen (P/O : residence en tete, gestionnaire en
+    // second) -- si l'un change, l'autre doit changer aussi.
+    var gestBrut = f.gestionnaire_meg || (f.residence ? (f.client || '') : '') || '';
+    if (gestBrut){
+      var gInfosCarte = gestionnaireInfos(gestBrut);
+      var gestEl = document.createElement('span'); gestEl.className = 'ct-gestionnaire'; gestEl.textContent = gInfosCarte.nom;
+      main.appendChild(gestEl);
+    }
+
+    // Ligne technique discrete : numero de contrat · designation · passage 1/N.
     var detailBits = [];
     if (f.numero_contrat) detailBits.push('N° ' + f.numero_contrat);
     if (f.designation) detailBits.push(f.designation);
     detailBits.push('Passage 1/' + (f.passages_an || 1));
-    if (detailBits.length){
-      var detailLigne = document.createElement('span'); detailLigne.className = 'dv-meta ct-detail-contrat';
-      detailLigne.textContent = detailBits.join(' · ');
-      main.appendChild(detailLigne);
-    }
-    var montant = document.createElement('span'); montant.className = 'dv-montant';
-    montant.textContent = Number(f.prix_ttc).toFixed(2) + ' € TTC';
-    main.appendChild(montant);
-    head.appendChild(main);
-    var thumb = contratsBuildThumb(f);
-    if (thumb) head.appendChild(thumb);
-    card.appendChild(head);
+    var detailLigne = document.createElement('span'); detailLigne.className = 'dv-meta ct-detail-contrat';
+    detailLigne.textContent = detailBits.join(' · ');
+    main.appendChild(detailLigne);
 
-    // ---- Statut "envoyee" : lecture seule, rien à modifier ni à traiter ----
-    if (f.statut === 'envoyee'){
-      if (f.numero_facture){
-        var numEnvoi = document.createElement('span'); numEnvoi.className = 'ct-numero';
-        numEnvoi.textContent = '№ ' + f.numero_facture;
-        card.appendChild(numEnvoi);
-      }
-      var ICON_CHECK_CT = '<svg class="hicon-sm" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="9"/><polyline points="8,12.5 10.7,15.2 16,9.5"/></svg>';
-      var metaEnvoi = document.createElement('span'); metaEnvoi.className = 'dv-meta';
-      metaEnvoi.innerHTML = ICON_CHECK_CT + 'Envoyée le ' + escHtml(fmtDevisDateSimple(f.date_envoi)) + (f.destinataire_email ? (' à ' + escHtml(f.destinataire_email)) : '');
-      card.appendChild(metaEnvoi);
-      return card;
+    // Bandeaux operationnels (bloquants/echec) -- gardes ICI (pas de simple badge decoratif,
+    // c'est une condition qui empeche reellement l'envoi ou vient d'echouer).
+    if (f._envoiEchec){
+      var errEnvoi = document.createElement('p'); errEnvoi.className = 'ct-motif-blocage';
+      errEnvoi.textContent = '❌ L\'envoi a échoué : ' + f._envoiEchec + ' — remis dans « À traiter ».';
+      main.appendChild(errEnvoi);
     }
-
-    // ---- Statut "skip" : motif + option de revenir en arrière ----
+    if (f.statut === 'a_traiter' && bloque){
+      var motifP = document.createElement('p'); motifP.className = 'ct-motif-blocage';
+      motifP.textContent = f.motif_blocage || 'Aucune désignation MEG vérifiée pour cette prestation.';
+      main.appendChild(motifP);
+    }
     if (f.statut === 'skip'){
-      var ICON_SKIP_CT = '<svg class="hicon-sm" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><polyline points="7,5 13,12 7,19"/><polyline points="13,5 19,12 13,19"/></svg>';
-      var ICON_UNDO_CT = '<svg class="hicon-sm" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M9 14l-4-4 4-4"/><path d="M5 10h9a5 5 0 0 1 5 5v1"/></svg>';
       var metaSkip = document.createElement('span'); metaSkip.className = 'dv-meta';
       metaSkip.innerHTML = ICON_SKIP_CT + 'Motif : ' + escHtml(f.motif_skip || '(non précisé)');
-      card.appendChild(metaSkip);
+      main.appendChild(metaSkip);
+    }
+    if (f.statut === 'envoyee'){
+      // Point 2 (Fenetre 1, 08/09/2026 soir) : le statut suit desormais la PREUVE d'envoi (voir
+      // MAJ facture envoyee (contrats)) -- envoi_reel dit la verite, numero_facture reste vide
+      // en mode test (le numero est reserve puis libere dans la meme execution, jamais affiche
+      // comme consomme). Distinction visuelle explicite : jamais une fausse assurance.
+      var metaEnvoi = document.createElement('span'); metaEnvoi.className = 'dv-meta';
+      var estReel = f.envoi_reel === true || f.envoi_reel === 'true';
+      var prefixeNum = f.numero_facture ? ('№ ' + f.numero_facture + ' — ') : '';
+      var texteEnvoi = estReel
+        ? (prefixeNum + 'Envoyée le ' + escHtml(fmtDevisDateSimple(f.date_envoi)) + (f.destinataire_email ? (' à ' + escHtml(f.destinataire_email)) : ''))
+        : ('(TEST — aucun numéro consommé) Envoyée le ' + escHtml(fmtDevisDateSimple(f.date_envoi)) + (f.destinataire_email ? (' à ' + escHtml(f.destinataire_email)) : ''));
+      metaEnvoi.innerHTML = ICON_CHECK_CT + texteEnvoi;
+      main.appendChild(metaEnvoi);
+    }
+
+    head.appendChild(main);
+
+    // ---- Colonne de droite : montant TTC + action selon statut ----
+    var right = document.createElement('div'); right.className = 'ct-right';
+    var montant = document.createElement('span'); montant.className = 'dv-montant';
+    montant.textContent = Number(f.prix_ttc).toFixed(2) + ' € TTC';
+    right.appendChild(montant);
+    if (f.statut === 'a_traiter'){
+      var toggleBtn = document.createElement('button'); toggleBtn.type = 'button'; toggleBtn.className = 'ct-toggle';
+      toggleBtn.innerHTML = '<svg class="hicon-sm" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 20h4L20 8l-4-4L4 16z"/><line x1="14" y1="6" x2="18" y2="10"/></svg>' + (bloque ? 'Saisir la désignation et traiter' : 'Modifier et traiter');
+      toggleBtn.addEventListener('click', function(){ factureContratFormOpen(f, bloque); });
+      right.appendChild(toggleBtn);
+    } else if (f.statut === 'skip'){
       var undoBtn = document.createElement('button'); undoBtn.className = 'ct-toggle'; undoBtn.type = 'button';
       undoBtn.innerHTML = ICON_UNDO_CT + 'Remettre à traiter';
       undoBtn.addEventListener('click', function(){
@@ -10844,31 +10924,10 @@
           contratsApplyFilter();
         }, function(err){ undoBtn.disabled = false; toast(err); });
       });
-      card.appendChild(undoBtn);
-      return card;
+      right.appendChild(undoBtn);
     }
-
-    // ---- Statut "a_traiter" (par défaut) : bouton -> ouvre l'écran plein écran de Facturation
-    // (Session 13, Point 4 corrigé) -- l'édition détaillée ne vit plus inline dans la carte. ----
-    // Fenetre 1 (08/09/2026), Point 2 : un envoi non-bloquant qui a échoué remet la carte ici
-    // (jamais un etat intermediaire silencieux) -- le message d'echec reste visible tant que
-    // Mickael n'a pas rouvert "Modifier et traiter" (efface a ce moment-la).
-    if (f._envoiEchec){
-      var errEnvoi = document.createElement('p'); errEnvoi.className = 'ct-motif-blocage';
-      errEnvoi.textContent = '❌ L\'envoi a échoué : ' + f._envoiEchec + ' — remis dans « À traiter ».';
-      card.appendChild(errEnvoi);
-    }
-    if (bloque){
-      var motifP = document.createElement('p'); motifP.className = 'ct-motif-blocage';
-      motifP.textContent = f.motif_blocage || 'Aucune désignation MEG vérifiée pour cette prestation.';
-      card.appendChild(motifP);
-    }
-    var toggleBtn = document.createElement('button'); toggleBtn.type = 'button'; toggleBtn.className = 'ct-toggle';
-    // Session 4 (06/09/2026) : innerHTML (pas textContent) -- meme icone crayon que
-    // "cal-client-changer-def" (famille SVG 24x24/trait 2/currentColor), au lieu de l'emoji ✏️.
-    toggleBtn.innerHTML = '<svg class="hicon-sm" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 20h4L20 8l-4-4L4 16z"/><line x1="14" y1="6" x2="18" y2="10"/></svg>' + (bloque ? 'Saisir la désignation et traiter' : 'Modifier et traiter');
-    toggleBtn.addEventListener('click', function(){ factureContratFormOpen(f, bloque); });
-    card.appendChild(toggleBtn);
+    head.appendChild(right);
+    card.appendChild(head);
     return card;
   }
 
@@ -11019,19 +11078,16 @@
     }
     els.push('<img class="fcf-ap-logo" src="' + FCF_LOGO_DATA_URI + '" style="left:' + ML + 'px;top:' + (PAGE_H-LOGO_TOP) + 'px;">');
 
-    // ---- cadre FACTURE (haut droite) ----
+    // ---- en-tete FACTURE (haut droite) -- Point 5.3/6 (Fenetre 1, 08/09/2026 soir) : plus
+    // aucun fond ni cadre ni ligne (verifie sur FA000215, vraie facture MEG : 0 trait sur toute
+    // la page) -- aligne sur le vrai PDF (buildFacturePdf, n8n), meme fix applique aux 2 cotes. ----
     var fbW = 179, fbX = MR - fbW, fbTop = LOGO_TOP, fbRowH = 16.03, fbH = fbRowH * 4;
-    RECT(fbX, fbTop - fbH, fbW, fbH, true);
-    STROKERECT(fbX, fbTop - fbH, fbW, fbH);
     T(fbX + 6, fbTop - 12, 10, true, 'FACTURE');
-    HLINE(fbX, fbX + fbW, fbTop - fbRowH);
     // "[APERÇU -- PAS ENCORE ENVOYÉ]" -- exactement le texte que le vrai generateur affiche sur
     // cette ligne pour un apercu (Preparer apercu pdf (contrats), numeroComplet), distinct du
     // placeholder "[n° attribué à l'envoi]" qui lui n'apparait que DANS l'objet/corps du mail.
     T(fbX + 6, fbTop - fbRowH - 11, 8.5, false, 'N°'); T(fbX + fbW - 6, fbTop - fbRowH - 11, 8.5, false, '[APERÇU -- PAS ENCORE ENVOYÉ]', null, 'right');
-    HLINE(fbX, fbX + fbW, fbTop - 2*fbRowH);
     T(fbX + 6, fbTop - 2*fbRowH - 11, 8.5, false, 'Date'); T(fbX + fbW - 6, fbTop - 2*fbRowH - 11, 8.5, false, dateFr, null, 'right', 90);
-    HLINE(fbX, fbX + fbW, fbTop - 3*fbRowH);
     T(fbX + 6, fbTop - 3*fbRowH - 11, 8.5, false, 'N° TVA'); T(fbX + fbW - 6, fbTop - 3*fbRowH - 11, 8.5, false, 'FR30500685391', null, 'right', 110);
 
     // ---- bloc MCS (gauche) / bloc client (droite) ----
@@ -11104,14 +11160,49 @@
     for (var ci=1; ci<5; ci++) VLINE(cols[ci], tabBottom, tabTop);
     y = tabBottom - 18;
 
-    // ---- sous-lignes (designation multi-ligne + texte libre), petit, gris ----
+    // ---- sous-lignes (designation multi-ligne + texte libre) -- Point 6 (Fenetre 1, 08/09/2026
+    // soir) : NOIR desormais (etait gris) -- aligne sur le vrai PDF (buildFacturePdf, n8n),
+    // 3e fois que cette regle est reperdue d'un cote sans l'autre, d'ou le controle mecanique
+    // ajoute plus bas (verifier-apercu-vs-pdf.js). ----
     var toutesSousLignes = designationLignes.slice(1).concat(sousLignesTexte);
     if (toutesSousLignes.length){
       y -= 3;
-      for (var sli=0; sli<toutesSousLignes.length; sli++){ T(cols[0]+2, y, 8, false, toutesSousLignes[sli], 'fcf-ap-gray'); y -= 10.5; }
+      for (var sli=0; sli<toutesSousLignes.length; sli++){ T(cols[0]+2, y, 8, false, toutesSousLignes[sli]); y -= 10.5; }
     }
 
-    // ---- Conditions de reglement (gauche) / RIB (droite) ----
+    // ---- Detail TVA + TOTAL HT/TVA/TOTAL TTC -- Point 6 : deplace AVANT Conditions de
+    // reglement/RIB (etait apres), copie exacte du nouvel ordre du vrai PDF -- suit desormais le
+    // flux normal (y courant), plus une position fixe pres du bas de page. ----
+    y -= 8;
+    var dW = 145.8, H1 = 10.8, H2 = 8.6, H3 = 33.9, dH = H1+H2+H3;
+    var boxTopY = y;
+    var yTitleBot = boxTopY-H1, ySubBot = boxTopY-H1-H2, yValBot = boxTopY-dH;
+    STROKERECT(ML, yValBot, dW, dH);
+    RECT(ML, yTitleBot, dW, H1, true);
+    T(ML+dW/2, boxTopY-8, 7.5, true, 'Détail de la T.V.A', null, 'center', dW);
+    HLINE(ML, ML+dW, yTitleBot);
+    T(ML+4, yTitleBot-8, 7, false, 'Base HT'); T(ML+59, yTitleBot-8, 7, false, 'Taux'); T(ML+99, yTitleBot-8, 7, false, 'Montant T.V.A');
+    HLINE(ML, ML+dW, ySubBot);
+    T(ML+58, ySubBot-11, 8, false, totalHt.toFixed(2).replace('.',',') + ' €', null, 'right', 54);
+    T(ML+95, ySubBot-11, 8, false, (tva*100).toFixed(0) + ' %', null, 'right', 34);
+    T(ML+dW-4, ySubBot-11, 8, false, tvaMontant.toFixed(2).replace('.',',') + ' €', null, 'right', 40);
+
+    var totBoxX = ML+dW, totBoxW = cols[5]-totBoxX, totColW = totBoxW/3, totHeadH = H1+H2;
+    STROKERECT(totBoxX, yValBot, totBoxW, dH);
+    RECT(totBoxX, ySubBot, totBoxW, totHeadH, true);
+    T(totBoxX+totColW*0.5, boxTopY-13, 9.5, true, 'TOTAL HT', null, 'center', totColW);
+    T(totBoxX+totColW*1.5, boxTopY-13, 9.5, true, 'TVA', null, 'center', totColW);
+    T(totBoxX+totColW*2.5, boxTopY-13, 9.5, true, 'TOTAL TTC', null, 'center', totColW);
+    VLINE(totBoxX+totColW, yValBot, boxTopY); VLINE(totBoxX+totColW*2, yValBot, boxTopY);
+    HLINE(totBoxX, totBoxX+totBoxW, ySubBot);
+    T(totBoxX+totColW-6, yValBot+8, 9.5, false, totalHt.toFixed(2).replace('.',',') + ' €', null, 'right', totColW-12);
+    T(totBoxX+totColW*2-6, yValBot+8, 9.5, false, tvaMontant.toFixed(2).replace('.',',') + ' €', null, 'right', totColW-12);
+    T(totBoxX+totColW*3-6, yValBot+8, 10.5, true, totalTtc.toFixed(2).replace('.',',') + ' €', null, 'right', totColW-12);
+    T(cols[5], yValBot-8, 8.5, true, 'Net à payer : ' + totalTtc.toFixed(2).replace('.',',') + ' €', null, 'right', 200);
+    y = yValBot - 24;
+
+    // ---- Conditions de reglement (gauche) / RIB (droite) -- Point 6 : deplace APRES Totaux/TVA
+    // (etait avant, au milieu de la facture -- signale par Mickael/Dorian). ----
     var boxGap = 3, boxW = (cols[5]-cols[0]-boxGap)/2, boxHeadH = 13.7, boxH = 52.3;
     var leftX = cols[0], rightX = cols[0]+boxW+boxGap;
     STROKERECT(leftX, y-boxH, boxW, boxH);
@@ -11141,34 +11232,8 @@
     ];
     for (var cpi=0; cpi<clauseParagraphes.length; cpi++){ T(ML, y, 7.3, false, clauseParagraphes[cpi], 'fcf-ap-gray'); y -= 9.5; }
 
-    // ---- Detail TVA + TOTAL HT/TVA/TOTAL TTC + Net a payer -- ancres en bas de page fixe,
-    // exactement comme le generateur (boxTopY=114.9 depuis le bas) ----
-    var dW = 145.8, H1 = 10.8, H2 = 8.6, H3 = 33.9, dH = H1+H2+H3, boxTopY = 114.9;
-    var yTitleBot = boxTopY-H1, ySubBot = boxTopY-H1-H2, yValBot = boxTopY-dH;
-    STROKERECT(ML, yValBot, dW, dH);
-    RECT(ML, yTitleBot, dW, H1, true);
-    T(ML+dW/2, boxTopY-8, 7.5, true, 'Détail de la T.V.A', null, 'center', dW);
-    HLINE(ML, ML+dW, yTitleBot);
-    T(ML+4, yTitleBot-8, 7, false, 'Base HT'); T(ML+59, yTitleBot-8, 7, false, 'Taux'); T(ML+99, yTitleBot-8, 7, false, 'Montant T.V.A');
-    HLINE(ML, ML+dW, ySubBot);
-    T(ML+58, ySubBot-11, 8, false, totalHt.toFixed(2).replace('.',',') + ' €', null, 'right', 54);
-    T(ML+95, ySubBot-11, 8, false, (tva*100).toFixed(0) + ' %', null, 'right', 34);
-    T(ML+dW-4, ySubBot-11, 8, false, tvaMontant.toFixed(2).replace('.',',') + ' €', null, 'right', 40);
-
-    var totBoxX = ML+dW, totBoxW = cols[5]-totBoxX, totColW = totBoxW/3, totHeadH = H1+H2;
-    STROKERECT(totBoxX, yValBot, totBoxW, dH);
-    RECT(totBoxX, ySubBot, totBoxW, totHeadH, true);
-    T(totBoxX+totColW*0.5, boxTopY-13, 9.5, true, 'TOTAL HT', null, 'center', totColW);
-    T(totBoxX+totColW*1.5, boxTopY-13, 9.5, true, 'TVA', null, 'center', totColW);
-    T(totBoxX+totColW*2.5, boxTopY-13, 9.5, true, 'TOTAL TTC', null, 'center', totColW);
-    VLINE(totBoxX+totColW, yValBot, boxTopY); VLINE(totBoxX+totColW*2, yValBot, boxTopY);
-    HLINE(totBoxX, totBoxX+totBoxW, ySubBot);
-    T(totBoxX+totColW-6, yValBot+8, 9.5, false, totalHt.toFixed(2).replace('.',',') + ' €', null, 'right', totColW-12);
-    T(totBoxX+totColW*2-6, yValBot+8, 9.5, false, tvaMontant.toFixed(2).replace('.',',') + ' €', null, 'right', totColW-12);
-    T(totBoxX+totColW*3-6, yValBot+8, 10.5, true, totalTtc.toFixed(2).replace('.',',') + ' €', null, 'right', totColW-12);
-    T(cols[5], yValBot-8, 8.5, true, 'Net à payer : ' + totalTtc.toFixed(2).replace('.',',') + ' €', null, 'right', 200);
-
-    // ---- pied de page + pagination ----
+    // ---- pied de page + pagination -- Point 6 : ancre sur y (apres la clause legale), plus une
+    // position fixe derivee de l'ancien bloc Totaux -- coherent avec le nouvel ordre. ----
     // Repartition en lignes IDENTIQUE au vrai generateur (wrapText/textWidthApprox de
     // buildFacturePdf, cote n8n) -- un simple slice(0,118) par nombre de caracteres derivait du
     // vrai decoupage par largeur reelle du texte, cause du leger decalage constate a l'overlay.
@@ -11195,7 +11260,7 @@
     }
     var footerTxt = 'SARL MCS - 2 Chemin de Belle Etoile - 33370 TRESSES au capital de 5 000€ / SIRET: 50068539100046 / Code APE: 8122Z / N° Intra: FR30500685391 / N° RCS: 500 685 391 R.C.S. Bordeaux';
     var footerLignes = wrapText(footerTxt, MR-ML, 7);
-    var fy = yValBot-21;
+    var fy = y-8;
     for (var fli=0; fli<footerLignes.length; fli++){ T(ML, fy, 7, false, footerLignes[fli], 'fcf-ap-gray'); fy -= 8.5; }
     T(PAGE_W/2, 18, 9, false, '1 / 1', 'fcf-ap-darkgray', 'center', 60);
 
@@ -11417,6 +11482,9 @@
     }
     var objetInput = document.getElementById('fcf-objet'); objetInput.value = fcfSubstituerDatesAffichage(f.objet_mail || f.objet_mail_defaut || '');
     var corpsInput = document.getElementById('fcf-corps'); corpsInput.value = fcfSubstituerDatesAffichage(f.corps_mail || f.corps_mail_defaut || '');
+    // Point 4 (Fenetre 1, 08/09/2026 soir) : commentaire libre, interne MCS uniquement (jamais
+    // sur la facture ni dans le mail -- cf. commentaire HTML au-dessus du champ).
+    var commentaireInput = document.getElementById('fcf-commentaire'); commentaireInput.value = f.commentaire || '';
     var garderInput = document.getElementById('fcf-garder'); garderInput.checked = false;
 
     // Point 3d -- sous-lignes et corps du mail montrent TOUT leur contenu, jamais une fenêtre à
@@ -11540,10 +11608,21 @@
       });
     };
 
-    // ---- Historique (Décision 3) ----
+    // ---- Historique (Décision 3) -- Point 5.1 (08/09/2026 soir) : accordeon replie par
+    // defaut (retour explicite : prenait trop de place affiche en entier). Rouvert a chaque
+    // ouverture du panneau (jamais "reste ouvert d'une facture a l'autre" -- confusion garantie).
     var histoSection = document.getElementById('fcf-historique-section');
+    var histoToggleBtn = document.getElementById('fcf-historique-toggle');
+    var histoCorps = document.getElementById('fcf-historique-corps');
     var histoListe = document.getElementById('fcf-historique-liste');
     var histoVide = document.getElementById('fcf-historique-vide');
+    histoCorps.style.display = 'none';
+    histoToggleBtn.classList.remove('open');
+    histoToggleBtn.onclick = function(){
+      var ouvert = histoCorps.style.display !== 'none';
+      histoCorps.style.display = ouvert ? 'none' : '';
+      histoToggleBtn.classList.toggle('open', !ouvert);
+    };
     histoSection.style.display = '';
     histoListe.innerHTML = '<p style="color:var(--muted);font-size:13px">Chargement…</p>';
     histoVide.style.display = 'none';
@@ -11595,18 +11674,26 @@
         date_echeance: echeanceInput.value || '',
         conditions_reglement: conditionsInput.value.trim(),
         sous_lignes: souslignesInput.value,
+        commentaire: commentaireInput.value.trim(),
         garder_pour_prochaine_fois: garderInput.checked,
       };
     }
 
-    // Fenetre 1 (08/09/2026), Point 3 : une facture ne doit jamais partir avec un trou -- au clic
+    // Fenetre 1 (08/09/2026 soir) : une facture ne doit jamais partir avec un trou -- au clic
     // Envoyer, tout champ obligatoire vide bloque l'envoi, la page defile jusqu'au PREMIER champ
-    // manquant (ordre du formulaire, pas un ordre arbitraire) et l'encadre en rouge. Residence et
-    // Client sont des ALTERNATIVES (cf. leurs libelles) : au moins l'un des deux suffit. Le
-    // gestionnaire n'est exige que si une residence est renseignee (P/O). SEULE exception
-    // volontaire, en attente de la reponse de Mickael a Dorian : l'adresse du gestionnaire --
-    // une seule ligne a changer (FCF_GESTIONNAIRE_ADRESSE_OBLIGATOIRE) le jour ou elle devient
-    // obligatoire, jamais une refonte.
+    // manquant (ordre du formulaire, pas un ordre arbitraire) et l'encadre en rouge.
+    // Reproduit a l'ecran (pas suppose) : l'ancienne regle "Residence et Client sont des
+    // ALTERNATIVES" a laisse partir Arborescence avec sa residence videe (Client="CITYA" restait
+    // rempli, donc aucun des deux n'etait marque) -- la facture est bien partie, puis
+    // contratNomAffiche() a bascule silencieusement sur "CITYA", rendant la ligne introuvable par
+    // recherche de son nom connu. Fixe en verifiant les 232 lignes REELLES du catalogue (jamais
+    // suppose) : les 161 VMC ont TOUJOURS residence ET client remplis, les 71 non-VMC ont
+    // TOUJOURS client rempli et residence VIDE par construction (repli normal, ne jamais
+    // l'exiger) -- la regle suit desormais le type_contrat, jamais un "au moins un des deux".
+    // Gestionnaire obligatoire des qu'une residence existe (P/O). SEULE exception volontaire, en
+    // attente de la reponse de Mickael a Dorian : l'adresse du gestionnaire -- une seule ligne a
+    // changer (FCF_GESTIONNAIRE_ADRESSE_OBLIGATOIRE) le jour ou elle devient obligatoire, jamais
+    // une refonte.
     var FCF_GESTIONNAIRE_ADRESSE_OBLIGATOIRE = false;
     function fcfValiderAvantEnvoi(){
       document.querySelectorAll('.fcf-champ-manquant').forEach(function(el){ el.classList.remove('fcf-champ-manquant'); });
@@ -11619,10 +11706,10 @@
         if (!manquant) manquant = el;
       }
       // Ordre EXACT du formulaire, de haut en bas -- garantit que "manquant" est bien le premier.
-      var residenceVide = estVide('fcf-residence');
-      var clientVide = estVide('fcf-client');
-      if (residenceVide && clientVide){ marque('fcf-residence'); marque('fcf-client'); }
-      if (!residenceVide && estVide('fcf-gestionnaire')) marque('fcf-gestionnaire');
+      var estVmc = String(f.type_contrat) === 'VMC';
+      if (estVmc && estVide('fcf-residence')) marque('fcf-residence');
+      if (estVide('fcf-client')) marque('fcf-client');
+      if (!estVide('fcf-residence') && estVide('fcf-gestionnaire')) marque('fcf-gestionnaire');
       if (FCF_GESTIONNAIRE_ADRESSE_OBLIGATOIRE && estVide('fcf-gestionnaire-adresse')) marque('fcf-gestionnaire-adresse');
       if (estVide('fcf-adresse')) marque('fcf-adresse');
       if (estVide('fcf-ville')) marque('fcf-ville');
@@ -13170,7 +13257,11 @@
   // sauvegarde (ligne juste en dessous) -- le select ne fait que le piloter.
   var ikfMotifSelect = document.getElementById('ikf-motif-select');
   var ikfMotifInput = document.getElementById('ikf-motif');
-  var IKF_MOTIFS_CONNUS = ['VMC', 'Devis', 'Passage résidence', 'Dératisation', 'Rendez-vous client', 'Désinsectisation'];
+  // Point 5.2 (Fenetre 1, 08/09/2026 soir) : 3 entrees, decision explicite de Mickael --
+  // un ANCIEN trajet dont le motif n'est plus dans cette liste (VMC/Dératisation/Désinsectisation/
+  // Passage résidence, retires) retombe sur "Autre..." avec son texte libre affiche tel quel
+  // (voir le repli ikfMotifSyncFromValue ci-dessous) -- jamais perdu, jamais reecrit de force.
+  var IKF_MOTIFS_CONNUS = ['Devis', 'Rendez-vous client', 'Chantier'];
   function ikfMotifSyncFromValue(valeur){
     if (IKF_MOTIFS_CONNUS.indexOf(valeur) !== -1){
       ikfMotifSelect.value = valeur;
