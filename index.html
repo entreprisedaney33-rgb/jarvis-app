@@ -6718,9 +6718,9 @@
          c'est ce qui supprime le conflit humain sur cette ligne precise. Sert aussi de cle
          unique de detection de mise a jour (voir checkUpdate ci-dessous), plus fiable qu'une
          comparaison de chaine de version par tenant. */
-  var APPV_MCS = '4.40';
+  var APPV_MCS = '4.41';
   var APPV_LABO = '1.00';
-  var BUILD = 20;
+  var BUILD = 21;
   // displayVersion()/displayVersionShort() lisent isMcsCode() (definie plus bas dans cette
   // meme IIFE -- declaration de fonction, donc disponible ici par hoisting) : le TENANT
   // affiche depend du code de connexion, jamais d'un simple "APPV" global qui ne dirait ni
@@ -10060,16 +10060,19 @@
       var accBtn = document.createElement('button'); accBtn.type = 'button'; accBtn.className = 'vc-ok'; accBtn.style.marginTop = '8px'; accBtn.style.width = '100%';
       accBtn.innerHTML = ICON_CHECK_DV + 'Le client a accepté';
       accBtn.addEventListener('click', function(){
-        accBtn.disabled = true;
+        // 08/09/2026 soir -- meme bug de reference perimee que Contrats (mission Mickael/Dorian) :
+        // dv.statut='accepte' mutait un objet local qui peut ne plus appartenir a devisData si un
+        // resync a eu lieu pendant que cet ecran etait ouvert. demarrerEnvoi/finDenvoi +
+        // devisResynchroniser() (vrai rechargement serveur) remplacent la mutation locale seule.
+        demarrerEnvoi(accBtn, null, []);
         var payload = dv.source === 'meg'
           ? { source: 'meg', numero: dv.numero, client_nom: dv.nom, objet: dv.objet, montant: dv.montant, choix: 'accepter' }
           : { token: dv.token, choix: 'accepter' };
         postDevisValider(payload, function(r){
-          if (!r || !r.ok){ accBtn.disabled = false; toast('❌ ' + ((r && r.message) || 'Impossible.')); return; }
-          dv.statut = 'accepte';
+          if (!r || !r.ok){ finDenvoi(accBtn, [], null); toast('❌ ' + ((r && r.message) || 'Impossible.')); return; }
           toast('✅ Devis marqué accepté');
-          devisApplyFilter();
-        }, function(err){ accBtn.disabled = false; toast(err); });
+          finDenvoi(accBtn, [], devisResynchroniser);
+        }, function(err){ finDenvoi(accBtn, [], null); toast(err); });
       });
       row.appendChild(accBtn);
     }
@@ -10086,14 +10089,15 @@
       var intBtnIdleHtml = ICON_CHECK_DV + 'Intervention faite — facturer le client';
       intBtn.innerHTML = intBtnIdleHtml;
       intBtn.addEventListener('click', function(){
-        intBtn.disabled = true; intBtn.textContent = 'Enregistrement…';
+        // 08/09/2026 soir -- meme migration que accBtn ci-dessus.
+        demarrerEnvoi(intBtn, 'Enregistrement…', []);
         var payload = dv.source === 'meg'
           ? { type: 'terminer', source: 'meg', numero: dv.numero, client_nom: dv.nom, objet: dv.objet, montant: dv.montant }
           : { type: 'terminer', token: dv.token };
         postDevisIntervention(payload, function(r){
-          if (r && r.ok){ dv.statut = 'intervention_faite'; toast('✅ Intervention déclarée terminée'); devisApplyFilter(); }
-          else { intBtn.disabled = false; intBtn.innerHTML = intBtnIdleHtml; toast('❌ ' + ((r && r.message) || 'Impossible.')); }
-        }, function(err){ intBtn.disabled = false; intBtn.innerHTML = intBtnIdleHtml; toast('❌ ' + err); });
+          if (r && r.ok){ toast('✅ Intervention déclarée terminée'); finDenvoi(intBtn, [], devisResynchroniser); }
+          else { finDenvoi(intBtn, [], null); intBtn.innerHTML = intBtnIdleHtml; toast('❌ ' + ((r && r.message) || 'Impossible.')); }
+        }, function(err){ finDenvoi(intBtn, [], null); intBtn.innerHTML = intBtnIdleHtml; toast('❌ ' + err); });
       });
       row.appendChild(intBtn);
     }
@@ -10309,6 +10313,13 @@
     devisData = j;
     devisApplyFilter();
     devisUpdateBadge();
+  }
+  // 08/09/2026 soir -- meme role que contratsResynchroniser()/relancesResynchroniser() : un VRAI
+  // rechargement reseau (pas le cache), qui remplace devisData et rend a nouveau. Utilise par les
+  // boutons "Le client a accepte"/"Intervention faite" (qui mutaient dv.statut en local, sur une
+  // reference potentiellement perimee si devisData a ete remplace entre-temps).
+  function devisResynchroniser(){
+    devisChargerListe(function(j){ devisApplyData(j); }, function(){});
   }
   function devisAttenteOpen(){
     devisview.classList.add('open');
@@ -11125,18 +11136,138 @@
     page.innerHTML = els.join('');
   }
 
+  // ===================== FIN D'ENVOI, fonction UNIQUE (08/09/2026 soir) =====================
+  // 3e occurrence du meme bug (relance amiable, puis mise en demeure, puis Contrats) : un
+  // bouton d'envoi qui (a) reste bloque sur "... en cours" parce que le succes ne restaure
+  // jamais son etat, et (b) une carte qui ne quitte jamais sa liste parce que la mutation
+  // locale de l'objet peut agir sur une REFERENCE PERIMEE (contratsMoisData/devisData/etc.
+  // remplaces entre-temps par un fetch reseau parallele, cache-puis-reseau). Desormais TOUS les
+  // chemins d'envoi de l'app passent par ces 2 fonctions -- plus jamais un `btn.disabled=false;
+  // btn.innerHTML=...` recopie a la main a un nouvel endroit.
+  //
+  // demarrerEnvoi(btn, texteEnCours, autresBoutons) : a appeler au clic. Le HTML "par defaut" est
+  // capture UNE SEULE FOIS et stocke sur l'element lui-meme (btn.dataset.htmlDefaut) -- jamais
+  // recapture a une ouverture ulterieure, donc jamais "empoisonne" par un etat "en cours" laisse
+  // par un envoi precedent qui n'aurait pas ete leve (c'est exactement ce qui s'est produit :
+  // okBtnHtmlDefaut etait recapture a CHAQUE ouverture du panneau, et capturait donc parfois deja
+  // le texte "Envoi en cours...").
+  // ===================== TVA, fonction UNIQUE de decision (08/09/2026 soir) =====================
+  // 3e fois que cette consigne est donnee (mission Mickael/Dorian, verbatim) : "prestation VMC ->
+  // 10%, sauf correction manuelle explicite sur ce contrat. Le tableur n'est plus une source de
+  // verite pour le taux, nulle part. Une seule fonction decide, tout le monde l'appelle." --
+  // f.tva_provenance==='corrige' signifie qu'une correction MANUELLE a deja ete enregistree pour
+  // CE contrat precis (posee par le bouton radio lui-meme, jamais par le tableur/registre) : dans
+  // ce cas on respecte la valeur deja appliquee, jamais on ne la re-ecrase. Sinon, VMC part
+  // toujours a 10% -- jamais le tableur/registre, qui ne sert plus que d'INFORMATION affichee a
+  // cote (jamais a decider). Deratisation/autres prestations : comportement inchange (tableur/
+  // registre, comme avant cette mission -- non concernes par la decision de Mickael).
+  // Meme regle, dupliquee cote serveur dans "Prep generation contrats (web/cron)" (workflow n8n
+  // MCS - Contrats) -- si l'une des deux copies change, l'autre doit changer aussi.
+  // Point trouve en construisant le controle de deploiement (08/09/2026 soir) : f.type_contrat
+  // peut valoir 'VMC' au sens du tableur brut pour un contrat de RAMONAGE (ex. Jacquart/Camponac,
+  // id 343) -- reclasse en 'Autres prestations' (famille_affichage) partout ailleurs dans
+  // l'app (reindexation, groupement, designation) des lors que sa designation contient
+  // "RAMONAGE". Jamais mentionne par Mickael dans sa demande "prestation VMC -> 10%" -- reste
+  // sur son regime actuel (tableur), comme la deratisation. Seul famille_affichage (jamais
+  // type_contrat seul) decide ici, pour rester coherent avec le reste du systeme.
+  function tvaParDefaut(f){
+    if (f.tva_provenance === 'corrige') return Number(f.tva);
+    if (f.famille_affichage === 'VMC') return 0.10;
+    return (f.tva_tableur != null) ? Number(f.tva_tableur) : Number(f.tva);
+  }
+  // ===================== GESTIONNAIRE, nom canonique + adresse (08/09/2026 soir) =====================
+  // Trouve dans les VRAIES factures MEG (clients/mcs/compta/devis-factures-pdf/, priorite absolue
+  // demandee par Mickael/Dorian) ; a defaut, source secondaire signalee (export contacts MEG, ou
+  // recherche web du 08/09 donnee par Dorian). Jamais invente : un gestionnaire absent de ce
+  // dictionnaire n'affiche aucune adresse (case vide), jamais une adresse devinee.
+  // Convention de casse retenue pour TOUTES les graphies : Titre (majuscule initiale de chaque mot
+  // significatif) -- jamais TOUT-MAJUSCULES (le format du tableur brut), jamais tout-minuscules.
+  var GESTIONNAIRE_INFOS = {
+    // -- Confirme par une VRAIE facture MEG (haute confiance) --
+    'IMMO DE FRANCE': { nom: 'Immo de France', adresse: '122 cours du Médoc, 33110 Le Bouscat' }, // D-2019002219 e.a.
+    'PICHET PESSAC': { nom: 'Pichet Pessac', adresse: '20-24 avenue de Canterrane, 33608 Pessac' }, // F-2019003762
+    'PICHET (AGENCE DE PESSAC)': { nom: 'Pichet Pessac', adresse: '20-24 avenue de Canterrane, 33608 Pessac' }, // idem, alias Jacquart->Pichet
+    'PICHET LA TESTE': { nom: 'Pichet La Teste-de-Buch', adresse: '6 rue F. Legallais, Espace Captal, 33260 La Teste-de-Buch' }, // D-2019002296
+    'CABINET RIVIERE': { nom: 'Cabinet Rivière', adresse: 'Lieu-dit Barrault, 28 route du Château, BP 32, 33670 Cursan' }, // F-2019003779 (majoritaire/recent -- pas Bordeaux, demenage depuis)
+    'COOPAIRS': { nom: 'Coopairs', adresse: 'Immeuble Le Phénix, 264 boulevard Godard, 33300 Bordeaux' }, // F-2019003729 e.a.
+    'FONCIA ARCACHON': { nom: 'Foncia Arcachon', adresse: '1 A place Roger Expert, 33120 Arcachon' }, // F-2019003736 e.a.
+    'CITYA': { nom: 'Citya', adresse: "42 cours d'Alsace-et-Lorraine, 33000 Bordeaux" }, // D-2019002276 (Arborescence/Citya Atlantis)
+    // AQUITANIS -- adresse majoritaire (8 occurrences) confirmee par facture MEG. Attention :
+    // plusieurs residences facturees "Aquitanis" au catalogue sont EN REALITE facturees a
+    // COOPAIRS dans MEG reel (voir id 333, signale a part dans le rapport) -- adresse quand meme
+    // donnee ici (Aquitanis est un vrai syndic confirme), l'ambiguite ne concerne pas tous les cas.
+    'AQUITANIS': { nom: 'Aquitanis', adresse: '1 avenue André Reinson, 33000 Bordeaux' }, // F-2019003739 e.a.
+    // -- Source secondaire (export contacts MEG ou recherche web, jamais une facture) --
+    'ACTA': { nom: 'Acta Immobilier', adresse: '43 bis avenue de Magudas, 33700 Mérignac' }, // export contacts MEG, pas de facture trouvee
+    'AJP': { nom: 'AJP', adresse: '73 rue des Arènes, 40600 Biscarrosse' }, // facture F-2019003777, mais plusieurs entites AJP existent -- a confirmer au cas par cas
+    'MLS': { nom: 'MLS', adresse: '1 cours Georges Clemenceau, 33000 Bordeaux' }, // export contacts MEG (confirme le nom brut deja present au catalogue)
+    'HABITAT URBAIN GESTION': { nom: 'Habitat Urbain Gestion', adresse: '31 rue Huguerie, 33000 Bordeaux' }, // export contacts MEG, pas de facture trouvee
+    // -- Deja validee par Dorian (mission precedente), ambiguite decouverte depuis (voir rapport :
+    // 3 CP differents trouves selon la source -- radiee 2023, absorbee par Foncia Aquitaine/Bordeaux
+    // au meme complexe -- GARDEE telle quelle, jamais changee sans validation explicite) --
+    'FONCIA CHABANEAU': { nom: 'Foncia Chabaneau', adresse: '61 quai Lawton, 33000 Bordeaux' },
+    // -- Connues mais SANS adresse fiable (agence reelle introuvable dans les 229 factures/devis
+    // MEG, jamais devinee) : PICHET seul (Le Clos de Florimont/Lesparre -- aucune des agences
+    // confirmees n'est proche geographiquement), PICHET CANEJAN/CANEJEAN (agence fermee depuis
+    // 2014, aucune facture ne dit a quelle agence reelle ces contrats sont aujourd'hui rattaches).
+    // Le nom reste normalise (voir alias ci-dessous), seule l'adresse reste vide.
+  };
+  // Alias de graphie -- fusionne les variantes typographiques d'un MEME syndic deja identifie
+  // avec certitude (typo de commune, casse) ; ne fusionne JAMAIS deux entites dont l'identite
+  // reelle reste incertaine (ex. "Aquitanis (Coopairs syndic)" reste distinct de "Aquitanis" --
+  // l'agent de recherche a trouve que plusieurs residences facturees "Aquitanis" au catalogue le
+  // sont en realite a COOPAIRS dans MEG reel, jamais tranche ici).
+  var GESTIONNAIRE_ALIAS = {
+    'PICHET CANEJAN': 'PICHET CANEJAN',  // typo commune corrigee a l'affichage seulement (Canéjan)
+    'PICHET CANEJEAN': 'PICHET CANEJAN', // meme agence catalogue, 2 graphies -- fusionnees
+    'ACTA (MÉRIGNAC)': 'ACTA',           // nom brut catalogue avec ville entre parentheses
+    'ACTA (MERIGNAC)': 'ACTA',           // meme, variante sans accent (normalize() pas garanti ici)
+  };
+  var GESTIONNAIRE_NOM_AFFICHE_ALIAS = { 'PICHET CANEJAN': 'Pichet Canéjan' };
+  function gestionnaireInfos(nomBrut){
+    var cle = String(nomBrut || '').trim().toUpperCase();
+    cle = GESTIONNAIRE_ALIAS[cle] || cle;
+    var info = GESTIONNAIRE_INFOS[cle];
+    var nomAffiche = (info && info.nom) || GESTIONNAIRE_NOM_AFFICHE_ALIAS[cle] || String(nomBrut || '').trim();
+    return { nom: nomAffiche, adresse: (info && info.adresse) || '' };
+  }
+  function demarrerEnvoi(btn, texteEnCours, autresBoutons){
+    if (btn){
+      if (btn.dataset.htmlDefaut == null) btn.dataset.htmlDefaut = btn.innerHTML;
+      btn.disabled = true;
+      if (texteEnCours) btn.textContent = texteEnCours;
+    }
+    (autresBoutons || []).forEach(function(b){ if (b) b.disabled = true; });
+  }
+  // finDenvoi(btn, autresBoutons, resyncFn) : a appeler DANS LES DEUX CAS, succes ET erreur.
+  // Leve l'etat du SEUL bouton concerne (jamais tous les boutons d'un ecran), puis, SEULEMENT en
+  // cas de succes (resyncFn fourni), appelle la resynchronisation reseau propre a l'ecran --
+  // jamais une simple mutation locale seule. Chaque ecran garde sa propre fonction de
+  // resynchronisation (contratsResynchroniser/relancesResynchroniser/devisResynchroniser/...),
+  // reinjectee ici en parametre : les donnees ne se ressemblent pas d'un ecran a l'autre, mais le
+  // point de convergence (lever le bouton + resynchroniser) est desormais unique.
+  function finDenvoi(btn, autresBoutons, resyncFn){
+    if (btn){
+      btn.disabled = false;
+      if (btn.dataset && btn.dataset.htmlDefaut != null) btn.innerHTML = btn.dataset.htmlDefaut;
+    }
+    (autresBoutons || []).forEach(function(b){ if (b) b.disabled = false; });
+    if (typeof resyncFn === 'function') resyncFn();
+  }
+
   function factureContratFormOpen(f, bloque){
     document.getElementById('fcf-titre').textContent = contratNomAffiche(f);
     document.getElementById('fcf-residence').value = f.residence || '';
     document.getElementById('fcf-client').value = f.client || '';
     // 08/09/2026 -- P/O : residence en tete, gestionnaire en second (jamais l'inverse). Le champ
     // gestionnaire se pre-remplit avec le gestionnaire deja connu (f.gestionnaire_meg, ou le nom
-    // du client facture quand une residence existe -- meme regle que le generateur PDF n8n).
-    document.getElementById('fcf-gestionnaire').value = f.gestionnaire_meg || (f.residence ? (f.client || '') : '') || '';
-    var GESTIONNAIRE_ADRESSES_CONNUES = { 'FONCIA CHABANEAU': '61 quai Lawton, 33000 Bordeaux' };
+    // du client facture quand une residence existe -- meme regle que le generateur PDF n8n),
+    // passe par gestionnaireInfos() pour la graphie canonique (uniformisation, 08/09/2026 soir).
+    var gestionnaireBrut = f.gestionnaire_meg || (f.residence ? (f.client || '') : '') || '';
+    var gInfos = gestionnaireInfos(gestionnaireBrut);
+    document.getElementById('fcf-gestionnaire').value = gestionnaireBrut ? gInfos.nom : '';
     var gestAdrInput = document.getElementById('fcf-gestionnaire-adresse');
-    var gNom = String(document.getElementById('fcf-gestionnaire').value || '').trim().toUpperCase();
-    gestAdrInput.value = f.gestionnaire_adresse || GESTIONNAIRE_ADRESSES_CONNUES[gNom] || '';
+    gestAdrInput.value = f.gestionnaire_adresse || gInfos.adresse || '';
     document.getElementById('fcf-adresse').value = f.adresse || '';
     document.getElementById('fcf-ville').value = f.ville || '';
     var destInput = document.getElementById('fcf-dest');
@@ -11229,15 +11360,27 @@
     var tvaLabel = document.createElement('label'); tvaLabel.className = 'ct-tva-titre'; tvaLabel.textContent = 'Taux de TVA';
     tvaWrap.appendChild(tvaLabel);
     var radioName = 'fcf-tva-' + f.id;
+    // 08/09/2026 soir (3e demande, "une seule fonction decide, tout le monde l'appelle") --
+    // registreVal reste l'INFORMATION brute du tableur, jamais retiree du texte "Votre tableau
+    // indique" ci-dessous. Mais la PRE-SELECTION du bouton doit passer par tvaParDefaut(f) --
+    // c'est CE bouton (radio.checked), pas ce texte, qui part reellement au serveur au clic
+    // "Envoyer" (fcfPayloadActuel lit le radio coche, jamais tva_tableur directement -- voir
+    // Preparer envoi facture contrat (web), qui fait confiance a body.tva sans le recalculer).
+    // Avant ce fix, un contrat VMC sans correction manuelle mais dont tva_tableur valait encore
+    // 0.2 pre-selectionnait 20% -- si Mickael cliquait Envoyer sans toucher au bouton, ce 20%
+    // partait reellement, ECRASANT le 10% deja corrige en base. Meme regle dupliquee cote
+    // serveur dans Prep generation contrats (web/cron) -- si l'une change, l'autre doit changer
+    // aussi, jamais divergentes.
     var registreVal = (f.tva_tableur != null) ? f.tva_tableur : Number(f.tva);
     var TVA_FIXES = [0.10, 0.20];
     var radiosRow = document.createElement('div'); radiosRow.className = 'ct-tva-radios';
     var tvaLabels = [];
     function tvaSyncSelected(){ tvaLabels.forEach(function(l){ l.classList.toggle('ct-tva-opt-selected', l.querySelector('input').checked); }); }
+    var tvaPreselection = tvaParDefaut(f);
     var tvaRadios = TVA_FIXES.map(function(valeur){
       var lab = document.createElement('label'); lab.className = 'ct-tva-opt';
       var radio = document.createElement('input'); radio.type = 'radio'; radio.name = radioName; radio.value = String(valeur);
-      if (Math.abs(registreVal - valeur) < 0.005) radio.checked = true;
+      if (Math.abs(tvaPreselection - valeur) < 0.005) radio.checked = true;
       var span = document.createElement('span'); span.className = 'ct-tva-pct'; span.textContent = (valeur*100).toFixed(0) + ' %';
       lab.appendChild(radio); lab.appendChild(span);
       radio.addEventListener('change', function(){ tvaSyncSelected(); recalcPreview(); });
@@ -11390,33 +11533,39 @@
     var okBtn = document.getElementById('fcf-envoyer');
     var skipBtn = document.getElementById('fcf-skip');
     okBtn.disabled = false; skipBtn.disabled = false;
-    // 08/09/2026 (mission Mickael, Point 6) : "3 secondes sans signal et on reclique" -- un
-    // bouton juste desactive ne suffit pas, il faut un MOT qui change (meme regle deja posee
-    // sur medBtn/envConfirmBtn/delBtn, cf. commentaire ligne ~13540). Ce bouton genere et envoie
-    // une VRAIE facture -- c'est celui qui en avait le plus besoin.
-    var okBtnHtmlDefaut = okBtn.innerHTML;
+    // 08/09/2026 soir (regression du build 20, corrigee) : okBtnHtmlDefaut etait recapture a
+    // CHAQUE ouverture de ce panneau (`okBtn.innerHTML` au moment de l'ouverture) -- si un envoi
+    // precedent avait reussi SANS que son callback de succes ne restaure le bouton (c'etait le
+    // cas), la capture suivante "figeait" le mauvais texte ("Envoi en cours...") comme etant
+    // desormais LE texte par defaut. demarrerEnvoi/finDenvoi (voir plus haut dans ce fichier)
+    // eliminent ce piege : le HTML par defaut est capture UNE SEULE FOIS sur l'element
+    // (btn.dataset.htmlDefaut), jamais recapture, et finDenvoi restaure systematiquement dans LES
+    // DEUX CAS (succes ET erreur) -- avant, seul le chemin d'erreur restaurait.
     okBtn.onclick = function(){
       if (bloque && !designationInput.value.trim()){ toast('Saisissez une désignation avant d\'envoyer.'); return; }
-      okBtn.disabled = true; skipBtn.disabled = true; okBtn.textContent = 'Envoi en cours…';
+      demarrerEnvoi(okBtn, 'Envoi en cours…', [skipBtn]);
       var payload = fcfPayloadActuel(f);
       payload.type = 'mois-action'; payload.choix = 'envoyer';
       postContrats(payload, function(j){
         toast(j.testMode ? '✅ Facture envoyée (mode test → Altaestima)' : '✅ Facture envoyée');
-        f.statut = 'envoyee'; f.destinataire_email = destInput.value.trim(); f.date_envoi = new Date().toISOString();
         fcfBg.classList.remove('open');
-        contratsApplyFilter();
-      }, function(err){ okBtn.disabled = false; skipBtn.disabled = false; okBtn.innerHTML = okBtnHtmlDefaut; toast(err); });
+        // 08/09/2026 soir : la mutation locale de f (f.statut='envoyee') est retiree -- f peut
+        // etre une reference perimee si contratsMoisData a ete remplace pendant que ce panneau
+        // etait ouvert (fetch mois-liste parallele, cache-puis-reseau). finDenvoi appelle
+        // contratsResynchroniser() : un vrai rechargement serveur, seule source de verite,
+        // memes pattern et raison que relancesResynchroniser() pour les Relances.
+        finDenvoi(okBtn, [skipBtn], contratsResynchroniser);
+      }, function(err){ finDenvoi(okBtn, [skipBtn]); toast(err); });
     };
     skipBtn.onclick = function(){
       var motif = prompt('Pourquoi ne pas facturer ce contrat ce mois-ci ? (ex : moteur changé il y a 3 mois, pas d\'entretien cette année)', '');
       if (motif === null) return;
-      okBtn.disabled = true; skipBtn.disabled = true;
+      demarrerEnvoi(skipBtn, null, [okBtn]);
       postContrats({ type: 'mois-action', id: f.id, choix: 'skip', motif: motif }, function(){
         toast('⏭️ Contrat marqué "pas cette année"');
-        f.statut = 'skip'; f.motif_skip = motif;
         fcfBg.classList.remove('open');
-        contratsApplyFilter();
-      }, function(err){ okBtn.disabled = false; skipBtn.disabled = false; toast(err); });
+        finDenvoi(skipBtn, [okBtn], contratsResynchroniser);
+      }, function(err){ finDenvoi(skipBtn, [okBtn]); toast(err); });
     };
 
     fcfBg.classList.add('open');
@@ -11826,6 +11975,17 @@
     contratsMoisPrevisionnel = j.previsionnel || [];
     contratsTestMode = !!j.testMode;
     contratsApplyFilter();
+  }
+  // 08/09/2026 soir -- meme role que relancesResynchroniser() : un VRAI rechargement reseau (pas
+  // le cache), sur le mois/annee COURANTS de l'ecran, qui remplace contratsMoisData et rend a
+  // nouveau -- seule facon fiable de faire quitter "A traiter" une facture qu'on vient d'envoyer,
+  // que l'objet local mute par l'appelant soit encore une reference valide ou non (voir
+  // finDenvoi). N'ecrit jamais dans le cache localStorage panelCache (un rechargement force ne
+  // doit pas re-figer un instantane qui redeviendrait un faux "cache recent").
+  function contratsResynchroniser(){
+    postContrats({ type: 'mois-liste', annee: contratsMoisAnnee, mois: contratsMoisMois }, function(j){
+      contratsApplyMoisData(j);
+    }, function(){});
   }
   function contratsLoadTab(useCache){
     if (contratsActiveTab === 'calendrier'){ contratsApplyFilter(); calOpen(); return; }
@@ -13610,12 +13770,14 @@
           askConfirm('Mise en demeure — ' + f.numero,
             'Envoie un VRAI courrier légal de mise en demeure à ' + b.destinataire + ', au nom de MCS. Ce n’est pas une simple relance : c’est une étape officielle et engageante.',
             function(){
-              // Point 4 (07/09/2026) : loading avec un MOT explicite pendant l'envoi reel, et
-              // toast laisse assez longtemps pour etre lu (une mise en demeure est l'action la
-              // plus engageante de l'ecran -- pas question qu'elle passe inapercue).
-              medBtn.disabled = true; medBtn.textContent = 'Envoi en cours…';
+              // 08/09/2026 soir : migre vers demarrerEnvoi/finDenvoi (fonction unique de fin
+              // d'envoi, voir sa definition pres de factureContratFormOpen) -- ce bouton etait
+              // deja correct (restaurait dans les 2 cas), converge desormais avec tous les
+              // autres chemins d'envoi de l'app sans changement de comportement.
+              demarrerEnvoi(medBtn, 'Envoi en cours…', []);
               postRelancesAction({ numero: f.numero, action: 'mise_en_demeure' }, function(r){
-                medBtn.disabled = false; medBtn.innerHTML = ICON_MED_SM + 'Mise en demeure';
+                finDenvoi(medBtn, [], null);
+                medBtn.innerHTML = ICON_MED_SM + 'Mise en demeure';
                 if (r && r.ok){
                   toast(r.testMode
                     ? ('🧪 Test envoyé à ' + (r.destinataireReel || b.destinataire) + ' — redirigé, n’a pas atteint le client.')
@@ -13628,7 +13790,7 @@
                   // source de verite pour ce bouton.
                   relancesResynchroniser();
                 } else { toast('❌ ' + ((r && r.error) || 'Échec.')); }
-              }, function(err){ medBtn.disabled = false; medBtn.innerHTML = ICON_MED_SM + 'Mise en demeure'; toast('❌ ' + err); });
+              }, function(err){ finDenvoi(medBtn, [], null); medBtn.innerHTML = ICON_MED_SM + 'Mise en demeure'; toast('❌ ' + err); });
             }, 'Envoyer la mise en demeure');
         });
         medBtn.classList.add('rl-facture-actbtn-med');
@@ -13735,7 +13897,8 @@
           return;
         }
         clearTimeout(armeTimer);
-        envBtn2.disabled = true; if (attBtn) attBtn.disabled = true; envBtn2.textContent = 'Envoi…';
+        // 08/09/2026 soir : migre vers demarrerEnvoi/finDenvoi (fonction unique de fin d'envoi).
+        demarrerEnvoi(envBtn2, 'Envoi…', attBtn ? [attBtn] : []);
         postRelancesAction({ cle: b.cle, action: 'envoyer' }, function(r){
           if (r && r.ok){
             toast(r.testMode
@@ -13746,13 +13909,16 @@
             // (07/09/2026) : relancesOpen(true) remplace par relancesResynchroniser() -- evite le
             // double appel synchrone a relancesApplyData qui cassait le scroll (cf. commentaire
             // de relancesResynchroniser).
-            relancesApplyerEnvoiLocal(b);
-            relancesResynchroniser();
+            arme = false;
+            finDenvoi(envBtn2, attBtn ? [attBtn] : [], function(){
+              relancesApplyerEnvoiLocal(b);
+              relancesResynchroniser();
+            });
           } else {
-            arme = false; envBtn2.disabled = false; if (attBtn) attBtn.disabled = false; envBtn2.textContent = 'Envoyer maintenant';
+            arme = false; finDenvoi(envBtn2, attBtn ? [attBtn] : [], null); envBtn2.textContent = 'Envoyer maintenant';
             toast('❌ ' + ((r && r.error) || 'Échec de l’envoi.'));
           }
-        }, function(err){ arme = false; envBtn2.disabled = false; if (attBtn) attBtn.disabled = false; envBtn2.textContent = 'Envoyer maintenant'; toast('❌ ' + err); });
+        }, function(err){ arme = false; finDenvoi(envBtn2, attBtn ? [attBtn] : [], null); envBtn2.textContent = 'Envoyer maintenant'; toast('❌ ' + err); });
       });
       row.appendChild(envBtn2);
     }
@@ -13951,8 +14117,8 @@
         // Point 4 (07/09/2026, retour Dorian « le pop-up qui dit que l'action est faite apparait
         // une demi-seconde, trop subtil ») : "Envoi en cours…" (un mot complet, jamais un rond
         // qui tourne seul) + bouton non cliquable pour eviter un double-envoi.
-        envConfirmBtn.disabled = true; envBtn.disabled = true;
-        envConfirmBtn.textContent = 'Envoi en cours…';
+        // 08/09/2026 soir : migre vers demarrerEnvoi/finDenvoi (fonction unique de fin d'envoi).
+        demarrerEnvoi(envConfirmBtn, 'Envoi en cours…', [envBtn]);
         var numerosEnvoi = b.factures.filter(function(f){ return b._selection[f.numero] !== false; }).map(function(f){ return f.numero; });
         var payloadEnvoi = { cle: b.cle, action: 'envoyer' };
         if (numerosEnvoi.length && numerosEnvoi.length < b.factures.length) payloadEnvoi.numeros = numerosEnvoi;
@@ -13974,13 +14140,15 @@
             // vient d'etre repatche juste au-dessus. Point 2 (07/09/2026) : relancesResynchroniser()
             // remplace relancesOpen(true) ici (cf. son commentaire -- evite le double appel
             // synchrone a relancesApplyData qui cassait le scroll, la vraie cause du bug).
-            relancesApplyerEnvoiLocal(b, payloadEnvoi.numeros);
-            relancesResynchroniser();
+            finDenvoi(envConfirmBtn, [envBtn], function(){
+              relancesApplyerEnvoiLocal(b, payloadEnvoi.numeros);
+              relancesResynchroniser();
+            });
           } else {
-            envConfirmBtn.disabled = false; envBtn.disabled = false; envConfirmBtn.textContent = 'Confirmer l’envoi';
+            finDenvoi(envConfirmBtn, [envBtn], null); envConfirmBtn.textContent = 'Confirmer l’envoi';
             toast('❌ ' + ((r && r.error) || 'Échec de l’envoi.'));
           }
-        }, function(err){ envConfirmBtn.disabled = false; envBtn.disabled = false; envConfirmBtn.textContent = 'Confirmer l’envoi'; toast('❌ ' + err); });
+        }, function(err){ finDenvoi(envConfirmBtn, [envBtn], null); envConfirmBtn.textContent = 'Confirmer l’envoi'; toast('❌ ' + err); });
       });
       wrap.appendChild(envBtn);
       wrap.appendChild(envExpl);
