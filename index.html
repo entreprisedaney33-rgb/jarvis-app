@@ -1545,13 +1545,19 @@
   #contrats-catalogue-par-mois{display:flex; flex-direction:column; gap:10px}
   .ct-mois-section{border:0.5px solid var(--hairline); border-radius:12px; overflow:hidden}
   .ct-mois-head{
-    width:100%; display:flex; align-items:center; gap:10px; padding:12px 14px; border:0;
+    width:100%; display:flex; flex-wrap:wrap; align-items:center; gap:10px; padding:12px 14px; border:0;
     background:var(--surface); color:var(--ink); font:inherit; text-align:left; cursor:pointer;
     -webkit-tap-highlight-color:transparent;
   }
   .ct-mois-titre{font-weight:800; font-size:14.5px}
   .ct-mois-compte{margin-left:auto; color:var(--muted); font-size:12.5px; white-space:nowrap}
-  .ct-mois-chevron{color:var(--gold-a); font-size:13px}
+  .ct-mois-chevron{color:var(--gold-a); font-size:13px; margin-left:auto}
+  /* Point 5 (08/09/2026) : le chiffre du mois en cours -- flex-basis:100% force sa propre
+     rangee (jamais colle en bout de ligne), centre, gras, taille lisible d'un coup d'oeil. */
+  .ct-mois-compte-vedette{
+    flex-basis:100%; text-align:center; font-weight:800; font-size:16px; color:var(--ink);
+    background:var(--bg); border-radius:8px; padding:6px 10px; margin-top:2px;
+  }
   .ct-mois-section.replie .ct-mois-head{opacity:.75}
   .ct-mois-body{padding:0 0 4px}
   /* Session 13 (07/09/2026), Point 4 -- la fiche contrat devient un VRAI ecran plein ecran
@@ -6073,13 +6079,17 @@
   <div class="contrat-form" id="facture-contrat-form">
     <div class="ctf-section">
       <p class="ctf-section-titre">Identité</p>
-      <label>Nom de la résidence</label><input id="fcf-residence" type="text">
-      <label>Client facturé (syndic/société)</label><input id="fcf-client" type="text">
-      <label>Représenté par</label><input id="fcf-gestionnaire" type="text" placeholder="ex : M. Dupont">
+      <!-- 08/09/2026 (mission Mickael, verbatim) : "On ne facture jamais le gestionnaire. On
+           facture toujours la residence." -- le nom facture (en gras, en tete du document) est
+           TOUJOURS la residence quand elle est renseignee, jamais le gestionnaire/syndic. -->
+      <label>Nom de la résidence (nom facturé)</label><input id="fcf-residence" type="text">
+      <label>Client facturé (si pas de résidence -- société directe, ex Bread Storming)</label><input id="fcf-client" type="text">
+      <label>P/O : gestionnaire (syndic, si résidence)</label><input id="fcf-gestionnaire" type="text" placeholder="ex : Foncia Chabaneau">
+      <label>Adresse du gestionnaire (ligne sous P/O, laisser vide si inconnue -- jamais inventée)</label><input id="fcf-gestionnaire-adresse" type="text" placeholder="ex : 61 quai Lawton, 33000 Bordeaux">
     </div>
     <div class="ctf-section">
       <p class="ctf-section-titre">Adresse</p>
-      <label>Adresse</label><input id="fcf-adresse" type="text">
+      <label>Adresse (de la résidence)</label><input id="fcf-adresse" type="text">
       <label>Ville</label><input id="fcf-ville" type="text">
       <label id="fcf-dest-label">Destinataire (email)</label><input id="fcf-dest" type="text">
       <p id="fcf-dest-preuve" class="fcf-avertissement" style="display:none"></p>
@@ -6708,9 +6718,9 @@
          c'est ce qui supprime le conflit humain sur cette ligne precise. Sert aussi de cle
          unique de detection de mise a jour (voir checkUpdate ci-dessous), plus fiable qu'une
          comparaison de chaine de version par tenant. */
-  var APPV_MCS = '4.39';
+  var APPV_MCS = '4.40';
   var APPV_LABO = '1.00';
-  var BUILD = 19;
+  var BUILD = 20;
   // displayVersion()/displayVersionShort() lisent isMcsCode() (definie plus bas dans cette
   // meme IIFE -- declaration de fonction, donc disponible ici par hoisting) : le TENANT
   // affiche depend du code de connexion, jamais d'un simple "APPV" global qui ne dirait ni
@@ -10853,6 +10863,7 @@
     if (!page) return;
     var val = function(id){ var el = document.getElementById(id); return el ? el.value.trim() : ''; };
     var residence = val('fcf-residence'), client = val('fcf-client'), gestionnaire = val('fcf-gestionnaire');
+    var gestionnaireAdresse = val('fcf-gestionnaire-adresse');
     var adresse = val('fcf-adresse'), ville = val('fcf-ville'), dest = val('fcf-dest');
     var designation = val('fcf-designation') || 'Prestation';
     var designationLignes = designation.split('\n').filter(Boolean);
@@ -10867,7 +10878,9 @@
     var tvaRadio = document.querySelector('#fcf-tva-wrap input[type=radio]:checked');
     var tva = tvaRadio ? parseFloat(tvaRadio.value) : 0.2;
     var totalHt = quantite * prixHt, tvaMontant = totalHt * tva, totalTtc = totalHt + tvaMontant;
-    var nomAffiche = client || residence || adresse || '(non identifié)';
+    // 08/09/2026 (mission Mickael) : la residence prime toujours sur le client/gestionnaire --
+    // "On ne facture jamais le gestionnaire. On facture toujours la residence."
+    var nomAffiche = residence || client || adresse || '(non identifié)';
     var dateFr = new Date().toLocaleDateString('fr-FR');
 
     // ---- constantes de mise en page, copiees a l'identique de buildFacturePdf (n8n) ----
@@ -10954,11 +10967,18 @@
     // Session 16, Point 1 -- le vrai generateur (drawLabelValue) aligne ce bloc a GAUCHE a partir
     // de cx (jamais cale sur la marge droite MR) : etait a tort en align:'right' ici, ce qui
     // decalait tout le bloc client par rapport au vrai PDF (trouve par overlay pixel-a-pixel).
+    // 08/09/2026 (mission Mickael, verbatim) : residence, son adresse, puis "P/O : GESTIONNAIRE"
+    // + son adresse SEULEMENT si un syndic existe (residence renseignee) -- copie a l'identique
+    // de la meme regle cote generateur PDF n8n (buildFacturePdf), pour que cet apercu reste
+    // fidele au vrai document.
     var cy = blockTop;
     T(cx, cy, 10, true, nomAffiche); cy -= LH;
-    if (gestionnaire){ T(cx, cy, 8.5, false, 'Représenté par ' + gestionnaire); cy -= LH; }
     var adresseClientTxt = [adresse, ville].filter(Boolean).join(', ');
     if (adresseClientTxt){ T(cx, cy, 8.5, false, adresseClientTxt); cy -= LH; }
+    if (residence && gestionnaire){
+      T(cx, cy, 8.5, false, 'P/O : ' + gestionnaire); cy -= LH;
+      if (gestionnaireAdresse){ T(cx, cy, 8.5, false, gestionnaireAdresse); cy -= LH; }
+    }
     T(cx, cy, 8.5, false, 'Email : ' + (dest||'NC')); cy -= LH;
 
     var mcsBlockBottom = blockTop - 4*LH;
@@ -11109,7 +11129,14 @@
     document.getElementById('fcf-titre').textContent = contratNomAffiche(f);
     document.getElementById('fcf-residence').value = f.residence || '';
     document.getElementById('fcf-client').value = f.client || '';
-    document.getElementById('fcf-gestionnaire').value = f.gestionnaire_meg || '';
+    // 08/09/2026 -- P/O : residence en tete, gestionnaire en second (jamais l'inverse). Le champ
+    // gestionnaire se pre-remplit avec le gestionnaire deja connu (f.gestionnaire_meg, ou le nom
+    // du client facture quand une residence existe -- meme regle que le generateur PDF n8n).
+    document.getElementById('fcf-gestionnaire').value = f.gestionnaire_meg || (f.residence ? (f.client || '') : '') || '';
+    var GESTIONNAIRE_ADRESSES_CONNUES = { 'FONCIA CHABANEAU': '61 quai Lawton, 33000 Bordeaux' };
+    var gestAdrInput = document.getElementById('fcf-gestionnaire-adresse');
+    var gNom = String(document.getElementById('fcf-gestionnaire').value || '').trim().toUpperCase();
+    gestAdrInput.value = f.gestionnaire_adresse || GESTIONNAIRE_ADRESSES_CONNUES[gNom] || '';
     document.getElementById('fcf-adresse').value = f.adresse || '';
     document.getElementById('fcf-ville').value = f.ville || '';
     var destInput = document.getElementById('fcf-dest');
@@ -11262,7 +11289,7 @@
 
     // ---- Aperçu (Point 2) : rendu fidèle, mis à jour à chaque frappe pertinente ----
     [document.getElementById('fcf-residence'), document.getElementById('fcf-client'), document.getElementById('fcf-gestionnaire'),
-     document.getElementById('fcf-adresse'), document.getElementById('fcf-ville'), destInput, designationInput,
+     gestAdrInput, document.getElementById('fcf-adresse'), document.getElementById('fcf-ville'), destInput, designationInput,
      quantiteInput, uniteInput, numeroInput, anneeInput, echeanceInput, conditionsInput].forEach(function(el){
       el.addEventListener('input', function(){ fcfRenderApercu(f); });
     });
@@ -11363,9 +11390,14 @@
     var okBtn = document.getElementById('fcf-envoyer');
     var skipBtn = document.getElementById('fcf-skip');
     okBtn.disabled = false; skipBtn.disabled = false;
+    // 08/09/2026 (mission Mickael, Point 6) : "3 secondes sans signal et on reclique" -- un
+    // bouton juste desactive ne suffit pas, il faut un MOT qui change (meme regle deja posee
+    // sur medBtn/envConfirmBtn/delBtn, cf. commentaire ligne ~13540). Ce bouton genere et envoie
+    // une VRAIE facture -- c'est celui qui en avait le plus besoin.
+    var okBtnHtmlDefaut = okBtn.innerHTML;
     okBtn.onclick = function(){
       if (bloque && !designationInput.value.trim()){ toast('Saisissez une désignation avant d\'envoyer.'); return; }
-      okBtn.disabled = true; skipBtn.disabled = true;
+      okBtn.disabled = true; skipBtn.disabled = true; okBtn.textContent = 'Envoi en cours…';
       var payload = fcfPayloadActuel(f);
       payload.type = 'mois-action'; payload.choix = 'envoyer';
       postContrats(payload, function(j){
@@ -11373,7 +11405,7 @@
         f.statut = 'envoyee'; f.destinataire_email = destInput.value.trim(); f.date_envoi = new Date().toISOString();
         fcfBg.classList.remove('open');
         contratsApplyFilter();
-      }, function(err){ okBtn.disabled = false; skipBtn.disabled = false; toast(err); });
+      }, function(err){ okBtn.disabled = false; skipBtn.disabled = false; okBtn.innerHTML = okBtnHtmlDefaut; toast(err); });
     };
     skipBtn.onclick = function(){
       var motif = prompt('Pourquoi ne pas facturer ce contrat ce mois-ci ? (ex : moteur changé il y a 3 mois, pas d\'entretien cette année)', '');
@@ -11563,16 +11595,42 @@
       // jamais le mois en cours lui-meme, meme s'il est deja bien avance.
       var estPasse = idx !== 0 && idx < contratsMoisMois;
       // Sujet HT/TTC (05/09/2026) : total HT, jamais TTC -- catalogue = ce que MCS produit.
-      var totalHt = liste.reduce(function(s, c){ return s + (Number(c.prix_ht) || 0); }, 0);
+      // 08/09/2026 (mission Mickael/Dorian) : pour le mois EN COURS, celui qui a deja ete
+      // generé (factures reelles dans mcs_contrats_factures, chargees par l'onglet "Facturation"
+      // -- contratsMoisData), on affiche CE total-la (prevu + reindexation +3% VMC deja
+      // appliquee), jamais la simple somme brute du catalogue -- "un seul chiffre a l'ecran,
+      // celui qui correspond a ce qui sera facture." Repli sur la somme catalogue si les vraies
+      // factures ne sont pas encore chargees (jamais un ecran vide).
+      var totalHtReel = null;
+      if (estMoisEnCours && contratsMoisData && contratsMoisData.length){
+        var facturesDuMois = contratsMoisData.filter(function(f){ return Number(f.annee) === contratsMoisAnnee && Number(f.mois) === contratsMoisMois; });
+        if (facturesDuMois.length){
+          totalHtReel = facturesDuMois.reduce(function(s, f){ return s + (Number(f.prix_ht) || 0); }, 0);
+        }
+      }
+      var totalHt = totalHtReel != null ? totalHtReel : liste.reduce(function(s, c){ return s + (Number(c.prix_ht) || 0); }, 0);
       var nomMois = idx === 0 ? 'Mois illisible' : CONTRATS_MOIS_NOMS[idx - 1];
       var section = document.createElement('div'); section.className = 'ct-mois-section' + (estPasse ? ' replie' : '');
       var head = document.createElement('button'); head.type = 'button'; head.className = 'ct-mois-head';
       var titre = document.createElement('span'); titre.className = 'ct-mois-titre';
       titre.textContent = nomMois + (estMoisEnCours ? ' (en cours)' : '');
-      var compte = document.createElement('span'); compte.className = 'ct-mois-compte';
-      compte.textContent = liste.length + ' contrat' + (liste.length > 1 ? 's' : '') + ' · ' + fmtEuros(totalHt) + ' HT';
+      var texteCompte = liste.length + ' contrat' + (liste.length > 1 ? 's' : '') + ' · ' + fmtEuros(totalHt) + ' HT';
       var chevron = document.createElement('span'); chevron.className = 'ct-mois-chevron'; chevron.textContent = estPasse ? '▸' : '▾';
-      head.appendChild(titre); head.appendChild(compte); head.appendChild(chevron);
+      // Point 5 (08/09/2026, mission Mickael/Dorian) : le total du mois en cours est LE premier
+      // chiffre cherche -- retire du petit texte discret pousse a droite, remplace par une
+      // rangee dediee, centree et grande, sous le titre (jamais releguee en bout de ligne).
+      // Les autres mois (estimations catalogue, pas encore factures) gardent l'ancien affichage
+      // discret -- ils n'ont pas encore de vrai chiffre a annoncer.
+      if (estMoisEnCours){
+        var compteVedette = document.createElement('span'); compteVedette.className = 'ct-mois-compte-vedette';
+        compteVedette.textContent = texteCompte;
+        head.appendChild(titre); head.appendChild(chevron);
+        head.appendChild(compteVedette);
+      } else {
+        var compte = document.createElement('span'); compte.className = 'ct-mois-compte';
+        compte.textContent = texteCompte;
+        head.appendChild(titre); head.appendChild(compte); head.appendChild(chevron);
+      }
       var body = document.createElement('div'); body.className = 'ct-mois-body';
       body.style.display = estPasse ? 'none' : '';
       body.appendChild(contratsBuildCatalogueTable(liste));
