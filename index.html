@@ -4004,7 +4004,18 @@
   #fd-dates-row label{flex:1; min-width:0}
   #fd-lignes-label{font-size:12.5px; color:var(--muted); margin-top:2px}
   .fd-ligne{display:flex; gap:6px; align-items:flex-start}
-  .fd-ligne-desig{flex:2; min-width:0}
+  .fd-ligne-desig-wrap{flex:2; min-width:0; position:relative; display:flex; flex-direction:column; gap:2px}
+  .fd-ligne-desig{width:100%; box-sizing:border-box}
+  .fd-ligne-sug{
+    list-style:none; margin:0; padding:0; border:0.5px solid rgba(255,255,255,.18); border-radius:10px;
+    overflow:hidden; position:absolute; left:0; right:0; top:100%; background:var(--dropdown-bg); z-index:6;
+    max-height:180px; overflow-y:auto; display:none;
+  }
+  .fd-ligne-sug.open{display:block}
+  .fd-ligne-sug li{padding:10px 11px; font-size:13.5px; color:var(--ink); border-bottom:0.5px solid rgba(255,255,255,.12); cursor:pointer}
+  .fd-ligne-sug li:last-child{border-bottom:none}
+  .fd-ligne-sug li:active{background:rgba(255,255,255,.1)}
+  .fd-ligne-warn{display:none; align-self:flex-start}
   .fd-ligne-qte, .fd-ligne-prix, .fd-ligne-tva{flex:1; min-width:0}
   .fd-ligne-del{
     flex:0 0 auto; width:32px; height:32px; margin-top:1px; border-radius:8px; border:0;
@@ -6836,9 +6847,9 @@
          c'est ce qui supprime le conflit humain sur cette ligne precise. Sert aussi de cle
          unique de detection de mise a jour (voir checkUpdate ci-dessous), plus fiable qu'une
          comparaison de chaine de version par tenant. */
-  var APPV_MCS = '4.44';
+  var APPV_MCS = '4.45';
   var APPV_LABO = '1.00';
-  var BUILD = 24;
+  var BUILD = 25;
   // displayVersion()/displayVersionShort() lisent isMcsCode() (definie plus bas dans cette
   // meme IIFE -- declaration de fonction, donc disponible ici par hoisting) : le TENANT
   // affiche depend du code de connexion, jamais d'un simple "APPV" global qui ne dirait ni
@@ -7558,6 +7569,11 @@
   var API_IK = 'https://n8n-self-hosted-t0pz.onrender.com/webhook/mcs-ik';
   var API_IK_EXPORT = 'https://n8n-self-hosted-t0pz.onrender.com/webhook/mcs-ik-export';
   var API_MEMOIRE = 'https://n8n-self-hosted-t0pz.onrender.com/webhook/mcs-memoire-app';
+  // Recherche article catalogue MEG (255 articles, mcs_articles_meg) -- nuit du 09/09/2026,
+  // workflow "MCS · Devis et Factures (formulaire)". Reutilise l'editeur de lignes generique
+  // (lignesEditorRow) partage entre Facture directe et Facturer-ce-devis, plutot qu'un 3e
+  // editeur -- voir wireArticleSearch plus bas.
+  var API_DF = 'https://n8n-self-hosted-t0pz.onrender.com/webhook/mcs-df-formulaire';
   var login = document.getElementById('login');
   var app = document.getElementById('app');
   var chat = document.getElementById('chat');
@@ -8005,6 +8021,7 @@
   }
   function postIk(payload, onOk, onErr){ postDevisWeb(API_IK, payload, onOk, onErr); }
   function postMemoire(payload, onOk, onErr){ postDevisWeb(API_MEMOIRE, payload, onOk, onErr); }
+  function postDf(payload, onOk, onErr){ postDevisWeb(API_DF, payload, onOk, onErr); }
 
   // Point 2 (session suite, 29/08/2026) : mémoire commune, générique pour tout écran qui a des
   // champs d'identité/coordonnées. Un champ CONNU se pré-remplit SEULEMENT s'il est vide (jamais
@@ -19511,19 +19528,61 @@
   // formulaire "Facture directe" (fdLigneRow/fdRecalcTotal, ci-dessous, comportement inchange)
   // ET par l'editeur de lignes d'un devis MEG sans lignes exploitables (devisRenderRowDevis,
   // plus bas) -- jamais une deuxieme implementation du meme editeur.
+  // Recherche article catalogue MEG (code OU libellé, >=3 caractères) -- branchée sur le champ
+  // désignation de l'éditeur de lignes générique. Prix/TVA restent TOUJOURS des suggestions
+  // éditables (jamais figées, cf. spec) : un article fusionné 10/20% ne préremplit aucun taux.
+  function wireArticleSearch(desigEl, sugEl, warnEl, prixEl, tvaEl, onChange){
+    var timer = null;
+    desigEl.addEventListener('input', function(){
+      clearTimeout(timer);
+      warnEl.style.display = 'none';
+      var q = desigEl.value.trim();
+      if (q.length < 3){ sugEl.innerHTML = ''; sugEl.classList.remove('open'); return; }
+      timer = setTimeout(function(){
+        postDf({ type: 'article-search', query: q }, function(r){
+          var items = (r && r.items) || [];
+          sugEl.innerHTML = '';
+          items.forEach(function(item){
+            var li = document.createElement('li');
+            li.textContent = (item.code ? item.code + ' — ' : '') + (item.libelle || '');
+            li.addEventListener('click', function(){
+              sugEl.innerHTML = ''; sugEl.classList.remove('open');
+              desigEl.value = item.libelle || desigEl.value;
+              if (item.prixHtSuggere !== undefined && item.prixHtSuggere !== null) prixEl.value = item.prixHtSuggere;
+              tvaEl.value = (item.tvaSuggeree === undefined || item.tvaSuggeree === null) ? '' : item.tvaSuggeree;
+              if (item.aVerifier){
+                warnEl.textContent = '🔍 à vérifier' + (item.motif ? ' — ' + item.motif : '');
+                warnEl.style.display = 'inline-block';
+              } else {
+                warnEl.style.display = 'none';
+              }
+              onChange();
+            });
+            sugEl.appendChild(li);
+          });
+          sugEl.classList.toggle('open', items.length > 0);
+        }, function(){});
+      }, 250);
+    });
+  }
   function lignesEditorRow(wrap, onChange){
     var row = document.createElement('div'); row.className = 'fd-ligne';
-    var desig = document.createElement('input'); desig.type = 'text'; desig.className = 'fd-ligne-desig'; desig.placeholder = 'Désignation';
+    var desigWrap = document.createElement('div'); desigWrap.className = 'fd-ligne-desig-wrap';
+    var desig = document.createElement('input'); desig.type = 'text'; desig.className = 'fd-ligne-desig'; desig.placeholder = 'Désignation (nom ou code article)'; desig.autocomplete = 'off';
+    var sug = document.createElement('ul'); sug.className = 'fd-ligne-sug';
+    var warn = document.createElement('span'); warn.className = 'rel-badge rel-badge-averifier fd-ligne-warn';
     var qte = document.createElement('input'); qte.type = 'number'; qte.className = 'fd-ligne-qte'; qte.placeholder = 'Qté'; qte.min = '1'; qte.step = '1'; qte.value = '1';
     var prix = document.createElement('input'); prix.type = 'number'; prix.className = 'fd-ligne-prix'; prix.placeholder = 'Prix'; prix.min = '0'; prix.step = '0.01';
     var tva = document.createElement('input'); tva.type = 'number'; tva.className = 'fd-ligne-tva'; tva.placeholder = 'TVA %'; tva.min = '0'; tva.step = '0.1'; tva.value = '20';
     var del = document.createElement('button'); del.type = 'button'; del.className = 'fd-ligne-del'; del.textContent = '✕';
     [desig, qte, prix, tva].forEach(function(el){ el.addEventListener('input', onChange); });
+    wireArticleSearch(desig, sug, warn, prix, tva, onChange);
     del.addEventListener('click', function(){
       if (wrap.children.length <= 1) return; // toujours au moins 1 ligne
       row.remove(); onChange();
     });
-    row.appendChild(desig); row.appendChild(qte); row.appendChild(prix); row.appendChild(tva); row.appendChild(del);
+    desigWrap.appendChild(desig); desigWrap.appendChild(sug); desigWrap.appendChild(warn);
+    row.appendChild(desigWrap); row.appendChild(qte); row.appendChild(prix); row.appendChild(tva); row.appendChild(del);
     return row;
   }
   function lignesEditorRecalc(wrap, totalEl){
