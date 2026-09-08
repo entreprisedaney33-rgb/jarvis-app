@@ -1129,6 +1129,15 @@
     background:rgba(var(--gold-rgb),.12); color:var(--gold-a); font-size:12.5px; line-height:1.4;
     font-weight:600;
   }
+  /* Fenetre 1 (08/09/2026), point 3 : total global "A traiter" -- meme gabarit que les bandeaux
+     ci-dessus, teinte neutre (ni avertissement dore, ni alerte rouge) puisque c'est une simple
+     information de synthese, pas un etat a corriger. */
+  .contrats-total-banniere{
+    flex:0 0 auto; margin:10px 14px 0; padding:10px 12px; border-radius:12px;
+    background:rgba(255,255,255,.06); color:var(--ink); font-size:13.5px; line-height:1.4;
+    font-weight:700;
+  }
+  html.mcs-theme .contrats-total-banniere{ background:rgba(0,0,0,.045); }
   /* Sujet 1 (01/09/2026, audit vitesse) : bandeau cache-first, discret (jamais confondu avec le
      bandeau TEST_MODE ci-dessus, couleur neutre pas dorée) -- retiré dès que la donnée fraîche
      remplace le cache. */
@@ -4632,6 +4641,7 @@
   html.mcs-theme .devis-card .dv-pdf,
   html.mcs-theme #contrats-previsionnel-banniere,
   html.mcs-theme .testmode-banniere,
+  html.mcs-theme .contrats-total-banniere,
   html.mcs-theme .cal-mois-pill b,
   html.mcs-theme .cal-line-sous,
   html.mcs-theme #cal-compteur-fait
@@ -5920,6 +5930,10 @@
     <button class="df-chip" data-statut="skip" type="button"><svg class="hicon-sm" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><polyline points="7,5 13,12 7,19"/><polyline points="13,5 19,12 13,19"/></svg>Pas cette année</button>
   </div>
   <button id="contrats-tva-lot-btn" type="button" style="display:none"><svg class="hicon-sm" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 3v18"/><path d="M5 8l-2 5a3 3 0 0 0 6 0l-2-5"/><path d="M19 8l-2 5a3 3 0 0 0 6 0l-2-5"/><path d="M5 8h14"/><path d="M8 21h8"/></svg>Choisir le taux de TVA pour tout le lot VMC</button>
+  <!-- Fenetre 1 (08/09/2026), point 3 : total global de l'onglet "A traiter" -- demande verbatim
+       de Mickael ("je sais qu'en septembre j'ai 17 646 de contrats"), visible uniquement sur ce
+       sous-statut, recalcule a chaque rendu (donc a chaque envoi). -->
+  <p id="contrats-total-a-traiter" class="contrats-total-banniere" style="display:none"></p>
   <p id="contrats-previsionnel-banniere" style="display:none">🔮 Rien n'est encore généré pour ce mois — aperçu de ce qui sera facturé automatiquement le 1<sup>er</sup> (prix indicatifs, peuvent encore changer d'ici là).</p>
   <button id="contrats-generer-btn" type="button" style="display:none"><svg class="hicon-sm" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><polygon points="13,2 4,14 11,14 10,22 20,9 13,9"/></svg>Générer les brouillons de ce mois maintenant</button>
   <div id="contrats-search-wrap">
@@ -6822,7 +6836,7 @@
          c'est ce qui supprime le conflit humain sur cette ligne precise. Sert aussi de cle
          unique de detection de mise a jour (voir checkUpdate ci-dessous), plus fiable qu'une
          comparaison de chaine de version par tenant. */
-  var APPV_MCS = '4.43';
+  var APPV_MCS = '4.44';
   var APPV_LABO = '1.00';
   var BUILD = 24;
   // displayVersion()/displayVersionShort() lisent isMcsCode() (definie plus bas dans cette
@@ -7965,6 +7979,30 @@
   function postRelations(payload, onOk, onErr){ postDevisWeb(API_RELATIONS, payload, onOk, onErr); }
   function postDocref(payload, onOk, onErr){ postDevisWeb(API_DOCREF, payload, onOk, onErr); }
   function postContrats(payload, onOk, onErr){ postDevisWeb(API_CONTRATS, payload, onOk, onErr); }
+  // Point 1b (Fenetre 1, 08/09/2026 soir) : la collision de numero est un mecanisme LEGAL qui
+  // marche bien (refuse plutot que de doubler un numero) -- mais un message d'erreur technique
+  // sur 1 facture parmi 30, devant Mickael, est inacceptable. Reessai automatique et SILENCIEUX
+  // (aucun toast/aucun etat affiche entre les tentatives -- le tout premier appel echoue deja en
+  // 1-2s reel, jamais visible), avec un court delai, avant de considerer l'echec comme reel.
+  // Le vrai defaut de cablage qui produisait cette collision meme SANS aucune concurrence
+  // reelle a ete corrige a la racine (voir MAJ liberer expiree contrat, n8n) -- ce reessai reste
+  // le dernier recours, jamais le premier, si une VRAIE concurrence se produit malgre tout
+  // (2 fenetres qui enverraient au meme instant, cas non exclu par ce fix de cablage).
+  var CONTRATS_RETRY_COLLISION_MAX = 2; // 2 reessais = 3 tentatives au total
+  var CONTRATS_RETRY_COLLISION_DELAI_MS = 700;
+  function postContratsAvecRetryCollision(payload, onOk, onErr, tentativesRestantes){
+    if (tentativesRestantes == null) tentativesRestantes = CONTRATS_RETRY_COLLISION_MAX;
+    postContrats(payload, onOk, function(err){
+      var estCollision = String(err || '').indexOf('collision') !== -1;
+      if (estCollision && tentativesRestantes > 0){
+        setTimeout(function(){
+          postContratsAvecRetryCollision(payload, onOk, onErr, tentativesRestantes - 1);
+        }, CONTRATS_RETRY_COLLISION_DELAI_MS);
+        return;
+      }
+      onErr(err);
+    });
+  }
   function postIk(payload, onOk, onErr){ postDevisWeb(API_IK, payload, onOk, onErr); }
   function postMemoire(payload, onOk, onErr){ postDevisWeb(API_MEMOIRE, payload, onOk, onErr); }
 
@@ -10556,6 +10594,18 @@
   ];
 
   function contratsClose(){ contratsview.classList.remove('open'); }
+  // Fenetre 1 (08/09/2026), point 2 : REGLE UNIQUE partagee par la VALIDATION
+  // (fcfValiderAvantEnvoi) ET l'AFFICHAGE (contratsChampsManquants -- bandeau rouge + tri en
+  // tete de liste) -- avant ce fix les 2 avaient des regles differentes (validation : residence
+  // obligatoire seulement pour VMC ; affichage : "les DEUX vides"), ce qui laissait une carte
+  // VMC sans residence bloquee a l'envoi mais SANS aucun bandeau rouge (cas reel : "Echos").
+  // Meme repartition que contratNomAffiche()/contratSousTitre() juste en dessous : VMC identifie
+  // le lieu par la RESIDENCE (obligatoire, jamais le syndic) ; deratisation/desinsectisation
+  // identifie le lieu par le CLIENT (le site est le client, pas de residence a saisir pour ce
+  // type -- la reclamer serait une fausse alerte).
+  function contratsResidenceObligatoire(typeContrat){
+    return String(typeContrat) === 'VMC';
+  }
   // 02/09/2026 : repli sur l'adresse quand client ET residence sont vides -- avant ce fix, un
   // contrat identifie seulement par son adresse (ex. les 4 contrats VMC rattrapes le 29/08)
   // affichait "(client non identifie)" sur 2 cartes indiscernables l'une de l'autre alors que
@@ -10795,7 +10845,8 @@
   // repli en lui-meme, qui a produit "une facture disparue".
   function contratsChampsManquants(f){
     var manquants = [];
-    if (!f.residence && !f.client) manquants.push('résidence/client');
+    if (contratsResidenceObligatoire(f.type_contrat) && !f.residence) manquants.push('résidence');
+    if (!f.client) manquants.push('client');
     if (!f.adresse) manquants.push('adresse');
     if (!f.ville) manquants.push('ville');
     if (!f.numero_contrat) manquants.push('numéro de contrat');
@@ -11706,7 +11757,8 @@
         if (!manquant) manquant = el;
       }
       // Ordre EXACT du formulaire, de haut en bas -- garantit que "manquant" est bien le premier.
-      var estVmc = String(f.type_contrat) === 'VMC';
+      // Regle partagee avec contratsChampsManquants() (affichage) -- voir contratsResidenceObligatoire().
+      var estVmc = contratsResidenceObligatoire(f.type_contrat);
       if (estVmc && estVide('fcf-residence')) marque('fcf-residence');
       if (estVide('fcf-client')) marque('fcf-client');
       if (!estVide('fcf-residence') && estVide('fcf-gestionnaire')) marque('fcf-gestionnaire');
@@ -11805,7 +11857,7 @@
       fcfBg.classList.remove('open');
       toast('✉️ Envoi en cours pour ' + nomPourToast + '…');
       contratsApplyFilter();
-      postContrats(payload, function(j){
+      postContratsAvecRetryCollision(payload, function(j){
         toast(j.testMode ? '✅ Facture envoyée (mode test → Altaestima)' : '✅ Facture envoyée');
         contratsResynchroniser();
       }, function(err){
@@ -12104,8 +12156,17 @@
     });
     // Point 2.3 (05/09/2026) : tri sur le nom AFFICHÉ (résidence en priorité pour la VMC, même
     // règle que le calendrier -- calc_calendrier_mois trie déjà pareil côté serveur).
+    // Fenetre 1 (08/09/2026), point 2 : les cartes a donnee manquante remontent EN PREMIER dans
+    // leur groupe (avant le tri alphabetique) -- meme regle de completude que le bandeau rouge
+    // (contratsChampsManquants/contratsResidenceObligatoire), jamais une carte incomplete
+    // enterree en bas de liste par ordre alphabetique.
     Object.keys(groupes).forEach(function(fam){
-      groupes[fam].sort(function(a, b){ return contratNomAffiche(a).localeCompare(contratNomAffiche(b), 'fr'); });
+      groupes[fam].sort(function(a, b){
+        var ma = contratsChampsManquants(a).length ? 1 : 0;
+        var mb = contratsChampsManquants(b).length ? 1 : 0;
+        if (ma !== mb) return mb - ma;
+        return contratNomAffiche(a).localeCompare(contratNomAffiche(b), 'fr');
+      });
     });
     var ordre = CONTRATS_FAMILLE_ORDRE.concat(Object.keys(groupes).filter(function(k){ return CONTRATS_FAMILLE_ORDRE.indexOf(k) === -1; }));
     var out = [];
@@ -12141,6 +12202,7 @@
       document.getElementById('contrats-generer-btn').style.display = 'none';
       document.getElementById('contrats-tva-lot-btn').style.display = 'none';
       document.getElementById('contrats-testmode-banniere').style.display = 'none';
+      document.getElementById('contrats-total-a-traiter').style.display = 'none';
       return;
     }
     calView.style.display = 'none';
@@ -12170,6 +12232,20 @@
     // Catalogue n'envoie rien) -- meme donnee testMode que le panneau Devis, cf. Formater
     // factures du mois (contrats) et Calculer previsionnel (mois-liste).
     document.getElementById('contrats-testmode-banniere').style.display = (contratsActiveTab === 'mois' && contratsTestMode) ? '' : 'none';
+    // Fenetre 1 (08/09/2026), point 3 : total global "A traiter" -- toujours sur la TOTALITE du
+    // mois (jamais filtre par la recherche texte, sinon le chiffre afficherait un decompte
+    // partiel trompeur), recalcule a chaque rendu de ce panneau -- donc a chaque envoi, puisque
+    // contratsApplyFilter est rappelee apres chaque action reussie (voir contratsResynchroniser).
+    var totalBandeau = document.getElementById('contrats-total-a-traiter');
+    if (contratsActiveTab === 'mois' && !enModePrevisionnel && contratsMoisStatutFiltre === 'a_traiter'){
+      var itemsTotal = (contratsMoisData || []).filter(function(f){ return f.statut === 'a_traiter'; });
+      var totalHt = itemsTotal.reduce(function(s, f){ return s + (Number(f.prix_ht) || 0); }, 0);
+      var totalTtc = itemsTotal.reduce(function(s, f){ return s + (Number(f.prix_ttc) || 0); }, 0);
+      totalBandeau.textContent = itemsTotal.length + (itemsTotal.length === 1 ? ' contrat restant · ' : ' contrats restants · ') + fmtEuros(totalHt) + ' HT · ' + fmtEuros(totalTtc) + ' TTC';
+      totalBandeau.style.display = '';
+    } else {
+      totalBandeau.style.display = 'none';
+    }
     if (contratsActiveTab === 'mois' && enModePrevisionnel){
       var itemsP = (contratsMoisPrevisionnel || []).filter(function(p){ return !q || normDoc(contratNomAffiche(p)).indexOf(q) !== -1; });
       if (!itemsP.length){ contratsList.innerHTML = '<p id="contrats-empty">Aucun contrat prévu pour ce mois.</p>'; return; }
@@ -12216,6 +12292,27 @@
     contratsMoisPrevisionnel = j.previsionnel || [];
     contratsTestMode = !!j.testMode;
     contratsApplyFilter();
+    contratsPreGenererApercus();
+  }
+  // Fenetre 1 (08/09/2026 soir), point 4 : pre-generation en tache de fond du cache PDF
+  // "mois-apercu-pdf" (cote n8n) pour les brouillons jamais envoyes -- deplace le cout de
+  // latence AVANT le clic "Voir le vrai PDF" plutot que pendant. Mesure reelle faite le
+  // 08/09/2026 : le cache serveur seul n'accelere PAS la reponse individuelle (dominee par la
+  // latence reseau/DB, cf. point 7 -- meme goulot d'etranglement, pas le calcul du PDF) --
+  // mais le prechauffer silencieusement en arriere-plan rend ce cout invisible au moment du
+  // clic, ce qui reste le vrai gain recherche ici. Sequentiel (jamais en parallele -- eviter de
+  // surcharger le service Render deja fragile en memoire, cf. incidents OOM documentes
+  // ailleurs), et totalement silencieux : aucun toast, aucune erreur affichee, un echec de
+  // prechauffage n'empeche jamais le vrai bouton de fonctionner normalement au clic.
+  function contratsPreGenererApercus(){
+    var items = (contratsMoisData || []).filter(function(f){ return f.statut === 'a_traiter'; });
+    var i = 0;
+    function suivant(){
+      if (i >= items.length) return;
+      var f = items[i++];
+      postContrats({ type: 'mois-apercu-pdf', id: f.id }, suivant, suivant);
+    }
+    suivant();
   }
   // 08/09/2026 soir -- meme role que relancesResynchroniser() : un VRAI rechargement reseau (pas
   // le cache), sur le mois/annee COURANTS de l'ecran, qui remplace contratsMoisData et rend a
