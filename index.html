@@ -6252,6 +6252,13 @@
             <label><input type="checkbox" data-statut="envoye" checked> Envoyé</label>
             <label><input type="checkbox" data-statut="accepte" checked> Accepté</label>
             <label><input type="checkbox" data-statut="intervention_faite" checked> Intervention faite</label>
+            <!-- 09/09/2026 soir (Dorian) : Refuse/Facture ajoutes -- le backend renvoie desormais
+                 les 4 vrais etats MEG, ces 2 cases manquaient (29 devis Refuse/Facture etaient
+                 invisibles ET introuvables par recherche, cf. dfxFiltresDevis/devisApplyFilter
+                 plus bas -- le vrai filet de securite est la regle "statut inconnu jamais masque",
+                 ces cases ne sont qu'un confort visuel pour pouvoir les decocher explicitement). -->
+            <label><input type="checkbox" data-statut="refuse" checked> Refusé</label>
+            <label><input type="checkbox" data-statut="facturee" checked> Facturé</label>
           </div>
         </details>
         <details class="dfx-filtres" id="dfx-filtres-factures" style="display:none">
@@ -7330,9 +7337,9 @@
          c'est ce qui supprime le conflit humain sur cette ligne precise. Sert aussi de cle
          unique de detection de mise a jour (voir checkUpdate ci-dessous), plus fiable qu'une
          comparaison de chaine de version par tenant. */
-  var APPV_MCS = '4.50';
+  var APPV_MCS = '4.51';
   var APPV_LABO = '1.00';
-  var BUILD = 32;
+  var BUILD = 33;
   // displayVersion()/displayVersionShort() lisent isMcsCode() (definie plus bas dans cette
   // meme IIFE -- declaration de fonction, donc disponible ici par hoisting) : le TENANT
   // affiche depend du code de connexion, jamais d'un simple "APPV" global qui ne dirait ni
@@ -10635,7 +10642,7 @@
   // Brouillon/Accepte demandes), remplacent les 2 chips "attente/valides" et "payees/impayees"
   // d'avant. "rejete" reste VOLONTAIREMENT hors de la liste -- regle deja actee (jamais affiche,
   // sur demande de Mathéo), aucune case a cocher pour ne pas laisser croire que c'est possible.
-  var dfxFiltresDevis = { brouillon:true, valide:true, envoye:true, accepte:true, intervention_faite:true };
+  var dfxFiltresDevis = { brouillon:true, valide:true, envoye:true, accepte:true, intervention_faite:true, refuse:true, facturee:true };
   var dfxFiltresFactures = { brouillon:true, validee:true, reglee:true, annulee:true };
   var dfxFiltresTypesFactures = { facture:true, avoir:true };
   var dfxPeriodeVal = 'tout';
@@ -10705,6 +10712,12 @@
     envoye: ['Envoyé', 'dfx-pastille--envoye'],
     accepte: ['Accepté', 'dfx-pastille--accepte'], intervention_faite: ['Intervention faite', 'dfx-pastille--intervention'],
     rejete: ['Rejeté', 'dfx-pastille--rejete'],
+    // 09/09/2026 soir : les 2 vrais etats MEG manquants -- memes classes CSS deja existantes
+    // (aucune nouvelle regle de style, pixel-identique labo preserve). Refuse = meme rouge que
+    // Rejete (deja utilise pour le refus cote Jarvis). Facture = meme vert qu'Accepte (etat
+    // termine avec succes, distingue par le libelle, meme logique que accepte/paye/reglee qui
+    // partagent deja cette classe cote factures).
+    refuse: ['Refusé', 'dfx-pastille--rejete'], facturee: ['Facturé', 'dfx-pastille--accepte'],
   };
   var DFX_PASTILLE_FACTURE = {
     brouillon: ['Brouillon', 'dfx-pastille--brouillon'], validee: ['Validée', 'dfx-pastille--envoye'],
@@ -11229,7 +11242,17 @@
       var totalD = (devisData.devis || []).filter(function(dv){ return dv.statut !== 'rejete'; }).length;
       var itemsD = (devisData.devis || []).filter(function(dv){
         if (dv.statut === 'rejete') return false;
-        if (!dfxFiltresDevis[dv.statut]) return false;
+        // Fix 09/09/2026 soir (Dorian, 29 devis Refuse/Facture disparus le meme jour ou le
+        // mapping backend a ete corrige pour renvoyer les 4 vrais etats MEG) : (a) un statut
+        // ABSENT de dfxFiltresDevis (etat inconnu de ce panneau, jamais coche/decoche par
+        // construction) ne doit JAMAIS masquer une ligne -- seul un statut CONNU et
+        // explicitement decoche masque. hasOwnProperty, pas juste falsy : dfxFiltresDevis[x]
+        // sur une cle absente vaut deja undefined, donc !dfxFiltresDevis[x] etait vrai pour
+        // TOUT statut non repertorie -- exactement la cause du bug (Refuse/Facture etaient
+        // filtres a tort avant l'ajout de leurs cases ci-dessus, et n'importe quel futur etat
+        // le sera pareillement sans ce garde). (b) la recherche par nom ne doit jamais etre
+        // bridee par l'etat : un match texte passe TOUJOURS, meme sur un statut decoche.
+        if (!q && Object.prototype.hasOwnProperty.call(dfxFiltresDevis, dv.statut) && !dfxFiltresDevis[dv.statut]) return false;
         if (!dfxInPeriode(dv.date, dfxPeriodeVal)) return false;
         return !q || normDoc(dv.nom).indexOf(q) !== -1;
       }).sort(dfxComparator);
