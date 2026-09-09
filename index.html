@@ -4003,8 +4003,8 @@
   #fd-dates-row{display:flex; gap:8px}
   #fd-dates-row label{flex:1; min-width:0}
   #fd-lignes-label{font-size:12.5px; color:var(--muted); margin-top:2px}
-  .fd-ligne{display:flex; gap:6px; align-items:flex-start}
-  .fd-ligne-desig-wrap{flex:2; min-width:0; position:relative; display:flex; flex-direction:column; gap:2px}
+  .fd-ligne{display:flex; flex-wrap:wrap; gap:6px; align-items:flex-start}
+  .fd-ligne-desig-wrap{flex:2; min-width:140px; position:relative; display:flex; flex-direction:column; gap:2px}
   .fd-ligne-desig{width:100%; box-sizing:border-box}
   .fd-ligne-sug{
     list-style:none; margin:0; padding:0; border:0.5px solid rgba(255,255,255,.18); border-radius:10px;
@@ -4016,7 +4016,8 @@
   .fd-ligne-sug li:last-child{border-bottom:none}
   .fd-ligne-sug li:active{background:rgba(255,255,255,.1)}
   .fd-ligne-warn{display:none; align-self:flex-start}
-  .fd-ligne-qte, .fd-ligne-prix, .fd-ligne-tva{flex:1; min-width:0}
+  .fd-ligne-qte, .fd-ligne-prix, .fd-ligne-remise, .fd-ligne-tva{flex:1 1 60px; min-width:56px}
+  .fd-ligne-total{flex:1 1 100%; order:5; text-align:right; font-size:12.5px; font-weight:600; color:var(--muted); padding:2px 2px 0}
   .fd-ligne-del{
     flex:0 0 auto; width:32px; height:32px; margin-top:1px; border-radius:8px; border:0;
     background:rgba(255,69,58,.13); color:#FF453A; font-size:14px; cursor:pointer; -webkit-tap-highlight-color:transparent;
@@ -4040,6 +4041,81 @@
      "Facturer ce devis" (facLignesWrap/facLignesTotal, classe car pas d'id unique possible sur
      une carte repetee) -- meme grammaire visuelle, aucune nouvelle regle de mise en page. */
   .fd-total-inline{font-size:14px; font-weight:700; color:var(--ink); text-align:right; margin-top:4px}
+  /* Ecran "Devis" (09/09/2026, mission ecran Devis et Factures) -- meme gabarit que #fd-form-bg/#fd-form,
+     juste renomme en dv-* pour ne jamais entrer en collision avec la Facture directe existante. */
+  #dv-form-bg{position:fixed; inset:0; background:rgba(0,0,0,.5); display:none; z-index:52}
+  #dv-form-bg.open{display:block}
+  #dv-form{
+    position:fixed; left:14px; right:14px; top:50%; transform:translateY(-50%) scale(.96); z-index:53;
+    background:var(--bg2); border-radius:16px; padding:18px 18px calc(18px + env(safe-area-inset-bottom));
+    display:none; flex-direction:column; gap:10px; max-height:82vh; overflow-y:auto; -webkit-overflow-scrolling:touch;
+    opacity:0; transition:opacity .2s ease, transform .2s ease;
+  }
+  #dv-form.open{display:flex; opacity:1; transform:translateY(-50%) scale(1)}
+  @media (prefers-reduced-motion: reduce){#dv-form{transition:none}}
+  #dv-form b{font-size:16px}
+  #dv-form label{display:flex; flex-direction:column; gap:5px; font-size:12.5px; color:var(--muted)}
+  #dv-form input, #dv-form textarea{
+    font:inherit; font-size:15px; color:var(--ink); background:var(--field-bg);
+    border:0.5px solid rgba(255,255,255,.18); border-radius:10px; padding:9px 11px; box-sizing:border-box;
+    resize:vertical;
+  }
+  #dv-form-head{display:flex; align-items:center; justify-content:space-between}
+  #dv-close{background:none; border:0; color:var(--muted); font-size:18px; padding:4px 6px; cursor:pointer; -webkit-tap-highlight-color:transparent}
+  #dv-meslist-row{margin:-2px 0 2px}
+  #dv-nom-wrap{position:relative}
+  #dv-dates-row{display:flex; gap:8px}
+  .dv-date-box{
+    flex:1; min-width:0; background:var(--surface); border-radius:10px; padding:8px 10px;
+    display:flex; flex-direction:column; gap:2px;
+  }
+  .dv-date-box span{font-size:11px; color:var(--muted); text-transform:uppercase; letter-spacing:.03em}
+  .dv-date-box b{font-size:14px; color:var(--ink)}
+  #dv-lignes-label{font-size:12.5px; color:var(--muted); margin-top:2px}
+  #dv-lignes-actions{display:flex; flex-wrap:wrap; gap:8px}
+  #dv-totaux{background:var(--surface); border-radius:12px; padding:10px 12px; display:flex; flex-direction:column; gap:4px}
+  .dv-total-row{display:flex; justify-content:space-between; font-size:13px; color:var(--ink)}
+  .dv-total-row.dv-total-ttc{font-size:15px; font-weight:700; border-top:0.5px solid var(--hairline); padding-top:6px; margin-top:2px}
+  #dv-total-tva-detail{display:flex; flex-direction:column; gap:2px}
+  #dv-total-tva-detail .dv-total-row{font-size:12px; color:var(--muted)}
+  .dv-note-hint{font-weight:400; text-transform:none; letter-spacing:0; color:var(--muted); font-size:11px}
+  #dv-err{color:#FF453A; font-size:12.5px; display:none}
+  #dv-err.show{display:block}
+  #dv-statut-badge{display:none}
+  #dv-statut-badge.show{
+    display:inline-block; align-self:flex-start; font-size:11px; font-weight:700; text-transform:uppercase;
+    letter-spacing:.03em; padding:4px 9px; border-radius:8px; background:rgba(255,255,255,.1); color:var(--muted);
+  }
+  #dv-row{display:flex; gap:8px}
+  #dv-row button{flex:1}
+  #dv-emettre-row{display:none}
+  #dv-emettre-row.show{display:block}
+  #dv-envoi-panel{display:none; background:var(--surface); border-radius:12px; padding:11px 12px; flex-direction:column; gap:8px}
+  #dv-envoi-panel.open{display:flex}
+  #dv-envoi-actions{display:flex; gap:8px}
+  #dv-envoi-actions button{flex:1}
+  /* Panneau "Mes devis" -- meme gabarit que #mf-view (liste large/scrollable). */
+  #dv-meslist-bg{position:fixed; inset:0; background:rgba(0,0,0,.5); display:none; z-index:54}
+  #dv-meslist-bg.open{display:block}
+  #dv-meslist{
+    position:fixed; left:14px; right:14px; top:8vh; bottom:8vh; z-index:55;
+    background:var(--bg2); border-radius:16px; padding:16px 16px calc(16px + env(safe-area-inset-bottom));
+    display:none; flex-direction:column; gap:10px; opacity:0; transition:opacity .2s ease;
+  }
+  #dv-meslist.open{display:flex; opacity:1}
+  #dv-meslist-head{display:flex; align-items:center; justify-content:space-between}
+  #dv-meslist-close{background:none; border:0; color:var(--muted); font-size:18px; padding:4px 6px; cursor:pointer; -webkit-tap-highlight-color:transparent}
+  #dv-meslist-search{
+    font:inherit; font-size:15px; color:var(--ink); background:var(--field-bg);
+    border:0.5px solid rgba(255,255,255,.18); border-radius:10px; padding:9px 11px; box-sizing:border-box;
+  }
+  #dv-meslist-items{flex:1; overflow-y:auto; -webkit-overflow-scrolling:touch; display:flex; flex-direction:column; gap:8px}
+  #dv-meslist-empty{color:var(--muted); font-size:13px; text-align:center; padding:20px 0}
+  .dv-meslist-card{background:var(--surface); border-radius:12px; padding:10px 12px; cursor:pointer; -webkit-tap-highlight-color:transparent}
+  .dv-meslist-card:active{background:rgba(255,255,255,.08)}
+  .dv-meslist-nom{font-size:14px; font-weight:600; color:var(--ink)}
+  .dv-meslist-meta{font-size:12px; color:var(--muted); margin-top:2px}
+  .dv-meslist-montant{font-size:13px; font-weight:700; color:var(--ink); margin-top:2px}
   /* V6 : liste des factures emises + bouton "annuler par un avoir" -- meme gabarit que #devis-form
      mais plus large/scrollable (une liste, pas un formulaire court). */
   #mf-view-bg{position:fixed; inset:0; background:rgba(0,0,0,.5); display:none; z-index:52}
@@ -6797,6 +6873,73 @@
   </div>
 </div>
 
+<!-- Formulaire Devis (09/09/2026, mission ecran "Devis et Factures") -- comme MEG : client
+     recherché en direct, articles préremplis, totaux en direct. Brouillon/aperçu/émission/envoi
+     passent tous par le webhook mcs-df-formulaire (deployé 08/09, serie DV dediee). -->
+<div id="dv-form-bg"></div>
+<div id="dv-form">
+  <div id="dv-form-head"><b>Devis</b><button id="dv-close" type="button" aria-label="Fermer">✕</button></div>
+  <p class="dfhint">Émission au jour même, validité 60 jours. Le reste (identité MCS, mentions légales) vient automatiquement.</p>
+  <div id="dv-meslist-row"><button id="dv-meslist-btn" type="button" class="fc-choice-link">📋 Voir mes devis (brouillons, validés, envoyés) →</button></div>
+  <label id="dv-nom-wrap">Client
+    <input id="dv-nom" type="text" placeholder="Ex : SDC Les Tilleuls (3 lettres minimum)" autocomplete="off">
+    <ul id="dv-nom-sug" class="fd-ligne-sug"></ul>
+  </label>
+  <label>Adresse de facturation
+    <input id="dv-adresse" type="text" placeholder="Adresse du client" autocomplete="off">
+  </label>
+  <label>Email <input id="dv-email" type="email" placeholder="contact@syndic.fr" autocomplete="off"></label>
+  <label>Nom de la résidence (si différent du client)
+    <input id="dv-residence" type="text" placeholder="Ex : Résidence Les Tilleuls" autocomplete="off">
+  </label>
+  <label>Objet du devis
+    <input id="dv-objet" type="text" placeholder="Ex : Contrat entretien VMC" autocomplete="off">
+  </label>
+  <div id="dv-dates-row">
+    <div class="dv-date-box"><span>Émission</span><b id="dv-date-emission">—</b></div>
+    <div class="dv-date-box"><span>Validité</span><b id="dv-date-validite">60 jours</b></div>
+  </div>
+  <div id="dv-lignes-label">Lignes</div>
+  <div id="dv-lignes"></div>
+  <div id="dv-lignes-actions">
+    <button id="dv-ligne-add" type="button" class="fd-ligne-add-btn">+ Ajouter une ligne</button>
+    <button id="dv-ligne-multi" type="button" class="fd-ligne-add-btn">🔍 Ajouter plusieurs articles</button>
+  </div>
+  <div id="dv-totaux">
+    <div class="dv-total-row"><span>Total HT</span><b id="dv-total-ht">0,00 €</b></div>
+    <div id="dv-total-tva-detail"></div>
+    <div class="dv-total-row dv-total-ttc"><span>Total TTC</span><b id="dv-total-ttc">0,00 €</b></div>
+  </div>
+  <label>Commentaire — note interne <span class="dv-note-hint">(jamais affiché sur le devis ni dans le mail)</span>
+    <textarea id="dv-note-interne" rows="2" placeholder="Ex : rappeler avant de passer, code portail 1234…"></textarea>
+  </label>
+  <div id="dv-err"></div>
+  <div id="dv-statut-badge"></div>
+  <div id="dv-row">
+    <button id="dv-cancel" type="button" class="vc-no">Annuler</button>
+    <button id="dv-apercu" type="button" class="vc-edit">👁️ Aperçu (filigrané)</button>
+    <button id="dv-save" type="button" class="vc-ok">Enregistrer le brouillon</button>
+  </div>
+  <div id="dv-emettre-row">
+    <button id="dv-emettre" type="button" class="vc-ok vc-envoi-reel"><svg class="hicon-sm" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><line x1="22" y1="2" x2="11" y2="13"/><polygon points="22 2 15 22 11 13 2 9 22 2"/></svg>Émettre le devis (attribue le numéro)</button>
+  </div>
+  <div id="dv-envoi-panel">
+    <b>Envoyer par mail</b>
+    <label>Destinataire <input id="dv-envoi-dest" type="email"></label>
+    <div id="dv-envoi-actions">
+      <button id="dv-envoi-plustard" type="button" class="vc-no">Plus tard</button>
+      <button id="dv-envoi-go" type="button" class="vc-ok vc-envoi-reel">Envoyer</button>
+    </div>
+  </div>
+</div>
+
+<div id="dv-meslist-bg"></div>
+<div id="dv-meslist">
+  <div id="dv-meslist-head"><b>Mes devis</b><button id="dv-meslist-close" type="button" aria-label="Fermer">✕</button></div>
+  <input id="dv-meslist-search" type="search" placeholder="🔍 Rechercher un client…" autocomplete="off">
+  <div id="dv-meslist-items"><p id="dv-meslist-empty">Chargement…</p></div>
+</div>
+
 <div id="mf-view-bg"></div>
 <div id="mf-view">
   <div id="mf-view-head"><b>Mes factures émises</b><button id="mf-view-close" type="button" aria-label="Fermer">✕</button></div>
@@ -6849,7 +6992,7 @@
          comparaison de chaine de version par tenant. */
   var APPV_MCS = '4.45';
   var APPV_LABO = '1.00';
-  var BUILD = 25;
+  var BUILD = 26;
   // displayVersion()/displayVersionShort() lisent isMcsCode() (definie plus bas dans cette
   // meme IIFE -- declaration de fonction, donc disponible ici par hoisting) : le TENANT
   // affiche depend du code de connexion, jamais d'un simple "APPV" global qui ne dirait ni
@@ -19501,7 +19644,11 @@
   }
   fcChoiceBg.addEventListener('click', fcChoiceClose);
   document.getElementById('fc-choice-cancel').addEventListener('click', fcChoiceClose);
-  document.getElementById('fc-choice-devis').addEventListener('click', function(){ fcChoiceClose(); devisOpen(); });
+  // 09/09/2026 (mission ecran Devis et Factures) : le "+" -> "Devis" ouvre desormais le VRAI
+  // formulaire construit ce jour (dvFormOpen, webhook mcs-df-formulaire) -- devisOpen() (l'ancienne
+  // fiche "creer un contact" conversationnelle) reste utilisee ailleurs (declencheurs chat/vocal,
+  // "ce chemin existe, tu ne le reecris pas"), jamais touchee ici.
+  document.getElementById('fc-choice-devis').addEventListener('click', function(){ fcChoiceClose(); dvFormOpen(); });
   document.getElementById('fc-choice-facture').addEventListener('click', function(){ fcChoiceClose(); fdFormOpen(); });
   document.getElementById('fc-choice-mesfactures').addEventListener('click', function(){ fcChoiceClose(); mfViewOpen(); });
 
@@ -19565,6 +19712,9 @@
       }, 250);
     });
   }
+  // Point 6 (09/09/2026, mission ecran Devis et Factures) : ajout d'une remise par ligne (%) et
+  // d'un total de ligne affiche en direct -- champs optionnels (defaut 0/vide), n'affecte aucun
+  // consommateur existant (Facture directe, Facturer-ce-devis) au-dela d'un calcul plus juste.
   function lignesEditorRow(wrap, onChange){
     var row = document.createElement('div'); row.className = 'fd-ligne';
     var desigWrap = document.createElement('div'); desigWrap.className = 'fd-ligne-desig-wrap';
@@ -19573,26 +19723,50 @@
     var warn = document.createElement('span'); warn.className = 'rel-badge rel-badge-averifier fd-ligne-warn';
     var qte = document.createElement('input'); qte.type = 'number'; qte.className = 'fd-ligne-qte'; qte.placeholder = 'Qté'; qte.min = '1'; qte.step = '1'; qte.value = '1';
     var prix = document.createElement('input'); prix.type = 'number'; prix.className = 'fd-ligne-prix'; prix.placeholder = 'Prix'; prix.min = '0'; prix.step = '0.01';
+    var remise = document.createElement('input'); remise.type = 'number'; remise.className = 'fd-ligne-remise'; remise.placeholder = 'Remise %'; remise.min = '0'; remise.max = '100'; remise.step = '0.1'; remise.value = '0';
     var tva = document.createElement('input'); tva.type = 'number'; tva.className = 'fd-ligne-tva'; tva.placeholder = 'TVA %'; tva.min = '0'; tva.step = '0.1'; tva.value = '20';
+    var ligneTotal = document.createElement('span'); ligneTotal.className = 'fd-ligne-total';
     var del = document.createElement('button'); del.type = 'button'; del.className = 'fd-ligne-del'; del.textContent = '✕';
-    [desig, qte, prix, tva].forEach(function(el){ el.addEventListener('input', onChange); });
-    wireArticleSearch(desig, sug, warn, prix, tva, onChange);
+    function majLigneTotal(){
+      var q = Number(qte.value) || 0, p = Number(prix.value) || 0, r = Number(remise.value) || 0;
+      var t = q * p * (1 - Math.min(100, Math.max(0, r)) / 100);
+      ligneTotal.textContent = fmtEuros(t);
+    }
+    [desig, qte, prix, remise, tva].forEach(function(el){ el.addEventListener('input', function(){ majLigneTotal(); onChange(); }); });
+    wireArticleSearch(desig, sug, warn, prix, tva, function(){ majLigneTotal(); onChange(); });
     del.addEventListener('click', function(){
       if (wrap.children.length <= 1) return; // toujours au moins 1 ligne
       row.remove(); onChange();
     });
     desigWrap.appendChild(desig); desigWrap.appendChild(sug); desigWrap.appendChild(warn);
-    row.appendChild(desigWrap); row.appendChild(qte); row.appendChild(prix); row.appendChild(tva); row.appendChild(del);
+    row.appendChild(desigWrap); row.appendChild(qte); row.appendChild(prix); row.appendChild(remise); row.appendChild(tva); row.appendChild(ligneTotal); row.appendChild(del);
+    majLigneTotal();
     return row;
+  }
+  function lignesEditorLigneMontant(row){
+    var q = Number(row.querySelector('.fd-ligne-qte').value) || 0;
+    var p = Number(row.querySelector('.fd-ligne-prix').value) || 0;
+    var rEl = row.querySelector('.fd-ligne-remise');
+    var r = rEl ? (Number(rEl.value) || 0) : 0;
+    return q * p * (1 - Math.min(100, Math.max(0, r)) / 100);
   }
   function lignesEditorRecalc(wrap, totalEl){
     var total = 0;
-    wrap.querySelectorAll('.fd-ligne').forEach(function(row){
-      var q = Number(row.querySelector('.fd-ligne-qte').value) || 0;
-      var p = Number(row.querySelector('.fd-ligne-prix').value) || 0;
-      total += q * p;
-    });
+    wrap.querySelectorAll('.fd-ligne').forEach(function(row){ total += lignesEditorLigneMontant(row); });
     totalEl.textContent = 'Total HT : ' + fmtEuros(total);
+  }
+  // Detail complet HT/TVA-par-taux/TTC, pour les ecrans qui veulent l'afficher en direct (devis).
+  function lignesEditorRecalcDetail(wrap){
+    var ht = 0; var parTaux = {};
+    wrap.querySelectorAll('.fd-ligne').forEach(function(row){
+      var m = lignesEditorLigneMontant(row);
+      var tEl = row.querySelector('.fd-ligne-tva');
+      var taux = tEl && tEl.value !== '' ? (Number(tEl.value) || 0) : 0;
+      ht += m; parTaux[taux] = (parTaux[taux] || 0) + m * (taux / 100);
+    });
+    var tvaDetail = Object.keys(parTaux).map(function(k){ return { taux: Number(k), montant: Math.round(parTaux[k] * 100) / 100 }; });
+    var montantTva = tvaDetail.reduce(function(s, x){ return s + x.montant; }, 0);
+    return { ht: Math.round(ht * 100) / 100, tvaDetail: tvaDetail, tva: Math.round(montantTva * 100) / 100, ttc: Math.round((ht + montantTva) * 100) / 100 };
   }
   function lignesEditorRead(wrap){
     var lignes = [], ligneInvalide = false;
@@ -19600,10 +19774,15 @@
       var d = row.querySelector('.fd-ligne-desig').value.trim();
       var q = Number(row.querySelector('.fd-ligne-qte').value) || 0;
       var p = row.querySelector('.fd-ligne-prix').value;
-      var t = Number(row.querySelector('.fd-ligne-tva').value);
+      var rEl = row.querySelector('.fd-ligne-remise');
+      var r = rEl ? (Number(rEl.value) || 0) : 0;
+      var tEl = row.querySelector('.fd-ligne-tva');
+      var t = tEl && tEl.value !== '' ? Number(tEl.value) : NaN;
       if (!d && !p) return; // ligne vide, ignorée
       if (!d || !p || Number(p) <= 0 || q <= 0){ ligneInvalide = true; return; }
-      lignes.push({ designation: d, quantite: q, prix_ht: Number(p), tva: isNaN(t) ? 20 : t });
+      var ligne = { designation: d, quantite: q, prix_ht: Number(p), tva: isNaN(t) ? 20 : t };
+      if (r > 0) ligne.remise = r;
+      lignes.push(ligne);
     });
     return { lignes: lignes, invalide: ligneInvalide };
   }
@@ -19716,6 +19895,331 @@
       fdErr.textContent = err || "Impossible d'émettre la facture.";
     });
   });
+
+  // ---- Ecran "Devis" (09/09/2026, mission ecran Devis et Factures) -- construit pour tenir la
+  // citation verbatim de Mickael ("comme dans MEG, en 30 secondes... le code article
+  // preenregistre... le client pareil"). Un seul webhook deja construit et teste la nuit
+  // precedente (mcs-df-formulaire) : recherche client/article en direct, brouillon qui ne
+  // consomme aucun numero, apercu filigrane, emission (serie DV dediee), envoi protege par
+  // TEST_MODE cote serveur. Reutilise TEL QUEL l'editeur de lignes generique (lignesEditorRow,
+  // deja branche sur la recherche article ci-dessus) -- aucune deuxieme implementation.
+  function dvNorm(s){ return String(s || '').toLowerCase().normalize('NFD').replace(/[̀-ͯ]/g, ''); }
+  var DV_STATUT_LABEL = { brouillon: 'Brouillon', valide: 'Émis', envoye: 'Envoyé', rejete: 'Rejeté' };
+  var dvFormBg = document.getElementById('dv-form-bg');
+  var dvForm = document.getElementById('dv-form');
+  var dvNom = document.getElementById('dv-nom');
+  var dvNomSug = document.getElementById('dv-nom-sug');
+  var dvAdresse = document.getElementById('dv-adresse');
+  var dvEmail = document.getElementById('dv-email');
+  var dvResidence = document.getElementById('dv-residence');
+  var dvObjet = document.getElementById('dv-objet');
+  var dvDateEmission = document.getElementById('dv-date-emission');
+  var dvDateValidite = document.getElementById('dv-date-validite');
+  var dvLignesWrap = document.getElementById('dv-lignes');
+  var dvTotalHt = document.getElementById('dv-total-ht');
+  var dvTotalTvaDetail = document.getElementById('dv-total-tva-detail');
+  var dvTotalTtc = document.getElementById('dv-total-ttc');
+  var dvNoteInterne = document.getElementById('dv-note-interne');
+  var dvErr = document.getElementById('dv-err');
+  var dvStatutBadge = document.getElementById('dv-statut-badge');
+  var dvSave = document.getElementById('dv-save');
+  var dvApercu = document.getElementById('dv-apercu');
+  var dvEmettreRow = document.getElementById('dv-emettre-row');
+  var dvEmettre = document.getElementById('dv-emettre');
+  var dvEnvoiPanel = document.getElementById('dv-envoi-panel');
+  var dvEnvoiDest = document.getElementById('dv-envoi-dest');
+  var dvEnvoiGo = document.getElementById('dv-envoi-go');
+  var dvEnvoiPlustard = document.getElementById('dv-envoi-plustard');
+  var dvToken = null, dvStatut = null, dvRoleCreateur = null;
+
+  function dvLigneRow(){ return lignesEditorRow(dvLignesWrap, dvRecalcTotaux); }
+  function dvRecalcTotaux(){
+    var d = lignesEditorRecalcDetail(dvLignesWrap);
+    dvTotalHt.textContent = fmtEuros(d.ht);
+    dvTotalTtc.textContent = fmtEuros(d.ttc);
+    dvTotalTvaDetail.innerHTML = '';
+    d.tvaDetail.forEach(function(t){
+      var row = document.createElement('div'); row.className = 'dv-total-row';
+      var l = document.createElement('span'); l.textContent = 'dont TVA ' + t.taux + '%';
+      var v = document.createElement('span'); v.textContent = fmtEuros(t.montant);
+      row.appendChild(l); row.appendChild(v); dvTotalTvaDetail.appendChild(row);
+    });
+  }
+  document.getElementById('dv-ligne-add').addEventListener('click', function(){
+    dvLignesWrap.appendChild(dvLigneRow());
+    dvRecalcTotaux();
+  });
+  // Multi-select "en une seule ouverture" (acceptance #4) : PAS construit ce jour -- honnêteté
+  // documentée dans le rapport de fin de session. Repli fonctionnel (jamais un bouton mort) :
+  // ajoute une ligne de plus, comme "+ Ajouter une ligne".
+  document.getElementById('dv-ligne-multi').addEventListener('click', function(){
+    dvLignesWrap.appendChild(dvLigneRow());
+    dvRecalcTotaux();
+    toast('Recherche multiple pas encore disponible — ajoute les articles un par un pour l’instant.');
+  });
+
+  function dvSetStatutBadge(){
+    if (dvStatut === 'valide' || dvStatut === 'envoye'){
+      dvStatutBadge.textContent = (dvStatut === 'envoye' ? 'Devis envoyé' : 'Devis émis') +
+        (dvRoleCreateur === 'salarie' ? ' · préparé par un salarié' : '');
+      dvStatutBadge.classList.add('show');
+    } else if (dvRoleCreateur === 'salarie'){
+      dvStatutBadge.textContent = 'Brouillon · préparé par un salarié';
+      dvStatutBadge.classList.add('show');
+    } else {
+      dvStatutBadge.classList.remove('show');
+    }
+  }
+  // Meme logique que dfNom (devisOpen, l'ancienne fiche) : separe "represente par X" (syndic/
+  // gestionnaire) de l'adresse de facturation reelle -- jamais un bloc brut colle dans le champ
+  // adresse. Reutilise isRepresentePar/splitRepresentePar deja construits et testes.
+  function dvOnClientSelect(item){
+    dvNom.value = item.nom || dvNom.value;
+    if (!dvEmail.value.trim() && item.email) dvEmail.value = item.email;
+    if (item.adresse && isRepresentePar(item.adresse)){
+      var sp = splitRepresentePar(item.adresse);
+      if (!dvAdresse.value.trim() && sp.adresse) dvAdresse.value = sp.adresse;
+    } else if (!dvAdresse.value.trim() && item.adresse) {
+      dvAdresse.value = item.adresse;
+    }
+  }
+  wireSearchAutocomplete(dvNom, dvNomSug, 'client-search', dvOnClientSelect);
+
+  function dvFormOpen(){
+    dvToken = null; dvStatut = null; dvRoleCreateur = null;
+    dvNom.value = ''; dvAdresse.value = ''; dvEmail.value = ''; dvResidence.value = ''; dvObjet.value = '';
+    dvNoteInterne.value = '';
+    var today = new Date();
+    var valid = new Date(today.getTime() + 60 * 86400000);
+    dvDateEmission.textContent = today.toLocaleDateString('fr-FR');
+    dvDateValidite.textContent = valid.toLocaleDateString('fr-FR') + ' (60 jours)';
+    dvLignesWrap.innerHTML = '';
+    dvLignesWrap.appendChild(dvLigneRow());
+    dvRecalcTotaux();
+    dvErr.textContent = ''; dvErr.classList.remove('show');
+    dvSetStatutBadge();
+    dvEmettreRow.classList.remove('show');
+    dvEnvoiPanel.classList.remove('open');
+    dvSave.disabled = false;
+    dvSave.textContent = 'Enregistrer le brouillon';
+    dvFormBg.classList.add('open');
+    dvForm.classList.add('open');
+    setTimeout(function(){ dvNom.focus(); }, 50);
+  }
+
+  function dvCollectLignes(){
+    var lecture = lignesEditorRead(dvLignesWrap);
+    var lignes = lecture.lignes.map(function(l){
+      return { designation: l.designation, quantite: l.quantite, unite: '', prix_ht: l.prix_ht, tva: l.tva };
+    });
+    return { lignes: lignes, invalide: lecture.invalide };
+  }
+  function dvSaveBrouillon(onOk, onErr){
+    var lecture = dvCollectLignes();
+    if (lecture.invalide){ if (onErr) onErr('Chaque ligne veut une désignation, une quantité et un prix HT.'); return; }
+    var payload = {
+      type: 'brouillon-enregistrer',
+      clientNom: dvNom.value.trim(), clientEmail: dvEmail.value.trim(), clientAdresse: dvAdresse.value.trim(),
+      gestionnaire: '', residenceNom: dvResidence.value.trim(), adresseIntervention: '',
+      objet: dvObjet.value.trim(), notesTechniques: '', noteInterne: dvNoteInterne.value.trim(),
+      lignes: lecture.lignes,
+    };
+    if (dvToken) payload.token = dvToken;
+    postDf(payload, function(r){
+      if (r && r.ok){ dvToken = r.token; dvStatut = 'brouillon'; dvSetStatutBadge(); if (onOk) onOk(r); }
+      else if (onErr) onErr((r && r.message) || 'Enregistrement impossible.');
+    }, function(err){ if (onErr) onErr(err || 'Enregistrement impossible.'); });
+  }
+  dvSave.addEventListener('click', function(){
+    if (!dvNom.value.trim()){ dvErr.textContent = 'Le nom du client est obligatoire.'; dvErr.classList.add('show'); return; }
+    dvErr.textContent = ''; dvErr.classList.remove('show');
+    dvSave.disabled = true;
+    var oldTxt = dvSave.textContent; dvSave.textContent = 'Enregistrement…';
+    dvSaveBrouillon(function(r){
+      dvSave.disabled = false; dvSave.textContent = oldTxt;
+      toast('✅ Brouillon enregistré' + (r.montantTtc != null ? ' — ' + fmtEuros(r.montantTtc) + ' TTC' : ''));
+      dvEmettreRow.classList.add('show');
+    }, function(msg){
+      dvSave.disabled = false; dvSave.textContent = oldTxt;
+      dvErr.textContent = msg; dvErr.classList.add('show');
+    });
+  });
+  dvApercu.addEventListener('click', function(){
+    if (!dvNom.value.trim()){ dvErr.textContent = 'Le nom du client est obligatoire.'; dvErr.classList.add('show'); return; }
+    dvErr.textContent = ''; dvErr.classList.remove('show');
+    dvApercu.disabled = true;
+    // Piège déjà documenté (contratsBuildThumb, "Voir le vrai PDF" de Contrats) : ouvrir la
+    // fenêtre de façon SYNCHRONE au clic, jamais dans le callback asynchrone (bloqueur de popup).
+    var popup = window.open('', '_blank');
+    function doApercu(){
+      postDf({ type: 'apercu-pdf', token: dvToken }, function(r){
+        dvApercu.disabled = false;
+        if (r && r.ok && r.dataB64){
+          try {
+            var bytes = atob(r.dataB64); var arr = new Uint8Array(bytes.length);
+            for (var i = 0; i < bytes.length; i++) arr[i] = bytes.charCodeAt(i);
+            var blobUrl = URL.createObjectURL(new Blob([arr], { type: r.mime || 'application/pdf' }));
+            if (popup && !popup.closed) popup.location = blobUrl; else window.open(blobUrl, '_blank');
+          } catch (e) { if (popup && !popup.closed) popup.close(); dvErr.textContent = 'Impossible d’ouvrir l’aperçu.'; dvErr.classList.add('show'); }
+        } else {
+          if (popup && !popup.closed) popup.close();
+          dvErr.textContent = (r && r.message) || 'Aperçu impossible.'; dvErr.classList.add('show');
+        }
+      }, function(err){
+        dvApercu.disabled = false;
+        if (popup && !popup.closed) popup.close();
+        dvErr.textContent = err || 'Aperçu impossible.'; dvErr.classList.add('show');
+      });
+    }
+    // L'aperçu doit refléter le brouillon à jour -- on l'enregistre d'abord (crée le token au
+    // besoin), jamais un aperçu périmé par rapport à ce qui est affiché à l'écran.
+    dvSaveBrouillon(function(){ doApercu(); }, function(msg){
+      dvApercu.disabled = false;
+      if (popup && !popup.closed) popup.close();
+      dvErr.textContent = msg; dvErr.classList.add('show');
+    });
+  });
+  dvEmettre.addEventListener('click', function(){
+    if (!dvToken){ dvErr.textContent = 'Enregistre d’abord le brouillon.'; dvErr.classList.add('show'); return; }
+    dvErr.textContent = ''; dvErr.classList.remove('show');
+    dvEmettre.disabled = true;
+    var oldHtml = dvEmettre.innerHTML; dvEmettre.textContent = 'Émission…';
+    postDf({ type: 'emettre', token: dvToken }, function(r){
+      dvEmettre.disabled = false; dvEmettre.innerHTML = oldHtml;
+      if (r && r.ok){
+        dvStatut = 'valide'; dvSetStatutBadge();
+        dvEmettreRow.classList.remove('show');
+        dvEnvoiDest.value = dvEmail.value.trim();
+        dvEnvoiPanel.classList.add('open');
+        toast('✅ Devis émis — n° ' + r.numeroDevis);
+      } else {
+        dvErr.textContent = (r && r.erreur === 'lignes_vides')
+          ? 'Ajoute au moins une ligne avant d’émettre.'
+          : ((r && r.message) || 'Émission impossible.');
+        dvErr.classList.add('show');
+      }
+    }, function(err){
+      dvEmettre.disabled = false; dvEmettre.innerHTML = oldHtml;
+      dvErr.textContent = err || 'Émission impossible.'; dvErr.classList.add('show');
+    });
+  });
+  dvEnvoiGo.addEventListener('click', function(){
+    var dest = dvEnvoiDest.value.trim();
+    if (!dest || dest.indexOf('@') === -1){ toast('Adresse email invalide.'); return; }
+    dvEnvoiGo.disabled = true;
+    postDf({ type: 'envoyer', token: dvToken, destinataire: dest }, function(r){
+      dvEnvoiGo.disabled = false;
+      if (r && r.ok){
+        dvStatut = 'envoye'; dvSetStatutBadge();
+        dvEnvoiPanel.classList.remove('open');
+        toast('✅ Devis envoyé' + (r.testMode ? ' (mode test → ' + r.destinataire + ')' : ' à ' + r.destinataire));
+        dvFormClose();
+      } else {
+        toast((r && r.message) || 'Envoi impossible.');
+      }
+    }, function(err){ dvEnvoiGo.disabled = false; toast(err || 'Envoi impossible.'); });
+  });
+  dvEnvoiPlustard.addEventListener('click', function(){
+    dvEnvoiPanel.classList.remove('open');
+    toast('Le devis reste émis, tu pourras l’envoyer depuis "Mes devis" plus tard.');
+  });
+  function dvFormClose(){
+    dvFormBg.classList.remove('open');
+    dvForm.classList.remove('open');
+  }
+  dvFormBg.addEventListener('click', dvFormClose);
+  document.getElementById('dv-close').addEventListener('click', dvFormClose);
+  document.getElementById('dv-cancel').addEventListener('click', dvFormClose);
+
+  // ---- "Mes devis" -- liste (statuts confondus), recherche client-side, réouverture via
+  // "charger" (mcs-df-formulaire). Table PARTAGÉE avec le mécanisme conversationnel existant
+  // (mcs_devis_fichiers) : un devis dicté par Bruno apparaît ici aussi bien qu'un devis créé
+  // depuis ce formulaire (acceptance #12).
+  var dvMeslistBg = document.getElementById('dv-meslist-bg');
+  var dvMeslist = document.getElementById('dv-meslist');
+  var dvMeslistSearch = document.getElementById('dv-meslist-search');
+  var dvMeslistItems = document.getElementById('dv-meslist-items');
+  var dvMeslistData = [];
+  function dvMeslistOpen(){
+    dvMeslistBg.classList.add('open'); dvMeslist.classList.add('open');
+    dvMeslistSearch.value = '';
+    dvMeslistItems.innerHTML = '<p id="dv-meslist-empty">Chargement…</p>';
+    postDf({ type: 'liste' }, function(r){
+      dvMeslistData = (r && r.items) || [];
+      dvMeslistRender('');
+    }, function(err){
+      dvMeslistItems.innerHTML = '<p id="dv-meslist-empty">' + (err || 'Impossible de charger la liste.') + '</p>';
+    });
+  }
+  function dvMeslistRender(filtre){
+    var f = dvNorm(filtre);
+    dvMeslistItems.innerHTML = '';
+    // Un devis rejeté n'est jamais affiché nulle part dans l'app (règle explicite de Mathéo,
+    // déjà appliquée au panneau "Devis et factures" existant) -- même convention ici.
+    var items = dvMeslistData.filter(function(it){
+      if (it.statut === 'rejete') return false;
+      if (!f) return true;
+      return dvNorm(it.clientNom || '').indexOf(f) !== -1 || dvNorm(it.objet || '').indexOf(f) !== -1;
+    });
+    if (!items.length){ dvMeslistItems.innerHTML = '<p id="dv-meslist-empty">Aucun devis trouvé.</p>'; return; }
+    items.forEach(function(it){
+      var card = document.createElement('div'); card.className = 'dv-meslist-card';
+      var nom = document.createElement('div'); nom.className = 'dv-meslist-nom';
+      nom.textContent = (it.numeroDevis && it.numeroDevis !== 'APERCU' ? it.numeroDevis + ' — ' : '') + (it.clientNom || '(sans nom)');
+      var meta = document.createElement('div'); meta.className = 'dv-meslist-meta';
+      var bits = [DV_STATUT_LABEL[it.statut] || it.statut || '?'];
+      if (it.roleCreateur === 'salarie') bits.push('👷 salarié');
+      if (it.updatedAt) bits.push(new Date(it.updatedAt).toLocaleDateString('fr-FR'));
+      meta.textContent = bits.join(' · ');
+      var montant = document.createElement('div'); montant.className = 'dv-meslist-montant';
+      montant.textContent = it.montantTtc != null ? fmtEuros(it.montantTtc) + ' TTC' : '';
+      card.appendChild(nom); card.appendChild(meta); card.appendChild(montant);
+      card.addEventListener('click', function(){
+        dvMeslistBg.classList.remove('open'); dvMeslist.classList.remove('open');
+        dvChargerDevis(it.token);
+      });
+      dvMeslistItems.appendChild(card);
+    });
+  }
+  dvMeslistSearch.addEventListener('input', function(){ dvMeslistRender(dvMeslistSearch.value.trim()); });
+  document.getElementById('dv-meslist-btn').addEventListener('click', dvMeslistOpen);
+  document.getElementById('dv-meslist-close').addEventListener('click', function(){
+    dvMeslistBg.classList.remove('open'); dvMeslist.classList.remove('open');
+  });
+  dvMeslistBg.addEventListener('click', function(){
+    dvMeslistBg.classList.remove('open'); dvMeslist.classList.remove('open');
+  });
+  function dvChargerDevis(token){
+    postDf({ type: 'charger', token: token }, function(r){
+      if (!r || !r.ok || !r.devis){ toast((r && r.message) || 'Impossible de charger ce devis.'); return; }
+      var d = r.devis;
+      dvToken = d.token; dvStatut = d.statut; dvRoleCreateur = d.roleCreateur;
+      dvNom.value = d.clientNom || ''; dvAdresse.value = d.clientAdresse || ''; dvEmail.value = d.clientEmail || '';
+      dvResidence.value = d.residenceNom || '';
+      dvObjet.value = d.objet || '';
+      dvNoteInterne.value = d.noteInterne || '';
+      dvDateEmission.textContent = d.createdAt ? new Date(d.createdAt).toLocaleDateString('fr-FR') : '—';
+      dvDateValidite.textContent = d.dateValidite ? new Date(d.dateValidite).toLocaleDateString('fr-FR') : '60 jours';
+      dvLignesWrap.innerHTML = '';
+      var lignes = (d.lignes && d.lignes.length) ? d.lignes : [null];
+      lignes.forEach(function(l){
+        var row = dvLigneRow();
+        if (l){
+          row.querySelector('.fd-ligne-desig').value = l.designation || '';
+          row.querySelector('.fd-ligne-qte').value = l.quantite || 1;
+          row.querySelector('.fd-ligne-prix').value = l.prix_ht != null ? l.prix_ht : '';
+          row.querySelector('.fd-ligne-tva').value = l.tva != null ? l.tva : 20;
+        }
+        dvLignesWrap.appendChild(row);
+      });
+      dvRecalcTotaux();
+      dvErr.textContent = ''; dvErr.classList.remove('show');
+      dvSetStatutBadge();
+      dvEmettreRow.classList.toggle('show', dvStatut === 'brouillon');
+      dvEnvoiPanel.classList.remove('open');
+      dvFormBg.classList.add('open'); dvForm.classList.add('open');
+    }, function(err){ toast(err || 'Impossible de charger ce devis.'); });
+  }
 
   // ---- V6 : "Mes factures émises" -- liste des vraies factures (mcs_factures_emises), avec un
   // bouton "Annuler par un avoir" SUR CHAQUE FACTURE. Jamais un avoir créé à partir de rien : la
