@@ -1982,7 +1982,7 @@
   .fcf-ap-hline{position:absolute; border-top:1px solid #000; height:0}
   .fcf-ap-vline{position:absolute; border-left:1px solid #000; width:0}
   .fcf-ap-strokerect{position:absolute; border:1px solid #000; box-sizing:border-box; background:transparent}
-  .fcf-ap-strokerect.fcf-ap-red-border{border-color:#CC1414}
+  .fcf-ap-strokerect.fcf-ap-red-border{border-color:#CC1414; border-width:2px}
   .fcf-ap-red{color:#CC1414}
   .fcf-ap-logo{position:absolute; width:335.7px; height:100.8px; object-fit:contain}
   /* Point 4 (Session 15) -- +3%/-3% en un clic, ancien/nouveau prix affiches avant validation. */
@@ -7330,7 +7330,7 @@
          c'est ce qui supprime le conflit humain sur cette ligne precise. Sert aussi de cle
          unique de detection de mise a jour (voir checkUpdate ci-dessous), plus fiable qu'une
          comparaison de chaine de version par tenant. */
-  var APPV_MCS = '4.49';
+  var APPV_MCS = '4.50';
   var APPV_LABO = '1.00';
   var BUILD = 31;
   // displayVersion()/displayVersionShort() lisent isMcsCode() (definie plus bas dans cette
@@ -12195,7 +12195,13 @@
     if (AVIS_CHANGEMENT_RIB){ y -= 12; }
     var leftX = cols[0], rightX = cols[0]+boxW+boxGap;
     if (AVIS_CHANGEMENT_RIB){
-      T(rightX, y+boxH+2, 8, true, 'Nouvelles coordonnées bancaires depuis le 01/09/2026', 'fcf-ap-red');
+      // 09/09/2026 soir (retour Dorian, tournee build 31) -- l'ancienne formule (y+boxH+2)
+      // placait la phrase a une hauteur superieure au haut du cadre RIB de la valeur de SA
+      // PROPRE hauteur (boxH), la faisant retomber en plein milieu du tableau Detail TVA/Totaux
+      // au-dessus. Ici "y" est deja le HAUT du cadre RIB (cf. STROKERECT(rightX, y-boxH, ...)
+      // juste en dessous) : "y+6" place donc la phrase JUSTE au-dessus du cadre, jamais dans le
+      // tableau des totaux (qui se termine bien plus haut, a yValBot+dH).
+      T(rightX, y+6, 8, true, 'Nouvelles coordonnées bancaires depuis le 01/09/2026', 'fcf-ap-red');
     }
     STROKERECT(leftX, y-boxH, boxW, boxH);
     RECT(leftX, y-boxHeadH, boxW, boxHeadH, true);
