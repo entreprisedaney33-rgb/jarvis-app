@@ -7328,9 +7328,9 @@
          c'est ce qui supprime le conflit humain sur cette ligne precise. Sert aussi de cle
          unique de detection de mise a jour (voir checkUpdate ci-dessous), plus fiable qu'une
          comparaison de chaine de version par tenant. */
-  var APPV_MCS = '4.47';
+  var APPV_MCS = '4.48';
   var APPV_LABO = '1.00';
-  var BUILD = 29;
+  var BUILD = 30;
   // displayVersion()/displayVersionShort() lisent isMcsCode() (definie plus bas dans cette
   // meme IIFE -- declaration de fonction, donc disponible ici par hoisting) : le TENANT
   // affiche depend du code de connexion, jamais d'un simple "APPV" global qui ne dirait ni
@@ -12629,6 +12629,7 @@
         adresse: document.getElementById('fcf-adresse').value.trim(),
         ville: document.getElementById('fcf-ville').value.trim(),
         gestionnaire: document.getElementById('fcf-gestionnaire').value.trim(),
+        gestionnaire_adresse: document.getElementById('fcf-gestionnaire-adresse').value.trim(),
         numero_contrat: numeroInput.value.trim(),
         annee: parseInt(anneeInput.value, 10) || f.annee,
         quantite: parseFloat(quantiteInput.value) || 1,
