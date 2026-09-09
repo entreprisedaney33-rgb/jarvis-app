@@ -6588,7 +6588,7 @@
       <label>Nom de la résidence (nom facturé)</label><input id="fcf-residence" type="text">
       <label>Client facturé (si pas de résidence -- société directe, ex Bread Storming)</label><input id="fcf-client" type="text">
       <label>P/O : gestionnaire (syndic, si résidence)</label><input id="fcf-gestionnaire" type="text" placeholder="ex : Foncia Chabaneau">
-      <label>Adresse du gestionnaire (ligne sous P/O, laisser vide si inconnue -- jamais inventée)</label><input id="fcf-gestionnaire-adresse" type="text" placeholder="ex : 61 quai Lawton, 33000 Bordeaux">
+      <label>Adresse du gestionnaire (ligne sous P/O) -- obligatoire dès qu'il y a un gestionnaire, à renseigner avant l'envoi (jamais inventée : uniquement une adresse réellement connue)</label><input id="fcf-gestionnaire-adresse" type="text" placeholder="ex : 61 quai Lawton, 33000 Bordeaux">
     </div>
     <div class="ctf-section">
       <p class="ctf-section-titre">Adresse</p>
@@ -7332,7 +7332,7 @@
          comparaison de chaine de version par tenant. */
   var APPV_MCS = '4.50';
   var APPV_LABO = '1.00';
-  var BUILD = 31;
+  var BUILD = 32;
   // displayVersion()/displayVersionShort() lisent isMcsCode() (definie plus bas dans cette
   // meme IIFE -- declaration de fonction, donc disponible ici par hoisting) : le TENANT
   // affiche depend du code de connexion, jamais d'un simple "APPV" global qui ne dirait ni
@@ -11764,6 +11764,21 @@
     if (!f.ville) manquants.push('ville');
     if (!f.numero_contrat) manquants.push('numéro de contrat');
     if (!f.designation) manquants.push('désignation');
+    // Adresse du gestionnaire (09/09/2026 soir, demande telephonique explicite de Mickael :
+    // "sur une facture, l'adresse du gestionnaire est OBLIGATOIRE") -- obligatoire des qu'un
+    // gestionnaire existe, jamais un simple "champ vide". "Un gestionnaire existe" = EXACTEMENT
+    // la meme regle que factureContratFormOpen() (jamais recalculee differemment) : nom transmis
+    // directement (gestionnaire_meg) OU deduit residence+client. Les 5 clients directs (Chez
+    // Julien Cestas, Bread Storming, Forever Padel, Luso Alimentation Lormont, Maison Des Champs
+    // SAS Alena -- ni residence ni gestionnaire_meg) ne sont donc JAMAIS concernes. On bloque sur
+    // l'adresse EFFECTIVEMENT IMPRIMEE (valeur stockee gestionnaire_adresse, sinon dictionnaire
+    // GESTIONNAIRE_INFOS via gestionnaireInfos()) -- jamais sur le seul champ de saisie, pour ne
+    // pas faussement alerter sur un contrat dont l'adresse vient du dictionnaire.
+    var gestionnaireBrutCM = f.gestionnaire_meg || (f.residence ? (f.client || '') : '') || '';
+    if (gestionnaireBrutCM){
+      var gInfosCM = gestionnaireInfos(gestionnaireBrutCM);
+      if (!(f.gestionnaire_adresse || gInfosCM.adresse)) manquants.push('adresse du gestionnaire');
+    }
     return manquants;
   }
 
@@ -12689,11 +12704,14 @@
     // suppose) : les 161 VMC ont TOUJOURS residence ET client remplis, les 71 non-VMC ont
     // TOUJOURS client rempli et residence VIDE par construction (repli normal, ne jamais
     // l'exiger) -- la regle suit desormais le type_contrat, jamais un "au moins un des deux".
-    // Gestionnaire obligatoire des qu'une residence existe (P/O). SEULE exception volontaire, en
-    // attente de la reponse de Mickael a Dorian : l'adresse du gestionnaire -- une seule ligne a
-    // changer (FCF_GESTIONNAIRE_ADRESSE_OBLIGATOIRE) le jour ou elle devient obligatoire, jamais
-    // une refonte.
-    var FCF_GESTIONNAIRE_ADRESSE_OBLIGATOIRE = false;
+    // Gestionnaire obligatoire des qu'une residence existe (P/O). Reponse de Mickael a Dorian
+    // recue par telephone le 09/09/2026 au soir : l'adresse du gestionnaire devient a son tour
+    // OBLIGATOIRE des qu'un gestionnaire existe -- plus une simple ligne facultative. Le
+    // declencheur "ce contrat a un gestionnaire" reutilise le champ fcf-gestionnaire deja rempli
+    // par factureContratFormOpen() selon la MEME regle de precedence que l'adresse (jamais
+    // recalcule a part) : les 5 clients directs (pas de residence, pas de gestionnaire_meg)
+    // laissent ce champ vide et ne sont donc jamais bloques. Meme fonction de regle partagee que
+    // contratsChampsManquants() (bandeau ⚠ Donnee manquante) -- voir contratsResidenceObligatoire().
     function fcfValiderAvantEnvoi(){
       document.querySelectorAll('.fcf-champ-manquant').forEach(function(el){ el.classList.remove('fcf-champ-manquant'); });
       var manquant = null;
@@ -12710,7 +12728,7 @@
       if (estVmc && estVide('fcf-residence')) marque('fcf-residence');
       if (estVide('fcf-client')) marque('fcf-client');
       if (!estVide('fcf-residence') && estVide('fcf-gestionnaire')) marque('fcf-gestionnaire');
-      if (FCF_GESTIONNAIRE_ADRESSE_OBLIGATOIRE && estVide('fcf-gestionnaire-adresse')) marque('fcf-gestionnaire-adresse');
+      if (!estVide('fcf-gestionnaire') && estVide('fcf-gestionnaire-adresse')) marque('fcf-gestionnaire-adresse');
       if (estVide('fcf-adresse')) marque('fcf-adresse');
       if (estVide('fcf-ville')) marque('fcf-ville');
       if (estVide('fcf-dest')) marque('fcf-dest');
