@@ -4015,6 +4015,14 @@
   .fd-ligne-sug li{padding:10px 11px; font-size:13.5px; color:var(--ink); border-bottom:0.5px solid rgba(255,255,255,.12); cursor:pointer}
   .fd-ligne-sug li:last-child{border-bottom:none}
   .fd-ligne-sug li:active{background:rgba(255,255,255,.1)}
+  /* Point D4 (09/09/2026) : mention visible sur les articles a taux ambigu/a verifier, DANS la
+     liste deroulante -- avant meme de choisir, pas seulement apres selection (rel-badge-averifier
+     deja utilise ailleurs pour la meme famille "attention", jamais rouge -- Principe 3). */
+  .fd-ligne-sug-tag{
+    display:inline-block; margin-left:8px; padding:2px 8px; border-radius:99px; font-size:10.5px;
+    font-weight:700; background:rgba(var(--gold-rgb),.16); color:var(--gold-a); vertical-align:middle;
+  }
+  .fd-ligne-sug-tag-tva{background:rgba(var(--gold-rgb),.24)}
   .fd-ligne-warn{display:none; align-self:flex-start}
   .fd-ligne-qte, .fd-ligne-prix, .fd-ligne-remise, .fd-ligne-tva{flex:1 1 60px; min-width:56px}
   .fd-ligne-total{flex:1 1 100%; order:5; text-align:right; font-size:12.5px; font-weight:600; color:var(--muted); padding:2px 2px 0}
@@ -4064,6 +4072,7 @@
   #dv-close{background:none; border:0; color:var(--muted); font-size:18px; padding:4px 6px; cursor:pointer; -webkit-tap-highlight-color:transparent}
   #dv-meslist-row{margin:-2px 0 2px}
   #dv-nom-wrap{position:relative}
+  #dv-residence-wrap{position:relative}
   #dv-dates-row{display:flex; gap:8px}
   .dv-date-box{
     flex:1; min-width:0; background:var(--surface); border-radius:10px; padding:8px 10px;
@@ -6889,8 +6898,9 @@
     <input id="dv-adresse" type="text" placeholder="Adresse du client" autocomplete="off">
   </label>
   <label>Email <input id="dv-email" type="email" placeholder="contact@syndic.fr" autocomplete="off"></label>
-  <label>Nom de la résidence (si différent du client)
+  <label id="dv-residence-wrap">Nom de la résidence (si différent du client)
     <input id="dv-residence" type="text" placeholder="Ex : Résidence Les Tilleuls" autocomplete="off">
+    <ul id="dv-residence-sug" class="fd-ligne-sug"></ul>
   </label>
   <label>Objet du devis
     <input id="dv-objet" type="text" placeholder="Ex : Contrat entretien VMC" autocomplete="off">
@@ -6992,7 +7002,7 @@
          comparaison de chaine de version par tenant. */
   var APPV_MCS = '4.45';
   var APPV_LABO = '1.00';
-  var BUILD = 26;
+  var BUILD = 27;
   // displayVersion()/displayVersionShort() lisent isMcsCode() (definie plus bas dans cette
   // meme IIFE -- declaration de fonction, donc disponible ici par hoisting) : le TENANT
   // affiche depend du code de connexion, jamais d'un simple "APPV" global qui ne dirait ni
@@ -8165,6 +8175,52 @@
   function postIk(payload, onOk, onErr){ postDevisWeb(API_IK, payload, onOk, onErr); }
   function postMemoire(payload, onOk, onErr){ postDevisWeb(API_MEMOIRE, payload, onOk, onErr); }
   function postDf(payload, onOk, onErr){ postDevisWeb(API_DF, payload, onOk, onErr); }
+
+  // ---- Point A (09/09/2026, mission écran Devis et Factures) : catalogue client/article chargé
+  // UNE SEULE FOIS à l'ouverture, filtré en local ensuite. Avant : CHAQUE frappe refaisait un
+  // aller-retour serveur -- mesuré à ~6s au 3e caractère. Deux backends différents (vérifié dans
+  // le code avant de toucher quoi que ce soit, pas supposé) : la recherche client passe par le
+  // CERVEAU MCS (post()/mcs-msg, route déterministe "client-search", réponse {results:[...]}),
+  // la recherche article passe par le webhook dédié du formulaire (postDf()/mcs-df-formulaire,
+  // route "article-search", réponse {items:[...]}) -- même mécanisme de cache, deux chemins.
+  var DF_CATALOG = { clients: null, articles: null, clientsCbs: [], articlesCbs: [] };
+  function dfNormCat(s){ return String(s || '').toLowerCase().normalize('NFD').replace(/[̀-ͯ]/g, '').trim(); }
+  function dfEnsureClients(cb){
+    if (DF_CATALOG.clients){ cb(DF_CATALOG.clients); return; }
+    DF_CATALOG.clientsCbs.push(cb);
+    if (DF_CATALOG.clientsCbs.length > 1) return; // déjà en cours de chargement
+    // query vide -> le filtre ilike serveur ('%'+query+'%') matche tout -- le plafond de 8
+    // résultats de cette route (pensée pour une recherche filtrée) a été retiré côté backend
+    // pour ce cas précis (patch jumeau de ce chantier), donc les ~1582 contacts reviennent
+    // en un seul appel plutôt qu'un par lettre tapée.
+    post({ type: 'client-search', query: '' }, function(r){
+      DF_CATALOG.clients = (r && r.results) || [];
+      var cbs = DF_CATALOG.clientsCbs; DF_CATALOG.clientsCbs = [];
+      cbs.forEach(function(f){ f(DF_CATALOG.clients); });
+    }, function(){
+      var cbs = DF_CATALOG.clientsCbs; DF_CATALOG.clientsCbs = [];
+      cbs.forEach(function(f){ f([]); });
+    });
+  }
+  function dfEnsureArticles(cb){
+    if (DF_CATALOG.articles){ cb(DF_CATALOG.articles); return; }
+    DF_CATALOG.articlesCbs.push(cb);
+    if (DF_CATALOG.articlesCbs.length > 1) return;
+    // '__ALL__' : sentinelle explicite côté backend (patch jumeau) -- distincte d'une simple
+    // chaîne vide, qui reste sous le seuil de 3 caractères déjà utilisé par la recherche
+    // filtrée normale.
+    postDf({ type: 'article-search', query: '__ALL__' }, function(r){
+      DF_CATALOG.articles = (r && r.items) || [];
+      var cbs = DF_CATALOG.articlesCbs; DF_CATALOG.articlesCbs = [];
+      cbs.forEach(function(f){ f(DF_CATALOG.articles); });
+    }, function(){
+      var cbs = DF_CATALOG.articlesCbs; DF_CATALOG.articlesCbs = [];
+      cbs.forEach(function(f){ f([]); });
+    });
+  }
+  // Précharge silencieuse : appelée dès l'ouverture du choix "+", pour que le catalogue soit déjà
+  // chaud avant même que l'écran de saisie s'affiche (cas le plus fréquent).
+  function dfPrechargerCatalogue(){ dfEnsureClients(function(){}); dfEnsureArticles(function(){}); }
 
   // Point 2 (session suite, 29/08/2026) : mémoire commune, générique pour tout écran qui a des
   // champs d'identité/coordonnées. Un champ CONNU se pré-remplit SEULEMENT s'il est vide (jamais
@@ -19463,12 +19519,32 @@
     sugEl.classList.toggle('open', items.length > 0);
   }
 
+  // Point A (09/09/2026) : recherche client instantanée -- filtre le catalogue déjà chargé en
+  // mémoire (DF_CATALOG.clients, cf. dfEnsureClients) au lieu d'un aller-retour serveur par
+  // frappe. Le cache se charge tout seul au premier besoin s'il n'était pas déjà chaud (rare,
+  // dfPrechargerCatalogue() le précharge dès l'ouverture du choix "+").
+  function dfFilterClientsLocal(q){
+    var nq = dfNormCat(q);
+    return (DF_CATALOG.clients || []).filter(function(r){ return r && dfNormCat(r.nom).indexOf(nq) !== -1; }).slice(0, 20);
+  }
   function wireSearchAutocomplete(inputEl, sugEl, searchType, onSelect){
     var timer = null;
     inputEl.addEventListener('input', function(){
       clearTimeout(timer);
       var q = inputEl.value.trim();
       if (q.length < 3){ sugEl.innerHTML = ''; sugEl.classList.remove('open'); return; }
+      // 'client-search' est le seul type concerné par le catalogue pré-chargé -- les autres
+      // (ex. 'client-history-search') gardent le chemin serveur existant, inchangé.
+      if (searchType === 'client-search'){
+        dfEnsureClients(function(){
+          // q a pu changer pendant le chargement (1er appel de la session) -- on relit la
+          // valeur actuelle du champ plutôt que la valeur capturée au moment du "input".
+          var qNow = inputEl.value.trim();
+          if (qNow.length < 3) return;
+          renderSuggestions(sugEl, dfFilterClientsLocal(qNow), onSelect);
+        });
+        return;
+      }
       timer = setTimeout(function(){
         post({ type: searchType, query: q }, function(r){
           renderSuggestions(sugEl, (r && r.results) || [], onSelect);
@@ -19637,6 +19713,10 @@
     sheetOpen(false);
     fcChoiceBg.classList.add('open');
     fcChoice.classList.add('open');
+    // Point A (09/09/2026) : précharge le catalogue client/article dès ce clic sur "+" -- avant
+    // même que l'utilisateur choisisse Devis ou Facture directe, pour qu'il soit déjà chaud à
+    // l'ouverture du formulaire (cas le plus fréquent, cf. dfEnsureClients/dfEnsureArticles).
+    dfPrechargerCatalogue();
   }
   function fcChoiceClose(){
     fcChoiceBg.classList.remove('open');
@@ -19678,38 +19758,61 @@
   // Recherche article catalogue MEG (code OU libellé, >=3 caractères) -- branchée sur le champ
   // désignation de l'éditeur de lignes générique. Prix/TVA restent TOUJOURS des suggestions
   // éditables (jamais figées, cf. spec) : un article fusionné 10/20% ne préremplit aucun taux.
+  // Point D4 (09/09/2026) : un article fusionné 10/20% (TVA ambiguë, taux non suggéré) n'était
+  // signalé nulle part -- ni dans la liste déroulante, ni après sélection. Ajouté ici, dans le
+  // même esprit que le badge "à vérifier" déjà existant (19 articles concernés) : une mention
+  // visible AVANT de choisir (dans le menu) ET APRÈS (sur la ligne, à côté du champ TVA vide).
+  function dfArticleBadgeTexte(item){
+    if (item.fusionne1020) return '⚠️ TVA ambiguë (10 % ou 20 %) — indique le taux toi-même';
+    if (item.aVerifier) return '🔍 à vérifier' + (item.motif ? ' — ' + item.motif : '');
+    return '';
+  }
   function wireArticleSearch(desigEl, sugEl, warnEl, prixEl, tvaEl, onChange){
     var timer = null;
+    function renderArticleSuggestions(items){
+      sugEl.innerHTML = '';
+      items.forEach(function(item){
+        var li = document.createElement('li');
+        var txt = (item.code ? item.code + ' — ' : '') + (item.libelle || '');
+        li.textContent = txt;
+        if (item.fusionne1020){
+          var bTva = document.createElement('span'); bTva.className = 'fd-ligne-sug-tag fd-ligne-sug-tag-tva'; bTva.textContent = 'TVA ?';
+          li.appendChild(bTva);
+        } else if (item.aVerifier){
+          var bAv = document.createElement('span'); bAv.className = 'fd-ligne-sug-tag'; bAv.textContent = 'à vérifier';
+          li.appendChild(bAv);
+        }
+        li.addEventListener('click', function(){
+          sugEl.innerHTML = ''; sugEl.classList.remove('open');
+          desigEl.value = item.libelle || desigEl.value;
+          if (item.prixHtSuggere !== undefined && item.prixHtSuggere !== null) prixEl.value = item.prixHtSuggere;
+          tvaEl.value = (item.tvaSuggeree === undefined || item.tvaSuggeree === null) ? '' : item.tvaSuggeree;
+          var badgeTxt = dfArticleBadgeTexte(item);
+          if (badgeTxt){ warnEl.textContent = badgeTxt; warnEl.style.display = 'inline-block'; }
+          else { warnEl.style.display = 'none'; }
+          onChange();
+        });
+        sugEl.appendChild(li);
+      });
+      sugEl.classList.toggle('open', items.length > 0);
+    }
     desigEl.addEventListener('input', function(){
       clearTimeout(timer);
       warnEl.style.display = 'none';
       var q = desigEl.value.trim();
       if (q.length < 3){ sugEl.innerHTML = ''; sugEl.classList.remove('open'); return; }
-      timer = setTimeout(function(){
-        postDf({ type: 'article-search', query: q }, function(r){
-          var items = (r && r.items) || [];
-          sugEl.innerHTML = '';
-          items.forEach(function(item){
-            var li = document.createElement('li');
-            li.textContent = (item.code ? item.code + ' — ' : '') + (item.libelle || '');
-            li.addEventListener('click', function(){
-              sugEl.innerHTML = ''; sugEl.classList.remove('open');
-              desigEl.value = item.libelle || desigEl.value;
-              if (item.prixHtSuggere !== undefined && item.prixHtSuggere !== null) prixEl.value = item.prixHtSuggere;
-              tvaEl.value = (item.tvaSuggeree === undefined || item.tvaSuggeree === null) ? '' : item.tvaSuggeree;
-              if (item.aVerifier){
-                warnEl.textContent = '🔍 à vérifier' + (item.motif ? ' — ' + item.motif : '');
-                warnEl.style.display = 'inline-block';
-              } else {
-                warnEl.style.display = 'none';
-              }
-              onChange();
-            });
-            sugEl.appendChild(li);
-          });
-          sugEl.classList.toggle('open', items.length > 0);
-        }, function(){});
-      }, 250);
+      // Point A : catalogue article chargé une fois (dfEnsureArticles), filtré en local --
+      // instantané dès que le cache est chaud (précédé d'un chargement silencieux à l'ouverture
+      // de l'écran, cf. dfPrechargerCatalogue).
+      dfEnsureArticles(function(articles){
+        var qNow = desigEl.value.trim();
+        if (qNow.length < 3) return;
+        var nq = dfNormCat(qNow);
+        var items = articles.filter(function(r){
+          return r && (dfNormCat(r.code).indexOf(nq) !== -1 || dfNormCat(r.libelle).indexOf(nq) !== -1);
+        }).slice(0, 30);
+        renderArticleSuggestions(items);
+      });
     });
   }
   // Point 6 (09/09/2026, mission ecran Devis et Factures) : ajout d'une remise par ligne (%) et
@@ -19912,6 +20015,7 @@
   var dvAdresse = document.getElementById('dv-adresse');
   var dvEmail = document.getElementById('dv-email');
   var dvResidence = document.getElementById('dv-residence');
+  var dvResidenceSug = document.getElementById('dv-residence-sug');
   var dvObjet = document.getElementById('dv-objet');
   var dvDateEmission = document.getElementById('dv-date-emission');
   var dvDateValidite = document.getElementById('dv-date-validite');
@@ -19970,23 +20074,36 @@
       dvStatutBadge.classList.remove('show');
     }
   }
-  // Meme logique que dfNom (devisOpen, l'ancienne fiche) : separe "represente par X" (syndic/
-  // gestionnaire) de l'adresse de facturation reelle -- jamais un bloc brut colle dans le champ
-  // adresse. Reutilise isRepresentePar/splitRepresentePar deja construits et testes.
+  // Points D1/D2 (09/09/2026) : CHOISIR un client dans la liste est un geste explicite --
+  // contrairement à la mémoire commune (qui ne remplit que du vide, pour ne jamais écraser une
+  // saisie manuelle), sélectionner une fiche doit TOUJOURS remplir tout ce qu'on connaît d'elle,
+  // y compris pour REMPLACER les infos d'un client précédemment choisi (avant ce fix : les
+  // champs déjà remplis étaient protégés par un `if (!champ.value.trim())`, donc changer de
+  // client laissait l'ancienne adresse -- exactement le bug D2 signalé). Même logique que dfNom
+  // (l'ancienne fiche) pour séparer "représenté par X" (syndic/gestionnaire) de l'adresse de
+  // facturation réelle -- réutilise isRepresentePar/splitRepresentePar déjà construits/testés.
+  var dvClientId = null;
+  function dvFillResidence(item){ dvResidence.value = item.nom || dvResidence.value; }
   function dvOnClientSelect(item){
+    dvClientId = item.id || null;
     dvNom.value = item.nom || dvNom.value;
-    if (!dvEmail.value.trim() && item.email) dvEmail.value = item.email;
+    dvEmail.value = item.email || '';
     if (item.adresse && isRepresentePar(item.adresse)){
       var sp = splitRepresentePar(item.adresse);
-      if (!dvAdresse.value.trim() && sp.adresse) dvAdresse.value = sp.adresse;
-    } else if (!dvAdresse.value.trim() && item.adresse) {
-      dvAdresse.value = item.adresse;
+      dvAdresse.value = sp.adresse || item.adresse;
+    } else {
+      dvAdresse.value = item.adresse || '';
     }
+    // D1 : "le reste" -- résidence connue via l'historique des devis/factures de ce client
+    // (même mécanisme déjà en place sur la Facture directe et l'écran de Bruno), jamais utilisé
+    // ici jusqu'à ce fix. Ne touche jamais objet/lignes -- change à chaque devis, non fiable.
+    dvResidence.value = '';
+    suggestResidenceFromHistory(item.id, dvResidence, dvResidenceSug, null, dvFillResidence);
   }
   wireSearchAutocomplete(dvNom, dvNomSug, 'client-search', dvOnClientSelect);
 
   function dvFormOpen(){
-    dvToken = null; dvStatut = null; dvRoleCreateur = null;
+    dvToken = null; dvStatut = null; dvRoleCreateur = null; dvClientId = null;
     dvNom.value = ''; dvAdresse.value = ''; dvEmail.value = ''; dvResidence.value = ''; dvObjet.value = '';
     dvNoteInterne.value = '';
     var today = new Date();
