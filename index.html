@@ -1080,6 +1080,150 @@
   .devis-card .dv-actions{display:flex; gap:8px; margin-top:6px}
   .devis-card .dv-actions .vc-ok, .devis-card .dv-actions .vc-no{padding:9px; font-size:14px}
   #devis-empty, #devis-loading{color:var(--muted); text-align:center; padding:40px 20px; font-size:14px}
+
+  /* ============================================================================
+     Ecran "Devis et factures" facon MEG (09/09/2026, mission dediee) -- structure
+     et gestes copies sur les vrais ecrans MEG (rail lateral -> menu -> liste en
+     tableau -> creation), couleurs et composants 100% Jarvis (aucune teinte MEG).
+     Classes prefixees "dfx-" pour ne JAMAIS entrer en collision avec .df-*/.devis-*/
+     .dv-* deja partagees avec Contrats/Relances (non touches par ce chantier).
+     Portee : uniquement a l'interieur de #devisview, jamais visible cote labo. ============================================================================ */
+  #dfshell{flex:1; min-height:0; display:flex; overflow:hidden}
+  /* Rail sombre "Jarvis" (memes tons que le theme sombre historique : #1C1C1E/blanc), pas une
+     teinte MEG -- visible uniquement au-dela de 760px, cf. media query plus bas. Masque par
+     defaut (mobile-first) : la nav de secours (#devis-tabs, deja existante/deja testee aux 3
+     largeurs) reste le seul chemin sur petit ecran. */
+  #dfrail{
+    display:none; flex:0 0 auto; width:78px; background:#1C1C1E; padding:14px 0 0;
+    flex-direction:column; align-items:center; gap:4px;
+  }
+  .dfx-rail-item{
+    display:flex; flex-direction:column; align-items:center; gap:5px; width:64px; padding:9px 4px;
+    border-radius:12px; border:0; background:transparent; color:#98989E; cursor:pointer;
+    -webkit-tap-highlight-color:transparent;
+  }
+  .dfx-rail-item.active{background:rgba(255,255,255,.12); color:#FFFFFF}
+  .dfx-rail-item svg{width:22px; height:22px}
+  .dfx-rail-item span{font-size:10.5px; font-weight:600; line-height:1.15; text-align:center}
+  /* Flyout (le "menu a 2 entrees" -- 3 chez nous, "A valider" en plus, jamais retiree) --
+     positionne juste a droite du rail, ferme par defaut. */
+  #dfflyout{
+    display:none; flex:0 0 auto; width:190px; background:var(--surface);
+    border-right:0.5px solid var(--hairline); padding:14px 10px; flex-direction:column; gap:3px;
+    overflow-y:auto;
+  }
+  #dfflyout.open{display:flex}
+  .dfx-flyout-title{font-size:11px; font-weight:700; color:var(--muted); text-transform:uppercase; letter-spacing:.4px; padding:4px 10px 8px}
+  .dfx-flyout-item{
+    display:flex; align-items:center; justify-content:space-between; gap:8px;
+    padding:10px 10px; border-radius:10px; border:0; background:transparent;
+    color:var(--ink); font-size:14.5px; font-weight:600; text-align:left; cursor:pointer;
+    -webkit-tap-highlight-color:transparent;
+  }
+  .dfx-flyout-item.active{background:var(--blue); color:#fff}
+  .dfx-flyout-item .df-badge{flex:0 0 auto}
+  /* Sous 760px : le flyout est masque quoi qu'il arrive (meme avec .open) -- seule la nav de
+     secours #devis-tabs (deja testee aux 3 largeurs) navigue. Bug reel trouve en testant a
+     375px : #dfflyout portait .open par defaut dans le HTML (pratique pour le desktop, ouvert
+     d'entree) et n'etait JAMAIS masque sous 760px -- rail + flyout + tabs s'affichaient tous les
+     3 en meme temps. */
+  @media (max-width:759px){
+    #dfflyout, #dfflyout.open{display:none}
+  }
+  @media (min-width:760px){
+    #dfrail{display:flex}
+    #devisview #devis-tabs{display:none}
+  }
+  #dfmain{flex:1; min-width:0; display:flex; flex-direction:column; overflow-y:auto; -webkit-overflow-scrolling:touch}
+  #dfx-breadcrumb{flex:0 0 auto; padding:12px 16px 0; font-size:12.5px; color:var(--muted)}
+  #dfx-breadcrumb b{color:var(--ink); font-weight:600}
+  .dfx-pageheader{flex:0 0 auto; display:flex; align-items:center; gap:10px; padding:6px 16px 4px}
+  .dfx-pageheader h2{flex:1; min-width:0; margin:0; font-size:19px; font-weight:800; color:var(--ink)}
+  .dfx-create-btn{
+    flex:0 0 auto; display:inline-flex; align-items:center; gap:6px; padding:10px 15px;
+    border-radius:11px; border:0; background:var(--blue); color:#fff; font-size:14px; font-weight:700;
+    cursor:pointer; -webkit-tap-highlight-color:transparent; white-space:nowrap;
+  }
+  .dfx-toolbar{flex:0 0 auto; display:flex; flex-wrap:wrap; align-items:center; gap:8px; padding:10px 16px 4px}
+  .dfx-toolbar #devis-search-wrap{flex:1 1 200px; min-width:160px; padding:0}
+  .dfx-filtres{position:relative; flex:0 0 auto}
+  .dfx-filtres summary{
+    list-style:none; display:flex; align-items:center; gap:6px; padding:9px 13px; border-radius:10px;
+    border:0.5px solid var(--chip-border); color:var(--ink); font-size:13.5px; font-weight:600;
+    cursor:pointer; -webkit-tap-highlight-color:transparent; background:var(--surface);
+  }
+  .dfx-filtres summary::-webkit-details-marker{display:none}
+  .dfx-filtres[open] summary{border-color:var(--blue); color:var(--blue)}
+  .dfx-filtres-panel{
+    position:absolute; top:calc(100% + 6px); left:0; z-index:5; min-width:210px;
+    background:var(--dropdown-bg); border-radius:12px; padding:10px; box-shadow:0 8px 24px rgba(0,0,0,.25);
+    display:flex; flex-direction:column; gap:2px;
+  }
+  .dfx-filtres-panel label{
+    display:flex; align-items:center; gap:9px; padding:7px 6px; border-radius:8px; font-size:13.5px; color:var(--ink);
+  }
+  .dfx-periode{
+    flex:0 0 auto; padding:9px 12px; border-radius:10px; border:0.5px solid var(--chip-border);
+    background:var(--surface); color:var(--ink); font-size:13.5px; font-weight:600; -webkit-appearance:none;
+  }
+  .dfx-reset-link{
+    flex:0 0 auto; border:0; background:transparent; color:var(--blue); font-size:13px; font-weight:600;
+    cursor:pointer; padding:9px 4px; -webkit-tap-highlight-color:transparent;
+  }
+  .dfx-body{flex:1; min-height:0; display:flex; gap:14px; padding:12px 16px calc(20px + env(safe-area-inset-bottom)); align-items:flex-start}
+  /* Bug reel trouve en testant a 375px : align-items:flex-start (necessaire en desktop pour que
+     la colonne laterale ne s'etire pas en hauteur) fait qu'en colonne (mobile) .dfx-table-wrap
+     se dimensionne sur le contenu (947px, largeur naturelle du tableau) au lieu de la largeur de
+     l'ecran -- la page entiere debordait horizontalement au lieu de scroller SEULEMENT le
+     tableau. align-items:stretch en colonne force la largeur du conteneur, laissant
+     overflow-x:auto du tableau faire son travail. */
+  @media (max-width:759px){.dfx-body{flex-direction:column; align-items:stretch}}
+  .dfx-table-wrap{flex:1; min-width:0; overflow-x:auto; border-radius:14px; background:var(--surface); -webkit-overflow-scrolling:touch}
+  .dfx-table{width:100%; min-width:760px; border-collapse:collapse; font-size:13px}
+  .dfx-table thead th{
+    position:sticky; top:0; background:var(--surface); text-align:left; font-size:11.5px; font-weight:700;
+    color:var(--muted); text-transform:uppercase; letter-spacing:.3px; padding:11px 12px;
+    border-bottom:0.5px solid var(--hairline); white-space:nowrap;
+  }
+  .dfx-table thead th.dfx-sortable{cursor:pointer; -webkit-tap-highlight-color:transparent}
+  .dfx-table thead th.dfx-sortable span.dfx-sort-ic{margin-left:3px; opacity:.6}
+  .dfx-table thead th.dfx-sort-active{color:var(--blue)}
+  .dfx-table td{padding:11px 12px; border-bottom:0.5px solid var(--hairline); vertical-align:middle; color:var(--ink)}
+  .dfx-table tbody tr.dfx-tr-data:last-child td, .dfx-table tbody tr.dfx-tr-actions:last-child td{border-bottom:0}
+  .dfx-table td.dfx-num-nom{font-weight:700}
+  .dfx-table td.dfx-num-montant{font-weight:700; white-space:nowrap}
+  .dfx-tr-actions td{padding:0 12px 12px; border-bottom:0.5px solid var(--hairline); background:var(--card-bg-2)}
+  .dfx-actions-inner{display:flex; flex-wrap:wrap; gap:8px; align-items:center; padding-top:10px}
+  .dfx-icon-row{display:flex; gap:6px; flex:0 0 auto}
+  .dfx-icon-btn{
+    width:34px; height:34px; border-radius:9px; border:0.5px solid var(--chip-border); background:var(--surface);
+    color:var(--ink); display:flex; align-items:center; justify-content:center; cursor:pointer;
+    -webkit-tap-highlight-color:transparent; text-decoration:none;
+  }
+  .dfx-icon-btn svg{width:17px; height:17px}
+  .dfx-icon-btn[disabled], .dfx-icon-btn.dfx-icon-disabled{opacity:.35; pointer-events:none}
+  .dfx-pastille{display:inline-block; font-size:11.5px; font-weight:700; border-radius:99px; padding:3px 10px; white-space:nowrap}
+  .dfx-pastille--brouillon{background:rgba(255,255,255,.1); color:var(--muted)}
+  html.mcs-theme .dfx-pastille--brouillon{background:var(--field-bg)}
+  .dfx-pastille--envoye{background:rgba(10,132,255,.15); color:var(--blue)}
+  .dfx-pastille--accepte, .dfx-pastille--paye, .dfx-pastille--reglee{background:rgba(48,209,88,.15); color:var(--ok)}
+  .dfx-pastille--intervention{background:rgba(232,185,106,.2); color:var(--gold-a)}
+  .dfx-pastille--rejete, .dfx-pastille--impaye, .dfx-pastille--annulee{background:rgba(255,69,58,.15); color:var(--no)}
+  .dfx-side{flex:0 0 auto; width:220px; display:flex; flex-direction:column; gap:12px}
+  @media (max-width:759px){.dfx-side{width:100%; flex-direction:row; flex-wrap:wrap}}
+  .dfx-card{flex:1 1 auto; min-width:150px; background:var(--surface); border-radius:14px; padding:14px}
+  .dfx-card-label{font-size:11.5px; font-weight:700; color:var(--muted); text-transform:uppercase; letter-spacing:.3px}
+  .dfx-card-value{font-size:24px; font-weight:800; color:var(--ink); margin-top:4px}
+  .dfx-card-sub{font-size:12px; color:var(--muted); margin-top:2px}
+  .dfx-card-totaux button{
+    margin-top:10px; width:100%; padding:9px; border-radius:10px; border:0; background:var(--blue);
+    color:#fff; font-size:13px; font-weight:700; cursor:pointer; -webkit-tap-highlight-color:transparent;
+  }
+  .dfx-totaux-ligne{display:flex; justify-content:space-between; font-size:13px; color:var(--ink); margin-top:6px}
+  .dfx-totaux-ligne b{font-weight:700}
+  .dfx-empty-cell{padding:40px 16px; text-align:center; color:var(--muted); font-size:14px}
+  .dfx-tr-actions.dfx-flash td{background:rgba(10,132,255,.14); transition:background .3s ease}
+
   /* Panneau plein ecran "Contrats" (chantier 5 : contrats et echeances -- patron d'un tenant secondaire uniquement) */
   #contratsview{
     position:fixed; inset:0; z-index:50; background:var(--bg);
@@ -5978,27 +6122,112 @@
 <div id="devisview">
   <div id="devis-head">
     <b id="devis-title"><svg class="hicon-sm" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><path d="M14 2v6h6"/><line x1="8" y1="13" x2="16" y2="13"/><line x1="8" y1="17" x2="16" y2="17"/><line x1="8" y1="9" x2="10" y2="9"/></svg>Devis et factures</b>
-    <button id="devis-add" type="button" aria-label="Nouveau devis">＋</button>
+    <button id="devis-add" type="button" aria-label="Nouveau devis">⊕</button>
     <button id="devis-close" type="button" aria-label="Fermer">✕</button>
   </div>
+  <!-- Nav de secours (<760px, deja testee aux 3 largeurs) -- masquee sur desktop au profit du
+       rail #dfrail/#dfflyout ci-dessous (meme etat/memes fonctions JS, cf. devisGoTab()). -->
   <div id="devis-tabs">
-    <button class="devis-tab active" data-tab="avalider" type="button">Devis à valider/envoyer</button>
+    <button class="devis-tab active" data-tab="avalider" type="button">À valider</button>
     <button class="devis-tab" data-tab="devis" type="button">Devis</button>
     <button class="devis-tab" data-tab="factures" type="button">Factures</button>
   </div>
   <p id="devis-testmode-banniere" class="testmode-banniere" style="display:none">🧪 Mode test : les devis et factures partent chez Altaestima, jamais chez le client.</p>
-  <div id="devis-search-wrap">
-    <input id="devis-search" type="search" inputmode="search" placeholder="🔍 Rechercher un client…" autocomplete="off" autocapitalize="off" autocorrect="off">
+  <div id="dfshell">
+    <!-- Rail facon MEG (>=760px) : 1 seule entree "Ventes" (MEG en a 9), clic = ouvre/ferme le
+         flyout listant les 3 pages -- meme geste, couleurs 100% Jarvis (rail sombre historique). -->
+    <nav id="dfrail" aria-label="Navigation Ventes">
+      <button class="dfx-rail-item active" id="dfrail-ventes" type="button" aria-haspopup="true" aria-expanded="true">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><path d="M14 2v6h6"/><line x1="8" y1="13" x2="16" y2="13"/><line x1="8" y1="17" x2="16" y2="17"/><line x1="8" y1="9" x2="10" y2="9"/></svg>
+        <span>Ventes</span>
+      </button>
+    </nav>
+    <div id="dfflyout" class="open">
+      <div class="dfx-flyout-title">Ventes</div>
+      <button class="dfx-flyout-item active" data-tab="avalider" type="button">À valider<span class="df-badge attente" id="dfflyout-avalider-badge" style="display:none"></span></button>
+      <button class="dfx-flyout-item" data-tab="devis" type="button">Devis</button>
+      <button class="dfx-flyout-item" data-tab="factures" type="button">Factures</button>
+    </div>
+    <div id="dfmain">
+      <p id="dfx-breadcrumb">Accueil <span aria-hidden="true">›</span> Ventes <span aria-hidden="true">›</span> <b id="dfx-breadcrumb-page">À valider</b></p>
+      <div class="dfx-pageheader">
+        <h2 id="dfx-page-title">Devis à valider/envoyer</h2>
+        <button class="dfx-create-btn" id="dfx-create-devis" type="button" style="display:none">⊕ Créer un devis</button>
+        <button class="dfx-create-btn" id="dfx-create-facture" type="button" style="display:none">⊕ Créer une facture</button>
+      </div>
+      <div class="dfx-toolbar" id="dfx-toolbar" style="display:none">
+        <div id="devis-search-wrap">
+          <input id="devis-search" type="search" inputmode="search" placeholder="🔍 Rechercher un client…" autocomplete="off" autocapitalize="off" autocorrect="off">
+        </div>
+        <details class="dfx-filtres" id="dfx-filtres-devis">
+          <summary>Filtres ⌄</summary>
+          <div class="dfx-filtres-panel">
+            <label><input type="checkbox" data-statut="brouillon" checked> Brouillon</label>
+            <label><input type="checkbox" data-statut="envoye" checked> Envoyé</label>
+            <label><input type="checkbox" data-statut="accepte" checked> Accepté</label>
+            <label><input type="checkbox" data-statut="intervention_faite" checked> Intervention faite</label>
+          </div>
+        </details>
+        <details class="dfx-filtres" id="dfx-filtres-factures" style="display:none">
+          <summary>Filtres ⌄</summary>
+          <div class="dfx-filtres-panel">
+            <label><input type="checkbox" data-statut="brouillon" checked> Brouillon</label>
+            <label><input type="checkbox" data-statut="validee" checked> Validée</label>
+            <label><input type="checkbox" data-statut="reglee" checked> Réglée</label>
+            <label><input type="checkbox" data-statut="annulee" checked> Annulée</label>
+          </div>
+        </details>
+        <select class="dfx-periode" id="dfx-periode" aria-label="Période">
+          <option value="tout">Toute période</option>
+          <option value="mois">Ce mois-ci</option>
+          <option value="mois-dernier">Mois dernier</option>
+          <option value="annee">Cette année</option>
+        </select>
+        <button class="dfx-reset-link" id="dfx-reset" type="button">Réinitialiser les filtres</button>
+      </div>
+      <div class="dfx-body" id="dfx-body-avalider">
+        <div id="devis-list"></div>
+      </div>
+      <div class="dfx-body" id="dfx-body-table" style="display:none">
+        <div class="dfx-table-wrap">
+          <table class="dfx-table" id="dfx-table-devis">
+            <thead>
+              <tr>
+                <th>État</th><th>Numéro</th>
+                <th class="dfx-sortable" data-sort="date">Date <span class="dfx-sort-ic">↕</span></th>
+                <th>Validité</th><th>Client</th><th>Référence</th>
+                <th>Montant HT</th><th>Montant TTC</th><th></th>
+              </tr>
+            </thead>
+            <tbody id="dfx-tbody-devis"></tbody>
+          </table>
+          <table class="dfx-table" id="dfx-table-factures" style="display:none">
+            <thead>
+              <tr>
+                <th>État</th><th>Numéro</th>
+                <th class="dfx-sortable" data-sort="date">Date <span class="dfx-sort-ic">↕</span></th>
+                <th>Client</th><th>Référence</th>
+                <th>Montant HT</th><th>Montant TTC</th><th>Réglé</th><th>Reste dû</th><th></th>
+              </tr>
+            </thead>
+            <tbody id="dfx-tbody-factures"></tbody>
+          </table>
+        </div>
+        <aside class="dfx-side">
+          <div class="dfx-card">
+            <div class="dfx-card-label" id="dfx-count-label">Devis</div>
+            <div class="dfx-card-value" id="dfx-count-value">0</div>
+            <div class="dfx-card-sub" id="dfx-count-sub"></div>
+          </div>
+          <div class="dfx-card dfx-card-totaux">
+            <div class="dfx-card-label">Totaux</div>
+            <div id="dfx-totaux-result"></div>
+            <button type="button" id="dfx-totaux-btn">Calculer</button>
+          </div>
+        </aside>
+      </div>
+    </div>
   </div>
-  <div class="df-filter-group" id="df-filter-devis">
-    <button class="df-chip active" data-val="attente" type="button"><svg class="hicon-sm" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="9"/><polyline points="12,7 12,12 15.5,14"/></svg>En attente</button>
-    <button class="df-chip" data-val="valides" type="button"><svg class="hicon-sm" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="9"/><polyline points="8,12.5 10.7,15.2 16,9.5"/></svg>Validés</button>
-  </div>
-  <div class="df-filter-group" id="df-filter-factures" style="display:none">
-    <button class="df-chip active" data-val="payees" type="button"><svg class="hicon-sm" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="9"/><polyline points="8,12.5 10.7,15.2 16,9.5"/></svg>Payées</button>
-    <button class="df-chip active" data-val="impayees" type="button"><svg class="hicon-sm" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="9"/><line x1="6.5" y1="6.5" x2="17.5" y2="17.5"/></svg>Impayées</button>
-  </div>
-  <div id="devis-list"></div>
 </div>
 
 <div id="contratsview">
@@ -7000,9 +7229,9 @@
          c'est ce qui supprime le conflit humain sur cette ligne precise. Sert aussi de cle
          unique de detection de mise a jour (voir checkUpdate ci-dessous), plus fiable qu'une
          comparaison de chaine de version par tenant. */
-  var APPV_MCS = '4.45';
+  var APPV_MCS = '4.46';
   var APPV_LABO = '1.00';
-  var BUILD = 27;
+  var BUILD = 28;
   // displayVersion()/displayVersionShort() lisent isMcsCode() (definie plus bas dans cette
   // meme IIFE -- declaration de fonction, donc disponible ici par hoisting) : le TENANT
   // affiche depend du code de connexion, jamais d'un simple "APPV" global qui ne dirait ni
@@ -8871,6 +9100,17 @@
     // d'un cache deja tiede SANS code duplique. Uniquement pour le patron MCS (les seuls tenants
     // qui voient ces 3 panneaux) ; purement en arriere-plan, aucun effet visible si ca echoue.
     if (mcs && role === 'patron') precacherPanneauxLourds();
+    // Ecran "Devis et factures" facon MEG (09/09/2026, point 2 de la mission) : le catalogue
+    // client/article (dfEnsureClients/dfEnsureArticles, ~1580 clients + ~250 articles en 1 seul
+    // appel chacun) prenait 5-12s la 1ere fois qu'on l'ouvrait -- jusqu'ici rechauffe seulement
+    // au clic sur "+" (fcChoiceOpen), donc encore froid si Mickael ouvrait directement "Devis et
+    // factures" -> "Creer un devis" et tapait aussitot. Rechauffe ici, des le demarrage de
+    // l'app, INDEPENDAMMENT de la file _precacheQueue ci-dessus (celle-la s'annule au 1er clic
+    // sur une tuile sh-*, cf. precacheAnnulerRestant -- annuler ce rechauffement-la aurait
+    // recree exactement le symptome a corriger). dfEnsureClients/dfEnsureArticles mettent deja
+    // en file d'attente tout appelant pendant le chargement (jamais de reponse muette) --
+    // rien a changer de ce cote, cf. leur definition plus haut.
+    if (mcs && role === 'patron') dfPrechargerCatalogue();
     // Refonte accueil MCS (29/08/2026) : deplace .sh-grid de #sheet vers #homeGrid -- reserve
     // strictement a MCS patron (jamais pour le tenant labo, jamais pour Bruno). Un appendChild
     // deplace le noeud EXISTANT (pas une copie) : les 11 boutons gardent leurs ids, leurs
@@ -10285,13 +10525,172 @@
   var devisSearchInput = document.getElementById('devis-search');
   var devisData = null; // { aValider, devis, factures }
   var devisActiveTab = 'avalider';
-  var devisFilterDevisVal = 'attente'; // choix unique : attente OU valides (rejetés jamais affichés, sur demande de Mathéo)
-  var devisFilterFactures = { payees:true, impayees:true };
-  // Point 4 (30/08/2026) : intervention_faite ajoute a "valides" -- meme famille qu'accepte
-  // (etape suivante du meme parcours positif), sinon il tombait dans "rejetes" qui n'est JAMAIS
-  // affiche (choix explicite de Mathéo) -- le geste "Facturer ce devis" aurait ete invisible.
-  function devisCatDevis(dv){ return (dv.statut === 'brouillon' || dv.statut === 'envoye') ? 'attente' : ((dv.statut === 'accepte' || dv.statut === 'intervention_faite') ? 'valides' : 'rejetes'); }
-  function devisCatFacture(f){ return f.paye ? 'payees' : 'impayees'; }
+  // Ecran "Devis et factures" facon MEG (09/09/2026) : filtres multi-select (au minimum
+  // Brouillon/Accepte demandes), remplacent les 2 chips "attente/valides" et "payees/impayees"
+  // d'avant. "rejete" reste VOLONTAIREMENT hors de la liste -- regle deja actee (jamais affiche,
+  // sur demande de Mathéo), aucune case a cocher pour ne pas laisser croire que c'est possible.
+  var dfxFiltresDevis = { brouillon:true, envoye:true, accepte:true, intervention_faite:true };
+  var dfxFiltresFactures = { brouillon:true, validee:true, reglee:true, annulee:true };
+  var dfxPeriodeVal = 'tout';
+  var dfxSortField = 'date', dfxSortDir = 'desc';
+  var dfxCurrentItems = [];
+  // Statut MEG brut ("Réglée"/"Validée"/"Annulée"/"Brouillon", accentué) -> clef ASCII stable.
+  // Une facture Jarvis fraîchement émise (source!=='meg') n'a pas d'équivalent MEG -- traitée
+  // comme "validee" (document fini et réel, juste pas encore payé), jamais "brouillon" (ça
+  // laisserait croire qu'elle n'a pas été émise) ni "reglee" (pas encore vrai par défaut).
+  function dfxFactureStatutKey(f){
+    if (f.source !== 'meg') return 'validee';
+    var e = normDoc(f.statut || '');
+    if (e.indexOf('regl') !== -1) return 'reglee';
+    if (e.indexOf('annul') !== -1) return 'annulee';
+    if (e.indexOf('brouillon') !== -1) return 'brouillon';
+    return 'validee';
+  }
+  function dfxInPeriode(dateStr, periode){
+    if (periode === 'tout' || !dateStr) return true;
+    var d; try { d = new Date(dateStr); } catch (e){ return true; }
+    if (isNaN(d.getTime())) return true;
+    var now = new Date();
+    if (periode === 'mois') return d.getFullYear() === now.getFullYear() && d.getMonth() === now.getMonth();
+    if (periode === 'mois-dernier'){
+      var m = now.getMonth() - 1, y = now.getFullYear(); if (m < 0){ m = 11; y--; }
+      return d.getFullYear() === y && d.getMonth() === m;
+    }
+    if (periode === 'annee') return d.getFullYear() === now.getFullYear();
+    return true;
+  }
+  function dfxComparator(a, b){
+    var da = new Date(a.date || 0).getTime() || 0, db = new Date(b.date || 0).getTime() || 0;
+    return dfxSortDir === 'asc' ? (da - db) : (db - da);
+  }
+  // Validite : uniquement les devis Jarvis natifs -- 60 jours, la REGLE ACTUELLE affichee en
+  // toutes lettres dans le vrai formulaire "Creer un devis" de cet ecran (dv-date-validite,
+  // dfhint) au moment de ce chantier -- jamais inventee. (Un ancien PDF genere le 04/08/2026
+  // affichait encore "30 jours" -- la regle a change depuis ; on suit la version EN VIGUEUR
+  // aujourd'hui, celle du formulaire de creation reellement utilise.) Un devis MEG n'exporte
+  // aucune date de validite -- honnete "-" plutot qu'une estimation.
+  function dfxValiditeDevis(dv){
+    if (dv.source !== 'jarvis' || !dv.date) return '—';
+    try { var d = new Date(dv.date); d.setDate(d.getDate() + 60); return fmtDevisDateSimple(d.toISOString()); }
+    catch (e){ return '—'; }
+  }
+  function dfxReference(dv){
+    var r = (dv.reference != null && dv.reference !== '') ? dv.reference : (dv.objet || '');
+    return r || '—';
+  }
+  var DFX_ICON_MAIL = '<svg class="hicon-sm" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="3" y="5" width="18" height="14" rx="2"/><path d="M4 7l8 6 8-6"/></svg>';
+  var DFX_ICON_PDF = '<svg class="hicon-sm" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><path d="M14 2v6h6"/><line x1="8" y1="13" x2="16" y2="13"/><line x1="8" y1="17" x2="16" y2="17"/><line x1="8" y1="9" x2="10" y2="9"/></svg>';
+  var DFX_ICON_PENCIL = '<svg class="hicon-sm" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 20h9"/><path d="M16.5 3.5a2.1 2.1 0 0 1 3 3L7 19l-4 1 1-4Z"/></svg>';
+  function dfxIconBtn(html, title, onClick, disabled){
+    var b = document.createElement('button'); b.type = 'button';
+    b.className = 'dfx-icon-btn' + (disabled ? ' dfx-icon-disabled' : '');
+    b.innerHTML = html; b.title = title; b.setAttribute('aria-label', title);
+    if (disabled) b.disabled = true; else b.addEventListener('click', onClick);
+    return b;
+  }
+  var DFX_PASTILLE_DEVIS = {
+    brouillon: ['Brouillon', 'dfx-pastille--brouillon'], envoye: ['Envoyé', 'dfx-pastille--envoye'],
+    accepte: ['Accepté', 'dfx-pastille--accepte'], intervention_faite: ['Intervention faite', 'dfx-pastille--intervention'],
+    rejete: ['Rejeté', 'dfx-pastille--rejete'],
+  };
+  var DFX_PASTILLE_FACTURE = {
+    brouillon: ['Brouillon', 'dfx-pastille--brouillon'], validee: ['Validée', 'dfx-pastille--envoye'],
+    reglee: ['Réglée', 'dfx-pastille--reglee'], annulee: ['Annulée', 'dfx-pastille--annulee'],
+  };
+  function dfxPastilleDevis(dv){
+    var m = DFX_PASTILLE_DEVIS[dv.statut] || ['—', 'dfx-pastille--brouillon'];
+    return '<span class="dfx-pastille ' + m[1] + '">' + escHtml(m[0]) + '</span>';
+  }
+  function dfxPastilleFacture(f){
+    if (f.typeDoc === 'avoir') return '<span class="dfx-pastille">Avoir</span>';
+    var m = DFX_PASTILLE_FACTURE[dfxFactureStatutKey(f)];
+    return '<span class="dfx-pastille ' + m[1] + '">' + escHtml(m[0]) + '</span>';
+  }
+  function dfxMontantCell(v){ return (v !== undefined && v !== null && v !== '') ? escHtml(fmtEuros(v)) : '—'; }
+  // Ligne tableau (donnees) + ligne actions juste en dessous (colspan) -- reutilise TELLES
+  // QUELLES les fonctions devisRenderRowDevis/devisRenderRowFacture(x, true) ci-dessus (memes
+  // boutons, meme etat, aucune logique dupliquee), toujours VISIBLES (pas de repli/expand qui
+  // casserait le tutoriel existant .dv-intervention-btn/.dv-facturer-btn, cf. TUTO_CONFIGS.devis).
+  function dfxBuildDevisRow(dv){
+    var tr = document.createElement('tr'); tr.className = 'dfx-tr-data';
+    function td(html, cls){ var d = document.createElement('td'); if (cls) d.className = cls; d.innerHTML = html; tr.appendChild(d); return d; }
+    td(dfxPastilleDevis(dv));
+    td(escHtml(dv.numero || '—'), 'dfx-num-nom');
+    td(escHtml(fmtDevisDateSimple(dv.date) || '—'));
+    td(escHtml(dfxValiditeDevis(dv)));
+    td(escHtml(dv.nom || '(client non précisé)'), 'dfx-num-nom');
+    td(escHtml(dfxReference(dv)));
+    td(dfxMontantCell(dv.montantHt), 'dfx-num-montant');
+    td(dfxMontantCell(dv.montant), 'dfx-num-montant');
+    var tdActions = document.createElement('td'); tr.appendChild(tdActions);
+    var iconRow = document.createElement('div'); iconRow.className = 'dfx-icon-row';
+    var pdfHref = dv.url ? ('https://n8n-self-hosted-t0pz.onrender.com' + dv.url + '&code=' + encodeURIComponent(String(read('jarvisCode') || '').trim())) : '';
+    var trAct;
+    iconRow.appendChild(dfxIconBtn(DFX_ICON_MAIL, dv.email ? 'Envoyer par mail' : 'Email du client inconnu', function(){
+      var corps = 'Bonjour,%0D%0A%0D%0AVeuillez trouver ci-joint votre devis' + (pdfHref ? (' : ' + encodeURIComponent(pdfHref)) : '') + '.%0D%0A%0D%0ACordialement.';
+      location.href = 'mailto:' + encodeURIComponent(dv.email) + '?subject=' + encodeURIComponent('Votre devis') + '&body=' + corps;
+    }, !dv.email));
+    iconRow.appendChild(dfxIconBtn(DFX_ICON_PDF, pdfHref ? 'Voir le PDF' : (dv.source === 'meg' ? 'Importer le PDF' : 'PDF indisponible'), function(){
+      if (pdfHref) window.open(pdfHref, '_blank');
+      else if (dv.source === 'meg'){ dvPdfImportTarget = dv; dvPdfImportInput.value = ''; dvPdfImportInput.click(); }
+    }, !pdfHref && dv.source !== 'meg'));
+    iconRow.appendChild(dfxIconBtn(DFX_ICON_PENCIL, 'Gérer ce devis', function(){
+      trAct.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+      trAct.classList.add('dfx-flash'); setTimeout(function(){ trAct.classList.remove('dfx-flash'); }, 900);
+    }, false));
+    tdActions.appendChild(iconRow);
+    trAct = document.createElement('tr'); trAct.className = 'dfx-tr-actions';
+    var tdAct = document.createElement('td'); tdAct.colSpan = 9;
+    tdAct.appendChild(devisRenderRowDevis(dv, true));
+    trAct.appendChild(tdAct);
+    return [tr, trAct];
+  }
+  function dfxBuildFactureRow(f){
+    var tr = document.createElement('tr'); tr.className = 'dfx-tr-data';
+    function td(html, cls){ var d = document.createElement('td'); if (cls) d.className = cls; d.innerHTML = html; tr.appendChild(d); return d; }
+    td(dfxPastilleFacture(f));
+    td(escHtml(f.numero || f.numeroComplet || '—'), 'dfx-num-nom');
+    td(escHtml(fmtDevisDateSimple(f.date) || '—'));
+    td(escHtml(f.nom || '(client non précisé)'), 'dfx-num-nom');
+    td(escHtml((f.reference || (f.typeDoc === 'avoir' ? ('Annule ' + (f.avoirDe || '')) : '')) || '—'));
+    td(dfxMontantCell(f.montantHt), 'dfx-num-montant');
+    td(dfxMontantCell(f.montantTtc), 'dfx-num-montant');
+    td(dfxMontantCell(f.regle), 'dfx-num-montant');
+    td(dfxMontantCell(f.resteDu), 'dfx-num-montant');
+    var tdActions = document.createElement('td'); tr.appendChild(tdActions);
+    var iconRow = document.createElement('div'); iconRow.className = 'dfx-icon-row';
+    var href = f.pdfUrl ? ('https://n8n-self-hosted-t0pz.onrender.com' + f.pdfUrl + '&code=' + encodeURIComponent(String(read('jarvisCode') || '').trim())) : (f.megUrl || '');
+    var trAct;
+    iconRow.appendChild(dfxIconBtn(DFX_ICON_PDF, href ? (f.pdfUrl ? 'Voir la facture' : 'Ouvrir dans MEG') : 'Indisponible', function(){ window.open(href, '_blank'); }, !href));
+    iconRow.appendChild(dfxIconBtn(DFX_ICON_PENCIL, 'Gérer cette facture', function(){
+      trAct.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+      trAct.classList.add('dfx-flash'); setTimeout(function(){ trAct.classList.remove('dfx-flash'); }, 900);
+    }, f.typeDoc === 'avoir'));
+    tdActions.appendChild(iconRow);
+    trAct = document.createElement('tr'); trAct.className = 'dfx-tr-actions';
+    var tdAct = document.createElement('td'); tdAct.colSpan = 10;
+    var inner = devisRenderRowFacture(f, true);
+    tdAct.appendChild(inner);
+    trAct.appendChild(tdAct);
+    return [tr, trAct];
+  }
+  function dfxUpdateCountsAndTotals(kind, items, totalAll){
+    document.getElementById('dfx-count-label').textContent = kind === 'devis' ? 'Devis' : 'Factures';
+    document.getElementById('dfx-count-value').textContent = items.length;
+    document.getElementById('dfx-count-sub').textContent = items.length === totalAll ? 'au total' : ('sur ' + totalAll + ' au total');
+    document.getElementById('dfx-totaux-result').innerHTML = '';
+  }
+  function dfxCalculerTotaux(){
+    var totHt = 0, totTtc = 0;
+    dfxCurrentItems.forEach(function(it){
+      var ht = Number(it.montantHt); if (!isNaN(ht)) totHt += ht;
+      var ttc = Number(devisActiveTab === 'devis' ? it.montant : it.montantTtc); if (!isNaN(ttc)) totTtc += ttc;
+    });
+    var el = document.getElementById('dfx-totaux-result'); el.innerHTML = '';
+    var l1 = document.createElement('div'); l1.className = 'dfx-totaux-ligne'; l1.innerHTML = '<span>Total HT</span><b>' + escHtml(fmtEuros(totHt)) + '</b>';
+    var l2 = document.createElement('div'); l2.className = 'dfx-totaux-ligne'; l2.innerHTML = '<span>Total TTC</span><b>' + escHtml(fmtEuros(totTtc)) + '</b>';
+    el.appendChild(l1); el.appendChild(l2);
+  }
   function devisAttenteClose(){ devisview.classList.remove('open'); }
   function fmtDevisDate(iso){
     try { return new Date(iso).toLocaleString('fr-FR', { day:'2-digit', month:'2-digit', hour:'2-digit', minute:'2-digit' }); }
@@ -10376,18 +10775,26 @@
     fr.readAsDataURL(f);
   });
 
-  function devisRenderRowDevis(dv){
-    var row = document.createElement('div'); row.className = 'devis-card';
-    var top = document.createElement('div'); top.className = 'df-row-top';
-    var nom = document.createElement('span'); nom.className = 'dv-nom'; nom.textContent = dv.nom || '(client non précisé)';
-    var badge = document.createElement('span'); badge.className = 'df-badge ' + (dv.statut || 'brouillon');
-    badge.textContent = DEVIS_STATUT_LABEL[dv.statut] || dv.statut || '';
-    top.appendChild(nom); top.appendChild(badge);
-    row.appendChild(top);
-    if (dv.objet){ var objet = document.createElement('span'); objet.className = 'dv-objet'; objet.textContent = dv.objet; row.appendChild(objet); }
-    var meta = document.createElement('span'); meta.className = 'dv-meta'; meta.textContent = fmtDevisDateSimple(dv.date);
-    row.appendChild(meta);
-    if (dv.montant){ var montant = document.createElement('span'); montant.className = 'dv-montant'; montant.textContent = dv.montant + ' € TTC'; row.appendChild(montant); }
+  // Ecran "Devis et factures" facon MEG (09/09/2026) : tableMode=true reutilise EXACTEMENT
+  // les memes boutons d'action (import PDF/accepter/intervention/facturer -- aucune logique
+  // dupliquee ni modifiee) mais saute la construction de l'entete nom/badge/objet/montant, deja
+  // rendue par les colonnes du tableau MEG (dfxBuildDevisRow, plus bas) -- evite le doublon
+  // visuel. Appelee sans 2e argument, cette fonction garde son comportement EXACT d'avant ce
+  // chantier (aucun appelant existant a ete change).
+  function devisRenderRowDevis(dv, tableMode){
+    var row = document.createElement('div'); row.className = tableMode ? 'dfx-actions-inner' : 'devis-card';
+    if (!tableMode){
+      var top = document.createElement('div'); top.className = 'df-row-top';
+      var nom = document.createElement('span'); nom.className = 'dv-nom'; nom.textContent = dv.nom || '(client non précisé)';
+      var badge = document.createElement('span'); badge.className = 'df-badge ' + (dv.statut || 'brouillon');
+      badge.textContent = DEVIS_STATUT_LABEL[dv.statut] || dv.statut || '';
+      top.appendChild(nom); top.appendChild(badge);
+      row.appendChild(top);
+      if (dv.objet){ var objet = document.createElement('span'); objet.className = 'dv-objet'; objet.textContent = dv.objet; row.appendChild(objet); }
+      var meta = document.createElement('span'); meta.className = 'dv-meta'; meta.textContent = fmtDevisDateSimple(dv.date);
+      row.appendChild(meta);
+      if (dv.montant){ var montant = document.createElement('span'); montant.className = 'dv-montant'; montant.textContent = dv.montant + ' € TTC'; row.appendChild(montant); }
+    }
     // Point 2b/2c (31/08/2026) : "Voir le PDF" existe desormais pour TOUTE origine (jarvis =
     // toujours genere a la creation ; meg = des qu'un PDF a ete importe, cf. bouton d'import
     // ci-dessous). L'origine est une INFORMATION, jamais une caste qui bloque le geste.
@@ -10564,30 +10971,36 @@
     }
     return row;
   }
-  function devisRenderRowFacture(f){
+  // Meme principe que devisRenderRowDevis ci-dessus : tableMode=true saute l'entete (deja rendue
+  // par les colonnes du tableau MEG, cf. dfxBuildFactureRow) et reutilise tel quel le lien
+  // PDF/MEG + le bouton "annuler par un avoir" (mfAppendAvoir, jamais duplique).
+  function devisRenderRowFacture(f, tableMode){
     // Sujet 2.5 (01/09/2026 soir) : un avoir (f.typeDoc==='avoir') s'affiche désormais comme sa
     // propre carte dans cette même liste (au lieu de rester invisible) — badge dédié, référence
     // à la facture qu'il annule, jamais de badge Payée/Impayée (un avoir n'est ni l'un ni
     // l'autre) et jamais de bouton "annuler par un avoir" sur un avoir lui-même.
     var estAvoir = f.typeDoc === 'avoir';
-    var row = document.createElement('div'); row.className = 'devis-card' + (estAvoir ? ' mf-card-avoir' : '');
-    var top = document.createElement('div'); top.className = 'df-row-top';
-    var nom = document.createElement('span'); nom.className = 'dv-nom';
-    nom.innerHTML = (estAvoir ? '<svg class="hicon-sm" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M9 14l-4-4 4-4"/><path d="M5 10h9a5 5 0 0 1 5 5v1"/></svg>' : '') + escHtml(f.nom || '(client non précisé)');
-    var badge = document.createElement('span');
-    if (estAvoir){ badge.className = 'df-badge'; badge.textContent = 'Avoir'; }
-    else { badge.className = 'df-badge ' + (f.paye ? 'paye' : 'impaye'); badge.textContent = f.paye ? 'Payée' : 'Impayée'; }
-    top.appendChild(nom); top.appendChild(badge);
-    row.appendChild(top);
-    var meta = document.createElement('span'); meta.className = 'dv-meta';
-    meta.textContent = (f.numero || '') + ' · ' + fmtDevisDateSimple(f.date) + (estAvoir ? ' · annule ' + (f.avoirDe || '?') : '');
-    row.appendChild(meta);
-    if (estAvoir && f.motifAvoir){
-      var motifRow = document.createElement('span'); motifRow.className = 'dv-meta'; motifRow.textContent = 'Motif : ' + f.motifAvoir;
-      row.appendChild(motifRow);
+    var row = document.createElement('div');
+    row.className = tableMode ? 'dfx-actions-inner' : ('devis-card' + (estAvoir ? ' mf-card-avoir' : ''));
+    if (!tableMode){
+      var top = document.createElement('div'); top.className = 'df-row-top';
+      var nom = document.createElement('span'); nom.className = 'dv-nom';
+      nom.innerHTML = (estAvoir ? '<svg class="hicon-sm" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M9 14l-4-4 4-4"/><path d="M5 10h9a5 5 0 0 1 5 5v1"/></svg>' : '') + escHtml(f.nom || '(client non précisé)');
+      var badge = document.createElement('span');
+      if (estAvoir){ badge.className = 'df-badge'; badge.textContent = 'Avoir'; }
+      else { badge.className = 'df-badge ' + (f.paye ? 'paye' : 'impaye'); badge.textContent = f.paye ? 'Payée' : 'Impayée'; }
+      top.appendChild(nom); top.appendChild(badge);
+      row.appendChild(top);
+      var meta = document.createElement('span'); meta.className = 'dv-meta';
+      meta.textContent = (f.numero || '') + ' · ' + fmtDevisDateSimple(f.date) + (estAvoir ? ' · annule ' + (f.avoirDe || '?') : '');
+      row.appendChild(meta);
+      if (estAvoir && f.motifAvoir){
+        var motifRow = document.createElement('span'); motifRow.className = 'dv-meta'; motifRow.textContent = 'Motif : ' + f.motifAvoir;
+        row.appendChild(motifRow);
+      }
+      var montant = document.createElement('span'); montant.className = 'dv-montant'; montant.textContent = f.montantTtc + ' € TTC';
+      row.appendChild(montant);
     }
-    var montant = document.createElement('span'); montant.className = 'dv-montant'; montant.textContent = f.montantTtc + ' € TTC';
-    row.appendChild(montant);
     // Point 3 (28/08/2026) : les 50 factures impayées archivées deviennent consultables (même
     // webhook authentifié que les devis) ; les autres ont un lien générique vers le portail MEG
     // (aucun deep-link par facture n'existe côté MEG).
@@ -10615,48 +11028,88 @@
     }
     return row;
   }
+  // Ecran "Devis et factures" facon MEG (09/09/2026) : "À valider" garde EXACTEMENT son rendu en
+  // cartes (devisBuildCardAValider, jamais touche) ; "Devis"/"Factures" basculent sur le tableau
+  // MEG (dfxBuildDevisRow/dfxBuildFactureRow), toolbar+filtres+periode+tri+cotecomptage/totaux.
   function devisApplyFilter(){
     if (!devisData) return;
     var q = normDoc(devisSearchInput.value.trim());
-    devisList.innerHTML = '';
-    document.getElementById('df-filter-devis').style.display = devisActiveTab === 'devis' ? '' : 'none';
-    document.getElementById('df-filter-factures').style.display = devisActiveTab === 'factures' ? '' : 'none';
-    // C4 (21/08/2026) : bandeau permanent, visible sur les 3 onglets (les 3 concernent des envois
-    // reels une fois valides) -- testMode deja dans devisData (= j entier, cf. devisAttenteOpen).
     document.getElementById('devis-testmode-banniere').style.display = devisData.testMode ? '' : 'none';
+    var bodyAvalider = document.getElementById('dfx-body-avalider');
+    var bodyTable = document.getElementById('dfx-body-table');
+    var toolbar = document.getElementById('dfx-toolbar');
+    var createDevisBtn = document.getElementById('dfx-create-devis');
+    var createFactureBtn = document.getElementById('dfx-create-facture');
+    var filtresDevisEl = document.getElementById('dfx-filtres-devis');
+    var filtresFacturesEl = document.getElementById('dfx-filtres-factures');
+    var tableDevis = document.getElementById('dfx-table-devis');
+    var tableFactures = document.getElementById('dfx-table-factures');
+    devisList.innerHTML = '';
+    document.getElementById('dfx-totaux-result').innerHTML = '';
+
     if (devisActiveTab === 'avalider'){
+      bodyAvalider.style.display = ''; bodyTable.style.display = 'none'; toolbar.style.display = 'none';
       var itemsA = (devisData.aValider || []).filter(function(dv){ return !q || normDoc(dv.nom).indexOf(q) !== -1; });
       if (!itemsA.length){ devisList.innerHTML = '<p id="devis-empty">Aucun devis à valider ou à envoyer pour le moment.</p>'; return; }
       itemsA.forEach(function(dv){ devisList.appendChild(devisBuildCardAValider(dv)); });
-    } else if (devisActiveTab === 'devis'){
-      var itemsD = (devisData.devis || []).filter(function(dv){ return devisCatDevis(dv) === devisFilterDevisVal && (!q || normDoc(dv.nom).indexOf(q) !== -1); });
+      return;
+    }
+
+    bodyAvalider.style.display = 'none'; bodyTable.style.display = ''; toolbar.style.display = '';
+
+    if (devisActiveTab === 'devis'){
+      createDevisBtn.style.display = ''; createFactureBtn.style.display = 'none';
+      filtresDevisEl.style.display = ''; filtresFacturesEl.style.display = 'none';
+      tableDevis.style.display = ''; tableFactures.style.display = 'none';
+      // "rejete" reste HORS filtre -- jamais affiche (regle historique deja actee, cf. plus haut).
+      var totalD = (devisData.devis || []).filter(function(dv){ return dv.statut !== 'rejete'; }).length;
+      var itemsD = (devisData.devis || []).filter(function(dv){
+        if (dv.statut === 'rejete') return false;
+        if (!dfxFiltresDevis[dv.statut]) return false;
+        if (!dfxInPeriode(dv.date, dfxPeriodeVal)) return false;
+        return !q || normDoc(dv.nom).indexOf(q) !== -1;
+      }).sort(dfxComparator);
+      dfxCurrentItems = itemsD;
+      var tbodyD = document.getElementById('dfx-tbody-devis'); tbodyD.innerHTML = '';
       if (!itemsD.length){
-        // Point 2a (31/08/2026) : un etat vide montre le CHEMIN, pas une liste blanche muette --
-        // sans ça, la seule facon de decouvrir "Facturer ce devis" est d'avoir deja un devis
-        // accepte, ce qui ne peut jamais arriver la premiere fois qu'on regarde cet onglet.
-        var msgVide = devisFilterDevisVal === 'valides'
-          ? 'Aucun devis accepté pour l’instant — quand un client accepte, le devis apparaît ici avec le bouton 🧾 Facturer.'
-          : 'Aucun devis trouvé.';
-        devisList.innerHTML = '<p id="devis-empty">' + msgVide + '</p>';
-        return;
+        // Point 2a (31/08/2026) : un etat vide montre le CHEMIN, pas une liste blanche muette.
+        var trE = document.createElement('tr'); var tdE = document.createElement('td');
+        tdE.colSpan = 9; tdE.className = 'dfx-empty-cell';
+        tdE.textContent = 'Aucun devis trouvé pour ces filtres.';
+        trE.appendChild(tdE); tbodyD.appendChild(trE);
+      } else {
+        itemsD.forEach(function(dv){ dfxBuildDevisRow(dv).forEach(function(tr){ tbodyD.appendChild(tr); }); });
       }
-      itemsD.forEach(function(dv){ devisList.appendChild(devisRenderRowDevis(dv)); });
+      dfxUpdateCountsAndTotals('devis', itemsD, totalD);
     } else {
+      createDevisBtn.style.display = 'none'; createFactureBtn.style.display = '';
+      filtresDevisEl.style.display = 'none'; filtresFacturesEl.style.display = '';
+      tableDevis.style.display = 'none'; tableFactures.style.display = '';
+      var totalF = (devisData.factures || []).length;
       // Sujet 2.5 (01/09/2026 soir) : un avoir n'est ni payé ni impayé -- toujours affiché, quel
-      // que soit l'état des 2 filtres (sinon décocher "Impayées" le ferait disparaître à tort).
-      var itemsF = (devisData.factures || []).filter(function(f){ return (f.typeDoc === 'avoir' || devisFilterFactures[devisCatFacture(f)]) && (!q || normDoc(f.nom).indexOf(q) !== -1); });
+      // que soit l'état des filtres (sinon decocher une case le ferait disparaître a tort).
+      var itemsF = (devisData.factures || []).filter(function(f){
+        if (f.typeDoc !== 'avoir' && !dfxFiltresFactures[dfxFactureStatutKey(f)]) return false;
+        if (!dfxInPeriode(f.date, dfxPeriodeVal)) return false;
+        return !q || normDoc(f.nom).indexOf(q) !== -1;
+      }).sort(dfxComparator);
+      dfxCurrentItems = itemsF;
+      var tbodyF = document.getElementById('dfx-tbody-factures'); tbodyF.innerHTML = '';
       if (!itemsF.length){
-        var aucunFiltre = !devisFilterFactures.payees && !devisFilterFactures.impayees;
-        devisList.innerHTML = '<p id="devis-empty">' + (aucunFiltre
-          ? 'Aucun filtre actif — active « Payées » ou « Impayées » ci-dessus pour voir tes factures.'
-          : 'Aucune facture trouvée.') + '</p>';
-        return;
+        var trE2 = document.createElement('tr'); var tdE2 = document.createElement('td');
+        tdE2.colSpan = 10; tdE2.className = 'dfx-empty-cell';
+        tdE2.textContent = 'Aucune facture trouvée pour ces filtres.';
+        trE2.appendChild(tdE2); tbodyF.appendChild(trE2);
+      } else {
+        itemsF.forEach(function(f){ dfxBuildFactureRow(f).forEach(function(tr){ tbodyF.appendChild(tr); }); });
       }
-      itemsF.forEach(function(f){ devisList.appendChild(devisRenderRowFacture(f)); });
+      dfxUpdateCountsAndTotals('factures', itemsF, totalF);
     }
   }
   function devisUpdateBadge(){
     var n = (devisData && devisData.aValider) ? devisData.aValider.length : 0;
+    var flyBadge = document.getElementById('dfflyout-avalider-badge');
+    if (flyBadge){ if (n > 0){ flyBadge.textContent = n; flyBadge.style.display = ''; } else flyBadge.style.display = 'none'; }
     if (!devisMenuBadge) return;
     if (n > 0){ devisMenuBadge.textContent = n; devisMenuBadge.style.display = ''; } else { devisMenuBadge.style.display = 'none'; }
     updateAppBadgeTotal();
@@ -10693,33 +11146,73 @@
       devisApplyData(j);
     }, function(err){ if (!cached) devisList.innerHTML = '<p id="devis-empty">' + escHtml(err) + '</p>'; });
   }
-  document.querySelectorAll('.devis-tab').forEach(function(btn){
-    btn.addEventListener('click', function(){
-      document.querySelectorAll('.devis-tab').forEach(function(b){ b.classList.toggle('active', b === btn); });
-      devisActiveTab = btn.dataset.tab;
+  // Ecran "Devis et factures" facon MEG (09/09/2026) : un seul point d'entree de navigation
+  // (devisGoTab) partage par la nav de secours mobile (#devis-tabs, <760px) ET le flyout du rail
+  // desktop (#dfflyout) -- meme etat, jamais deux mecanismes qui divergent. Fil d'ariane + titre
+  // de page mis a jour au meme endroit.
+  var DFX_PAGE_LABEL = { avalider: 'À valider', devis: 'Devis', factures: 'Factures' };
+  var DFX_PAGE_TITLE = { avalider: 'Devis à valider/envoyer', devis: 'Liste des devis', factures: 'Liste des factures' };
+  function devisGoTab(tab){
+    devisActiveTab = tab;
+    document.querySelectorAll('.devis-tab').forEach(function(b){ b.classList.toggle('active', b.dataset.tab === tab); });
+    document.querySelectorAll('.dfx-flyout-item').forEach(function(b){ b.classList.toggle('active', b.dataset.tab === tab); });
+    document.getElementById('dfx-breadcrumb-page').textContent = DFX_PAGE_LABEL[tab] || tab;
+    document.getElementById('dfx-page-title').textContent = DFX_PAGE_TITLE[tab] || tab;
+    devisApplyFilter();
+  }
+  document.querySelectorAll('.devis-tab, .dfx-flyout-item').forEach(function(btn){
+    btn.addEventListener('click', function(){ devisGoTab(btn.dataset.tab); });
+  });
+  // Rail "Ventes" (>=760px) : ouvre/ferme le flyout -- ouvert par defaut (une seule entree chez
+  // nous, contre 9 chez MEG, autant la laisser visible d'entree ; le clic reste fonctionnel).
+  document.getElementById('dfrail-ventes').addEventListener('click', function(){
+    var fly = document.getElementById('dfflyout');
+    var willOpen = !fly.classList.contains('open');
+    fly.classList.toggle('open', willOpen);
+    this.setAttribute('aria-expanded', willOpen ? 'true' : 'false');
+  });
+  document.querySelectorAll('#dfx-filtres-devis input[type="checkbox"]').forEach(function(cb){
+    cb.addEventListener('change', function(){ dfxFiltresDevis[cb.dataset.statut] = cb.checked; devisApplyFilter(); });
+  });
+  document.querySelectorAll('#dfx-filtres-factures input[type="checkbox"]').forEach(function(cb){
+    cb.addEventListener('change', function(){ dfxFiltresFactures[cb.dataset.statut] = cb.checked; devisApplyFilter(); });
+  });
+  document.getElementById('dfx-periode').addEventListener('change', function(){ dfxPeriodeVal = this.value; devisApplyFilter(); });
+  document.getElementById('dfx-reset').addEventListener('click', function(){
+    devisSearchInput.value = '';
+    Object.keys(dfxFiltresDevis).forEach(function(k){ dfxFiltresDevis[k] = true; });
+    Object.keys(dfxFiltresFactures).forEach(function(k){ dfxFiltresFactures[k] = true; });
+    document.querySelectorAll('#dfx-filtres-devis input[type="checkbox"], #dfx-filtres-factures input[type="checkbox"]').forEach(function(cb){ cb.checked = true; });
+    dfxPeriodeVal = 'tout'; document.getElementById('dfx-periode').value = 'tout';
+    dfxSortField = 'date'; dfxSortDir = 'desc';
+    document.querySelectorAll('.dfx-table thead th.dfx-sortable .dfx-sort-ic').forEach(function(ic){ ic.textContent = '↕'; });
+    document.querySelectorAll('.dfx-table thead th.dfx-sortable').forEach(function(h){ h.classList.remove('dfx-sort-active'); });
+    devisApplyFilter();
+  });
+  document.getElementById('dfx-totaux-btn').addEventListener('click', dfxCalculerTotaux);
+  // Triable par date (seule colonne demandee) -- les 2 tableaux (Devis/Factures) partagent le
+  // meme etat de tri, un seul visible a la fois.
+  document.querySelectorAll('.dfx-table thead th.dfx-sortable').forEach(function(th){
+    th.addEventListener('click', function(){
+      var field = th.dataset.sort;
+      dfxSortDir = (dfxSortField === field && dfxSortDir === 'desc') ? 'asc' : 'desc';
+      dfxSortField = field;
+      document.querySelectorAll('.dfx-table thead th.dfx-sortable').forEach(function(h){ h.classList.remove('dfx-sort-active'); h.querySelector('.dfx-sort-ic').textContent = '↕'; });
+      document.querySelectorAll('.dfx-table thead th[data-sort="' + field + '"]').forEach(function(h){ h.classList.add('dfx-sort-active'); h.querySelector('.dfx-sort-ic').textContent = dfxSortDir === 'asc' ? '↑' : '↓'; });
       devisApplyFilter();
     });
   });
-  document.querySelectorAll('#df-filter-devis .df-chip').forEach(function(chip){
-    chip.addEventListener('click', function(){
-      devisFilterDevisVal = chip.dataset.val;
-      document.querySelectorAll('#df-filter-devis .df-chip').forEach(function(b){ b.classList.toggle('active', b === chip); });
-      devisApplyFilter();
-    });
-  });
-  document.querySelectorAll('#df-filter-factures .df-chip').forEach(function(chip){
-    chip.addEventListener('click', function(){
-      devisFilterFactures[chip.dataset.val] = !devisFilterFactures[chip.dataset.val];
-      chip.classList.toggle('active', devisFilterFactures[chip.dataset.val]);
-      devisApplyFilter();
-    });
-  });
+  document.getElementById('dfx-create-devis').addEventListener('click', function(){ dvFormOpen(); });
+  document.getElementById('dfx-create-facture').addEventListener('click', function(){ fdFormOpen(); });
   devisSearchInput.addEventListener('input', devisApplyFilter);
   document.getElementById('devis-close').addEventListener('click', devisAttenteClose);
   // 25/08/2026 (soir) : devisOpen() (la fiche client, plus bas dans ce fichier -- declaration
   // hoisted, disponible ici) ouvre une modale (z-index 53) AU-DESSUS de #devisview (z-index 50) ;
   // devisClose() ne touche que #devis-form/#devis-form-bg, jamais #devisview -- superposition et
   // fermeture verifiees sans effet de bord sur le panneau derriere (teste en reel, cf. session).
+  // "+" generique du bandeau du haut (#devis-head) : garde son ancien comportement (choix
+  // Devis/Facture directe) -- utile en particulier depuis "À valider", qui n'a pas de bouton
+  // ⊕ dedie dans sa propre en-tete (cf. dfx-create-devis/dfx-create-facture, masques sur cette page).
   document.getElementById('devis-add').addEventListener('click', function(){ fcChoiceOpen(); });
   document.getElementById('sh-devis-attente').addEventListener('click', function(){ sheetOpen(false); devisAttenteOpen(); });
 
