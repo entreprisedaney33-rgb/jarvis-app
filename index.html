@@ -2075,6 +2075,14 @@
   .dfx-tot-row.dfx-tot-sub{color:var(--muted); font-size:12.5px}
   .dfx-tot-row.dfx-tot-input span{flex:0 0 auto}
   .dfx-tot-row.dfx-tot-input input{width:90px; text-align:right; flex:0 0 auto}
+  /* Retour Dorian (10/09/2026 nuit) : ces 2 champs changent le total affiché mais ne sont
+     reportés sur AUCUN document réel (ni devis ni facture) -- tant que ce n'est pas corrigé
+     côté serveur, mieux vaut un champ visiblement inactif qu'un total faux. readonly (pas
+     disabled, pour que .value reste lisible/cohérent partout où il est déjà lu) + grisé. */
+  .dfx-tot-row.dfx-tot-input input[readonly]{
+    background:var(--surface); color:var(--muted); border-color:var(--hairline) !important;
+    cursor:not-allowed;
+  }
   .dfx-tot-row.dfx-tot-net{font-size:15px; font-weight:700; border-top:0.5px solid var(--hairline); padding-top:8px; margin-top:4px}
   .dfx-tot-hint{font-size:11px; color:var(--muted); line-height:1.4; margin-top:8px}
   /* Fenêtre "Sélectionner un client" -- même gabarit que #mf-view (liste large/scrollable),
@@ -4382,6 +4390,7 @@
   .fd-ligne{display:flex; flex-wrap:wrap; gap:6px; align-items:flex-start}
   .fd-ligne-desig-wrap{flex:2; min-width:140px; position:relative; display:flex; flex-direction:column; gap:2px}
   .fd-ligne-desig{width:100%; box-sizing:border-box}
+  .fd-ligne-commentaire{width:100%; box-sizing:border-box; font-size:12.5px; color:var(--muted)}
   .fd-ligne-sug{
     list-style:none; margin:0; padding:0; border:0.5px solid rgba(255,255,255,.18); border-radius:10px;
     overflow:hidden; position:absolute; left:0; right:0; top:100%; background:var(--dropdown-bg); z-index:6;
@@ -7402,8 +7411,9 @@
       <p class="ctf-section-titre">Totaux</p>
       <div class="dfx-tot-row dfx-tot-sub"><span>Remise article(s)</span><b id="fd-tot-remise-art">0,00 €</b></div>
       <div class="dfx-tot-row"><span>Total brut HT</span><b id="fd-tot-brut">0,00 €</b></div>
-      <div class="dfx-tot-row dfx-tot-input"><span>Remise Sup. HT</span><input id="fd-remise-sup" type="number" min="0" step="0.01" value="0"></div>
-      <div class="dfx-tot-row dfx-tot-input"><span>Frais de port HT</span><input id="fd-frais-port" type="number" min="0" step="0.01" value="0"></div>
+      <div class="dfx-tot-row dfx-tot-input"><span>Remise Sup. HT</span><input id="fd-remise-sup" type="number" min="0" step="0.01" value="0" readonly aria-readonly="true"></div>
+      <div class="dfx-tot-row dfx-tot-input"><span>Frais de port HT</span><input id="fd-frais-port" type="number" min="0" step="0.01" value="0" readonly aria-readonly="true"></div>
+      <p class="dfx-tot-hint">Pas encore reportés sur le document réel — grisés tant que ce n'est pas fait côté serveur.</p>
       <div class="dfx-tot-row dfx-tot-net"><span>Total net HT</span><b id="fd-tot-net-ht">0,00 €</b></div>
       <div class="dfx-tot-row"><span>Total TVA</span><b id="fd-tot-tva">0,00 €</b></div>
       <div class="dfx-tot-row dfx-tot-net"><span>Total net TTC</span><b id="fd-tot-net-ttc">0,00 €</b></div>
@@ -7501,8 +7511,9 @@
       <div class="dfx-tot-row dfx-tot-sub"><span>Remise article(s)</span><b id="dv-tot-remise-art">0,00 €</b></div>
       <p class="dfx-tot-hint" id="dv-remise-alerte" style="display:none">⚠️ Remise saisie sur une ligne, mais pas encore appliquée par le serveur sur le PDF réel du devis (vérifié ce soir) — le document envoyé au client affichera le prix plein tant que ce n'est pas corrigé côté serveur.</p>
       <div class="dfx-tot-row"><span>Total brut HT</span><b id="dv-tot-brut">0,00 €</b></div>
-      <div class="dfx-tot-row dfx-tot-input"><span>Remise Sup. HT</span><input id="dv-remise-sup" type="number" min="0" step="0.01" value="0"></div>
-      <div class="dfx-tot-row dfx-tot-input"><span>Frais de port HT</span><input id="dv-frais-port" type="number" min="0" step="0.01" value="0"></div>
+      <div class="dfx-tot-row dfx-tot-input"><span>Remise Sup. HT</span><input id="dv-remise-sup" type="number" min="0" step="0.01" value="0" readonly aria-readonly="true"></div>
+      <div class="dfx-tot-row dfx-tot-input"><span>Frais de port HT</span><input id="dv-frais-port" type="number" min="0" step="0.01" value="0" readonly aria-readonly="true"></div>
+      <p class="dfx-tot-hint">Pas encore reportés sur le document réel — grisés tant que ce n'est pas fait côté serveur.</p>
       <div class="dfx-tot-row dfx-tot-net"><span>Total net HT</span><b id="dv-total-ht">0,00 €</b></div>
       <div class="dfx-tot-row"><span>Total TVA</span><b id="dv-total-tva">0,00 €</b></div>
       <div class="dfx-tot-row dfx-tot-net"><span>Total net TTC</span><b id="dv-total-ttc">0,00 €</b></div>
@@ -7538,7 +7549,7 @@
   <div id="cp-head"><b>Sélectionner un client</b><button id="cp-close" type="button" aria-label="Fermer">✕</button></div>
   <div id="cp-toolbar">
     <input id="cp-search" type="search" placeholder="🔍 Rechercher un client…" autocomplete="off">
-    <button id="cp-new-btn" type="button" class="fc-choice-link">＋ Nouveau client</button>
+    <button id="cp-new-btn" type="button" class="fc-choice-link">＋ Client ponctuel (hors fiche)</button>
   </div>
   <div id="cp-table-wrap">
     <table id="cp-table">
@@ -7554,9 +7565,9 @@
 
 <div id="nc-bg"></div>
 <div id="nc-form">
-  <div id="nc-head"><b>Ajouter un client</b><button id="nc-close" type="button" aria-label="Fermer">✕</button></div>
+  <div id="nc-head"><b>Client ponctuel (pour ce document)</b><button id="nc-close" type="button" aria-label="Fermer">✕</button></div>
   <div id="nc-body">
-    <p class="dfhint">Ce client n'existe pas encore dans la base de Jarvis. Ces informations serviront à pré-remplir CE document — Jarvis n'a pas encore de mécanisme pour créer une fiche client permanente depuis l'application (aucun bouton de ce genre n'existait avant ce soir).</p>
+    <p class="dfhint">Ce client n'existe pas dans la base de Jarvis, et ce formulaire ne l'y ajoute pas — Jarvis n'a pas encore de mécanisme pour créer une fiche client permanente depuis l'application. Ce que tu saisis ici ne sert QU'à pré-remplir ce document précis ; à refaire la prochaine fois si tu retravailles avec ce client.</p>
     <div class="ctf-actif-row">
       <button type="button" class="ctf-actif-opt on" id="nc-statut-physique">Personne physique</button>
       <button type="button" class="ctf-actif-opt" id="nc-statut-morale">Personne morale</button>
@@ -7625,9 +7636,9 @@
          c'est ce qui supprime le conflit humain sur cette ligne precise. Sert aussi de cle
          unique de detection de mise a jour (voir checkUpdate ci-dessous), plus fiable qu'une
          comparaison de chaine de version par tenant. */
-  var APPV_MCS = '4.53';
+  var APPV_MCS = '4.54';
   var APPV_LABO = '1.00';
-  var BUILD = 35;
+  var BUILD = 36;
   // displayVersion()/displayVersionShort() lisent isMcsCode() (definie plus bas dans cette
   // meme IIFE -- declaration de fonction, donc disponible ici par hoisting) : le TENANT
   // affiche depend du code de connexion, jamais d'un simple "APPV" global qui ne dirait ni
@@ -11195,6 +11206,16 @@
     pdf.href = 'https://n8n-self-hosted-t0pz.onrender.com' + dv.url + '&code=' + encodeURIComponent(String(read('jarvisCode') || '').trim());
     card.appendChild(pdf);
     var actions = document.createElement('div'); actions.className = 'dv-actions';
+    // Coeur du sujet (10/09/2026 nuit, retour Dorian) : Bruno saisit, Mickael doit pouvoir
+    // CORRIGER avant d'envoyer -- pas juste confirmer tel quel ou rejeter. Réutilise l'écran de
+    // création/édition déjà construit (dvChargerDevis, déjà utilisé ailleurs pour rouvrir un
+    // devis Jarvis) -- même token, même table mcs_devis_fichiers (vérifié : 'charger' sur
+    // mcs-df-formulaire renvoie bien ce même devis "attente_validation"), donc AUCUN second
+    // écran, juste un 2e point d'entrée vers celui qui existe déjà.
+    var editBtn = document.createElement('button'); editBtn.className = 'vc-edit'; editBtn.type = 'button';
+    editBtn.innerHTML = '<svg class="hicon-sm" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 20h9"/><path d="M16.5 3.5a2.1 2.1 0 0 1 3 3L7 19l-4 1 1-4Z"/></svg>Modifier avant envoi';
+    editBtn.addEventListener('click', function(){ devisOuvrirPourModifier(dv); });
+    actions.appendChild(editBtn);
     var okBtn = document.createElement('button'); okBtn.className = 'vc-ok'; okBtn.type = 'button';
     okBtn.innerHTML = '<svg class="hicon-sm" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="9"/><polyline points="8,12.5 10.7,15.2 16,9.5"/></svg>Confirmer et envoyer';
     var noBtn = document.createElement('button'); noBtn.className = 'vc-no'; noBtn.type = 'button'; noBtn.textContent = 'Rejeter';
@@ -11221,6 +11242,15 @@
         toast('❌ Devis rejeté');
       }
     }, function(err){ okBtn.disabled = false; noBtn.disabled = false; toast(err); });
+  }
+  // "Modifier avant envoi" depuis "Devis à valider" (10/09/2026 nuit) -- ouvre le VRAI écran de
+  // création/édition (dvChargerDevis, déjà existant) sur ce même devis. dvOpenedFromAValider
+  // (déclarée plus bas avec les autres variables du formulaire devis) permet à dvFormClose() de
+  // rafraîchir la liste "À valider" en refermant, pour que ce devis en disparaisse dès qu'il a
+  // été réellement traité (enregistré/émis) -- jamais un doublon entre les deux écrans.
+  function devisOuvrirPourModifier(dv){
+    dvOpenedFromAValider = true;
+    dvChargerDevis(dv.token);
   }
   // Point 4a (30/08/2026) : "Accepté (MEG)" devenait trompeur -- un devis Jarvis peut desormais
   // etre marque accepte par un geste manuel, pas seulement lu depuis un import MEG.
@@ -12699,11 +12729,18 @@
       totalHt += ligneHt;
       tvaBuckets[tvaTaux] = (tvaBuckets[tvaTaux]||0) + ligneHt*(tvaTaux/100);
       var desigLignes = fcfWrapText(desig || '—', cols[1]-cols[0]-10, 9);
-      var rowH = Math.max(19, desigLignes.length>1 ? desigLignes.length*10.6+8.5 : 19);
+      // Commentaire par ligne (mission 10/09/2026 nuit) : sous-ligne grise, sous la désignation
+      // -- même colonne/largeur, police plus petite (comme les sous-lignes de fcfRenderApercu).
+      var commentaireTxt = l && l.commentaire ? String(l.commentaire).trim() : '';
+      var commentLignes = commentaireTxt ? fcfWrapText(commentaireTxt, cols[1]-cols[0]-10, 7.5) : [];
+      var totalSousLignes = desigLignes.length + commentLignes.length;
+      var rowH = Math.max(19, totalSousLignes>1 ? totalSousLignes*10.6+8.5 : 19);
       var rowTop = ry; ry -= rowH;
       var firstLineY = rowH === 19 ? (rowTop - 12.75) : (rowTop - 9);
       T(cols[0]+6, firstLineY, 9, false, desigLignes[0] || '');
-      for (var dli=1; dli<desigLignes.length; dli++) T(cols[0]+6, firstLineY - dli*10.6, 9, false, desigLignes[dli]);
+      var dfxLigneIdx = 1;
+      for (var dli=1; dli<desigLignes.length; dli++){ T(cols[0]+6, firstLineY - dfxLigneIdx*10.6, 9, false, desigLignes[dli]); dfxLigneIdx++; }
+      for (var cli=0; cli<commentLignes.length; cli++){ T(cols[0]+6, firstLineY - dfxLigneIdx*10.6, 7.5, false, commentLignes[cli], 'fcf-ap-gray'); dfxLigneIdx++; }
       T((cols[1]+cols[2])/2, firstLineY, 9, false, qte ? String(qte) : '', null, 'center');
       T((cols[2]+cols[3])/2, firstLineY, 9, false, unite, null, 'center');
       T(cols[4]-6, firstLineY, 9, false, pu.toFixed(2).replace('.',',') + ' €', null, 'right');
@@ -21222,7 +21259,9 @@
   // aucun comportement existant retiré.
   function fdOnClientSelect(item){
     fdClientId = item.id || null;
-    fdNom.value = item.nom || fdNom.value;
+    // Même correctif que dvOnClientSelect (10/09/2026 nuit) : toujours écraser, jamais garder
+    // l'ancien nom si la fiche choisie en a un vide.
+    fdNom.value = item.nom || '';
     fdEmail.value = item.email || '';
     if (item.tva) fdTva.value = item.tva;
     if (item.adresse && isRepresentePar(item.adresse)){
@@ -21311,6 +21350,11 @@
     var row = document.createElement('div'); row.className = 'fd-ligne';
     var desigWrap = document.createElement('div'); desigWrap.className = 'fd-ligne-desig-wrap';
     var desig = document.createElement('input'); desig.type = 'text'; desig.className = 'fd-ligne-desig'; desig.placeholder = 'Désignation (nom ou code article)'; desig.autocomplete = 'off';
+    // Mission commentaire par ligne (10/09/2026 nuit) : un commentaire libre, affiché SOUS la
+    // désignation -- rangé dans lignes_json sous la clé exacte "commentaire" (demandée par
+    // l'autre fenêtre côté n8n pour l'imprimer sur le document, ne jamais renommer). Visible
+    // dans l'aperçu en direct (dfxRenderApercuGenerique, plus haut) comme une sous-ligne grise.
+    var commentaire = document.createElement('input'); commentaire.type = 'text'; commentaire.className = 'fd-ligne-commentaire'; commentaire.placeholder = 'Commentaire sous cette ligne (facultatif)'; commentaire.autocomplete = 'off';
     var sug = document.createElement('ul'); sug.className = 'fd-ligne-sug';
     var warn = document.createElement('span'); warn.className = 'rel-badge rel-badge-averifier fd-ligne-warn';
     var qte = document.createElement('input'); qte.type = 'number'; qte.className = 'fd-ligne-qte'; qte.placeholder = 'Qté'; qte.min = '1'; qte.step = '1'; qte.value = '1';
@@ -21324,13 +21368,13 @@
       var t = q * p * (1 - Math.min(100, Math.max(0, r)) / 100);
       ligneTotal.textContent = fmtEuros(t);
     }
-    [desig, qte, prix, remise, tva].forEach(function(el){ el.addEventListener('input', function(){ majLigneTotal(); onChange(); }); });
+    [desig, qte, prix, remise, tva, commentaire].forEach(function(el){ el.addEventListener('input', function(){ majLigneTotal(); onChange(); }); });
     wireArticleSearch(desig, sug, warn, prix, tva, function(){ majLigneTotal(); onChange(); });
     del.addEventListener('click', function(){
       if (wrap.children.length <= 1) return; // toujours au moins 1 ligne
       row.remove(); onChange();
     });
-    desigWrap.appendChild(desig); desigWrap.appendChild(sug); desigWrap.appendChild(warn);
+    desigWrap.appendChild(desig); desigWrap.appendChild(commentaire); desigWrap.appendChild(sug); desigWrap.appendChild(warn);
     row.appendChild(desigWrap); row.appendChild(qte); row.appendChild(prix); row.appendChild(remise); row.appendChild(tva); row.appendChild(ligneTotal); row.appendChild(del);
     majLigneTotal();
     return row;
@@ -21398,10 +21442,15 @@
       var r = rEl ? (Number(rEl.value) || 0) : 0;
       var tEl = row.querySelector('.fd-ligne-tva');
       var t = tEl && tEl.value !== '' ? Number(tEl.value) : NaN;
+      var cEl = row.querySelector('.fd-ligne-commentaire');
+      var c = cEl ? cEl.value.trim() : '';
       if (!d && !p) return; // ligne vide, ignorée
       if (!d || !p || Number(p) <= 0 || q <= 0){ ligneInvalide = true; return; }
       var ligne = { designation: d, quantite: q, prix_ht: Number(p), tva: isNaN(t) ? 20 : t };
       if (r > 0) ligne.remise = r;
+      // Clé EXACTE "commentaire" -- demandée par l'autre fenêtre (workflow n8n) pour l'imprimer
+      // sur le document réel, ne jamais renommer.
+      if (c) ligne.commentaire = c;
       lignes.push(ligne);
     });
     return { lignes: lignes, invalide: ligneInvalide };
@@ -21580,6 +21629,10 @@
   var dvEnvoiGo = document.getElementById('dv-envoi-go');
   var dvEnvoiPlustard = document.getElementById('dv-envoi-plustard');
   var dvToken = null, dvStatut = null, dvRoleCreateur = null;
+  // "Modifier avant envoi" depuis "Devis à valider" (10/09/2026 nuit) -- vrai tant que ce devis
+  // précis a été ouvert depuis cette liste, remis à faux à la fermeture (dvFormClose) : sert
+  // uniquement à savoir s'il faut rafraîchir cette liste en refermant, jamais transmis au serveur.
+  var dvOpenedFromAValider = false;
   // Mission MEG (09/09/2026 soir) : plein écran + champs "comme dans MEG" + aperçu en direct.
   var dvReference = document.getElementById('dv-reference');
   var dvTva = document.getElementById('dv-tva');
@@ -21661,7 +21714,13 @@
   function dvFillResidence(item){ dvResidence.value = item.nom || dvResidence.value; dvRenderApercuLive(); }
   function dvOnClientSelect(item){
     dvClientId = item.id || null;
-    dvNom.value = item.nom || dvNom.value;
+    // Retour Dorian (10/09/2026 nuit) : "changer de client ne change rien" -- ce garde-fou
+    // `|| dvNom.value` (pensé à l'origine pour ne jamais VIDER le champ si la fiche choisie n'a
+    // vraiment aucun nom) gardait silencieusement l'ANCIEN client si la fiche sélectionnée avait
+    // un nom vide/absent -- exactement l'effet "rien ne se met à jour" décrit. Une sélection
+    // explicite doit TOUJOURS écraser, même vers une valeur vide (jamais pire qu'un champ vide
+    // à corriger à la main, un ancien client oublié dans le champ est le vrai risque).
+    dvNom.value = item.nom || '';
     dvEmail.value = item.email || '';
     if (item.tva) dvTva.value = item.tva;
     if (item.adresse && isRepresentePar(item.adresse)){
@@ -21723,6 +21782,7 @@
     var lignes = lecture.lignes.map(function(l){
       var ligne = { designation: l.designation, quantite: l.quantite, unite: '', prix_ht: l.prix_ht, tva: l.tva };
       if (l.remise) ligne.remise = l.remise;
+      if (l.commentaire) ligne.commentaire = l.commentaire;
       return ligne;
     });
     return { lignes: lignes, invalide: lecture.invalide };
@@ -21807,6 +21867,14 @@
   function dvFormClose(){
     dvFormBg.classList.remove('open');
     dvForm.classList.remove('open');
+    // Coeur du sujet (10/09/2026 nuit) : un devis de Bruno traité (enregistré/émis) depuis cet
+    // écran doit disparaître de "Devis à valider" en refermant -- jamais un doublon entre les
+    // deux écrans. Rafraîchit la MÊME liste que celle déjà affichée derrière (devisview reste
+    // ouvert tout ce temps, jamais fermé par ce chemin).
+    if (dvOpenedFromAValider){
+      dvOpenedFromAValider = false;
+      devisChargerListe(function(j){ devisApplyData(j); }, function(){});
+    }
   }
   dvFormBg.addEventListener('click', dvFormClose);
   document.getElementById('dv-close').addEventListener('click', dvFormClose);
@@ -21839,6 +21907,11 @@
           row.querySelector('.fd-ligne-qte').value = l.quantite || 1;
           row.querySelector('.fd-ligne-prix').value = l.prix_ht != null ? l.prix_ht : '';
           row.querySelector('.fd-ligne-tva').value = l.tva != null ? l.tva : 20;
+          // Manquaient avant ce soir (10/09/2026) : remise et commentaire n'étaient jamais
+          // rechargés en rouvrant un devis existant -- invisibles à Mickael alors que Bruno
+          // avait pu les saisir. Corrigé au passage (coeur du sujet : "toutes ses valeurs").
+          if (l.remise) row.querySelector('.fd-ligne-remise').value = l.remise;
+          if (l.commentaire) row.querySelector('.fd-ligne-commentaire').value = l.commentaire;
         }
         dvLignesWrap.appendChild(row);
       });
@@ -21846,7 +21919,9 @@
       dvRenderApercuLive();
       dvErr.textContent = ''; dvErr.classList.remove('show');
       dvSetStatutBadge();
-      dvEmettreRow.classList.toggle('show', dvStatut === 'brouillon');
+      // "attente_validation" (devis de Bruno, coeur du sujet 10/09/2026) doit lui aussi pouvoir
+      // être émis après correction -- pas seulement un "brouillon" créé par le patron lui-même.
+      dvEmettreRow.classList.toggle('show', dvStatut === 'brouillon' || dvStatut === 'attente_validation');
       // Retour Dorian (09/09/2026) : rouvrir un devis deja EMIS (numerote, PDF final) mais pas
       // encore ENVOYE doit presenter directement le panneau d'envoi -- avant ce fix, seule une
       // emission FRAICHE (dans la meme session) l'ouvrait, un devis "valide" rouvert plus tard
