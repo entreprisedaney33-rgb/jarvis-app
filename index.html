@@ -2000,6 +2000,138 @@
     width:595px; height:842px; position:relative; background:#fff; color:#000; flex:0 0 auto;
     box-shadow:0 4px 24px rgba(0,0,0,.18); font-family:Helvetica,Arial,sans-serif; overflow:hidden;
   }
+  /* ===== Refonte "façon MEG" du 09/09/2026 (nuit) : deux colonnes (formulaire / Totaux), Carte 1
+     en grille (Numéro/Émission/Validité, Client/N° TVA/Mode de règlement), sélecteur de client en
+     fenêtre dédiée, "Nouveau client". Empile en 1 colonne sous 900px -- même seuil que Contrats. */
+  /* Retour utilisateur (09/09/2026 nuit, en cours de test) : "utilise la place que tu as, tu as
+     toute la fenêtre, aère" -- le formulaire ne doit jamais se sentir à l'étroit sur un grand
+     écran. .dfx-outer-left n'avait pas de flex explicite (retombait sur sa largeur de contenu,
+     plus étroite que l'espace dispo) -- 1er symptôme trouvé en testant : le champ Client
+     (flex:1 générique, à égalité avec N° TVA/Mode de règlement) n'avait que ~134px pour
+     l'input + le bouton "Choisir…", le bouton seul en prenant 100 -- l'input ne montrait plus
+     rien. Corrigé par : colonne gauche qui s'étire vraiment, Client 2x plus large que
+     TVA/Mode, et un peu plus de largeur/marge partout. */
+  /* .contrat-form{max-width:640px; margin:0 auto} (règle de base, ligne ~1859) vient de l'usage
+     Contrats -- une seule colonne centrée, jamais touchée. #devis-form-corps/
+     #facture-directe-form sont désormais la colonne GAUCHE d'une disposition à 2 colonnes sur
+     un écran large : ce plafond de 640px les empêchait justement de "prendre la place
+     disponible" -- override par id (bat la règle de classe sans la modifier, Contrats intact). */
+  #devis-form-corps, #facture-directe-form{max-width:none; margin:0}
+  .dfx-outer-grid{display:flex; gap:28px; align-items:flex-start}
+  .dfx-outer-left{flex:1 1 auto; min-width:0}
+  .dfx-outer-right{flex:0 0 300px; min-width:0}
+  @media (max-width:899px){
+    .dfx-outer-grid{flex-direction:column; gap:16px}
+    .dfx-outer-right{flex:1 1 auto; width:100%}
+  }
+  /* Carte 1 (Identité) : sous-grille 2 colonnes -- champs MEG à gauche, Statut/Adresse/Email
+     empilés à droite (même famille que Contrats : cadre bleu, carte blanche, déjà posé sur
+     .ctf-section/.contrat-form). */
+  .dfx-card1-grid{display:flex; gap:28px; align-items:flex-start}
+  .dfx-card1-main{flex:1 1 auto; min-width:0}
+  .dfx-card1-side{flex:0 0 240px; display:flex; flex-direction:column; gap:2px}
+  @media (max-width:640px){
+    .dfx-card1-grid{flex-direction:column; gap:16px}
+    .dfx-card1-side{flex:1 1 auto; width:100%}
+  }
+  .dfx-card1-main .cf-row{margin:16px 0 6px; gap:16px}
+  .dfx-card1-main .cf-row label{margin:0 0 6px}
+  /* Sous ~560px (téléphone) : les 3 champs par ligne (Numéro/Émission/Validité,
+     Client/N° TVA/Mode de règlement) n'ont plus la place -- ils passent à la ligne plutôt que
+     d'écraser le champ Client (retour direct après test : "Ex : SI" au lieu de "Ex : SDC Les
+     Tilleuls", complètement tronqué à 480px). */
+  @media (max-width:560px){
+    .dfx-card1-main .cf-row{flex-wrap:wrap}
+    .dfx-card1-main .cf-row > *{flex:1 1 100%}
+    .contrat-form .cf-row > .dfx-field-client{flex:1 1 100%}
+  }
+  .dfx-statut-pill{
+    display:inline-block; align-self:flex-start; font-size:11px; font-weight:700; text-transform:uppercase;
+    letter-spacing:.03em; padding:5px 10px; border-radius:8px; background:var(--surface); color:var(--muted);
+    margin-bottom:12px;
+  }
+  html.mcs-theme .dfx-statut-pill{background:rgba(10,132,255,.1); color:var(--blue)}
+  .dfx-statut-pill.dfx-pill-envoye{background:rgba(52,199,89,.15); color:#2E8B45}
+  /* Champ Client : input + bouton icône (loupe) qui ouvre la fenêtre de sélection façon MEG --
+     garde la saisie libre (un client hors fiche reste possible, capacité déjà existante de
+     Jarvis, jamais retirée). .dfx-field-client{flex:2.2} lui donne plus du double de
+     N° TVA/Mode de règlement (même ligne, .cf-row > * générique leur donne flex:1 à tous les
+     trois -- cette règle-ci, plus spécifique -- .contrat-form .cf-row > .dfx-field-client --
+     l'emporte pour ce seul champ). Bouton en icône SEULE (pas "Choisir…" en texte, titre/
+     aria-label à la place) -- 1er essai avec le libellé texte ne laissait que ~70px pour
+     l'input, "Ex : SDC Les Tilleuls" totalement tronqué, trouvé en testant. */
+  .contrat-form .cf-row > .dfx-field-client{flex:2.2 1 0%; min-width:0}
+  .dfx-client-input-wrap{display:flex; gap:8px}
+  .dfx-client-input-wrap input{flex:1 1 auto; min-width:0}
+  .dfx-client-pick-btn{
+    flex:0 0 auto; width:44px; height:44px; white-space:nowrap; border-radius:10px; border:1.5px solid var(--blue);
+    background:none; color:var(--blue); font-size:17px; cursor:pointer; -webkit-tap-highlight-color:transparent;
+  }
+  /* Panneau Totaux (colonne de droite) -- même carte .ctf-section, champs saisissables
+     (Remise Sup./Frais de port) avec la même bordure bleue que le reste du formulaire :
+     étendu via le même sélecteur html.mcs-theme #devis-form-corps/#facture-directe-form input
+     plus bas, cf. #dv-totaux-panel/#fd-totaux-panel ajoutés à cette liste. */
+  .dfx-tot-row{display:flex; justify-content:space-between; align-items:center; gap:8px; font-size:13px; color:var(--ink); padding:5px 0}
+  .dfx-tot-row.dfx-tot-sub{color:var(--muted); font-size:12.5px}
+  .dfx-tot-row.dfx-tot-input span{flex:0 0 auto}
+  .dfx-tot-row.dfx-tot-input input{width:90px; text-align:right; flex:0 0 auto}
+  .dfx-tot-row.dfx-tot-net{font-size:15px; font-weight:700; border-top:0.5px solid var(--hairline); padding-top:8px; margin-top:4px}
+  .dfx-tot-hint{font-size:11px; color:var(--muted); line-height:1.4; margin-top:8px}
+  /* Fenêtre "Sélectionner un client" -- même gabarit que #mf-view (liste large/scrollable),
+     mais z-index au-dessus de #dv-form/#fd-form (53) et de leurs propres sous-panneaux (54-57). */
+  #client-picker-bg{position:fixed; inset:0; background:rgba(0,0,0,.5); display:none; z-index:58}
+  #client-picker-bg.open{display:block}
+  #client-picker{
+    position:fixed; left:14px; right:14px; top:6vh; bottom:6vh; z-index:59;
+    background:var(--bg2); border-radius:16px; padding:16px 16px calc(16px + env(safe-area-inset-bottom));
+    display:none; flex-direction:column; gap:10px; opacity:0; transition:opacity .2s ease;
+  }
+  #client-picker.open{display:flex; opacity:1}
+  #cp-head{display:flex; align-items:center; justify-content:space-between}
+  #cp-head b{font-size:16px}
+  #cp-close{background:none; border:0; color:var(--muted); font-size:18px; padding:4px 6px; cursor:pointer; -webkit-tap-highlight-color:transparent}
+  #cp-toolbar{display:flex; gap:10px; align-items:center; flex-wrap:wrap}
+  #cp-search{
+    flex:1; min-width:160px; font:inherit; font-size:15px; color:var(--ink); background:var(--field-bg);
+    border:0.5px solid rgba(255,255,255,.18); border-radius:10px; padding:9px 11px; box-sizing:border-box;
+  }
+  html.mcs-theme #cp-search{border:1.5px solid var(--hairline)}
+  #cp-table-wrap{flex:1; overflow:auto; -webkit-overflow-scrolling:touch; border:0.5px solid var(--hairline); border-radius:10px}
+  #cp-table{width:100%; border-collapse:collapse; font-size:13.5px}
+  #cp-table thead th{
+    position:sticky; top:0; background:var(--bg2); text-align:left; padding:9px 12px; font-size:11.5px;
+    text-transform:uppercase; letter-spacing:.03em; color:var(--muted); border-bottom:0.5px solid var(--hairline);
+  }
+  #cp-table td{padding:9px 12px; border-bottom:0.5px solid var(--hairline); color:var(--ink)}
+  #cp-table tr.cp-tr{cursor:pointer; -webkit-tap-highlight-color:transparent}
+  #cp-table tr.cp-tr:active{background:rgba(255,255,255,.06)}
+  #cp-table tr.cp-tr-sel{background:rgba(10,132,255,.12)}
+  html.mcs-theme #cp-table tr.cp-tr-sel{background:rgba(10,132,255,.14)}
+  .dfx-empty-cell{text-align:center; color:var(--muted); padding:24px 12px !important}
+  #cp-row{display:flex; gap:8px}
+  #cp-row button{flex:1}
+  /* Fenêtre "Ajouter un client" -- même gabarit que les petites modales centrées (#fc-choice). */
+  #nc-bg{position:fixed; inset:0; background:rgba(0,0,0,.5); display:none; z-index:62}
+  #nc-bg.open{display:block}
+  #nc-form{
+    position:fixed; left:14px; right:14px; top:50%; transform:translateY(-50%) scale(.96); z-index:63;
+    background:var(--bg2); border-radius:16px; padding:0; max-height:82vh; overflow:hidden;
+    display:none; flex-direction:column; opacity:0; transition:opacity .2s ease, transform .2s ease;
+  }
+  #nc-form.open{display:flex; opacity:1; transform:translateY(-50%) scale(1)}
+  #nc-head{display:flex; align-items:center; justify-content:space-between; padding:16px 16px 10px; flex:0 0 auto}
+  #nc-head b{font-size:16px}
+  #nc-close{background:none; border:0; color:var(--muted); font-size:18px; padding:4px 6px; cursor:pointer; -webkit-tap-highlight-color:transparent}
+  #nc-body{flex:1; overflow-y:auto; -webkit-overflow-scrolling:touch; padding:0 16px 16px}
+  #nc-body label{display:block; font-size:12.5px; color:var(--muted); margin:14px 0 6px}
+  #nc-body input{
+    width:100%; font:inherit; font-size:15px; color:var(--ink); background:var(--field-bg);
+    border:0.5px solid rgba(255,255,255,.18); border-radius:10px; padding:9px 11px; box-sizing:border-box;
+  }
+  html.mcs-theme #nc-body input{border:1.5px solid var(--hairline)}
+  #nc-err{color:#FF453A; font-size:12.5px; margin-top:6px}
+  #nc-row{display:flex; gap:8px; padding:12px 16px calc(12px + env(safe-area-inset-bottom)); flex:0 0 auto; border-top:0.5px solid var(--hairline)}
+  #nc-row button{flex:1}
   /* Point 4 (Session 15) -- +3%/-3% en un clic, ancien/nouveau prix affiches avant validation. */
   .fcf-reindex-row{display:flex; gap:8px; margin-top:8px}
   .fcf-reindex-btn{
@@ -2056,7 +2188,9 @@
   html.mcs-theme #devis-form-corps textarea,
   html.mcs-theme #facture-directe-form input,
   html.mcs-theme #facture-directe-form select,
-  html.mcs-theme #facture-directe-form textarea{
+  html.mcs-theme #facture-directe-form textarea,
+  html.mcs-theme #dv-totaux-panel input,
+  html.mcs-theme #fd-totaux-panel input{
     border:2px solid var(--blue); background:#fff;
   }
   html.mcs-theme #facture-contrat-form input:disabled,
@@ -2072,7 +2206,9 @@
   html.mcs-theme #facture-contrat-form .ctf-section,
   html.mcs-theme #contrat-catalogue-form .ctf-section,
   html.mcs-theme #devis-form-corps .ctf-section,
-  html.mcs-theme #facture-directe-form .ctf-section{
+  html.mcs-theme #facture-directe-form .ctf-section,
+  html.mcs-theme #dv-totaux-panel,
+  html.mcs-theme #fd-totaux-panel{
     background:#fff; border:1px solid rgba(10,132,255,.25); border-radius:14px;
     padding:14px 14px 16px; box-shadow:0 1px 3px rgba(0,0,0,.06);
   }
@@ -4276,7 +4412,10 @@
     color:var(--gold-a); font:inherit; font-size:13px; font-weight:600; padding:8px 12px; cursor:pointer;
     -webkit-tap-highlight-color:transparent;
   }
-  #fd-total{font-size:14px; font-weight:700; color:var(--ink); text-align:right}
+  /* Masqué le 09/09/2026 (nuit) : remplacé à l'écran par le panneau Totaux (colonne de droite) --
+     l'élément reste dans le DOM (lignesEditorRecalc, partagée avec "Facturer ce devis", continue
+     de lui écrire un texte), juste plus jamais affiché ici. */
+  #fd-total{display:none}
   /* Sujet 4 (02/09/2026) : récapitulatif complet avant émission -- toutes les lignes, TVA,
      destinataire, montant TTC -- affiché avant le 2e clic qui émet vraiment. */
   #fd-recap{display:none; background:var(--surface); border-radius:12px; padding:11px 12px; margin:8px 0; font-size:12.5px; color:var(--ink); line-height:1.5}
@@ -4322,7 +4461,6 @@
   }
   #dv-form-body{flex:1; overflow-y:auto; -webkit-overflow-scrolling:touch; padding:14px 18px calc(20px + env(safe-area-inset-bottom)); display:flex; flex-direction:column; gap:10px}
   #dv-close{background:none; border:0; color:var(--muted); font-size:18px; padding:4px 6px; cursor:pointer; -webkit-tap-highlight-color:transparent}
-  #dv-meslist-row{margin:-2px 0 2px}
   #dv-nom-wrap{position:relative}
   #dv-residence-wrap{position:relative}
   #dv-dates-row{display:flex; gap:8px}
@@ -4342,11 +4480,9 @@
   .dv-note-hint{font-weight:400; text-transform:none; letter-spacing:0; color:var(--muted); font-size:11px}
   #dv-err{color:#FF453A; font-size:12.5px; display:none}
   #dv-err.show{display:block}
-  #dv-statut-badge{display:none}
-  #dv-statut-badge.show{
-    display:inline-block; align-self:flex-start; font-size:11px; font-weight:700; text-transform:uppercase;
-    letter-spacing:.03em; padding:4px 9px; border-radius:8px; background:rgba(255,255,255,.1); color:var(--muted);
-  }
+  /* Statut "Brouillon/Émis/Envoyé" -- desormais TOUJOURS visible (colonne de droite de la
+     Carte 1, comme MEG), habille par .dfx-statut-pill (generique, definie plus haut) au lieu de
+     l'ancien #dv-statut-badge.show qui le masquait par defaut. */
   #dv-row{display:flex; gap:8px}
   #dv-row button{flex:1}
   #dv-emettre-row{display:none}
@@ -4355,28 +4491,6 @@
   #dv-envoi-panel.open{display:flex}
   #dv-envoi-actions{display:flex; gap:8px}
   #dv-envoi-actions button{flex:1}
-  /* Panneau "Mes devis" -- meme gabarit que #mf-view (liste large/scrollable). */
-  #dv-meslist-bg{position:fixed; inset:0; background:rgba(0,0,0,.5); display:none; z-index:54}
-  #dv-meslist-bg.open{display:block}
-  #dv-meslist{
-    position:fixed; left:14px; right:14px; top:8vh; bottom:8vh; z-index:55;
-    background:var(--bg2); border-radius:16px; padding:16px 16px calc(16px + env(safe-area-inset-bottom));
-    display:none; flex-direction:column; gap:10px; opacity:0; transition:opacity .2s ease;
-  }
-  #dv-meslist.open{display:flex; opacity:1}
-  #dv-meslist-head{display:flex; align-items:center; justify-content:space-between}
-  #dv-meslist-close{background:none; border:0; color:var(--muted); font-size:18px; padding:4px 6px; cursor:pointer; -webkit-tap-highlight-color:transparent}
-  #dv-meslist-search{
-    font:inherit; font-size:15px; color:var(--ink); background:var(--field-bg);
-    border:0.5px solid rgba(255,255,255,.18); border-radius:10px; padding:9px 11px; box-sizing:border-box;
-  }
-  #dv-meslist-items{flex:1; overflow-y:auto; -webkit-overflow-scrolling:touch; display:flex; flex-direction:column; gap:8px}
-  #dv-meslist-empty{color:var(--muted); font-size:13px; text-align:center; padding:20px 0}
-  .dv-meslist-card{background:var(--surface); border-radius:12px; padding:10px 12px; cursor:pointer; -webkit-tap-highlight-color:transparent}
-  .dv-meslist-card:active{background:rgba(255,255,255,.08)}
-  .dv-meslist-nom{font-size:14px; font-weight:600; color:var(--ink)}
-  .dv-meslist-meta{font-size:12px; color:var(--muted); margin-top:2px}
-  .dv-meslist-montant{font-size:13px; font-weight:700; color:var(--ink); margin-top:2px}
   /* V6 : liste des factures emises + bouton "annuler par un avoir" -- meme gabarit que #devis-form
      mais plus large/scrollable (une liste, pas un formulaire court). */
   #mf-view-bg{position:fixed; inset:0; background:rgba(0,0,0,.5); display:none; z-index:52}
@@ -7225,46 +7339,77 @@
   <div id="fd-form-head"><b>Facture directe</b><button id="fd-close" type="button" aria-label="Fermer">✕</button></div>
   <div id="fd-form-body">
   <p class="dfhint">Sans devis d'origine — pour une prestation déjà réalisée (ex. destruction de nid de frelons). Le reste (identité MCS, RIB, mentions légales) vient automatiquement.</p>
-  <div class="contrat-form" id="facture-directe-form">
-    <div class="ctf-section">
+  <div class="dfx-outer-grid">
+  <div class="contrat-form dfx-outer-left" id="facture-directe-form">
+    <div class="ctf-section dfx-card1">
       <p class="ctf-section-titre">Identité</p>
-      <label>Client</label>
-      <input id="fd-nom" type="text" placeholder="Ex : SDC Les Tilleuls" autocomplete="off">
-      <label>Adresse de facturation</label>
-      <input id="fd-adresse" type="text" placeholder="Adresse du client" autocomplete="off">
-      <label>Email</label>
-      <input id="fd-email" type="email" placeholder="contact@syndic.fr" autocomplete="off">
-    </div>
-    <div class="ctf-section">
-      <p class="ctf-section-titre">Document</p>
-      <div id="fd-dates-row">
-        <div class="dv-date-box"><span>Numéro</span><b>Attribué à l'émission</b></div>
-        <div class="dv-date-box"><span>Date</span><b id="fd-date-jour">—</b></div>
+      <div class="dfx-card1-grid">
+        <div class="dfx-card1-main">
+          <div class="cf-row">
+            <div class="dv-date-box"><span>Numéro</span><b>Attribué à l'émission</b></div>
+            <div class="dv-date-box"><span>Date d'émission</span><b id="fd-date-jour">—</b></div>
+            <div class="dv-date-box"><span>Date d'échéance</span><b id="fd-date-echeance">—</b></div>
+          </div>
+          <label>Date d'intervention (fin optionnelle)</label>
+          <div class="cf-row">
+            <input id="fd-date-debut" type="date">
+            <input id="fd-date-fin" type="date">
+          </div>
+          <div class="cf-row">
+            <div class="dfx-field-client">
+              <label>Client</label>
+              <div class="dfx-client-input-wrap">
+                <input id="fd-nom" type="text" placeholder="Ex : SDC Les Tilleuls" autocomplete="off">
+                <button id="fd-client-pick-btn" type="button" class="dfx-client-pick-btn" title="Choisir un client" aria-label="Choisir un client">🔍</button>
+              </div>
+            </div>
+            <div><label>N° TVA</label><input id="fd-tva" type="text" placeholder="Ex : FR12345678900" autocomplete="off"></div>
+            <div>
+              <label>Mode de règlement</label>
+              <select id="fd-mode-reglement">
+                <option value="Virement" selected>Virement</option>
+                <option value="Chèque">Chèque</option>
+                <option value="Prélèvement">Prélèvement</option>
+                <option value="Carte bancaire">Carte bancaire</option>
+                <option value="Espèces">Espèces</option>
+              </select>
+            </div>
+          </div>
+          <label>Référence</label>
+          <input id="fd-reference" type="text" placeholder="Ex : votre référence interne" autocomplete="off">
+          <label>Description</label>
+          <textarea id="fd-objet" rows="2" placeholder="Ex : Destruction nid de frelons"></textarea>
+        </div>
+        <div class="dfx-card1-side">
+          <span class="dfx-statut-pill">Brouillon</span>
+          <label>Adresse</label>
+          <textarea id="fd-adresse" rows="3" placeholder="Adresse du client"></textarea>
+          <label>Email</label>
+          <input id="fd-email" type="email" placeholder="contact@syndic.fr" autocomplete="off">
+        </div>
       </div>
-      <label>Date d'intervention (fin optionnelle)</label>
-      <div class="cf-row">
-        <input id="fd-date-debut" type="date">
-        <input id="fd-date-fin" type="date">
-      </div>
-      <label>Référence</label>
-      <input id="fd-reference" type="text" placeholder="Ex : votre référence interne" autocomplete="off">
-      <label>Mode de règlement</label>
-      <select id="fd-mode-reglement">
-        <option value="Virement" selected>Virement</option>
-        <option value="Chèque">Chèque</option>
-        <option value="Prélèvement">Prélèvement</option>
-        <option value="Carte bancaire">Carte bancaire</option>
-        <option value="Espèces">Espèces</option>
-      </select>
-      <label>Prestation</label>
-      <input id="fd-objet" type="text" placeholder="Ex : Destruction nid de frelons" autocomplete="off">
     </div>
     <div class="ctf-section">
       <p class="ctf-section-titre">Lignes</p>
       <div id="fd-lignes"></div>
       <button id="fd-ligne-add" type="button" class="fd-ligne-add-btn">+ Ajouter une ligne</button>
+      <button id="fd-ligne-multi" type="button" class="fd-ligne-add-btn">🔍 Ajouter plusieurs articles</button>
       <div id="fd-total">Total HT : 0,00 €</div>
     </div>
+  </div>
+  <div class="dfx-outer-right">
+    <div class="ctf-section" id="fd-totaux-panel">
+      <p class="ctf-section-titre">Totaux</p>
+      <div class="dfx-tot-row dfx-tot-sub"><span>Remise article(s)</span><b id="fd-tot-remise-art">0,00 €</b></div>
+      <div class="dfx-tot-row"><span>Total brut HT</span><b id="fd-tot-brut">0,00 €</b></div>
+      <div class="dfx-tot-row dfx-tot-input"><span>Remise Sup. HT</span><input id="fd-remise-sup" type="number" min="0" step="0.01" value="0"></div>
+      <div class="dfx-tot-row dfx-tot-input"><span>Frais de port HT</span><input id="fd-frais-port" type="number" min="0" step="0.01" value="0"></div>
+      <div class="dfx-tot-row dfx-tot-net"><span>Total net HT</span><b id="fd-tot-net-ht">0,00 €</b></div>
+      <div class="dfx-tot-row"><span>Total TVA</span><b id="fd-tot-tva">0,00 €</b></div>
+      <div class="dfx-tot-row dfx-tot-net"><span>Total net TTC</span><b id="fd-tot-net-ttc">0,00 €</b></div>
+      <p class="dfx-tot-hint">Échéancier : non disponible pour une facture directe (réglée en une fois).</p>
+    </div>
+  </div>
   </div>
   <div class="dfx-apercu-wrap">
     <p class="dfx-apercu-label">👁️ Aperçu en direct (non officiel — se met à jour à la frappe)</p>
@@ -7287,43 +7432,55 @@
   <div id="dv-form-head"><b>Devis</b><button id="dv-close" type="button" aria-label="Fermer">✕</button></div>
   <div id="dv-form-body">
   <p class="dfhint">Émission au jour même, validité 60 jours. Le reste (identité MCS, mentions légales) vient automatiquement.</p>
-  <div id="dv-meslist-row"><button id="dv-meslist-btn" type="button" class="fc-choice-link">📋 Voir mes devis (brouillons, validés, envoyés) →</button></div>
-  <div class="contrat-form" id="devis-form-corps">
-    <div class="ctf-section">
+  <div class="dfx-outer-grid">
+  <div class="contrat-form dfx-outer-left" id="devis-form-corps">
+    <div class="ctf-section dfx-card1">
       <p class="ctf-section-titre">Identité</p>
-      <label id="dv-nom-wrap-label">Client (3 lettres minimum)</label>
-      <div id="dv-nom-wrap">
-        <input id="dv-nom" type="text" placeholder="Ex : SDC Les Tilleuls" autocomplete="off">
-        <ul id="dv-nom-sug" class="fd-ligne-sug"></ul>
+      <div class="dfx-card1-grid">
+        <div class="dfx-card1-main">
+          <div class="cf-row">
+            <div class="dv-date-box"><span>Numéro</span><b>Attribué à l'émission</b></div>
+            <div class="dv-date-box"><span>Émission</span><b id="dv-date-emission">—</b></div>
+            <div class="dv-date-box"><span>Validité</span><b id="dv-date-validite">60 jours</b></div>
+          </div>
+          <div class="cf-row">
+            <div class="dfx-field-client">
+              <label>Client</label>
+              <div class="dfx-client-input-wrap">
+                <input id="dv-nom" type="text" placeholder="Ex : SDC Les Tilleuls" autocomplete="off">
+                <button id="dv-client-pick-btn" type="button" class="dfx-client-pick-btn" title="Choisir un client" aria-label="Choisir un client">🔍</button>
+              </div>
+            </div>
+            <div><label>N° TVA</label><input id="dv-tva" type="text" placeholder="Ex : FR12345678900" autocomplete="off"></div>
+            <div>
+              <label>Mode de règlement</label>
+              <select id="dv-mode-reglement">
+                <option value="Virement" selected>Virement</option>
+                <option value="Chèque">Chèque</option>
+                <option value="Prélèvement">Prélèvement</option>
+                <option value="Carte bancaire">Carte bancaire</option>
+                <option value="Espèces">Espèces</option>
+              </select>
+            </div>
+          </div>
+          <label>Référence</label>
+          <input id="dv-reference" type="text" placeholder="Ex : votre référence interne" autocomplete="off">
+          <label>Description</label>
+          <textarea id="dv-objet" rows="2" placeholder="Ex : Contrat entretien VMC"></textarea>
+          <label id="dv-residence-wrap-label">Nom de la résidence (si différent du client)</label>
+          <div id="dv-residence-wrap">
+            <input id="dv-residence" type="text" placeholder="Ex : Résidence Les Tilleuls" autocomplete="off">
+            <ul id="dv-residence-sug" class="fd-ligne-sug"></ul>
+          </div>
+        </div>
+        <div class="dfx-card1-side">
+          <span id="dv-statut-badge" class="dfx-statut-pill">Brouillon</span>
+          <label>Adresse</label>
+          <textarea id="dv-adresse" rows="3" placeholder="Adresse du client"></textarea>
+          <label>Email</label>
+          <input id="dv-email" type="email" placeholder="contact@syndic.fr" autocomplete="off">
+        </div>
       </div>
-      <label>Adresse de facturation</label>
-      <input id="dv-adresse" type="text" placeholder="Adresse du client" autocomplete="off">
-      <label>Email</label>
-      <input id="dv-email" type="email" placeholder="contact@syndic.fr" autocomplete="off">
-      <label id="dv-residence-wrap-label">Nom de la résidence (si différent du client)</label>
-      <div id="dv-residence-wrap">
-        <input id="dv-residence" type="text" placeholder="Ex : Résidence Les Tilleuls" autocomplete="off">
-        <ul id="dv-residence-sug" class="fd-ligne-sug"></ul>
-      </div>
-    </div>
-    <div class="ctf-section">
-      <p class="ctf-section-titre">Document</p>
-      <div id="dv-dates-row">
-        <div class="dv-date-box"><span>Émission</span><b id="dv-date-emission">—</b></div>
-        <div class="dv-date-box"><span>Validité</span><b id="dv-date-validite">60 jours</b></div>
-      </div>
-      <label>Référence</label>
-      <input id="dv-reference" type="text" placeholder="Ex : votre référence interne" autocomplete="off">
-      <label>Mode de règlement</label>
-      <select id="dv-mode-reglement">
-        <option value="Virement" selected>Virement</option>
-        <option value="Chèque">Chèque</option>
-        <option value="Prélèvement">Prélèvement</option>
-        <option value="Carte bancaire">Carte bancaire</option>
-        <option value="Espèces">Espèces</option>
-      </select>
-      <label>Objet du devis</label>
-      <input id="dv-objet" type="text" placeholder="Ex : Contrat entretien VMC" autocomplete="off">
     </div>
     <div class="ctf-section">
       <p class="ctf-section-titre">Lignes</p>
@@ -7332,26 +7489,34 @@
         <button id="dv-ligne-add" type="button" class="fd-ligne-add-btn">+ Ajouter une ligne</button>
         <button id="dv-ligne-multi" type="button" class="fd-ligne-add-btn">🔍 Ajouter plusieurs articles</button>
       </div>
-      <div id="dv-totaux">
-        <div class="dv-total-row"><span>Total HT</span><b id="dv-total-ht">0,00 €</b></div>
-        <div id="dv-total-tva-detail"></div>
-        <div class="dv-total-row dv-total-ttc"><span>Total TTC</span><b id="dv-total-ttc">0,00 €</b></div>
-      </div>
     </div>
     <div class="ctf-section">
       <p class="ctf-section-titre">Commentaire — note interne <span class="dv-note-hint">(jamais affiché sur le devis ni dans le mail)</span></p>
       <textarea id="dv-note-interne" rows="2" placeholder="Ex : rappeler avant de passer, code portail 1234…"></textarea>
     </div>
   </div>
+  <div class="dfx-outer-right">
+    <div class="ctf-section" id="dv-totaux-panel">
+      <p class="ctf-section-titre">Totaux</p>
+      <div class="dfx-tot-row dfx-tot-sub"><span>Remise article(s)</span><b id="dv-tot-remise-art">0,00 €</b></div>
+      <p class="dfx-tot-hint" id="dv-remise-alerte" style="display:none">⚠️ Remise saisie sur une ligne, mais pas encore appliquée par le serveur sur le PDF réel du devis (vérifié ce soir) — le document envoyé au client affichera le prix plein tant que ce n'est pas corrigé côté serveur.</p>
+      <div class="dfx-tot-row"><span>Total brut HT</span><b id="dv-tot-brut">0,00 €</b></div>
+      <div class="dfx-tot-row dfx-tot-input"><span>Remise Sup. HT</span><input id="dv-remise-sup" type="number" min="0" step="0.01" value="0"></div>
+      <div class="dfx-tot-row dfx-tot-input"><span>Frais de port HT</span><input id="dv-frais-port" type="number" min="0" step="0.01" value="0"></div>
+      <div class="dfx-tot-row dfx-tot-net"><span>Total net HT</span><b id="dv-total-ht">0,00 €</b></div>
+      <div class="dfx-tot-row"><span>Total TVA</span><b id="dv-total-tva">0,00 €</b></div>
+      <div class="dfx-tot-row dfx-tot-net"><span>Total net TTC</span><b id="dv-total-ttc">0,00 €</b></div>
+      <p class="dfx-tot-hint">Acomptes : non disponible — Jarvis n'enregistre pas encore de règlement partiel sur un devis.</p>
+    </div>
+  </div>
+  </div>
   <div class="dfx-apercu-wrap">
     <p class="dfx-apercu-label">👁️ Aperçu en direct (non officiel — se met à jour à la frappe)</p>
     <div class="dfx-apercu-scroll"><div id="dv-apercu-page"></div></div>
   </div>
   <div id="dv-err"></div>
-  <div id="dv-statut-badge"></div>
   <div id="dv-row">
     <button id="dv-cancel" type="button" class="vc-no">Annuler</button>
-    <button id="dv-apercu" type="button" class="vc-edit">👁️ Aperçu (filigrané)</button>
     <button id="dv-save" type="button" class="vc-ok">Enregistrer le brouillon</button>
   </div>
   <div id="dv-emettre-row">
@@ -7368,11 +7533,46 @@
   </div>
 </div>
 
-<div id="dv-meslist-bg"></div>
-<div id="dv-meslist">
-  <div id="dv-meslist-head"><b>Mes devis</b><button id="dv-meslist-close" type="button" aria-label="Fermer">✕</button></div>
-  <input id="dv-meslist-search" type="search" placeholder="🔍 Rechercher un client…" autocomplete="off">
-  <div id="dv-meslist-items"><p id="dv-meslist-empty">Chargement…</p></div>
+<div id="client-picker-bg"></div>
+<div id="client-picker">
+  <div id="cp-head"><b>Sélectionner un client</b><button id="cp-close" type="button" aria-label="Fermer">✕</button></div>
+  <div id="cp-toolbar">
+    <input id="cp-search" type="search" placeholder="🔍 Rechercher un client…" autocomplete="off">
+    <button id="cp-new-btn" type="button" class="fc-choice-link">＋ Nouveau client</button>
+  </div>
+  <div id="cp-table-wrap">
+    <table id="cp-table">
+      <thead><tr><th>Nom</th><th>Adresse</th></tr></thead>
+      <tbody id="cp-tbody"></tbody>
+    </table>
+  </div>
+  <div id="cp-row">
+    <button id="cp-cancel" type="button" class="vc-no">Annuler</button>
+    <button id="cp-select" type="button" class="vc-ok" disabled>Sélectionner</button>
+  </div>
+</div>
+
+<div id="nc-bg"></div>
+<div id="nc-form">
+  <div id="nc-head"><b>Ajouter un client</b><button id="nc-close" type="button" aria-label="Fermer">✕</button></div>
+  <div id="nc-body">
+    <p class="dfhint">Ce client n'existe pas encore dans la base de Jarvis. Ces informations serviront à pré-remplir CE document — Jarvis n'a pas encore de mécanisme pour créer une fiche client permanente depuis l'application (aucun bouton de ce genre n'existait avant ce soir).</p>
+    <div class="ctf-actif-row">
+      <button type="button" class="ctf-actif-opt on" id="nc-statut-physique">Personne physique</button>
+      <button type="button" class="ctf-actif-opt" id="nc-statut-morale">Personne morale</button>
+    </div>
+    <label id="nc-nom-label">Nom et prénom</label>
+    <input id="nc-nom" type="text" placeholder="Ex : Jean Martin" autocomplete="off">
+    <label>Localisation (adresse)</label>
+    <input id="nc-adresse" type="text" placeholder="Adresse du client" autocomplete="off">
+    <label>N° TVA Intra (facultatif)</label>
+    <input id="nc-tva" type="text" placeholder="Ex : FR12345678900" autocomplete="off">
+    <div id="nc-err"></div>
+  </div>
+  <div id="nc-row">
+    <button id="nc-cancel" type="button" class="vc-no">Annuler</button>
+    <button id="nc-save" type="button" class="vc-ok">Utiliser pour ce document</button>
+  </div>
 </div>
 
 <div id="mf-view-bg"></div>
@@ -7425,9 +7625,9 @@
          c'est ce qui supprime le conflit humain sur cette ligne precise. Sert aussi de cle
          unique de detection de mise a jour (voir checkUpdate ci-dessous), plus fiable qu'une
          comparaison de chaine de version par tenant. */
-  var APPV_MCS = '4.52';
+  var APPV_MCS = '4.53';
   var APPV_LABO = '1.00';
-  var BUILD = 34;
+  var BUILD = 35;
   // displayVersion()/displayVersionShort() lisent isMcsCode() (definie plus bas dans cette
   // meme IIFE -- declaration de fonction, donc disponible ici par hoisting) : le TENANT
   // affiche depend du code de connexion, jamais d'un simple "APPV" global qui ne dirait ni
@@ -12542,6 +12742,17 @@
     });
     var totalTva = tvaRows.reduce(function(s,r){ return s+r.montant; }, 0);
     var totalTtc = Math.round((totalHt + totalTva)*100)/100;
+    // Remise Sup./Frais de port (panneau Totaux, saisis a cote du formulaire -- jamais envoyes
+    // au serveur, cf. dfxCalcTotauxDetail) : remplacent le HT/TVA/TTC de synthese par les
+    // memes chiffres que le panneau lateral, pour ne jamais afficher 2 totaux differents a
+    // l'ecran. Le detail TVA par taux ci-dessus reste base sur les SEULES lignes (avant ajustement) --
+    // approximation assumee, ce panneau reste un apercu non officiel.
+    var ajustements = opts.totauxOverride;
+    if (ajustements){
+      totalHt = Math.round(Number(ajustements.ht)*100)/100;
+      totalTva = Math.round(Number(ajustements.tva)*100)/100;
+      totalTtc = Math.round(Number(ajustements.ttc)*100)/100;
+    }
     var totBoxX = ML+dW, totBoxW = cols[7]-totBoxX, totColW = totBoxW/3;
     STROKERECT(totBoxX, yValBot, totBoxW, dH);
     RECT(totBoxX, ySubBot, totBoxW, H1+H2, true);
@@ -20621,6 +20832,126 @@
     var nq = dfNormCat(q);
     return (DF_CATALOG.clients || []).filter(function(r){ return r && dfNormCat(r.nom).indexOf(nq) !== -1; }).slice(0, 20);
   }
+  // ===== Fenêtre "Sélectionner un client" (mission MEG, 09/09/2026 nuit) =====
+  // Générique, réutilisée par Devis et Facture directe (n'importe quel futur écran peut
+  // l'appeler) : réutilise le catalogue déjà chargé en cache (DF_CATALOG.clients/dfEnsureClients,
+  // ci-dessus), aucun nouvel appel serveur. Colonnes "Nom | Adresse" seulement -- Jarvis n'a
+  // aucune notion de "code client" (contrairement à MEG), une colonne Code aurait été une
+  // information inventée.
+  var cpBg = document.getElementById('client-picker-bg');
+  var cpModal = document.getElementById('client-picker');
+  var cpSearch = document.getElementById('cp-search');
+  var cpTbody = document.getElementById('cp-tbody');
+  var cpSelectBtn = document.getElementById('cp-select');
+  var cpOnSelect = null;
+  var cpPending = null;
+  function cpRenderRows(items){
+    cpTbody.innerHTML = '';
+    cpPending = null;
+    cpSelectBtn.disabled = true;
+    if (!items.length){
+      var tr0 = document.createElement('tr');
+      var td0 = document.createElement('td'); td0.colSpan = 2; td0.className = 'dfx-empty-cell'; td0.textContent = 'Aucun client trouvé.';
+      tr0.appendChild(td0); cpTbody.appendChild(tr0);
+      return;
+    }
+    // Pas de vraie pagination côté serveur pour ce catalogue (tout est déjà en mémoire) --
+    // liste scrollable plutôt qu'un vrai découpage par page, limite assumée.
+    items.slice(0, 300).forEach(function(item){
+      var tr = document.createElement('tr'); tr.className = 'cp-tr';
+      var tdNom = document.createElement('td'); tdNom.textContent = item.nom || '(sans nom)';
+      var tdAdr = document.createElement('td'); tdAdr.textContent = item.adresse || '—';
+      tr.appendChild(tdNom); tr.appendChild(tdAdr);
+      tr.addEventListener('click', function(){
+        cpTbody.querySelectorAll('tr.cp-tr').forEach(function(x){ x.classList.remove('cp-tr-sel'); });
+        tr.classList.add('cp-tr-sel');
+        cpPending = item;
+        cpSelectBtn.disabled = false;
+      });
+      tr.addEventListener('dblclick', function(){ cpPending = item; cpApply(); });
+      cpTbody.appendChild(tr);
+    });
+  }
+  function cpFilter(){
+    var q = dfNormCat(cpSearch.value.trim());
+    var all = DF_CATALOG.clients || [];
+    cpRenderRows(!q ? all : all.filter(function(r){ return r && dfNormCat(r.nom).indexOf(q) !== -1; }));
+  }
+  function cpApply(){
+    if (!cpPending) return;
+    var cb = cpOnSelect, item = cpPending;
+    cpClose();
+    if (cb) cb(item);
+  }
+  function cpClose(){ cpBg.classList.remove('open'); cpModal.classList.remove('open'); }
+  function clientPickerOpen(onSelect){
+    cpOnSelect = onSelect;
+    cpSearch.value = '';
+    cpTbody.innerHTML = '<tr><td colspan="2" class="dfx-empty-cell">Chargement…</td></tr>';
+    cpBg.classList.add('open'); cpModal.classList.add('open');
+    dfEnsureClients(function(){ cpFilter(); });
+    setTimeout(function(){ cpSearch.focus(); }, 50);
+  }
+  cpSearch.addEventListener('input', cpFilter);
+  document.getElementById('cp-cancel').addEventListener('click', cpClose);
+  document.getElementById('cp-close').addEventListener('click', cpClose);
+  cpBg.addEventListener('click', cpClose);
+  cpSelectBtn.addEventListener('click', cpApply);
+  document.getElementById('cp-new-btn').addEventListener('click', function(){
+    ncOpen(function(item){ cpPending = item; cpApply(); });
+  });
+
+  // ===== Fenêtre "Ajouter un client" =====
+  // Vérifié AVANT de construire cet écran : aucune route de création de client/contact
+  // n'existe aujourd'hui dans Jarvis (aucun 'client-ajouter'/'contact-ajouter' nulle part dans
+  // ce fichier) -- ce formulaire ne PERSISTE donc rien côté serveur, contrairement à MEG. Il se
+  // contente de pré-remplir CE document (un client "de passage"), annoncé comme tel dans le
+  // texte d'aide. Champs gardés uniquement s'ils ont un effet réel une fois fermé :
+  //   - Statut (physique/morale) : change le libellé et le placeholder du champ Nom (même
+  //     ressort que bcSetType, déjà dans ce fichier pour le Carnet bleu) -- pas cosmétique gratuit.
+  //   - Nom et prénom / Nom de la société : UN SEUL champ (Jarvis n'a qu'un "nom" de client,
+  //     jamais nom+prénom séparés) -- devient le Client du document.
+  //   - Localisation : devient l'Adresse du document.
+  //   - N° TVA Intra : reprend le champ "N° TVA" du formulaire (lui-même déjà purement
+  //     d'affichage côté aperçu, cf. plus haut).
+  // Retiré délibérément : Civilité (M./Mme) -- aucun document généré par Jarvis ne l'affiche,
+  // un champ qui ne sert à rien nulle part.
+  var ncBg = document.getElementById('nc-bg');
+  var ncForm = document.getElementById('nc-form');
+  var ncStatutPhysique = document.getElementById('nc-statut-physique');
+  var ncStatutMorale = document.getElementById('nc-statut-morale');
+  var ncNomLabel = document.getElementById('nc-nom-label');
+  var ncNom = document.getElementById('nc-nom');
+  var ncAdresse = document.getElementById('nc-adresse');
+  var ncTva = document.getElementById('nc-tva');
+  var ncErr = document.getElementById('nc-err');
+  var ncOnSave = null;
+  function ncSetStatut(s){
+    ncStatutPhysique.classList.toggle('on', s === 'physique');
+    ncStatutMorale.classList.toggle('on', s === 'morale');
+    ncNomLabel.textContent = s === 'morale' ? 'Nom de la société' : 'Nom et prénom';
+    ncNom.placeholder = s === 'morale' ? 'Ex : SDC Les Tilleuls' : 'Ex : Jean Martin';
+  }
+  ncStatutPhysique.addEventListener('click', function(){ ncSetStatut('physique'); });
+  ncStatutMorale.addEventListener('click', function(){ ncSetStatut('morale'); });
+  function ncOpen(onSave){
+    ncOnSave = onSave;
+    ncSetStatut('physique');
+    ncNom.value = ''; ncAdresse.value = ''; ncTva.value = ''; ncErr.textContent = '';
+    ncBg.classList.add('open'); ncForm.classList.add('open');
+    setTimeout(function(){ ncNom.focus(); }, 50);
+  }
+  function ncClose(){ ncBg.classList.remove('open'); ncForm.classList.remove('open'); }
+  document.getElementById('nc-close').addEventListener('click', ncClose);
+  document.getElementById('nc-cancel').addEventListener('click', ncClose);
+  ncBg.addEventListener('click', ncClose);
+  document.getElementById('nc-save').addEventListener('click', function(){
+    var nom = ncNom.value.trim();
+    if (!nom){ ncErr.textContent = 'Le nom est obligatoire.'; return; }
+    var item = { id: null, nom: nom, email: '', adresse: ncAdresse.value.trim(), tva: ncTva.value.trim() };
+    ncClose();
+    if (ncOnSave) ncOnSave(item);
+  });
   function wireSearchAutocomplete(inputEl, sugEl, searchType, onSelect){
     var timer = null;
     inputEl.addEventListener('input', function(){
@@ -20842,21 +21173,69 @@
   var fdTotal = document.getElementById('fd-total');
   var fdErr = document.getElementById('fd-err');
   var fdSave = document.getElementById('fd-save');
-  // Mission MEG (09/09/2026 soir) : plein écran + champs "comme dans MEG" + aperçu en direct.
+  // Mission MEG (09/09/2026 soir puis nuit) : plein écran + champs "comme dans MEG" + panneau
+  // Totaux + aperçu en direct + sélecteur de client en fenêtre.
   var fdClose = document.getElementById('fd-close');
   var fdDateJour = document.getElementById('fd-date-jour');
+  var fdDateEcheance = document.getElementById('fd-date-echeance');
   var fdReference = document.getElementById('fd-reference');
+  var fdTva = document.getElementById('fd-tva');
   var fdModeReglement = document.getElementById('fd-mode-reglement');
   var fdApercuPage = document.getElementById('fd-apercu-page');
+  var fdTotRemiseArt = document.getElementById('fd-tot-remise-art');
+  var fdTotBrut = document.getElementById('fd-tot-brut');
+  var fdRemiseSup = document.getElementById('fd-remise-sup');
+  var fdFraisPort = document.getElementById('fd-frais-port');
+  var fdTotNetHt = document.getElementById('fd-tot-net-ht');
+  var fdTotTva = document.getElementById('fd-tot-tva');
+  var fdTotNetTtc = document.getElementById('fd-tot-net-ttc');
+  var fdClientId = null;
   function fdRenderApercuLive(){
+    var d = dfxCalcTotauxDetail(fdLignesWrap, fdRemiseSup.value, fdFraisPort.value);
     dfxRenderApercuGenerique(fdApercuPage, {
       typeDoc: 'FACTURE',
       nom: fdNom.value, adresse: fdAdresse.value, objet: fdObjet.value,
       reference: fdReference.value, conditions: fdModeReglement.value,
       dateLabel: 'Date d’échéance', dateValeur: fdDateFin.value ? fmtDevisDateSimple(fdDateFin.value) : '',
       lignes: lignesEditorRead(fdLignesWrap).lignes,
+      totauxOverride: { ht: d.netHt, tva: d.tva, ttc: d.ttc },
     });
   }
+  function fdRecalcTotauxPanel(){
+    var d = dfxCalcTotauxDetail(fdLignesWrap, fdRemiseSup.value, fdFraisPort.value);
+    fdTotRemiseArt.textContent = fmtEuros(d.remiseArt);
+    fdTotBrut.textContent = fmtEuros(d.brut);
+    fdTotNetHt.textContent = fmtEuros(d.netHt);
+    fdTotTva.textContent = fmtEuros(d.tva);
+    fdTotNetTtc.textContent = fmtEuros(d.ttc);
+  }
+  [fdRemiseSup, fdFraisPort].forEach(function(el){
+    el.addEventListener('input', function(){ fdRecalcTotauxPanel(); fdRenderApercuLive(); });
+  });
+  fdDateFin.addEventListener('change', function(){
+    fdDateEcheance.textContent = fdDateFin.value ? fmtDevisDateSimple(fdDateFin.value) : '—';
+    fdRenderApercuLive();
+  });
+  // Mission MEG (09/09/2026 nuit) : le champ Client ouvre la fenêtre "Sélectionner un client"
+  // (clientPickerOpen, générique, cf. plus haut) -- Facture directe n'avait AUCUNE recherche de
+  // client avant ce soir (aucun wireSearchAutocomplete branché sur fd-nom), donc pure addition,
+  // aucun comportement existant retiré.
+  function fdOnClientSelect(item){
+    fdClientId = item.id || null;
+    fdNom.value = item.nom || fdNom.value;
+    fdEmail.value = item.email || '';
+    if (item.tva) fdTva.value = item.tva;
+    if (item.adresse && isRepresentePar(item.adresse)){
+      var sp = splitRepresentePar(item.adresse);
+      fdAdresse.value = sp.adresse || item.adresse;
+    } else {
+      fdAdresse.value = item.adresse || '';
+    }
+    fdRenderApercuLive();
+  }
+  document.getElementById('fd-client-pick-btn').addEventListener('click', function(){
+    clientPickerOpen(fdOnClientSelect);
+  });
   fdClose.addEventListener('click', function(){ fdFormClose(); });
   // Section 7 (06/09/2026, dernier point) : emission reelle immediate (postFacturation
   // type:'emettre'), meme icone/couleur que les autres boutons vc-envoi-reel de l'app.
@@ -20981,6 +21360,34 @@
     var montantTva = tvaDetail.reduce(function(s, x){ return s + x.montant; }, 0);
     return { ht: Math.round(ht * 100) / 100, tvaDetail: tvaDetail, tva: Math.round(montantTva * 100) / 100, ttc: Math.round((ht + montantTva) * 100) / 100 };
   }
+  // Panneau "Totaux" façon MEG (mission du 09/09/2026, nuit) : Remise article(s)/Total brut HT/
+  // Remise Sup. HT (saisie)/Frais de port HT (saisie)/Total net HT/Total TVA/Total net TTC.
+  // Remise Sup./Frais de port n'existent dans AUCUN champ envoyé au serveur (postDf/
+  // postFacturation inchangés) -- purement un ajustement d'affichage local (panneau + aperçu en
+  // direct), jamais persisté. Le taux de TVA appliqué à l'ajustement est le taux EFFECTIF moyen
+  // des lignes (tva lignes / HT lignes) -- exact dans le cas courant d'un taux unique, une
+  // approximation assumée si plusieurs taux coexistent (ce panneau reste un aperçu non officiel).
+  function dfxCalcTotauxDetail(wrap, remiseSup, fraisPort){
+    var brut = 0, htLignes = 0, tvaLignes = 0;
+    wrap.querySelectorAll('.fd-ligne').forEach(function(row){
+      var q = Number(row.querySelector('.fd-ligne-qte').value) || 0;
+      var p = Number(row.querySelector('.fd-ligne-prix').value) || 0;
+      var rEl = row.querySelector('.fd-ligne-remise'); var r = rEl ? Math.min(100, Math.max(0, Number(rEl.value) || 0)) : 0;
+      var tEl = row.querySelector('.fd-ligne-tva'); var taux = tEl && tEl.value !== '' ? (Number(tEl.value) || 0) : 20;
+      var ligneBrut = q * p, ligneNet = ligneBrut * (1 - r / 100);
+      brut += ligneBrut; htLignes += ligneNet; tvaLignes += ligneNet * (taux / 100);
+    });
+    remiseSup = Number(remiseSup) || 0; fraisPort = Number(fraisPort) || 0;
+    var remiseArt = brut - htLignes;
+    var netHt = htLignes - remiseSup + fraisPort;
+    var tauxEffectif = htLignes > 0 ? (tvaLignes / htLignes) : 0.20;
+    var tva = Math.max(0, Math.round(netHt * tauxEffectif * 100) / 100);
+    var ttc = Math.round((netHt + tva) * 100) / 100;
+    return {
+      brut: Math.round(brut * 100) / 100, remiseArt: Math.round(remiseArt * 100) / 100,
+      netHt: Math.round(netHt * 100) / 100, tva: tva, ttc: ttc,
+    };
+  }
   function lignesEditorRead(wrap){
     var lignes = [], ligneInvalide = false;
     wrap.querySelectorAll('.fd-ligne').forEach(function(row){
@@ -20999,11 +21406,25 @@
     });
     return { lignes: lignes, invalide: ligneInvalide };
   }
-  function fdLigneRow(){ return lignesEditorRow(fdLignesWrap, function(){ fdRecalcTotal(); fdRenderApercuLive(); }); }
+  function fdLigneRow(){ return lignesEditorRow(fdLignesWrap, function(){ fdRecalcTotal(); fdRecalcTotauxPanel(); fdRenderApercuLive(); }); }
+  // #fd-total (Total HT simple, dans la carte "Lignes") reste à jour mais masqué en CSS --
+  // le panneau Totaux (colonne de droite, fdRecalcTotauxPanel) est désormais le seul affiché ;
+  // fdTotal/lignesEditorRecalc restent inchangés (fonction PARTAGÉE avec "Facturer ce devis",
+  // jamais touchée) pour ne rien casser côté serveur ni côté cet autre écran.
   function fdRecalcTotal(){ lignesEditorRecalc(fdLignesWrap, fdTotal); }
   document.getElementById('fd-ligne-add').addEventListener('click', function(){
     fdLignesWrap.appendChild(fdLigneRow());
+    fdRecalcTotauxPanel();
     fdRenderApercuLive();
+  });
+  // Bouton "Ajouter plusieurs articles" -- ajouté à Facture directe le 09/09/2026 (nuit),
+  // n'existait pas avant (pure addition). Même repli honnête que sur l'écran Devis : la
+  // recherche multiple n'est pas construite, ajoute une ligne de plus plutôt qu'un bouton mort.
+  document.getElementById('fd-ligne-multi').addEventListener('click', function(){
+    fdLignesWrap.appendChild(fdLigneRow());
+    fdRecalcTotauxPanel();
+    fdRenderApercuLive();
+    toast('Recherche multiple pas encore disponible — ajoute les articles un par un pour l’instant.');
   });
   var fdRecap = document.getElementById('fd-recap');
   var fdRecapArme = false;
@@ -21017,12 +21438,14 @@
     fdNom.value = ''; fdAdresse.value = ''; fdEmail.value = ''; fdObjet.value = '';
     delete fdNom.dataset.memValeur; delete fdAdresse.dataset.memValeur; delete fdEmail.dataset.memValeur;
     fdForm.querySelectorAll('.mem-badge').forEach(function(b){ b.style.display = 'none'; });
-    fdDateDebut.value = ''; fdDateFin.value = '';
-    fdReference.value = ''; fdModeReglement.value = 'Virement';
+    fdDateDebut.value = ''; fdDateFin.value = ''; fdDateEcheance.textContent = '—';
+    fdReference.value = ''; fdTva.value = ''; fdModeReglement.value = 'Virement';
+    fdRemiseSup.value = '0'; fdFraisPort.value = '0'; fdClientId = null;
     fdDateJour.textContent = new Date().toLocaleDateString('fr-FR');
     fdLignesWrap.innerHTML = '';
     fdLignesWrap.appendChild(fdLigneRow());
     fdRecalcTotal();
+    fdRecalcTotauxPanel();
     fdErr.textContent = '';
     fdSave.disabled = false;
     fdRecapDesarmer();
@@ -21041,6 +21464,7 @@
     el.addEventListener('change', fdRenderApercuLive);
   });
   fdLignesWrap.addEventListener('input', fdRecapDesarmer);
+  fdLignesWrap.addEventListener('input', fdRecalcTotauxPanel);
   fdLignesWrap.addEventListener('input', fdRenderApercuLive);
   // Point 2 (session suite, 29/08/2026) : mémoire commune -- une fois le nom du client tapé,
   // propose adresse/email déjà connus (jamais écrase un champ déjà rempli). Éditer ces champs
@@ -21130,7 +21554,6 @@
   var dvFormBg = document.getElementById('dv-form-bg');
   var dvForm = document.getElementById('dv-form');
   var dvNom = document.getElementById('dv-nom');
-  var dvNomSug = document.getElementById('dv-nom-sug');
   var dvAdresse = document.getElementById('dv-adresse');
   var dvEmail = document.getElementById('dv-email');
   var dvResidence = document.getElementById('dv-residence');
@@ -21140,13 +21563,16 @@
   var dvDateValidite = document.getElementById('dv-date-validite');
   var dvLignesWrap = document.getElementById('dv-lignes');
   var dvTotalHt = document.getElementById('dv-total-ht');
-  var dvTotalTvaDetail = document.getElementById('dv-total-tva-detail');
+  var dvTotalTva = document.getElementById('dv-total-tva');
   var dvTotalTtc = document.getElementById('dv-total-ttc');
+  var dvTotRemiseArt = document.getElementById('dv-tot-remise-art');
+  var dvTotBrut = document.getElementById('dv-tot-brut');
+  var dvRemiseSup = document.getElementById('dv-remise-sup');
+  var dvFraisPort = document.getElementById('dv-frais-port');
   var dvNoteInterne = document.getElementById('dv-note-interne');
   var dvErr = document.getElementById('dv-err');
   var dvStatutBadge = document.getElementById('dv-statut-badge');
   var dvSave = document.getElementById('dv-save');
-  var dvApercu = document.getElementById('dv-apercu');
   var dvEmettreRow = document.getElementById('dv-emettre-row');
   var dvEmettre = document.getElementById('dv-emettre');
   var dvEnvoiPanel = document.getElementById('dv-envoi-panel');
@@ -21156,31 +21582,41 @@
   var dvToken = null, dvStatut = null, dvRoleCreateur = null;
   // Mission MEG (09/09/2026 soir) : plein écran + champs "comme dans MEG" + aperçu en direct.
   var dvReference = document.getElementById('dv-reference');
+  var dvTva = document.getElementById('dv-tva');
   var dvModeReglement = document.getElementById('dv-mode-reglement');
   var dvApercuPage = document.getElementById('dv-apercu-page');
   function dvRenderApercuLive(){
+    var d = dfxCalcTotauxDetail(dvLignesWrap, dvRemiseSup.value, dvFraisPort.value);
     dfxRenderApercuGenerique(dvApercuPage, {
       typeDoc: 'DEVIS',
       nom: dvNom.value, adresse: dvAdresse.value, objet: dvObjet.value,
       reference: dvReference.value, conditions: dvModeReglement.value,
       dateLabel: 'Date de validité', dateValeur: dvDateValidite.textContent,
       lignes: lignesEditorRead(dvLignesWrap).lignes,
+      totauxOverride: { ht: d.netHt, tva: d.tva, ttc: d.ttc },
     });
   }
 
   function dvLigneRow(){ return lignesEditorRow(dvLignesWrap, function(){ dvRecalcTotaux(); dvRenderApercuLive(); }); }
+  var dvRemiseAlerte = document.getElementById('dv-remise-alerte');
   function dvRecalcTotaux(){
-    var d = lignesEditorRecalcDetail(dvLignesWrap);
-    dvTotalHt.textContent = fmtEuros(d.ht);
+    var d = dfxCalcTotauxDetail(dvLignesWrap, dvRemiseSup.value, dvFraisPort.value);
+    dvTotRemiseArt.textContent = fmtEuros(d.remiseArt);
+    dvTotBrut.textContent = fmtEuros(d.brut);
+    dvTotalHt.textContent = fmtEuros(d.netHt);
+    dvTotalTva.textContent = fmtEuros(d.tva);
     dvTotalTtc.textContent = fmtEuros(d.ttc);
-    dvTotalTvaDetail.innerHTML = '';
-    d.tvaDetail.forEach(function(t){
-      var row = document.createElement('div'); row.className = 'dv-total-row';
-      var l = document.createElement('span'); l.textContent = 'dont TVA ' + t.taux + '%';
-      var v = document.createElement('span'); v.textContent = fmtEuros(t.montant);
-      row.appendChild(l); row.appendChild(v); dvTotalTvaDetail.appendChild(row);
-    });
+    // Bug backend réel confirmé ce soir (09/09/2026) : la remise par ligne n'est PAS appliquée
+    // par le générateur de PDF serveur pour un devis (vérifié octet par octet sur un vrai PDF
+    // renvoyé -- 300€ de ligne + 10% de remise ressort à 360€ TTC, comme si la remise était
+    // nulle). Le panneau/l'aperçu ici restent honnêtes (ils calculent ce qui DEVRAIT sortir) --
+    // ce bandeau évite que Mickael/Dorian ne se fient à ce calcul tant que le serveur (hors de
+    // mon périmètre ce soir : aucun workflow n8n touché) n'est pas corrigé.
+    dvRemiseAlerte.style.display = d.remiseArt > 0 ? 'block' : 'none';
   }
+  [dvRemiseSup, dvFraisPort].forEach(function(el){
+    el.addEventListener('input', function(){ dvRecalcTotaux(); dvRenderApercuLive(); });
+  });
   document.getElementById('dv-ligne-add').addEventListener('click', function(){
     dvLignesWrap.appendChild(dvLigneRow());
     dvRecalcTotaux();
@@ -21203,17 +21639,15 @@
     el.addEventListener('change', dvRenderApercuLive);
   });
 
+  // Mission MEG (09/09/2026 nuit) : la pastille d'état est desormais TOUJOURS visible (colonne
+  // de droite de la Carte 1, comme MEG) -- avant ce soir elle etait masquee pour un brouillon
+  // "normal" (patron, pas encore emis), ce qui n'a plus de sens une fois la pastille integree a
+  // la grille façon MEG plutot que flottante en bas de formulaire.
   function dvSetStatutBadge(){
-    if (dvStatut === 'valide' || dvStatut === 'envoye'){
-      dvStatutBadge.textContent = (dvStatut === 'envoye' ? 'Devis envoyé' : 'Devis émis') +
-        (dvRoleCreateur === 'salarie' ? ' · préparé par un salarié' : '');
-      dvStatutBadge.classList.add('show');
-    } else if (dvRoleCreateur === 'salarie'){
-      dvStatutBadge.textContent = 'Brouillon · préparé par un salarié';
-      dvStatutBadge.classList.add('show');
-    } else {
-      dvStatutBadge.classList.remove('show');
-    }
+    var suffixe = dvRoleCreateur === 'salarie' ? ' · salarié' : '';
+    if (dvStatut === 'envoye'){ dvStatutBadge.textContent = 'Envoyé' + suffixe; dvStatutBadge.classList.add('dfx-pill-envoye'); }
+    else if (dvStatut === 'valide'){ dvStatutBadge.textContent = 'Émis' + suffixe; dvStatutBadge.classList.remove('dfx-pill-envoye'); }
+    else { dvStatutBadge.textContent = 'Brouillon' + suffixe; dvStatutBadge.classList.remove('dfx-pill-envoye'); }
   }
   // Points D1/D2 (09/09/2026) : CHOISIR un client dans la liste est un geste explicite --
   // contrairement à la mémoire commune (qui ne remplit que du vide, pour ne jamais écraser une
@@ -21229,6 +21663,7 @@
     dvClientId = item.id || null;
     dvNom.value = item.nom || dvNom.value;
     dvEmail.value = item.email || '';
+    if (item.tva) dvTva.value = item.tva;
     if (item.adresse && isRepresentePar(item.adresse)){
       var sp = splitRepresentePar(item.adresse);
       dvAdresse.value = sp.adresse || item.adresse;
@@ -21242,12 +21677,19 @@
     suggestResidenceFromHistory(item.id, dvResidence, dvResidenceSug, null, dvFillResidence);
     dvRenderApercuLive();
   }
-  wireSearchAutocomplete(dvNom, dvNomSug, 'client-search', dvOnClientSelect);
+  // Mission MEG (09/09/2026 nuit) : le champ Client ouvre desormais la fenetre "Sélectionner un
+  // client" (clientPickerOpen, generique -- voir plus bas) au lieu d'une liste de suggestions
+  // qui apparaissait en tapant. La saisie libre reste possible (capacite deja existante,
+  // jamais retiree : un client hors fiche reste un cas valide).
+  document.getElementById('dv-client-pick-btn').addEventListener('click', function(){
+    clientPickerOpen(dvOnClientSelect);
+  });
 
   function dvFormOpen(){
     dvToken = null; dvStatut = null; dvRoleCreateur = null; dvClientId = null;
     dvNom.value = ''; dvAdresse.value = ''; dvEmail.value = ''; dvResidence.value = ''; dvObjet.value = '';
     dvNoteInterne.value = ''; dvReference.value = ''; dvModeReglement.value = 'Virement';
+    dvTva.value = ''; dvRemiseSup.value = '0'; dvFraisPort.value = '0';
     var today = new Date();
     var valid = new Date(today.getTime() + 60 * 86400000);
     dvDateEmission.textContent = today.toLocaleDateString('fr-FR');
@@ -21267,10 +21709,21 @@
     setTimeout(function(){ dvNom.focus(); }, 50);
   }
 
+  // Bug réel trouvé en testant l'envoi ce soir (09/09/2026, mission MEG) : cette fonction
+  // recopiait les lignes SANS jamais reprendre `remise` -- une remise par ligne (%), déjà
+  // prise en compte par le panneau Totaux et l'aperçu en direct (tous deux affichés à
+  // Mickael), disparaissait silencieusement à l'enregistrement/l'émission réelle du devis
+  // (vérifié : un devis à 300€ HT avec 10% de remise partait à 360€ TTC au lieu de 324€ TTC,
+  // remise ignorée). La Facture directe n'avait PAS ce bug (elle envoie lignesEditorRead()
+  // telle quelle, qui inclut déjà `remise`) -- seul ce mapper dédié au devis l'oubliait.
+  // Corrigé en reprenant `remise` comme le fait déjà lignesEditorRead(), pour ne plus jamais
+  // afficher à l'écran une remise que le document réel n'appliquerait pas.
   function dvCollectLignes(){
     var lecture = lignesEditorRead(dvLignesWrap);
     var lignes = lecture.lignes.map(function(l){
-      return { designation: l.designation, quantite: l.quantite, unite: '', prix_ht: l.prix_ht, tva: l.tva };
+      var ligne = { designation: l.designation, quantite: l.quantite, unite: '', prix_ht: l.prix_ht, tva: l.tva };
+      if (l.remise) ligne.remise = l.remise;
+      return ligne;
     });
     return { lignes: lignes, invalide: lecture.invalide };
   }
@@ -21304,41 +21757,9 @@
       dvErr.textContent = msg; dvErr.classList.add('show');
     });
   });
-  dvApercu.addEventListener('click', function(){
-    if (!dvNom.value.trim()){ dvErr.textContent = 'Le nom du client est obligatoire.'; dvErr.classList.add('show'); return; }
-    dvErr.textContent = ''; dvErr.classList.remove('show');
-    dvApercu.disabled = true;
-    // Piège déjà documenté (contratsBuildThumb, "Voir le vrai PDF" de Contrats) : ouvrir la
-    // fenêtre de façon SYNCHRONE au clic, jamais dans le callback asynchrone (bloqueur de popup).
-    var popup = window.open('', '_blank');
-    function doApercu(){
-      postDf({ type: 'apercu-pdf', token: dvToken }, function(r){
-        dvApercu.disabled = false;
-        if (r && r.ok && r.dataB64){
-          try {
-            var bytes = atob(r.dataB64); var arr = new Uint8Array(bytes.length);
-            for (var i = 0; i < bytes.length; i++) arr[i] = bytes.charCodeAt(i);
-            var blobUrl = URL.createObjectURL(new Blob([arr], { type: r.mime || 'application/pdf' }));
-            if (popup && !popup.closed) popup.location = blobUrl; else window.open(blobUrl, '_blank');
-          } catch (e) { if (popup && !popup.closed) popup.close(); dvErr.textContent = 'Impossible d’ouvrir l’aperçu.'; dvErr.classList.add('show'); }
-        } else {
-          if (popup && !popup.closed) popup.close();
-          dvErr.textContent = (r && r.message) || 'Aperçu impossible.'; dvErr.classList.add('show');
-        }
-      }, function(err){
-        dvApercu.disabled = false;
-        if (popup && !popup.closed) popup.close();
-        dvErr.textContent = err || 'Aperçu impossible.'; dvErr.classList.add('show');
-      });
-    }
-    // L'aperçu doit refléter le brouillon à jour -- on l'enregistre d'abord (crée le token au
-    // besoin), jamais un aperçu périmé par rapport à ce qui est affiché à l'écran.
-    dvSaveBrouillon(function(){ doApercu(); }, function(msg){
-      dvApercu.disabled = false;
-      if (popup && !popup.closed) popup.close();
-      dvErr.textContent = msg; dvErr.classList.add('show');
-    });
-  });
+  // Bouton "Aperçu (filigrané)" retiré le 09/09/2026 (nuit, mission MEG) : l'aperçu en direct
+  // (dvRenderApercuLive, sous le formulaire) est désormais permanent, ce bouton dupliquait un
+  // aller-retour serveur devenu inutile pour un simple aperçu visuel.
   dvEmettre.addEventListener('click', function(){
     if (!dvToken){ dvErr.textContent = 'Enregistre d’abord le brouillon.'; dvErr.classList.add('show'); return; }
     dvErr.textContent = ''; dvErr.classList.remove('show');
@@ -21391,64 +21812,11 @@
   document.getElementById('dv-close').addEventListener('click', dvFormClose);
   document.getElementById('dv-cancel').addEventListener('click', dvFormClose);
 
-  // ---- "Mes devis" -- liste (statuts confondus), recherche client-side, réouverture via
-  // "charger" (mcs-df-formulaire). Table PARTAGÉE avec le mécanisme conversationnel existant
-  // (mcs_devis_fichiers) : un devis dicté par Bruno apparaît ici aussi bien qu'un devis créé
-  // depuis ce formulaire (acceptance #12).
-  var dvMeslistBg = document.getElementById('dv-meslist-bg');
-  var dvMeslist = document.getElementById('dv-meslist');
-  var dvMeslistSearch = document.getElementById('dv-meslist-search');
-  var dvMeslistItems = document.getElementById('dv-meslist-items');
-  var dvMeslistData = [];
-  function dvMeslistOpen(){
-    dvMeslistBg.classList.add('open'); dvMeslist.classList.add('open');
-    dvMeslistSearch.value = '';
-    dvMeslistItems.innerHTML = '<p id="dv-meslist-empty">Chargement…</p>';
-    postDf({ type: 'liste' }, function(r){
-      dvMeslistData = (r && r.items) || [];
-      dvMeslistRender('');
-    }, function(err){
-      dvMeslistItems.innerHTML = '<p id="dv-meslist-empty">' + (err || 'Impossible de charger la liste.') + '</p>';
-    });
-  }
-  function dvMeslistRender(filtre){
-    var f = dvNorm(filtre);
-    dvMeslistItems.innerHTML = '';
-    // Un devis rejeté n'est jamais affiché nulle part dans l'app (règle explicite de Mathéo,
-    // déjà appliquée au panneau "Devis et factures" existant) -- même convention ici.
-    var items = dvMeslistData.filter(function(it){
-      if (it.statut === 'rejete') return false;
-      if (!f) return true;
-      return dvNorm(it.clientNom || '').indexOf(f) !== -1 || dvNorm(it.objet || '').indexOf(f) !== -1;
-    });
-    if (!items.length){ dvMeslistItems.innerHTML = '<p id="dv-meslist-empty">Aucun devis trouvé.</p>'; return; }
-    items.forEach(function(it){
-      var card = document.createElement('div'); card.className = 'dv-meslist-card';
-      var nom = document.createElement('div'); nom.className = 'dv-meslist-nom';
-      nom.textContent = (it.numeroDevis && it.numeroDevis !== 'APERCU' ? it.numeroDevis + ' — ' : '') + (it.clientNom || '(sans nom)');
-      var meta = document.createElement('div'); meta.className = 'dv-meslist-meta';
-      var bits = [DV_STATUT_LABEL[it.statut] || it.statut || '?'];
-      if (it.roleCreateur === 'salarie') bits.push('👷 salarié');
-      if (it.updatedAt) bits.push(new Date(it.updatedAt).toLocaleDateString('fr-FR'));
-      meta.textContent = bits.join(' · ');
-      var montant = document.createElement('div'); montant.className = 'dv-meslist-montant';
-      montant.textContent = it.montantTtc != null ? fmtEuros(it.montantTtc) + ' TTC' : '';
-      card.appendChild(nom); card.appendChild(meta); card.appendChild(montant);
-      card.addEventListener('click', function(){
-        dvMeslistBg.classList.remove('open'); dvMeslist.classList.remove('open');
-        dvChargerDevis(it.token);
-      });
-      dvMeslistItems.appendChild(card);
-    });
-  }
-  dvMeslistSearch.addEventListener('input', function(){ dvMeslistRender(dvMeslistSearch.value.trim()); });
-  document.getElementById('dv-meslist-btn').addEventListener('click', dvMeslistOpen);
-  document.getElementById('dv-meslist-close').addEventListener('click', function(){
-    dvMeslistBg.classList.remove('open'); dvMeslist.classList.remove('open');
-  });
-  dvMeslistBg.addEventListener('click', function(){
-    dvMeslistBg.classList.remove('open'); dvMeslist.classList.remove('open');
-  });
+  // ---- Recharger un devis existant dans le VRAI formulaire (identité/lignes/PDF) -- appelé
+  // depuis la liste principale "Devis et Factures" (icône mail, dfxBuildDevisRow). Le panneau
+  // "Mes devis" dédié (redondant avec cet écran-liste) a été retiré le 09/09/2026 (nuit, mission
+  // MEG) -- son seul bouton d'entrée ("Voir mes devis…" en haut du formulaire) est supprimé,
+  // cette fonction reste seule survivante, toujours utilisée.
   function dvChargerDevis(token){
     postDf({ type: 'charger', token: token }, function(r){
       if (!r || !r.ok || !r.devis){ toast((r && r.message) || 'Impossible de charger ce devis.'); return; }
@@ -21458,6 +21826,8 @@
       dvResidence.value = d.residenceNom || '';
       dvObjet.value = d.objet || '';
       dvNoteInterne.value = d.noteInterne || '';
+      dvReference.value = ''; dvTva.value = ''; dvRemiseSup.value = '0'; dvFraisPort.value = '0';
+      dvModeReglement.value = 'Virement';
       dvDateEmission.textContent = d.createdAt ? new Date(d.createdAt).toLocaleDateString('fr-FR') : '—';
       dvDateValidite.textContent = d.dateValidite ? new Date(d.dateValidite).toLocaleDateString('fr-FR') : '60 jours';
       dvLignesWrap.innerHTML = '';
