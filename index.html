@@ -1985,6 +1985,21 @@
   .fcf-ap-strokerect.fcf-ap-red-border{border-color:#CC1414; border-width:2px}
   .fcf-ap-red{color:#CC1414}
   .fcf-ap-logo{position:absolute; width:335.7px; height:100.8px; object-fit:contain}
+  /* Apercu EN DIRECT du devis/facture (mission Mickael, 09/09/2026 soir) -- SOUS le formulaire
+     (pas a cote comme Contrats, demande explicite), mis a jour a chaque frappe SANS aucun appel
+     serveur. Reutilise les MEMES primitives de dessin (fcf-ap-t/rect/strokerect/hline/vline,
+     T()/RECT()/... extraites en fonctions partagees, voir dfxMakeDrawer dans le JS) que
+     fcfRenderApercu (Contrats) -- jamais un 2e moteur de rendu, juste une 2e MISE EN PAGE
+     (devis/facture generique multi-lignes) construite avec les memes briques. Le bouton
+     "Apercu (filigrane)" existant sur le devis (vrai PDF serveur, avec le futur numero) reste
+     inchange a cote -- celui-ci est explicitement local/non officiel (bandeau au-dessus). */
+  .dfx-apercu-wrap{margin-top:6px}
+  .dfx-apercu-label{font-size:12.5px; color:var(--muted); margin-bottom:8px; text-align:center}
+  .dfx-apercu-scroll{overflow-x:auto; -webkit-overflow-scrolling:touch; display:flex; justify-content:center; padding:4px 0 8px}
+  #dv-apercu-page, #fd-apercu-page{
+    width:595px; height:842px; position:relative; background:#fff; color:#000; flex:0 0 auto;
+    box-shadow:0 4px 24px rgba(0,0,0,.18); font-family:Helvetica,Arial,sans-serif; overflow:hidden;
+  }
   /* Point 4 (Session 15) -- +3%/-3% en un clic, ancien/nouveau prix affiches avant validation. */
   .fcf-reindex-row{display:flex; gap:8px; margin-top:8px}
   .fcf-reindex-btn{
@@ -2035,17 +2050,29 @@
   html.mcs-theme #facture-contrat-form textarea,
   html.mcs-theme #contrat-catalogue-form input,
   html.mcs-theme #contrat-catalogue-form select,
-  html.mcs-theme #contrat-catalogue-form textarea{
+  html.mcs-theme #contrat-catalogue-form textarea,
+  html.mcs-theme #devis-form-corps input,
+  html.mcs-theme #devis-form-corps select,
+  html.mcs-theme #devis-form-corps textarea,
+  html.mcs-theme #facture-directe-form input,
+  html.mcs-theme #facture-directe-form select,
+  html.mcs-theme #facture-directe-form textarea{
     border:2px solid var(--blue); background:#fff;
   }
   html.mcs-theme #facture-contrat-form input:disabled,
   html.mcs-theme #facture-contrat-form textarea:disabled,
   html.mcs-theme #contrat-catalogue-form input:disabled,
-  html.mcs-theme #contrat-catalogue-form textarea:disabled{
+  html.mcs-theme #contrat-catalogue-form textarea:disabled,
+  html.mcs-theme #devis-form-corps input:disabled,
+  html.mcs-theme #devis-form-corps textarea:disabled,
+  html.mcs-theme #facture-directe-form input:disabled,
+  html.mcs-theme #facture-directe-form textarea:disabled{
     border-color:var(--hairline); color:var(--muted);
   }
   html.mcs-theme #facture-contrat-form .ctf-section,
-  html.mcs-theme #contrat-catalogue-form .ctf-section{
+  html.mcs-theme #contrat-catalogue-form .ctf-section,
+  html.mcs-theme #devis-form-corps .ctf-section,
+  html.mcs-theme #facture-directe-form .ctf-section{
     background:#fff; border:1px solid rgba(10,132,255,.25); border-radius:14px;
     padding:14px 14px 16px; box-shadow:0 1px 3px rgba(0,0,0,.06);
   }
@@ -4185,22 +4212,34 @@
   /* Point 2 (session suite, 29/08/2026) : badge discret "déjà connu" -- mémoire commune,
      partagé par tous les formulaires qui la consultent (jamais imposé, juste indicatif). */
   .mem-badge{font-size:11px; color:var(--gold-a); opacity:.85; margin-top:1px; display:none}
+  /* Ecran "Facture directe" -- refait en PLEIN ECRAN le 09/09/2026 soir (mission Mickael, meme
+     demande que le devis l'apres-midi meme : "je dois pouvoir faire comme dans MEG"). Meme
+     gabarit EXACT que #dv-form/#facture-contrat-form-bg -- #fd-form-bg (fond assombri de
+     l'ancienne modale) reste en place tel quel, jamais retire/touche : #fd-form devient
+     position:fixed;inset:0 et le recouvre entierement, le JS (fdFormBg.classList.add/remove
+     ('open')) continue de fonctionner sans AUCUNE modification. */
   #fd-form-bg{position:fixed; inset:0; background:rgba(0,0,0,.5); display:none; z-index:52}
   #fd-form-bg.open{display:block}
   #fd-form{
-    position:fixed; left:14px; right:14px; top:50%; transform:translateY(-50%) scale(.96); z-index:53;
-    background:var(--bg2); border-radius:16px; padding:18px 18px calc(18px + env(safe-area-inset-bottom));
-    display:none; flex-direction:column; gap:10px; max-height:82vh; overflow-y:auto; -webkit-overflow-scrolling:touch;
-    opacity:0; transition:opacity .2s ease, transform .2s ease;
+    position:fixed; inset:0; z-index:53; background:var(--bg);
+    display:none; flex-direction:column;
+    transform:translateY(100%); transition:transform .28s cubic-bezier(.2,.9,.25,1);
+    padding:0; border-radius:0; max-height:none; opacity:1; gap:0;
   }
-  #fd-form.open{display:flex; opacity:1; transform:translateY(-50%) scale(1)}
+  #fd-form.open{display:flex; transform:translateY(0)}
   @media (prefers-reduced-motion: reduce){#fd-form{transition:none}}
   #fd-form b{font-size:16px}
-  #fd-form label{display:flex; flex-direction:column; gap:5px; font-size:12.5px; color:var(--muted)}
-  #fd-form input{
-    font:inherit; font-size:15px; color:var(--ink); background:var(--field-bg);
-    border:0.5px solid rgba(255,255,255,.18); border-radius:10px; padding:9px 11px; box-sizing:border-box;
+  #fd-form-head{
+    flex:0 0 auto; display:flex; align-items:center; justify-content:space-between; gap:10px;
+    padding:calc(10px + env(safe-area-inset-top)) 18px 12px; border-bottom:0.5px solid var(--hairline);
   }
+  #fd-close{background:none; border:0; color:var(--muted); font-size:18px; padding:4px 6px; cursor:pointer; -webkit-tap-highlight-color:transparent}
+  #fd-form-body{flex:1; overflow-y:auto; -webkit-overflow-scrolling:touch; padding:14px 16px calc(20px + env(safe-area-inset-bottom)); display:flex; flex-direction:column; gap:10px}
+  /* Les champs de "Facture directe" sont desormais dans .contrat-form/.ctf-section (memes
+     classes generiques que Contrats -- voir plus loin pour l'extension des regles
+     "encadre bleu"/"carte blanche") : plus de style #fd-form label/input propre, qui aurait
+     gagne en specificite (id) sur .contrat-form label/input (classe) et casse la coherence
+     visuelle avec Contrats. */
   #fd-dates-row{display:flex; gap:8px}
   #fd-dates-row label{flex:1; min-width:0}
   #fd-lignes-label{font-size:12.5px; color:var(--muted); margin-top:2px}
@@ -4270,19 +4309,13 @@
   #dv-form.open{display:flex; transform:translateY(0)}
   @media (prefers-reduced-motion: reduce){#dv-form{transition:none}}
   #dv-form b{font-size:16px}
-  #dv-form label{display:flex; flex-direction:column; gap:5px; font-size:12.5px; color:var(--muted)}
-  #dv-form input, #dv-form textarea{
-    font:inherit; font-size:15px; color:var(--ink); background:var(--field-bg);
-    border:0.5px solid rgba(255,255,255,.18); border-radius:10px; padding:9px 11px; box-sizing:border-box;
-    resize:vertical;
-  }
-  /* Retour Dorian : "les champs ne sont pas encadres, on ne distingue pas ce qui est saisissable"
-     -- vrai en theme clair MCS : une bordure blanche a 18% d'opacite (pensee pour le fond sombre
-     du labo) est quasi invisible sur un champ clair. Meme correctif deja applique ailleurs dans
-     ce fichier pour les memes raisons (contours WCAG verifies) : bordure plus epaisse, couleur
-     --hairline (deja calibree a 3,44:1 sur blanc pour ce theme, cf. le bloc html.mcs-theme en
-     tete de fichier) au lieu du blanc translucide. */
-  html.mcs-theme #dv-form input, html.mcs-theme #dv-form textarea{border:1.5px solid var(--hairline)}
+  /* Retour Dorian (09/09/2026 soir, mission MEG) : "je dois pouvoir faire comme dans MEG" --
+     les champs passent desormais dans .contrat-form/.ctf-section (memes classes generiques
+     que Contrats -- carte blanche encadree, bordure bleue 2px sur chaque champ, cf. l'extension
+     des selecteurs html.mcs-theme #facture-contrat-form/#contrat-catalogue-form plus bas, qui
+     inclut maintenant #devis-form-corps/#facture-directe-form). L'ancien style bespoke
+     #dv-form label/input (id, plus specifique qu'une classe) est retire : il aurait sinon
+     gagne sur .contrat-form label/input et cassé la coherence visuelle avec Contrats. */
   #dv-form-head{
     flex:0 0 auto; display:flex; align-items:center; justify-content:space-between; gap:10px;
     padding:calc(10px + env(safe-area-inset-top)) 18px 12px; border-bottom:0.5px solid var(--hairline);
@@ -7189,31 +7222,60 @@
 
 <div id="fd-form-bg"></div>
 <div id="fd-form">
-  <b>Facture directe</b>
+  <div id="fd-form-head"><b>Facture directe</b><button id="fd-close" type="button" aria-label="Fermer">✕</button></div>
+  <div id="fd-form-body">
   <p class="dfhint">Sans devis d'origine — pour une prestation déjà réalisée (ex. destruction de nid de frelons). Le reste (identité MCS, RIB, mentions légales) vient automatiquement.</p>
-  <label>Client
-    <input id="fd-nom" type="text" placeholder="Ex : SDC Les Tilleuls" autocomplete="off">
-  </label>
-  <label>Adresse de facturation
-    <input id="fd-adresse" type="text" placeholder="Adresse du client" autocomplete="off">
-  </label>
-  <label>Email <input id="fd-email" type="email" placeholder="contact@syndic.fr" autocomplete="off"></label>
-  <label>Prestation
-    <input id="fd-objet" type="text" placeholder="Ex : Destruction nid de frelons" autocomplete="off">
-  </label>
-  <div id="fd-dates-row">
-    <label>Date d'intervention <input id="fd-date-debut" type="date"></label>
-    <label>Fin (optionnel) <input id="fd-date-fin" type="date"></label>
+  <div class="contrat-form" id="facture-directe-form">
+    <div class="ctf-section">
+      <p class="ctf-section-titre">Identité</p>
+      <label>Client</label>
+      <input id="fd-nom" type="text" placeholder="Ex : SDC Les Tilleuls" autocomplete="off">
+      <label>Adresse de facturation</label>
+      <input id="fd-adresse" type="text" placeholder="Adresse du client" autocomplete="off">
+      <label>Email</label>
+      <input id="fd-email" type="email" placeholder="contact@syndic.fr" autocomplete="off">
+    </div>
+    <div class="ctf-section">
+      <p class="ctf-section-titre">Document</p>
+      <div id="fd-dates-row">
+        <div class="dv-date-box"><span>Numéro</span><b>Attribué à l'émission</b></div>
+        <div class="dv-date-box"><span>Date</span><b id="fd-date-jour">—</b></div>
+      </div>
+      <label>Date d'intervention (fin optionnelle)</label>
+      <div class="cf-row">
+        <input id="fd-date-debut" type="date">
+        <input id="fd-date-fin" type="date">
+      </div>
+      <label>Référence</label>
+      <input id="fd-reference" type="text" placeholder="Ex : votre référence interne" autocomplete="off">
+      <label>Mode de règlement</label>
+      <select id="fd-mode-reglement">
+        <option value="Virement" selected>Virement</option>
+        <option value="Chèque">Chèque</option>
+        <option value="Prélèvement">Prélèvement</option>
+        <option value="Carte bancaire">Carte bancaire</option>
+        <option value="Espèces">Espèces</option>
+      </select>
+      <label>Prestation</label>
+      <input id="fd-objet" type="text" placeholder="Ex : Destruction nid de frelons" autocomplete="off">
+    </div>
+    <div class="ctf-section">
+      <p class="ctf-section-titre">Lignes</p>
+      <div id="fd-lignes"></div>
+      <button id="fd-ligne-add" type="button" class="fd-ligne-add-btn">+ Ajouter une ligne</button>
+      <div id="fd-total">Total HT : 0,00 €</div>
+    </div>
   </div>
-  <div id="fd-lignes-label">Lignes</div>
-  <div id="fd-lignes"></div>
-  <button id="fd-ligne-add" type="button" class="fd-ligne-add-btn">+ Ajouter une ligne</button>
-  <div id="fd-total">Total HT : 0,00 €</div>
+  <div class="dfx-apercu-wrap">
+    <p class="dfx-apercu-label">👁️ Aperçu en direct (non officiel — se met à jour à la frappe)</p>
+    <div class="dfx-apercu-scroll"><div id="fd-apercu-page"></div></div>
+  </div>
   <div id="fd-recap"></div>
   <div id="fd-err"></div>
   <div id="df-row">
     <button id="fd-cancel" type="button" class="vc-no">Annuler</button>
     <button id="fd-save" type="button" class="vc-ok vc-envoi-reel"><svg class="hicon-sm" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><line x1="22" y1="2" x2="11" y2="13"/><polygon points="22 2 15 22 11 13 2 9 22 2"/></svg>Émettre la facture</button>
+  </div>
   </div>
 </div>
 
@@ -7226,39 +7288,65 @@
   <div id="dv-form-body">
   <p class="dfhint">Émission au jour même, validité 60 jours. Le reste (identité MCS, mentions légales) vient automatiquement.</p>
   <div id="dv-meslist-row"><button id="dv-meslist-btn" type="button" class="fc-choice-link">📋 Voir mes devis (brouillons, validés, envoyés) →</button></div>
-  <label id="dv-nom-wrap">Client
-    <input id="dv-nom" type="text" placeholder="Ex : SDC Les Tilleuls (3 lettres minimum)" autocomplete="off">
-    <ul id="dv-nom-sug" class="fd-ligne-sug"></ul>
-  </label>
-  <label>Adresse de facturation
-    <input id="dv-adresse" type="text" placeholder="Adresse du client" autocomplete="off">
-  </label>
-  <label>Email <input id="dv-email" type="email" placeholder="contact@syndic.fr" autocomplete="off"></label>
-  <label id="dv-residence-wrap">Nom de la résidence (si différent du client)
-    <input id="dv-residence" type="text" placeholder="Ex : Résidence Les Tilleuls" autocomplete="off">
-    <ul id="dv-residence-sug" class="fd-ligne-sug"></ul>
-  </label>
-  <label>Objet du devis
-    <input id="dv-objet" type="text" placeholder="Ex : Contrat entretien VMC" autocomplete="off">
-  </label>
-  <div id="dv-dates-row">
-    <div class="dv-date-box"><span>Émission</span><b id="dv-date-emission">—</b></div>
-    <div class="dv-date-box"><span>Validité</span><b id="dv-date-validite">60 jours</b></div>
+  <div class="contrat-form" id="devis-form-corps">
+    <div class="ctf-section">
+      <p class="ctf-section-titre">Identité</p>
+      <label id="dv-nom-wrap-label">Client (3 lettres minimum)</label>
+      <div id="dv-nom-wrap">
+        <input id="dv-nom" type="text" placeholder="Ex : SDC Les Tilleuls" autocomplete="off">
+        <ul id="dv-nom-sug" class="fd-ligne-sug"></ul>
+      </div>
+      <label>Adresse de facturation</label>
+      <input id="dv-adresse" type="text" placeholder="Adresse du client" autocomplete="off">
+      <label>Email</label>
+      <input id="dv-email" type="email" placeholder="contact@syndic.fr" autocomplete="off">
+      <label id="dv-residence-wrap-label">Nom de la résidence (si différent du client)</label>
+      <div id="dv-residence-wrap">
+        <input id="dv-residence" type="text" placeholder="Ex : Résidence Les Tilleuls" autocomplete="off">
+        <ul id="dv-residence-sug" class="fd-ligne-sug"></ul>
+      </div>
+    </div>
+    <div class="ctf-section">
+      <p class="ctf-section-titre">Document</p>
+      <div id="dv-dates-row">
+        <div class="dv-date-box"><span>Émission</span><b id="dv-date-emission">—</b></div>
+        <div class="dv-date-box"><span>Validité</span><b id="dv-date-validite">60 jours</b></div>
+      </div>
+      <label>Référence</label>
+      <input id="dv-reference" type="text" placeholder="Ex : votre référence interne" autocomplete="off">
+      <label>Mode de règlement</label>
+      <select id="dv-mode-reglement">
+        <option value="Virement" selected>Virement</option>
+        <option value="Chèque">Chèque</option>
+        <option value="Prélèvement">Prélèvement</option>
+        <option value="Carte bancaire">Carte bancaire</option>
+        <option value="Espèces">Espèces</option>
+      </select>
+      <label>Objet du devis</label>
+      <input id="dv-objet" type="text" placeholder="Ex : Contrat entretien VMC" autocomplete="off">
+    </div>
+    <div class="ctf-section">
+      <p class="ctf-section-titre">Lignes</p>
+      <div id="dv-lignes"></div>
+      <div id="dv-lignes-actions">
+        <button id="dv-ligne-add" type="button" class="fd-ligne-add-btn">+ Ajouter une ligne</button>
+        <button id="dv-ligne-multi" type="button" class="fd-ligne-add-btn">🔍 Ajouter plusieurs articles</button>
+      </div>
+      <div id="dv-totaux">
+        <div class="dv-total-row"><span>Total HT</span><b id="dv-total-ht">0,00 €</b></div>
+        <div id="dv-total-tva-detail"></div>
+        <div class="dv-total-row dv-total-ttc"><span>Total TTC</span><b id="dv-total-ttc">0,00 €</b></div>
+      </div>
+    </div>
+    <div class="ctf-section">
+      <p class="ctf-section-titre">Commentaire — note interne <span class="dv-note-hint">(jamais affiché sur le devis ni dans le mail)</span></p>
+      <textarea id="dv-note-interne" rows="2" placeholder="Ex : rappeler avant de passer, code portail 1234…"></textarea>
+    </div>
   </div>
-  <div id="dv-lignes-label">Lignes</div>
-  <div id="dv-lignes"></div>
-  <div id="dv-lignes-actions">
-    <button id="dv-ligne-add" type="button" class="fd-ligne-add-btn">+ Ajouter une ligne</button>
-    <button id="dv-ligne-multi" type="button" class="fd-ligne-add-btn">🔍 Ajouter plusieurs articles</button>
+  <div class="dfx-apercu-wrap">
+    <p class="dfx-apercu-label">👁️ Aperçu en direct (non officiel — se met à jour à la frappe)</p>
+    <div class="dfx-apercu-scroll"><div id="dv-apercu-page"></div></div>
   </div>
-  <div id="dv-totaux">
-    <div class="dv-total-row"><span>Total HT</span><b id="dv-total-ht">0,00 €</b></div>
-    <div id="dv-total-tva-detail"></div>
-    <div class="dv-total-row dv-total-ttc"><span>Total TTC</span><b id="dv-total-ttc">0,00 €</b></div>
-  </div>
-  <label>Commentaire — note interne <span class="dv-note-hint">(jamais affiché sur le devis ni dans le mail)</span>
-    <textarea id="dv-note-interne" rows="2" placeholder="Ex : rappeler avant de passer, code portail 1234…"></textarea>
-  </label>
   <div id="dv-err"></div>
   <div id="dv-statut-badge"></div>
   <div id="dv-row">
@@ -7337,9 +7425,9 @@
          c'est ce qui supprime le conflit humain sur cette ligne precise. Sert aussi de cle
          unique de detection de mise a jour (voir checkUpdate ci-dessous), plus fiable qu'une
          comparaison de chaine de version par tenant. */
-  var APPV_MCS = '4.51';
+  var APPV_MCS = '4.52';
   var APPV_LABO = '1.00';
-  var BUILD = 33;
+  var BUILD = 34;
   // displayVersion()/displayVersionShort() lisent isMcsCode() (definie plus bas dans cette
   // meme IIFE -- declaration de fonction, donc disponible ici par hoisting) : le TENANT
   // affiche depend du code de connexion, jamais d'un simple "APPV" global qui ne dirait ni
@@ -10861,15 +10949,27 @@
     document.getElementById('dfx-totaux-result').innerHTML = '';
   }
   function dfxCalculerTotaux(){
-    var totHt = 0, totTtc = 0;
+    var totHt = 0, totTtc = 0, totReg = 0, totReste = 0;
     dfxCurrentItems.forEach(function(it){
       var ht = Number(it.montantHt); if (!isNaN(ht)) totHt += ht;
       var ttc = Number(devisActiveTab === 'devis' ? it.montant : it.montantTtc); if (!isNaN(ttc)) totTtc += ttc;
+      // Point 09/09/2026 (Dorian, demande Mickael) : MEG affiche aussi Regle/Reste du, sur les
+      // memes lignes filtrees ("ces totaux prennent en compte les resultats des filtres
+      // appliques" -- meme principe que HT/TTC ci-dessus). N'existe que sur les factures (un
+      // devis n'est jamais "regle") -- it.regle/it.resteDu valent undefined sur l'onglet Devis,
+      // Number(undefined) = NaN, donc les 2 sommes restent a 0 sans branche separee.
+      var reg = Number(it.regle); if (!isNaN(reg)) totReg += reg;
+      var reste = Number(it.resteDu); if (!isNaN(reste)) totReste += reste;
     });
     var el = document.getElementById('dfx-totaux-result'); el.innerHTML = '';
     var l1 = document.createElement('div'); l1.className = 'dfx-totaux-ligne'; l1.innerHTML = '<span>Total HT</span><b>' + escHtml(fmtEuros(totHt)) + '</b>';
     var l2 = document.createElement('div'); l2.className = 'dfx-totaux-ligne'; l2.innerHTML = '<span>Total TTC</span><b>' + escHtml(fmtEuros(totTtc)) + '</b>';
     el.appendChild(l1); el.appendChild(l2);
+    if (devisActiveTab === 'factures'){
+      var l3 = document.createElement('div'); l3.className = 'dfx-totaux-ligne'; l3.innerHTML = '<span>Total réglé</span><b>' + escHtml(fmtEuros(totReg)) + '</b>';
+      var l4 = document.createElement('div'); l4.className = 'dfx-totaux-ligne'; l4.innerHTML = '<span>Total restant dû</span><b>' + escHtml(fmtEuros(totReste)) + '</b>';
+      el.appendChild(l3); el.appendChild(l4);
+    }
   }
   function devisAttenteClose(){ devisview.classList.remove('open'); }
   function fmtDevisDate(iso){
@@ -11996,6 +12096,84 @@
   // qui a mis n8n a genoux fin aout ; un bouton separe ("Voir le vrai PDF") appelle le serveur,
   // a la demande seulement.
   var FCF_LOGO_DATA_URI = 'data:image/jpeg;base64,/9j/4AAQSkZJRgABAQAAAQABAAD/2wBDAAMCAgICAgMCAgIDAwMDBAYEBAQEBAgGBgUGCQgKCgkICQkKDA8MCgsOCwkJDRENDg8QEBEQCgwSExIQEw8QEBD/2wBDAQMDAwQDBAgEBAgQCwkLEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBD/wAARCAFQBF8DASIAAhEBAxEB/8QAHwAAAQUBAQEBAQEAAAAAAAAAAAECAwQFBgcICQoL/8QAtRAAAgEDAwIEAwUFBAQAAAF9AQIDAAQRBRIhMUEGE1FhByJxFDKBkaEII0KxwRVS0fAkM2JyggkKFhcYGRolJicoKSo0NTY3ODk6Q0RFRkdISUpTVFVWV1hZWmNkZWZnaGlqc3R1dnd4eXqDhIWGh4iJipKTlJWWl5iZmqKjpKWmp6ipqrKztLW2t7i5usLDxMXGx8jJytLT1NXW19jZ2uHi4+Tl5ufo6erx8vP09fb3+Pn6/8QAHwEAAwEBAQEBAQEBAQAAAAAAAAECAwQFBgcICQoL/8QAtREAAgECBAQDBAcFBAQAAQJ3AAECAxEEBSExBhJBUQdhcRMiMoEIFEKRobHBCSMzUvAVYnLRChYkNOEl8RcYGRomJygpKjU2Nzg5OkNERUZHSElKU1RVVldYWVpjZGVmZ2hpanN0dXZ3eHl6goOEhYaHiImKkpOUlZaXmJmaoqOkpaanqKmqsrO0tba3uLm6wsPExcbHyMnK0tPU1dbX2Nna4uPk5ebn6Onq8vP09fb3+Pn6/9oADAMBAAIRAxEAPwD9U6KKKACiiigAooooAKKKKACiiigAooooAKKKKACiiigAooooAKKKKACiiigAooooAKKKKACiiigAooooAKKKKACiiigAooooAKKKKACiiigAooooAKKKKACiiigAooooAKKKKACiiigAooooAKKKKACiiigAooooAKKKKACiiigAooooAKKKKACiikz9PzoAWikz9Pzoz9PzoAWiiigAooooAKKKKACiiigAooooAKKKKACiiigAooooAKKKKACiiigAooooAKKKKACiiigAooooAKKKKACiiigAooooAKKKKACiiigAooooAKKKKACiiigAooooAKKKKACiiigAooooAKKKKACiiigAooooAKKKKACi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UAFFFFABRRRQAUUUUAFFFFABRRRQAUUUUAFFFFABRRRQAUUUUAFFFFABRRRQAUUUUAFFFFABRRRQAUUUUAFFFFABRRRQAUUUUAFFFFABRRRQAUUUUAFFFFABRRRQAUUUUAFFFFABRRRQAUUUUAFFFFABRRRQAUUUUAFFFFABRRRQAUUUUAFFFFABRRRQAUUUUAFFFFABRRRQAUUUUAFFFFABRRRQAUUUUAFIxpaKAISDnpRtJHNS4HpS0CklJFfaR2pwBbrUuB6UtBEYcrumVJYi4wBQkZVQMVawPSjA9KpSsdHtHaxU8gk5qOSzRz8yZ+tX6MD0pqbRyVaEau5han4bstSh8qS1iOR3UV5t4j/Z90PXGd5LSHLf7Nez0n41Ua0o7HNUy2jVVpI+RPE37Iek3G8w2q59hXlniH9km5sizWVnKT7A1+hxUHqAajaCBvvW6N9VBrtp5lOn0PnsdwbhMbvK3yPy71L9nrxdYki202c4/wBk1kP8HfHyfKNHnP8AwA1+q5srJvvWEJ+sa03+ztO/6Btv/wB+lrqWdTX2T52p4X4Sbv7Z/cflMfg14/PI0af/AL4NSR/Avx5cMu/Srgc/3TX6q/2dp3/QNt/+/S0v2DTx006D/v0taLP6i+yioeGODg7uq/uPzZ0T9mnX70KLvT5hnrlTXoWgfsdW9wUe5tWB4JyK+51tbRfu2cQ+kYqRY41+7Eo+gFYzzqpPoeph+AcFQd1K/wAj5s8K/sqaHo2yQ26Ej1FesaF8ONK0ZVVLGA7f9gV3uKMCvPnipz3PosPkWHw6tExTo8AKGKBE2/3RirQticdeK0MD0owPSsHNs9GGGUNmVxHlQCKUW4ByBU9LU8zOqLcVa5XMB7Uqw7etT0Uh31uRbKNmKkwPSjA9Kdx8w2lWlwKWle5L1GnrSU+incnlEHSloopFBRRRQAUUUUAFFFFABRRRQAUUUUAFFFFABRRRQAUUUUAFFFFABRRRQAUUUUAFFFFABRRRQAUUUUAFFFFABRRRQAUUUUAFFFFABRRRQAUUUUAFFFFABRRRQAUUUUAFFFFABRRRQAUUUUAFFFFABRRRQAUUUUAFFFFABRRRQAUUUUAFFFFABRRRQAUUUUAFFFFABRRRQAUUUUAFFFFABRRRQAUUUUAFFFFABRRRQAUUUUAFFFFABRRRQAUUUUAFFFFABRRRQAUUUUAFFFFABRRRQAUUUUAFFFFABRRRQAUUUUAFFFFABRRRQAUUUUAFFFFABRRRQAUUUUAFFFFABRRRQAUUUUAFFFFABRRRQAUUUUAFFFFABRRRQAUUUUAFFFFABRRRQAUUUUAFFFFABRRRQAUUUUAFFFFABRRRQAUUUUAFFFFABRRRQAUUUUAFFFFABRRRQAUUUUAFFFFABRRRQAUUUUAFFFFABRRRQAUUUUAFFFFABRRRQAUUUUAf/9k=';
+  // ===================== MOTEUR DE DESSIN PARTAGE (extrait le 09/09/2026 soir, mission MEG) =====
+  // T()/RECT()/STROKERECT()/HLINE()/VLINE() + les approximations de largeur de police
+  // (numWidthApprox/centerWidthApprox) etaient jusqu'ici des fonctions LOCALES a
+  // fcfRenderApercu (apercu HTML/CSS de "Modifier et traiter", Contrats -> Facturation).
+  // Extraites ici A L'IDENTIQUE (meme logique, memes constantes, aucun comportement change --
+  // fcfRenderApercu les appelle desormais via fcfMakeDrawer(PAGE_H) au lieu de les redefinir)
+  // pour etre reutilisees par dfxRenderApercuGenerique (nouvel apercu en direct des ecrans
+  // "Devis"/"Facture directe", plus bas) -- UN SEUL moteur de rendu, jamais deux qui pourraient
+  // diverger, comme demande explicitement dans la mission du 09/09/2026 soir.
+  function fcfNumWidthApprox(str, size){
+    var w = 0; str = String(str||'');
+    for (var i=0; i<str.length; i++){
+      var ch = str.charAt(i);
+      if (ch>='0'&&ch<='9') w += 556;
+      else if (ch===' ') w += 278;
+      else if (ch==='.') w += 278;
+      else if (ch===',') w += 278;
+      else if (ch==='€') w += 556;
+      else if (ch==='%') w += 889;
+      else w += 556;
+    }
+    return w * size / 1000;
+  }
+  function fcfCenterWidthApprox(str, size){
+    var w = 0; str = String(str||'');
+    for (var i=0; i<str.length; i++){
+      var ch = str.charAt(i);
+      w += (ch>='0'&&ch<='9') ? 556 : ch===' ' ? 278 : (ch>='A'&&ch<='Z') ? 660 : 520;
+    }
+    return w * size / 1000;
+  }
+  function fcfMakeDrawer(PAGE_H){
+    var els = [];
+    // text(xPdf, yPdf, size, bold, txt, colorClass, align, maxWidth) -- align: 'left'|'right'|'center'
+    // (maxWidth n'est plus utilise pour 'right'/'center', garde uniquement pour compatibilite d'appel)
+    function T(xPdf, yPdf, size, bold, txt, colorClass, align, maxWidth){
+      var topCss = PAGE_H - yPdf - size * 0.86;
+      var leftPos = xPdf;
+      if (align === 'right') leftPos = xPdf - fcfNumWidthApprox(txt, size);
+      else if (align === 'center') leftPos = xPdf - fcfCenterWidthApprox(txt, size) / 2;
+      var style = 'left:' + leftPos.toFixed(2) + 'px;top:' + topCss.toFixed(2) + 'px;font-size:' + size.toFixed(2) + 'px;';
+      els.push('<div class="fcf-ap-t' + (bold?' fcf-ap-b':'') + (colorClass?(' '+colorClass):'') + '" style="' + style + '">' + escHtml(txt) + '</div>');
+    }
+    function RECT(xPdf, yPdfBottom, w, h, headbg){
+      els.push('<div class="fcf-ap-rect' + (headbg?' fcf-ap-headbg':'') + '" style="left:' + xPdf.toFixed(2) + 'px;top:' + (PAGE_H-yPdfBottom-h).toFixed(2) + 'px;width:' + w.toFixed(2) + 'px;height:' + h.toFixed(2) + 'px;"></div>');
+    }
+    function STROKERECT(xPdf, yPdfBottom, w, h, colorClass){
+      els.push('<div class="fcf-ap-strokerect' + (colorClass?(' '+colorClass):'') + '" style="left:' + xPdf.toFixed(2) + 'px;top:' + (PAGE_H-yPdfBottom-h).toFixed(2) + 'px;width:' + w.toFixed(2) + 'px;height:' + h.toFixed(2) + 'px;"></div>');
+    }
+    function HLINE(x1, x2, yPdf){
+      els.push('<div class="fcf-ap-hline" style="left:' + x1.toFixed(2) + 'px;top:' + (PAGE_H-yPdf).toFixed(2) + 'px;width:' + (x2-x1).toFixed(2) + 'px;"></div>');
+    }
+    function VLINE(xPdf, y1, y2){
+      els.push('<div class="fcf-ap-vline" style="left:' + xPdf.toFixed(2) + 'px;top:' + (PAGE_H-y2).toFixed(2) + 'px;height:' + (y2-y1).toFixed(2) + 'px;"></div>');
+    }
+    return { els: els, T: T, RECT: RECT, STROKERECT: STROKERECT, HLINE: HLINE, VLINE: VLINE };
+  }
+  function fcfTextWidthApprox(str, size){
+    var w = 0; str = String(str||'');
+    for (var ci=0; ci<str.length; ci++){
+      var ch = str.charAt(ci);
+      w += (ch>='0'&&ch<='9') ? 556 : ch===' ' ? 278 : (ch>='A'&&ch<='Z') ? 660 : 520;
+    }
+    return w * size / 1000;
+  }
+  function fcfWrapText(str, maxWidthPt, size){
+    var rawWords = String(str||'').trim().split(/\s+/).filter(Boolean);
+    if (!rawWords.length) return [''];
+    var lines = []; var cur = '';
+    for (var wi=0; wi<rawWords.length; wi++){
+      var w = rawWords[wi];
+      var test = cur ? cur+' '+w : w;
+      if (fcfTextWidthApprox(test, size) <= maxWidthPt) cur = test;
+      else { if (cur) lines.push(cur); cur = w; }
+    }
+    if (cur) lines.push(cur);
+    return lines;
+  }
   function fcfRenderApercu(){
     var page = document.getElementById('fcf-apercu-page');
     if (!page) return;
@@ -12029,60 +12207,10 @@
     // ---- constantes de mise en page, copiees a l'identique de buildFacturePdf (n8n) ----
     var PAGE_W = 595, PAGE_H = 842, ML = 18, MR = 577;
     var LOGO_W = 335.7, LOGO_H = 100.8, LOGO_TOP = 819;
-    var els = [];
-    function css(top, cssExtra){ return 'top:' + top.toFixed(2) + 'px;' + (cssExtra||''); }
-    // Session 16, Point 1 -- le vrai generateur (buildFacturePdf, cote n8n) ne centre/aligne PAS
-    // a droite selon la largeur REELLE des glyphes (le navigateur, lui, mesure sa propre police
-    // Arial-substituee) : il utilise ses propres formules d'APPROXIMATION par caractere
-    // (numWidth pour textRight, une autre table pour textCenter -- copiees ici A L'IDENTIQUE,
-    // bug pour bug) puis positionne le texte en LEFT-ALIGNED a la position calculee. Utiliser le
-    // text-align CSS du navigateur au lieu de reproduire ce calcul donnait un leger decalage a
-    // l'overlay pixel-a-pixel (trouve en comparant le vrai PDF a l'apercu), plus visible sur les
-    // textes en gras et les chaines longues (largeur cumulee qui derive de l'approximation).
-    function numWidthApprox(str, size){
-      var w = 0; str = String(str||'');
-      for (var i=0; i<str.length; i++){
-        var ch = str.charAt(i);
-        if (ch>='0'&&ch<='9') w += 556;
-        else if (ch===' ') w += 278;
-        else if (ch==='.') w += 278;
-        else if (ch===',') w += 278;
-        else if (ch==='€') w += 556;
-        else if (ch==='%') w += 889;
-        else w += 556;
-      }
-      return w * size / 1000;
-    }
-    function centerWidthApprox(str, size){
-      var w = 0; str = String(str||'');
-      for (var i=0; i<str.length; i++){
-        var ch = str.charAt(i);
-        w += (ch>='0'&&ch<='9') ? 556 : ch===' ' ? 278 : (ch>='A'&&ch<='Z') ? 660 : 520;
-      }
-      return w * size / 1000;
-    }
-    // text(xPdf, yPdf, size, bold, txt, colorClass, align, maxWidth) -- align: 'left'|'right'|'center'
-    // (maxWidth n'est plus utilise pour 'right'/'center', garde uniquement pour compatibilite d'appel)
-    function T(xPdf, yPdf, size, bold, txt, colorClass, align, maxWidth){
-      var topCss = PAGE_H - yPdf - size * 0.86;
-      var leftPos = xPdf;
-      if (align === 'right') leftPos = xPdf - numWidthApprox(txt, size);
-      else if (align === 'center') leftPos = xPdf - centerWidthApprox(txt, size) / 2;
-      var style = 'left:' + leftPos.toFixed(2) + 'px;top:' + topCss.toFixed(2) + 'px;font-size:' + size.toFixed(2) + 'px;';
-      els.push('<div class="fcf-ap-t' + (bold?' fcf-ap-b':'') + (colorClass?(' '+colorClass):'') + '" style="' + style + '">' + escHtml(txt) + '</div>');
-    }
-    function RECT(xPdf, yPdfBottom, w, h, headbg){
-      els.push('<div class="fcf-ap-rect' + (headbg?' fcf-ap-headbg':'') + '" style="left:' + xPdf.toFixed(2) + 'px;top:' + (PAGE_H-yPdfBottom-h).toFixed(2) + 'px;width:' + w.toFixed(2) + 'px;height:' + h.toFixed(2) + 'px;"></div>');
-    }
-    function STROKERECT(xPdf, yPdfBottom, w, h, colorClass){
-      els.push('<div class="fcf-ap-strokerect' + (colorClass?(' '+colorClass):'') + '" style="left:' + xPdf.toFixed(2) + 'px;top:' + (PAGE_H-yPdfBottom-h).toFixed(2) + 'px;width:' + w.toFixed(2) + 'px;height:' + h.toFixed(2) + 'px;"></div>');
-    }
-    function HLINE(x1, x2, yPdf){
-      els.push('<div class="fcf-ap-hline" style="left:' + x1.toFixed(2) + 'px;top:' + (PAGE_H-yPdf).toFixed(2) + 'px;width:' + (x2-x1).toFixed(2) + 'px;"></div>');
-    }
-    function VLINE(xPdf, y1, y2){
-      els.push('<div class="fcf-ap-vline" style="left:' + xPdf.toFixed(2) + 'px;top:' + (PAGE_H-y2).toFixed(2) + 'px;height:' + (y2-y1).toFixed(2) + 'px;"></div>');
-    }
+    // T/RECT/STROKERECT/HLINE/VLINE viennent desormais de fcfMakeDrawer (extrait le 09/09/2026
+    // soir, voir juste au-dessus de cette fonction) -- meme logique, aucun comportement change.
+    var D = fcfMakeDrawer(PAGE_H);
+    var els = D.els, T = D.T, RECT = D.RECT, STROKERECT = D.STROKERECT, HLINE = D.HLINE, VLINE = D.VLINE;
     els.push('<img class="fcf-ap-logo" src="' + FCF_LOGO_DATA_URI + '" style="left:' + ML + 'px;top:' + (PAGE_H-LOGO_TOP) + 'px;">');
 
     // ---- en-tete FACTURE (haut droite) -- Point 5.3/6 (Fenetre 1, 08/09/2026 soir) : plus
@@ -12270,37 +12398,214 @@
 
     // ---- pied de page + pagination -- Point 6 : ancre sur y (apres la clause legale), plus une
     // position fixe derivee de l'ancien bloc Totaux -- coherent avec le nouvel ordre. ----
-    // Repartition en lignes IDENTIQUE au vrai generateur (wrapText/textWidthApprox de
-    // buildFacturePdf, cote n8n) -- un simple slice(0,118) par nombre de caracteres derivait du
-    // vrai decoupage par largeur reelle du texte, cause du leger decalage constate a l'overlay.
-    function textWidthApprox(str, size){
-      var w = 0;
-      for (var ci=0; ci<str.length; ci++){
-        var ch = str.charAt(ci);
-        w += (ch>='0'&&ch<='9') ? 556 : ch===' ' ? 278 : (ch>='A'&&ch<='Z') ? 660 : 520;
-      }
-      return w * size / 1000;
-    }
-    function wrapText(str, maxWidthPt, size){
-      var rawWords = String(str||'').trim().split(/\s+/).filter(Boolean);
-      if (!rawWords.length) return [''];
-      var lines = []; var cur = '';
-      for (var wi=0; wi<rawWords.length; wi++){
-        var w = rawWords[wi];
-        var test = cur ? cur+' '+w : w;
-        if (textWidthApprox(test, size) <= maxWidthPt) cur = test;
-        else { if (cur) lines.push(cur); cur = w; }
-      }
-      if (cur) lines.push(cur);
-      return lines;
-    }
+    // Repartition en lignes IDENTIQUE au vrai generateur (fcfWrapText/fcfTextWidthApprox,
+    // extraites de buildFacturePdf, cote n8n) -- un simple slice(0,118) par nombre de caracteres
+    // derivait du vrai decoupage par largeur reelle du texte, cause du leger decalage constate a
+    // l'overlay.
     var footerTxt = 'SARL MCS - 2 Chemin de Belle Etoile - 33370 TRESSES au capital de 5 000€ / SIRET: 50068539100046 / Code APE: 8122Z / N° Intra: FR30500685391 / N° RCS: 500 685 391 R.C.S. Bordeaux';
-    var footerLignes = wrapText(footerTxt, MR-ML, 7);
+    var footerLignes = fcfWrapText(footerTxt, MR-ML, 7);
     var fy = y-8;
     for (var fli=0; fli<footerLignes.length; fli++){ T(ML, fy, 7, false, footerLignes[fli], 'fcf-ap-gray'); fy -= 8.5; }
     T(PAGE_W/2, 18, 9, false, '1 / 1', 'fcf-ap-darkgray', 'center', 60);
 
     page.innerHTML = els.join('');
+  }
+
+  // ===================== APERCU EN DIRECT DEVIS/FACTURE (mission MEG, 09/09/2026 soir) =========
+  // Meme moteur de dessin que fcfRenderApercu ci-dessus (fcfMakeDrawer/fcfWrapText, extraits pour
+  // l'occasion) mais une mise en page DIFFERENTE (generique, multi-lignes, DEVIS ou FACTURE) --
+  // utilisee par les nouveaux ecrans plein ecran "Devis" et "Facture directe" (aperçu SOUS le
+  // formulaire, mis a jour a chaque frappe, jamais un appel serveur). Reste explicitement
+  // "non officiel" (bandeau au-dessus + filigrane BROUILLON) : le numero reel et le PDF
+  // definitif restent produits par le serveur (bouton "Aperçu (filigrané)" existant sur le
+  // devis, ou a l'émission) -- cette fonction ne remplace ni ne modifie ce mecanisme.
+  function dfxRenderApercuGenerique(pageEl, opts){
+    if (!pageEl) return;
+    opts = opts || {};
+    var nom = String(opts.nom || '').trim();
+    var adresse = String(opts.adresse || '').trim();
+    var objet = String(opts.objet || '').trim();
+    var reference = String(opts.reference || '').trim();
+    var conditions = String(opts.conditions || 'Virement').trim();
+    var typeDoc = opts.typeDoc === 'FACTURE' ? 'FACTURE' : 'DEVIS';
+    var dateLabel = opts.dateLabel || (typeDoc === 'DEVIS' ? 'Date de validité' : 'Date d’échéance');
+    var dateValeur = String(opts.dateValeur || '').trim();
+    // lignesEditorRead()/dvCollectLignes() renvoient prix_ht (snake_case) -- accepte aussi
+    // prixHt par robustesse si un futur appelant utilise l'autre convention.
+    function dfxPu(l){ return l.prix_ht !== undefined ? l.prix_ht : l.prixHt; }
+    var lignes = (opts.lignes || []).filter(function(l){ return l && (String(l.designation||'').trim() || Number(dfxPu(l))); });
+
+    var PAGE_W = 595, PAGE_H = 842, ML = 18, MR = 577;
+    var LOGO_H = 100.8, LOGO_TOP = 819;
+    var D = fcfMakeDrawer(PAGE_H);
+    var els = D.els, T = D.T, RECT = D.RECT, STROKERECT = D.STROKERECT, HLINE = D.HLINE, VLINE = D.VLINE;
+    els.push('<img class="fcf-ap-logo" src="' + FCF_LOGO_DATA_URI + '" style="left:' + ML + 'px;top:' + (PAGE_H-LOGO_TOP) + 'px;">');
+
+    var dateFr = new Date().toLocaleDateString('fr-FR');
+
+    // ---- en-tete (haut droite) ----
+    var fbW = 179, fbX = MR - fbW, fbTop = LOGO_TOP, fbRowH = 16.03;
+    T(fbX + 6, fbTop - 12, 10, true, typeDoc);
+    T(fbX + 6, fbTop - fbRowH - 11, 8.5, false, 'N°'); T(fbX + fbW - 6, fbTop - fbRowH - 11, 8.5, false, 'Attribué à l’émission', null, 'right');
+    T(fbX + 6, fbTop - 2*fbRowH - 11, 8.5, false, 'Date'); T(fbX + fbW - 6, fbTop - 2*fbRowH - 11, 8.5, false, dateFr, null, 'right', 90);
+    T(fbX + 6, fbTop - 3*fbRowH - 11, 8.5, false, dateLabel); T(fbX + fbW - 6, fbTop - 3*fbRowH - 11, 8.5, false, dateValeur || '—', null, 'right', 110);
+
+    // ---- bloc MCS (gauche) / bloc client (droite) -- meme gabarit que fcfRenderApercu ----
+    var blockTop = LOGO_TOP - LOGO_H - 16, cx = 370, LH = 11.2;
+    T(ML, blockTop, 10, true, 'SARL MCS');
+    T(ML, blockTop - LH, 8.5, false, '2 Chemin de Belle Etoile');
+    T(ML, blockTop - 2*LH, 8.5, false, '33370 TRESSES');
+    T(ML, blockTop - 3*LH, 8.5, false, 'Mobile : 06.09.16.47.30');
+    T(ML, blockTop - 4*LH, 8.5, false, 'Mail : mickael.chantereau@orange.fr');
+    var cy = blockTop;
+    T(cx, cy, 10, true, nom || '(client non précisé)'); cy -= LH;
+    if (adresse){ cy -= LH; T(cx, cy, 8.5, false, adresse); cy -= LH; }
+
+    var mcsBlockBottom = blockTop - 4*LH;
+    var y = Math.min(cy, mcsBlockBottom) - 20;
+
+    // ---- Client / Adresse / Objet -- meme gabarit que "Nom de la Résidence/Adresse/Nature de
+    // la Prestation" de fcfRenderApercu ----
+    var valX = ML + 112;
+    T(ML, y, 9, false, 'Client'); T(valX, y, 9, false, nom || '-'); y -= LH;
+    T(ML, y, 9, false, 'Adresse'); T(valX, y, 9, false, adresse || '-'); y -= LH;
+    T(ML, y, 9, false, 'Objet'); T(valX, y, 9, false, objet || '-'); y -= LH;
+    y -= 8.8;
+    if (reference){ T(ML, y, 8.5, false, 'Réf. : ' + reference); y -= 13; }
+
+    // ---- tableau des lignes (multi-lignes, colonnes MEG : Désignation/Qté/Unité/P.U. HT/
+    // Remise/TVA/Total HT) ----
+    var cols = [ML, 260, 310, 355, 410, 460, 510, MR], headH = 19.5;
+    RECT(cols[0], y - headH, cols[7]-cols[0], headH, true);
+    var headY = y - headH + 6.5;
+    T(cols[0]+6, headY, 8.5, true, 'Désignation');
+    T((cols[1]+cols[2])/2, headY, 8.5, true, 'Qté', null, 'center');
+    T((cols[2]+cols[3])/2, headY, 8.5, true, 'Unité', null, 'center');
+    T(cols[4]-6, headY, 8.5, true, 'P.U. HT', null, 'right');
+    T((cols[4]+cols[5])/2, headY, 8.5, true, 'Remise', null, 'center');
+    T((cols[5]+cols[6])/2, headY, 8.5, true, 'TVA', null, 'center');
+    T(cols[7]-6, headY, 8.5, true, 'Total HT', null, 'right');
+    var tabTop = y, ry = y - headH;
+    var totalHt = 0, tvaBuckets = {};
+    var lignesAffichees = lignes.length ? lignes : [null];
+    lignesAffichees.forEach(function(l){
+      var desig = l ? String(l.designation||'').trim() : '';
+      var qte = l ? (Number(l.quantite)||0) : 0;
+      var unite = l ? String(l.unite||'U').trim() : '';
+      var pu = l ? (Number(dfxPu(l))||0) : 0;
+      var remise = l ? Math.min(100, Math.max(0, Number(l.remise)||0)) : 0;
+      var tvaTaux = l && l.tva !== undefined && l.tva !== null && l.tva !== '' ? Number(l.tva) : 20;
+      var ligneHt = qte * pu * (1 - remise/100);
+      totalHt += ligneHt;
+      tvaBuckets[tvaTaux] = (tvaBuckets[tvaTaux]||0) + ligneHt*(tvaTaux/100);
+      var desigLignes = fcfWrapText(desig || '—', cols[1]-cols[0]-10, 9);
+      var rowH = Math.max(19, desigLignes.length>1 ? desigLignes.length*10.6+8.5 : 19);
+      var rowTop = ry; ry -= rowH;
+      var firstLineY = rowH === 19 ? (rowTop - 12.75) : (rowTop - 9);
+      T(cols[0]+6, firstLineY, 9, false, desigLignes[0] || '');
+      for (var dli=1; dli<desigLignes.length; dli++) T(cols[0]+6, firstLineY - dli*10.6, 9, false, desigLignes[dli]);
+      T((cols[1]+cols[2])/2, firstLineY, 9, false, qte ? String(qte) : '', null, 'center');
+      T((cols[2]+cols[3])/2, firstLineY, 9, false, unite, null, 'center');
+      T(cols[4]-6, firstLineY, 9, false, pu.toFixed(2).replace('.',',') + ' €', null, 'right');
+      T((cols[4]+cols[5])/2, firstLineY, 9, false, remise ? (remise + ' %') : '—', null, 'center');
+      T((cols[5]+cols[6])/2, firstLineY, 9, false, tvaTaux + ' %', null, 'center');
+      T(cols[7]-6, firstLineY, 9, false, ligneHt.toFixed(2).replace('.',',') + ' €', null, 'right');
+    });
+    var tabBottom = ry;
+    STROKERECT(cols[0], tabBottom, cols[7]-cols[0], tabTop-tabBottom);
+    HLINE(cols[0], cols[7], tabTop-headH);
+    for (var ci=1; ci<7; ci++) VLINE(cols[ci], tabBottom, tabTop);
+    y = tabBottom - 18;
+
+    // ---- Détail TVA (une ligne par taux réellement utilisé) + TOTAL HT/TVA/TOTAL TTC -- meme
+    // gabarit que fcfRenderApercu, généralisé a N taux ----
+    y -= 8;
+    var tvaRows = Object.keys(tvaBuckets).map(function(k){ return { taux: Number(k), montant: Math.round(tvaBuckets[k]*100)/100 }; }).sort(function(a,b){ return a.taux-b.taux; });
+    if (!tvaRows.length) tvaRows = [{ taux: 20, montant: 0 }];
+    var dW = 145.8, H1 = 10.8, H2 = 8.6, rowHtva = 11;
+    var dH = H1 + H2 + (tvaRows.length*rowHtva + 6);
+    var boxTopY = y;
+    var yTitleBot = boxTopY-H1, ySubBot = boxTopY-H1-H2, yValBot = boxTopY-dH;
+    STROKERECT(ML, yValBot, dW, dH);
+    RECT(ML, yTitleBot, dW, H1, true);
+    T(ML+dW/2, boxTopY-8, 7.5, true, 'Détail de la T.V.A', null, 'center');
+    HLINE(ML, ML+dW, yTitleBot);
+    T(ML+4, yTitleBot-8, 7, false, 'Base HT'); T(ML+59, yTitleBot-8, 7, false, 'Taux'); T(ML+99, yTitleBot-8, 7, false, 'Montant T.V.A');
+    HLINE(ML, ML+dW, ySubBot);
+    var tvY = ySubBot - 9;
+    tvaRows.forEach(function(r){
+      var baseHt = r.taux > 0 ? r.montant / (r.taux/100) : 0;
+      T(ML+58, tvY, 8, false, baseHt.toFixed(2).replace('.',',') + ' €', null, 'right');
+      T(ML+95, tvY, 8, false, r.taux.toFixed(0) + ' %', null, 'right');
+      T(ML+dW-4, tvY, 8, false, r.montant.toFixed(2).replace('.',',') + ' €', null, 'right');
+      tvY -= rowHtva;
+    });
+    var totalTva = tvaRows.reduce(function(s,r){ return s+r.montant; }, 0);
+    var totalTtc = Math.round((totalHt + totalTva)*100)/100;
+    var totBoxX = ML+dW, totBoxW = cols[7]-totBoxX, totColW = totBoxW/3;
+    STROKERECT(totBoxX, yValBot, totBoxW, dH);
+    RECT(totBoxX, ySubBot, totBoxW, H1+H2, true);
+    T(totBoxX+totColW*0.5, boxTopY-13, 9.5, true, 'TOTAL HT', null, 'center');
+    T(totBoxX+totColW*1.5, boxTopY-13, 9.5, true, 'TVA', null, 'center');
+    T(totBoxX+totColW*2.5, boxTopY-13, 9.5, true, 'TOTAL TTC', null, 'center');
+    VLINE(totBoxX+totColW, yValBot, boxTopY); VLINE(totBoxX+totColW*2, yValBot, boxTopY);
+    HLINE(totBoxX, totBoxX+totBoxW, ySubBot);
+    T(totBoxX+totColW-6, yValBot+8, 9.5, false, totalHt.toFixed(2).replace('.',',') + ' €', null, 'right');
+    T(totBoxX+totColW*2-6, yValBot+8, 9.5, false, totalTva.toFixed(2).replace('.',',') + ' €', null, 'right');
+    T(totBoxX+totColW*3-6, yValBot+8, 10.5, true, totalTtc.toFixed(2).replace('.',',') + ' €', null, 'right');
+    y = yValBot - 24;
+
+    // ---- Bon pour accord (devis uniquement) / Conditions de règlement / RIB -- 3 cases pour un
+    // devis (le client doit pouvoir signer), 2 pour une facture (deja acceptee), meme largeur
+    // totale que le tableau ----
+    var boxCount = typeDoc === 'DEVIS' ? 3 : 2;
+    var boxGap = 3, boxW = (cols[7]-cols[0] - boxGap*(boxCount-1)) / boxCount, boxHeadH = 13.7, boxH = 52.3;
+    var bx = cols[0], bi = 0;
+    if (typeDoc === 'DEVIS'){
+      STROKERECT(bx, y-boxH, boxW, boxH);
+      T(bx+4, y-19.3, 8.2, true, 'Bon pour accord (nom, date et');
+      T(bx+4, y-29.8, 8.2, true, 'signature) :');
+      bx += boxW + boxGap; bi++;
+    }
+    STROKERECT(bx, y-boxH, boxW, boxH);
+    RECT(bx, y-boxHeadH, boxW, boxHeadH, true);
+    HLINE(bx, bx+boxW, y-boxHeadH);
+    T(bx+boxW/2, y-11, 9, true, 'Conditions de règlement', null, 'center');
+    T(bx+4, y-boxHeadH-11.8, 8.5, false, conditions);
+    T(bx+4, y-boxHeadH-23.7, 8.5, false, 'Aucun escompte pour règlement anticipé');
+    if (typeDoc === 'FACTURE' && dateValeur){ T(bx+4, y-boxHeadH-35.6, 8.5, false, 'Échéance : ' + dateValeur); }
+    bx += boxW + boxGap;
+    STROKERECT(bx, y-boxH, boxW, boxH);
+    RECT(bx, y-boxHeadH, boxW, boxHeadH, true);
+    HLINE(bx, bx+boxW, y-boxHeadH);
+    T(bx+boxW/2, y-11, 9, true, 'RIB', null, 'center');
+    T(bx+4, y-boxHeadH-11.8, 8.5, false, 'NOM :'); T(bx+57, y-boxHeadH-11.8, 7.3, false, 'CIC SUD OUEST');
+    T(bx+4, y-boxHeadH-23.7, 8.5, false, 'IBAN :'); T(bx+57, y-boxHeadH-23.7, 7.3, false, 'FR76 1005 7190 7500 0208 3880 168');
+    T(bx+4, y-boxHeadH-36.1, 8.5, false, 'BIC :'); T(bx+57, y-boxHeadH-36.1, 7.3, false, 'CMCIFRPP');
+    y -= boxH + 22;
+
+    T(ML, y, 8.5, false, "Le montant total s'élève à " + nombreEnLettresFr(totalTtc)); y -= 11;
+
+    // ---- clause legale + pied de page -- memes textes que fcfRenderApercu (meme societe) ----
+    var clauseParagraphes = [
+      "CLAUSE DE RÉSERVE DE PROPRIÉTÉ : conformément à la loi 80.335 du 12 mai 1980, MCS conserve la propriété",
+      "des prestations et marchandises jusqu'au paiement intégral du prix et de ses accessoires.",
+      "Pénalité de retard : 3 fois le taux d'intérêt légal après l'échéance (art. L.441-10). Escompte pour règlement anticipé : 0 %.",
+      "Indemnité forfaitaire pour frais de recouvrement (art. D.441-5) : 40 € en cas de retard de paiement.",
+    ];
+    for (var cpi=0; cpi<clauseParagraphes.length; cpi++){ T(ML, y, 7.3, false, clauseParagraphes[cpi], 'fcf-ap-gray'); y -= 9.5; }
+    var footerTxt = 'SARL MCS - 2 Chemin de Belle Etoile - 33370 TRESSES au capital de 5 000€ / SIRET: 50068539100046 / Code APE: 8122Z / N° Intra: FR30500685391 / N° RCS: 500 685 391 R.C.S. Bordeaux';
+    var footerLignes = fcfWrapText(footerTxt, MR-ML, 7);
+    var fy = y-8;
+    for (var fli=0; fli<footerLignes.length; fli++){ T(ML, fy, 7, false, footerLignes[fli], 'fcf-ap-gray'); fy -= 8.5; }
+    T(PAGE_W/2, 18, 9, false, '1 / 1', 'fcf-ap-darkgray', 'center');
+
+    // ---- filigrane BROUILLON -- toujours affiché, cet aperçu n'est jamais le document officiel ----
+    [140, 430, 720].forEach(function(cy2){
+      els.push('<div class="fcf-ap-t fcf-ap-b" style="left:70px;top:' + (PAGE_H-cy2) + 'px;font-size:46px;color:#d0d0d0;transform:rotate(-45deg);transform-origin:left top;">BROUILLON</div>');
+    });
+
+    pageEl.innerHTML = els.join('');
   }
 
   // ===================== FIN D'ENVOI, fonction UNIQUE (08/09/2026 soir) =====================
@@ -20537,6 +20842,22 @@
   var fdTotal = document.getElementById('fd-total');
   var fdErr = document.getElementById('fd-err');
   var fdSave = document.getElementById('fd-save');
+  // Mission MEG (09/09/2026 soir) : plein écran + champs "comme dans MEG" + aperçu en direct.
+  var fdClose = document.getElementById('fd-close');
+  var fdDateJour = document.getElementById('fd-date-jour');
+  var fdReference = document.getElementById('fd-reference');
+  var fdModeReglement = document.getElementById('fd-mode-reglement');
+  var fdApercuPage = document.getElementById('fd-apercu-page');
+  function fdRenderApercuLive(){
+    dfxRenderApercuGenerique(fdApercuPage, {
+      typeDoc: 'FACTURE',
+      nom: fdNom.value, adresse: fdAdresse.value, objet: fdObjet.value,
+      reference: fdReference.value, conditions: fdModeReglement.value,
+      dateLabel: 'Date d’échéance', dateValeur: fdDateFin.value ? fmtDevisDateSimple(fdDateFin.value) : '',
+      lignes: lignesEditorRead(fdLignesWrap).lignes,
+    });
+  }
+  fdClose.addEventListener('click', function(){ fdFormClose(); });
   // Section 7 (06/09/2026, dernier point) : emission reelle immediate (postFacturation
   // type:'emettre'), meme icone/couleur que les autres boutons vc-envoi-reel de l'app.
   var ICON_ENVOI_REEL = '<svg class="hicon-sm" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><line x1="22" y1="2" x2="11" y2="13"/><polygon points="22 2 15 22 11 13 2 9 22 2"/></svg>';
@@ -20678,10 +20999,11 @@
     });
     return { lignes: lignes, invalide: ligneInvalide };
   }
-  function fdLigneRow(){ return lignesEditorRow(fdLignesWrap, fdRecalcTotal); }
+  function fdLigneRow(){ return lignesEditorRow(fdLignesWrap, function(){ fdRecalcTotal(); fdRenderApercuLive(); }); }
   function fdRecalcTotal(){ lignesEditorRecalc(fdLignesWrap, fdTotal); }
   document.getElementById('fd-ligne-add').addEventListener('click', function(){
     fdLignesWrap.appendChild(fdLigneRow());
+    fdRenderApercuLive();
   });
   var fdRecap = document.getElementById('fd-recap');
   var fdRecapArme = false;
@@ -20696,6 +21018,8 @@
     delete fdNom.dataset.memValeur; delete fdAdresse.dataset.memValeur; delete fdEmail.dataset.memValeur;
     fdForm.querySelectorAll('.mem-badge').forEach(function(b){ b.style.display = 'none'; });
     fdDateDebut.value = ''; fdDateFin.value = '';
+    fdReference.value = ''; fdModeReglement.value = 'Virement';
+    fdDateJour.textContent = new Date().toLocaleDateString('fr-FR');
     fdLignesWrap.innerHTML = '';
     fdLignesWrap.appendChild(fdLigneRow());
     fdRecalcTotal();
@@ -20704,14 +21028,20 @@
     fdRecapDesarmer();
     fdFormBg.classList.add('open');
     fdForm.classList.add('open');
+    fdRenderApercuLive();
     setTimeout(function(){ fdNom.focus(); }, 50);
   }
   // Sujet 4 (02/09/2026) : toute modification d'un champ apres avoir vu le recap desarme la
-  // confirmation -- jamais emettre sur des donnees que Mickael n'a pas relues.
-  [fdNom, fdAdresse, fdEmail, fdObjet, fdDateDebut, fdDateFin].forEach(function(el){
+  // confirmation -- jamais emettre sur des donnees que Mickael n'a pas relues. Mission MEG
+  // (09/09/2026 soir) : les memes champs (+ Référence/Mode de règlement, nouveaux) rafraichissent
+  // aussi l'apercu en direct, jamais un appel serveur.
+  [fdNom, fdAdresse, fdEmail, fdObjet, fdDateDebut, fdDateFin, fdReference, fdModeReglement].forEach(function(el){
     el.addEventListener('input', fdRecapDesarmer);
+    el.addEventListener('input', fdRenderApercuLive);
+    el.addEventListener('change', fdRenderApercuLive);
   });
   fdLignesWrap.addEventListener('input', fdRecapDesarmer);
+  fdLignesWrap.addEventListener('input', fdRenderApercuLive);
   // Point 2 (session suite, 29/08/2026) : mémoire commune -- une fois le nom du client tapé,
   // propose adresse/email déjà connus (jamais écrase un champ déjà rempli). Éditer ces champs
   // ensuite (blur) enregistre la correction, historique gardé côté serveur.
@@ -20824,8 +21154,21 @@
   var dvEnvoiGo = document.getElementById('dv-envoi-go');
   var dvEnvoiPlustard = document.getElementById('dv-envoi-plustard');
   var dvToken = null, dvStatut = null, dvRoleCreateur = null;
+  // Mission MEG (09/09/2026 soir) : plein écran + champs "comme dans MEG" + aperçu en direct.
+  var dvReference = document.getElementById('dv-reference');
+  var dvModeReglement = document.getElementById('dv-mode-reglement');
+  var dvApercuPage = document.getElementById('dv-apercu-page');
+  function dvRenderApercuLive(){
+    dfxRenderApercuGenerique(dvApercuPage, {
+      typeDoc: 'DEVIS',
+      nom: dvNom.value, adresse: dvAdresse.value, objet: dvObjet.value,
+      reference: dvReference.value, conditions: dvModeReglement.value,
+      dateLabel: 'Date de validité', dateValeur: dvDateValidite.textContent,
+      lignes: lignesEditorRead(dvLignesWrap).lignes,
+    });
+  }
 
-  function dvLigneRow(){ return lignesEditorRow(dvLignesWrap, dvRecalcTotaux); }
+  function dvLigneRow(){ return lignesEditorRow(dvLignesWrap, function(){ dvRecalcTotaux(); dvRenderApercuLive(); }); }
   function dvRecalcTotaux(){
     var d = lignesEditorRecalcDetail(dvLignesWrap);
     dvTotalHt.textContent = fmtEuros(d.ht);
@@ -20841,6 +21184,7 @@
   document.getElementById('dv-ligne-add').addEventListener('click', function(){
     dvLignesWrap.appendChild(dvLigneRow());
     dvRecalcTotaux();
+    dvRenderApercuLive();
   });
   // Multi-select "en une seule ouverture" (acceptance #4) : PAS construit ce jour -- honnêteté
   // documentée dans le rapport de fin de session. Repli fonctionnel (jamais un bouton mort) :
@@ -20848,7 +21192,15 @@
   document.getElementById('dv-ligne-multi').addEventListener('click', function(){
     dvLignesWrap.appendChild(dvLigneRow());
     dvRecalcTotaux();
+    dvRenderApercuLive();
     toast('Recherche multiple pas encore disponible — ajoute les articles un par un pour l’instant.');
+  });
+  // Mission MEG (09/09/2026 soir) : chaque champ d'identité/document rafraichit l'apercu en
+  // direct -- jamais un appel serveur, jamais de "recap" a desarmer (le devis n'a pas ce
+  // mecanisme, contrairement a la facture directe).
+  [dvNom, dvAdresse, dvEmail, dvResidence, dvObjet, dvReference, dvModeReglement].forEach(function(el){
+    el.addEventListener('input', dvRenderApercuLive);
+    el.addEventListener('change', dvRenderApercuLive);
   });
 
   function dvSetStatutBadge(){
@@ -20872,7 +21224,7 @@
   // (l'ancienne fiche) pour séparer "représenté par X" (syndic/gestionnaire) de l'adresse de
   // facturation réelle -- réutilise isRepresentePar/splitRepresentePar déjà construits/testés.
   var dvClientId = null;
-  function dvFillResidence(item){ dvResidence.value = item.nom || dvResidence.value; }
+  function dvFillResidence(item){ dvResidence.value = item.nom || dvResidence.value; dvRenderApercuLive(); }
   function dvOnClientSelect(item){
     dvClientId = item.id || null;
     dvNom.value = item.nom || dvNom.value;
@@ -20888,13 +21240,14 @@
     // ici jusqu'à ce fix. Ne touche jamais objet/lignes -- change à chaque devis, non fiable.
     dvResidence.value = '';
     suggestResidenceFromHistory(item.id, dvResidence, dvResidenceSug, null, dvFillResidence);
+    dvRenderApercuLive();
   }
   wireSearchAutocomplete(dvNom, dvNomSug, 'client-search', dvOnClientSelect);
 
   function dvFormOpen(){
     dvToken = null; dvStatut = null; dvRoleCreateur = null; dvClientId = null;
     dvNom.value = ''; dvAdresse.value = ''; dvEmail.value = ''; dvResidence.value = ''; dvObjet.value = '';
-    dvNoteInterne.value = '';
+    dvNoteInterne.value = ''; dvReference.value = ''; dvModeReglement.value = 'Virement';
     var today = new Date();
     var valid = new Date(today.getTime() + 60 * 86400000);
     dvDateEmission.textContent = today.toLocaleDateString('fr-FR');
@@ -20902,6 +21255,7 @@
     dvLignesWrap.innerHTML = '';
     dvLignesWrap.appendChild(dvLigneRow());
     dvRecalcTotaux();
+    dvRenderApercuLive();
     dvErr.textContent = ''; dvErr.classList.remove('show');
     dvSetStatutBadge();
     dvEmettreRow.classList.remove('show');
@@ -21119,6 +21473,7 @@
         dvLignesWrap.appendChild(row);
       });
       dvRecalcTotaux();
+      dvRenderApercuLive();
       dvErr.textContent = ''; dvErr.classList.remove('show');
       dvSetStatutBadge();
       dvEmettreRow.classList.toggle('show', dvStatut === 'brouillon');
