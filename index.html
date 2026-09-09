@@ -1085,32 +1085,54 @@
      Ecran "Devis et factures" facon MEG (09/09/2026, mission dediee) -- structure
      et gestes copies sur les vrais ecrans MEG (rail lateral -> menu -> liste en
      tableau -> creation), couleurs et composants 100% Jarvis (aucune teinte MEG).
-     Classes prefixees "dfx-" pour ne JAMAIS entrer en collision avec .df-*/.devis-*/
-     .dv-* deja partagees avec Contrats/Relances (non touches par ce chantier).
-     Portee : uniquement a l'interieur de #devisview, jamais visible cote labo. ============================================================================ */
-  #dfshell{flex:1; min-height:0; display:flex; overflow:hidden}
+     Classes prefixees "dfx-" pour ne JAMAIS entrer en collision avec .df- et .devis- et
+     .dv- deja partagees avec Contrats/Relances (non touches par ce chantier).
+     BUG VECU ET CORRIGE ICI (09/09/2026 apres-midi) : la version precedente de ce
+     commentaire ecrivait un slash entre deux noms de classe (df- puis devis-) -- juste
+     avant la fin de ce meme commentaire, cette sequence (etoile suivie d un slash) referme
+     un commentaire CSS PREMATUREMENT (piege deja documente dans ce fichier pour la paire
+     plume/vitrine, jamais applique ici avant ce jour). Consequence reelle : la regle
+     #dfshell{...} juste en dessous etait silencieusement AVALEE par le parseur (0
+     occurrence dans le CSSOM, confirme par un test isole document.styleSheets),
+     #devisview restait haut de 18 000+ px avec un seul defilement casse -- cause du bug
+     "le tableau ne defile pas, on ne voit que 3 lignes" signale par Dorian. Regle absolue
+     desormais : jamais de slash entre deux noms de classes dans UN COMMENTAIRE CSS de ce
+     fichier, toujours "et". Portee de cet ecran : uniquement a l'interieur de #devisview,
+     jamais visible cote labo. ============================================================================ */
+  #dfshell{flex:1; min-height:0; display:flex; overflow:hidden; position:relative}
   /* Rail sombre "Jarvis" (memes tons que le theme sombre historique : #1C1C1E/blanc), pas une
      teinte MEG -- visible uniquement au-dela de 760px, cf. media query plus bas. Masque par
      defaut (mobile-first) : la nav de secours (#devis-tabs, deja existante/deja testee aux 3
-     largeurs) reste le seul chemin sur petit ecran. */
+     largeurs) reste le seul chemin sur petit ecran.
+     Retour Dorian (09/09/2026) : "le rail est trop large et laisse un grand vide -- chez MEG la
+     barre d'outils et le tableau commencent immediatement a droite du rail". Cause exacte :
+     #dfflyout etait un FRERE flex de #dfmain (flex:0 0 auto, largeur 190px PERMANENTE), donc
+     meme "ferme" il continuait a pousser #dfmain vers la droite en layout normal -- seul son
+     CONTENU se masquait (display:none), pas son emprise. Largeur du rail elle-meme resserree
+     (78px -> 64px) et #dfflyout passe en overlay FLOTTANT (position:absolute, cf. plus bas) qui
+     ne pousse plus jamais #dfmain -- la barre d'outils et le tableau commencent desormais
+     directement a droite du rail, sur toute la largeur restante, comme demande. */
   #dfrail{
-    display:none; flex:0 0 auto; width:78px; background:#1C1C1E; padding:14px 0 0;
-    flex-direction:column; align-items:center; gap:4px;
+    display:none; flex:0 0 auto; width:64px; background:#1C1C1E; padding:14px 0 0;
+    flex-direction:column; align-items:center; gap:4px; z-index:2;
   }
   .dfx-rail-item{
-    display:flex; flex-direction:column; align-items:center; gap:5px; width:64px; padding:9px 4px;
+    display:flex; flex-direction:column; align-items:center; gap:4px; width:54px; padding:8px 3px;
     border-radius:12px; border:0; background:transparent; color:#98989E; cursor:pointer;
     -webkit-tap-highlight-color:transparent;
   }
   .dfx-rail-item.active{background:rgba(255,255,255,.12); color:#FFFFFF}
-  .dfx-rail-item svg{width:22px; height:22px}
-  .dfx-rail-item span{font-size:10.5px; font-weight:600; line-height:1.15; text-align:center}
-  /* Flyout (le "menu a 2 entrees" -- 3 chez nous, "A valider" en plus, jamais retiree) --
-     positionne juste a droite du rail, ferme par defaut. */
+  .dfx-rail-item svg{width:20px; height:20px}
+  .dfx-rail-item span{font-size:10px; font-weight:600; line-height:1.15; text-align:center}
+  /* Flyout (le "menu a 2 entrees" -- 3 chez nous, "A valider" en plus, jamais retiree) -- overlay
+     FLOTTANT ancre juste a droite du rail (position:absolute, HORS du flux flex -- ne pousse
+     jamais #dfmain, cf. commentaire de #dfrail ci-dessus), ferme par defaut, une ombre portee le
+     distingue du contenu qu'il recouvre. Se referme au clic ailleurs (voir le listener document
+     plus bas dans le JS) -- geste MEG reproduit a l'identique. */
   #dfflyout{
-    display:none; flex:0 0 auto; width:190px; background:var(--surface);
-    border-right:0.5px solid var(--hairline); padding:14px 10px; flex-direction:column; gap:3px;
-    overflow-y:auto;
+    display:none; position:absolute; top:0; left:64px; width:190px; height:100%; background:var(--surface);
+    border-right:0.5px solid var(--hairline); box-shadow:4px 0 16px rgba(0,0,0,.18);
+    padding:14px 10px; flex-direction:column; gap:3px; overflow-y:auto; z-index:4;
   }
   #dfflyout.open{display:flex}
   .dfx-flyout-title{font-size:11px; font-weight:700; color:var(--muted); text-transform:uppercase; letter-spacing:.4px; padding:4px 10px 8px}
@@ -1166,11 +1188,21 @@
     flex:0 0 auto; padding:9px 12px; border-radius:10px; border:0.5px solid var(--chip-border);
     background:var(--surface); color:var(--ink); font-size:13.5px; font-weight:600; -webkit-appearance:none;
   }
+  #dfx-periode-custom{display:flex; gap:6px; flex:0 0 auto}
+  #dfx-periode-custom input{width:140px}
+  html.mcs-theme #dfx-periode-custom input{border:1.5px solid var(--hairline)}
   .dfx-reset-link{
     flex:0 0 auto; border:0; background:transparent; color:var(--blue); font-size:13px; font-weight:600;
     cursor:pointer; padding:9px 4px; -webkit-tap-highlight-color:transparent;
   }
-  .dfx-body{flex:1; min-height:0; display:flex; gap:14px; padding:12px 16px calc(20px + env(safe-area-inset-bottom)); align-items:flex-start}
+  /* Bug reel vecu (09/09/2026 apres-midi, remonte par Dorian "le tableau ne defile pas, on
+     ne voit que 3 lignes") : align-items:flex-start (pose pour empecher la colonne laterale
+     Nombre+Totaux de s etirer inutilement) avait pour effet de bord de laisser .dfx-table-wrap
+     grandir a la hauteur naturelle de SON CONTENU (20 000px+ pour 127 devis) au lieu d etre
+     contraint a la hauteur du conteneur -- sans hauteur contrainte, overflow-y:auto ne peut
+     jamais declencher de defilement interne. Retire (retour au stretch par defaut, sans effet
+     visuel gênant sur la colonne laterale : ses 2 cartes restent ancrees en haut). */
+  .dfx-body{flex:1; min-height:0; display:flex; gap:14px; padding:12px 16px calc(20px + env(safe-area-inset-bottom))}
   /* Bug reel trouve en testant a 375px : align-items:flex-start (necessaire en desktop pour que
      la colonne laterale ne s'etire pas en hauteur) fait qu'en colonne (mobile) .dfx-table-wrap
      se dimensionne sur le contenu (947px, largeur naturelle du tableau) au lieu de la largeur de
@@ -1178,7 +1210,7 @@
      tableau. align-items:stretch en colonne force la largeur du conteneur, laissant
      overflow-x:auto du tableau faire son travail. */
   @media (max-width:759px){.dfx-body{flex-direction:column; align-items:stretch}}
-  .dfx-table-wrap{flex:1; min-width:0; overflow-x:auto; border-radius:14px; background:var(--surface); -webkit-overflow-scrolling:touch}
+  .dfx-table-wrap{flex:1; min-width:0; min-height:0; overflow:auto; border-radius:14px; background:var(--surface); -webkit-overflow-scrolling:touch}
   .dfx-table{width:100%; min-width:760px; border-collapse:collapse; font-size:13px}
   .dfx-table thead th{
     position:sticky; top:0; background:var(--surface); text-align:left; font-size:11.5px; font-weight:700;
@@ -1192,6 +1224,14 @@
   .dfx-table tbody tr.dfx-tr-data:last-child td, .dfx-table tbody tr.dfx-tr-actions:last-child td{border-bottom:0}
   .dfx-table td.dfx-num-nom{font-weight:700}
   .dfx-table td.dfx-num-montant{font-weight:700; white-space:nowrap}
+  /* Repli/deploi par ligne (09/09/2026, retour Dorian -- "Gerer ce devis/cette facture" ne
+     faisait rien, et "Le client a accepte" s'affichait en bandeau permanent entre les lignes).
+     La ligne d'actions est desormais MASQUEE par defaut (display:none, jamais table-row en CSS
+     pur --必要 pour un <tr>) et revelee par le crayon (.dfx-pencil-btn), qui bascule .dfx-open.
+     Resout aussi "on ne voit que 3 lignes" : des lignes repliees par defaut sont bien plus
+     courtes, plus de lignes tiennent a l'ecran avant meme de defiler. */
+  .dfx-tr-actions{display:none}
+  .dfx-tr-actions.dfx-open{display:table-row}
   .dfx-tr-actions td{padding:0 12px 12px; border-bottom:0.5px solid var(--hairline); background:var(--card-bg-2)}
   .dfx-actions-inner{display:flex; flex-wrap:wrap; gap:8px; align-items:center; padding-top:10px}
   .dfx-icon-row{display:flex; gap:6px; flex:0 0 auto}
@@ -1202,6 +1242,22 @@
   }
   .dfx-icon-btn svg{width:17px; height:17px}
   .dfx-icon-btn[disabled], .dfx-icon-btn.dfx-icon-disabled{opacity:.35; pointer-events:none}
+  .dfx-icon-btn.dfx-icon-btn-active{background:var(--blue); border-color:var(--blue); color:#fff}
+  /* Boutons d'action de ligne (ex "Le client a accepte", "Facturer ce devis") : DISCRETS --
+     plus jamais width:100% (le "bandeau plein largeur entre chaque ligne" signale par Dorian),
+     largeur naturelle au contenu, alignes a gauche dans la ligne d'actions repliable. */
+  .dfx-row-action-btn{width:auto !important; margin-top:0 !important; padding:8px 14px; font-size:13px}
+  /* Panneau d'envoi de facture (09/09/2026) -- meme grammaire que le reste des formulaires
+     (label/input encadre, boutons vc-ok/vc-no), largeur bornee pour rester lisible sur desktop. */
+  .dfx-envoi-facture{display:flex; flex-direction:column; gap:8px; padding:10px; margin-top:6px; background:var(--surface); border-radius:10px; max-width:360px}
+  .dfx-envoi-facture label{display:flex; flex-direction:column; gap:5px; font-size:12px; color:var(--muted)}
+  .dfx-envoi-facture input{
+    font:inherit; font-size:15px; color:var(--ink); background:var(--field-bg); border-radius:10px;
+    padding:9px 11px; box-sizing:border-box; border:0.5px solid rgba(255,255,255,.18);
+  }
+  html.mcs-theme .dfx-envoi-facture input{border:1.5px solid var(--hairline)}
+  .dfx-envoi-facture-row{display:flex; gap:8px}
+  .dfx-envoi-facture-row button{flex:1; padding:8px; font-size:13px}
   .dfx-pastille{display:inline-block; font-size:11.5px; font-weight:700; border-radius:99px; padding:3px 10px; white-space:nowrap}
   .dfx-pastille--brouillon{background:rgba(255,255,255,.1); color:var(--muted)}
   html.mcs-theme .dfx-pastille--brouillon{background:var(--field-bg)}
@@ -1222,7 +1278,6 @@
   .dfx-totaux-ligne{display:flex; justify-content:space-between; font-size:13px; color:var(--ink); margin-top:6px}
   .dfx-totaux-ligne b{font-weight:700}
   .dfx-empty-cell{padding:40px 16px; text-align:center; color:var(--muted); font-size:14px}
-  .dfx-tr-actions.dfx-flash td{background:rgba(10,132,255,.14); transition:background .3s ease}
 
   /* Panneau plein ecran "Contrats" (chantier 5 : contrats et echeances -- patron d'un tenant secondaire uniquement) */
   #contratsview{
@@ -4193,17 +4248,24 @@
      "Facturer ce devis" (facLignesWrap/facLignesTotal, classe car pas d'id unique possible sur
      une carte repetee) -- meme grammaire visuelle, aucune nouvelle regle de mise en page. */
   .fd-total-inline{font-size:14px; font-weight:700; color:var(--ink); text-align:right; margin-top:4px}
-  /* Ecran "Devis" (09/09/2026, mission ecran Devis et Factures) -- meme gabarit que #fd-form-bg/#fd-form,
-     juste renomme en dv-* pour ne jamais entrer en collision avec la Facture directe existante. */
+  /* Ecran "Devis" -- refait en PLEIN ECRAN le 09/09/2026 apres-midi (retour Dorian : "il s'ouvre
+     en fenetre surgissante, il doit s'ouvrir en plein ecran, comme Modifier et traiter de
+     l'onglet Contrats -- c'est le meme geste, il doit avoir la meme forme"). Meme gabarit
+     EXACT que #facture-contrat-form-bg (Contrats -> Facturation, "Modifier et traiter") :
+     position:fixed;inset:0, glissement depuis le bas, jamais une carte centree. #dv-form-bg (le
+     fond assombri de l'ancienne modale) est laisse EN PLACE tel quel dans le HTML/JS (jamais
+     retire, jamais touche) -- #dv-form, desormais a z-index superieur ET inset:0, le recouvre
+     entierement quand il est ouvert : le JS (dvFormBg.classList.add/remove('open')) continue de
+     fonctionner sans AUCUNE modification, il devient juste invisible derriere le plein ecran. */
   #dv-form-bg{position:fixed; inset:0; background:rgba(0,0,0,.5); display:none; z-index:52}
   #dv-form-bg.open{display:block}
   #dv-form{
-    position:fixed; left:14px; right:14px; top:50%; transform:translateY(-50%) scale(.96); z-index:53;
-    background:var(--bg2); border-radius:16px; padding:18px 18px calc(18px + env(safe-area-inset-bottom));
-    display:none; flex-direction:column; gap:10px; max-height:82vh; overflow-y:auto; -webkit-overflow-scrolling:touch;
-    opacity:0; transition:opacity .2s ease, transform .2s ease;
+    position:fixed; inset:0; z-index:53; background:var(--bg);
+    display:none; flex-direction:column;
+    transform:translateY(100%); transition:transform .28s cubic-bezier(.2,.9,.25,1);
+    padding:0; border-radius:0; max-height:none; opacity:1;
   }
-  #dv-form.open{display:flex; opacity:1; transform:translateY(-50%) scale(1)}
+  #dv-form.open{display:flex; transform:translateY(0)}
   @media (prefers-reduced-motion: reduce){#dv-form{transition:none}}
   #dv-form b{font-size:16px}
   #dv-form label{display:flex; flex-direction:column; gap:5px; font-size:12.5px; color:var(--muted)}
@@ -4212,7 +4274,18 @@
     border:0.5px solid rgba(255,255,255,.18); border-radius:10px; padding:9px 11px; box-sizing:border-box;
     resize:vertical;
   }
-  #dv-form-head{display:flex; align-items:center; justify-content:space-between}
+  /* Retour Dorian : "les champs ne sont pas encadres, on ne distingue pas ce qui est saisissable"
+     -- vrai en theme clair MCS : une bordure blanche a 18% d'opacite (pensee pour le fond sombre
+     du labo) est quasi invisible sur un champ clair. Meme correctif deja applique ailleurs dans
+     ce fichier pour les memes raisons (contours WCAG verifies) : bordure plus epaisse, couleur
+     --hairline (deja calibree a 3,44:1 sur blanc pour ce theme, cf. le bloc html.mcs-theme en
+     tete de fichier) au lieu du blanc translucide. */
+  html.mcs-theme #dv-form input, html.mcs-theme #dv-form textarea{border:1.5px solid var(--hairline)}
+  #dv-form-head{
+    flex:0 0 auto; display:flex; align-items:center; justify-content:space-between; gap:10px;
+    padding:calc(10px + env(safe-area-inset-top)) 18px 12px; border-bottom:0.5px solid var(--hairline);
+  }
+  #dv-form-body{flex:1; overflow-y:auto; -webkit-overflow-scrolling:touch; padding:14px 18px calc(20px + env(safe-area-inset-bottom)); display:flex; flex-direction:column; gap:10px}
   #dv-close{background:none; border:0; color:var(--muted); font-size:18px; padding:4px 6px; cursor:pointer; -webkit-tap-highlight-color:transparent}
   #dv-meslist-row{margin:-2px 0 2px}
   #dv-nom-wrap{position:relative}
@@ -6135,14 +6208,17 @@
   <p id="devis-testmode-banniere" class="testmode-banniere" style="display:none">🧪 Mode test : les devis et factures partent chez Altaestima, jamais chez le client.</p>
   <div id="dfshell">
     <!-- Rail facon MEG (>=760px) : 1 seule entree "Ventes" (MEG en a 9), clic = ouvre/ferme le
-         flyout listant les 3 pages -- meme geste, couleurs 100% Jarvis (rail sombre historique). -->
+         flyout listant les 3 pages -- meme geste, couleurs 100% Jarvis (rail sombre historique).
+         Ferme par defaut (09/09/2026, retour Dorian) : le flyout est desormais un OVERLAY
+         flottant (cf. CSS #dfflyout) qui ne pousse plus la barre d'outils/le tableau -- ouvert
+         d'entree, il aurait recouvert le debut du tableau sans raison des l'arrivee sur l'ecran. -->
     <nav id="dfrail" aria-label="Navigation Ventes">
-      <button class="dfx-rail-item active" id="dfrail-ventes" type="button" aria-haspopup="true" aria-expanded="true">
+      <button class="dfx-rail-item active" id="dfrail-ventes" type="button" aria-haspopup="true" aria-expanded="false">
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><path d="M14 2v6h6"/><line x1="8" y1="13" x2="16" y2="13"/><line x1="8" y1="17" x2="16" y2="17"/><line x1="8" y1="9" x2="10" y2="9"/></svg>
         <span>Ventes</span>
       </button>
     </nav>
-    <div id="dfflyout" class="open">
+    <div id="dfflyout">
       <div class="dfx-flyout-title">Ventes</div>
       <button class="dfx-flyout-item active" data-tab="avalider" type="button">À valider<span class="df-badge attente" id="dfflyout-avalider-badge" style="display:none"></span></button>
       <button class="dfx-flyout-item" data-tab="devis" type="button">Devis</button>
@@ -6159,10 +6235,18 @@
         <div id="devis-search-wrap">
           <input id="devis-search" type="search" inputmode="search" placeholder="🔍 Rechercher un client…" autocomplete="off" autocapitalize="off" autocorrect="off">
         </div>
+        <!-- Filtres "facon MEG, sans le recopier aveuglement" (09/09/2026) : MEG a en plus
+             Proforma (Etats) et un groupe Statuts (Depose/Rejete/Refuse/Encaisse, propres a son
+             depot bancaire/e-facturation) -- aucun des deux n'existe dans les donnees MCS
+             (ni Proforma ni pipeline de depot electronique a ce jour), retires plutot
+             qu'inventes. "Emis" ajoute (devis numerote via ce formulaire, pas encore envoye --
+             existait deja en donnees, jamais filtrable avant ce jour). -->
         <details class="dfx-filtres" id="dfx-filtres-devis">
           <summary>Filtres ⌄</summary>
           <div class="dfx-filtres-panel">
+            <div class="dfx-flyout-title">États</div>
             <label><input type="checkbox" data-statut="brouillon" checked> Brouillon</label>
+            <label><input type="checkbox" data-statut="valide" checked> Émis</label>
             <label><input type="checkbox" data-statut="envoye" checked> Envoyé</label>
             <label><input type="checkbox" data-statut="accepte" checked> Accepté</label>
             <label><input type="checkbox" data-statut="intervention_faite" checked> Intervention faite</label>
@@ -6171,18 +6255,31 @@
         <details class="dfx-filtres" id="dfx-filtres-factures" style="display:none">
           <summary>Filtres ⌄</summary>
           <div class="dfx-filtres-panel">
+            <div class="dfx-flyout-title">États</div>
             <label><input type="checkbox" data-statut="brouillon" checked> Brouillon</label>
             <label><input type="checkbox" data-statut="validee" checked> Validée</label>
             <label><input type="checkbox" data-statut="reglee" checked> Réglée</label>
             <label><input type="checkbox" data-statut="annulee" checked> Annulée</label>
+            <div class="dfx-flyout-title">Types</div>
+            <label><input type="checkbox" data-type="facture" checked> Facture</label>
+            <label><input type="checkbox" data-type="avoir" checked> Avoir</label>
           </div>
         </details>
         <select class="dfx-periode" id="dfx-periode" aria-label="Période">
           <option value="tout">Toute période</option>
-          <option value="mois">Ce mois-ci</option>
+          <option value="mois">Mois en cours</option>
           <option value="mois-dernier">Mois dernier</option>
-          <option value="annee">Cette année</option>
+          <option value="6mois">6 derniers mois</option>
+          <option value="exercice">Exercice en cours</option>
+          <option value="personnalise">Personnalisé…</option>
         </select>
+        <!-- "Personnalise" (09/09/2026, retour Dorian : "un vrai calendrier avec date de debut
+             et de fin", au lieu des 4 entrees de texte d'avant) -- 2 vrais selecteurs de date,
+             masques tant que ce choix n'est pas actif. -->
+        <span id="dfx-periode-custom" style="display:none">
+          <input type="date" id="dfx-periode-debut" class="dfx-periode" aria-label="Début de période">
+          <input type="date" id="dfx-periode-fin" class="dfx-periode" aria-label="Fin de période">
+        </span>
         <button class="dfx-reset-link" id="dfx-reset" type="button">Réinitialiser les filtres</button>
       </div>
       <div class="dfx-body" id="dfx-body-avalider">
@@ -6195,7 +6292,7 @@
               <tr>
                 <th>État</th><th>Numéro</th>
                 <th class="dfx-sortable" data-sort="date">Date <span class="dfx-sort-ic">↕</span></th>
-                <th>Validité</th><th>Client</th><th>Référence</th>
+                <th>Client</th><th>Référence</th>
                 <th>Montant HT</th><th>Montant TTC</th><th></th>
               </tr>
             </thead>
@@ -7117,6 +7214,7 @@
 <div id="dv-form-bg"></div>
 <div id="dv-form">
   <div id="dv-form-head"><b>Devis</b><button id="dv-close" type="button" aria-label="Fermer">✕</button></div>
+  <div id="dv-form-body">
   <p class="dfhint">Émission au jour même, validité 60 jours. Le reste (identité MCS, mentions légales) vient automatiquement.</p>
   <div id="dv-meslist-row"><button id="dv-meslist-btn" type="button" class="fc-choice-link">📋 Voir mes devis (brouillons, validés, envoyés) →</button></div>
   <label id="dv-nom-wrap">Client
@@ -7169,6 +7267,7 @@
       <button id="dv-envoi-plustard" type="button" class="vc-no">Plus tard</button>
       <button id="dv-envoi-go" type="button" class="vc-ok vc-envoi-reel">Envoyer</button>
     </div>
+  </div>
   </div>
 </div>
 
@@ -7229,9 +7328,9 @@
          c'est ce qui supprime le conflit humain sur cette ligne precise. Sert aussi de cle
          unique de detection de mise a jour (voir checkUpdate ci-dessous), plus fiable qu'une
          comparaison de chaine de version par tenant. */
-  var APPV_MCS = '4.46';
+  var APPV_MCS = '4.47';
   var APPV_LABO = '1.00';
-  var BUILD = 28;
+  var BUILD = 29;
   // displayVersion()/displayVersionShort() lisent isMcsCode() (definie plus bas dans cette
   // meme IIFE -- declaration de fonction, donc disponible ici par hoisting) : le TENANT
   // affiche depend du code de connexion, jamais d'un simple "APPV" global qui ne dirait ni
@@ -7344,15 +7443,20 @@
           text: 'Le nom du client, le montant TTC, et un lien pour ouvrir le PDF.' },
         { selector: '#devis-list .dv-actions', title: 'Valider ou refuser',
           text: 'Dans « À valider » : ✅ prépare un mail personnalisé et modifiable à envoyer au client, ❌ refuse ce que Jarvis a préparé. Rien ne part sans votre clic.' },
-        // Point 7 (31/08/2026, gros chantier) : la chaine accepte -> intervention faite ->
-        // facturer (Point 2 du meme chantier) n'avait aucune etape -- ces 2 boutons n'existent
-        // QUE sur un devis dans le bon etat (onglet Devis -> Valides), pas toujours presents a
-        // l'ecran -- comme les autres etapes "conditionnelles" deja dans ce fichier, le moteur
-        // saute silencieusement l'etape si le bouton n'est pas visible (jamais bloquant).
-        { selector: '.dv-intervention-btn', title: 'Intervention faite — facturer le client',
-          text: 'Sur un devis accepté par le client (onglet « Devis » → « Validés ») : appuyez ici une fois le travail terminé chez le client. Le bouton « 🧾 Facturer ce devis » apparaît alors juste en dessous, sur la même fiche. Vous pouvez le faire vous-même, pas seulement Bruno.' },
+        // Point 7 (31/08/2026, gros chantier) puis revu le 09/09/2026 (retour Dorian --
+        // "Intervention faite" n'a rien a faire sur cet ecran, c'est un geste de l'onglet
+        // Contrats) : l'ancienne etape dediee au bouton "Intervention faite" est retiree. Le
+        // geste reste necessaire cote serveur (ordre accepte -> intervention_faite ->
+        // facturable, jamais change) mais devient INVISIBLE -- "Facturer ce devis" le declenche
+        // lui-meme en un seul clic desormais (cf. devisRenderRowDevis). "Gerer ce devis" (le
+        // crayon, en tete de ligne) revele ce bouton -- comme les autres etapes "conditionnelles"
+        // deja dans ce fichier, le moteur saute silencieusement l'etape si le bouton n'est pas
+        // visible/trouvable (jamais bloquant) -- avec plusieurs lignes a l'ecran, `open` ne clique
+        // que sur le PREMIER crayon trouve, qui n'est pas forcement celui du bon devis : limite
+        // assumee, sans consequence (l'etape saute proprement si la cible reste introuvable).
         { selector: '.dv-facturer-btn', title: 'Facturer ce devis',
-          text: 'Une fois l’intervention déclarée terminée, ce bouton reprend tout le devis (client, lignes, prix) pour préparer la facture — vous n’avez rien à ressaisir. Un récapitulatif s’affiche avant l’émission réelle.' }
+          open: '.dfx-pencil-btn',
+          text: 'Sur un devis accepté par le client (onglet « Devis ») : dépliez la ligne avec le crayon ✏️, puis appuyez sur « Facturer ce devis ». Ce bouton déclare l’intervention terminée ET reprend tout le devis (client, lignes, prix) pour préparer la facture, en un seul geste — vous n’avez rien à ressaisir. Un récapitulatif s’affiche avant l’émission réelle.' }
       ]
     },
     contrats: {
@@ -10529,8 +10633,9 @@
   // Brouillon/Accepte demandes), remplacent les 2 chips "attente/valides" et "payees/impayees"
   // d'avant. "rejete" reste VOLONTAIREMENT hors de la liste -- regle deja actee (jamais affiche,
   // sur demande de Mathéo), aucune case a cocher pour ne pas laisser croire que c'est possible.
-  var dfxFiltresDevis = { brouillon:true, envoye:true, accepte:true, intervention_faite:true };
+  var dfxFiltresDevis = { brouillon:true, valide:true, envoye:true, accepte:true, intervention_faite:true };
   var dfxFiltresFactures = { brouillon:true, validee:true, reglee:true, annulee:true };
+  var dfxFiltresTypesFactures = { facture:true, avoir:true };
   var dfxPeriodeVal = 'tout';
   var dfxSortField = 'date', dfxSortDir = 'desc';
   var dfxCurrentItems = [];
@@ -10546,6 +10651,10 @@
     if (e.indexOf('brouillon') !== -1) return 'brouillon';
     return 'validee';
   }
+  // Periode facon MEG (09/09/2026, retour Dorian : "MEG propose Mois en cours/Mois dernier/6
+  // derniers mois/Exercice en cours, et un vrai calendrier -- Jarvis n'offrait que 4 entrees de
+  // texte"). "Exercice" MCS = annee civile (aucun exercice decale connu/documente pour ce client
+  // -- si Mickael en a un different, a corriger avec lui plutot que de deviner).
   function dfxInPeriode(dateStr, periode){
     if (periode === 'tout' || !dateStr) return true;
     var d; try { d = new Date(dateStr); } catch (e){ return true; }
@@ -10556,23 +10665,24 @@
       var m = now.getMonth() - 1, y = now.getFullYear(); if (m < 0){ m = 11; y--; }
       return d.getFullYear() === y && d.getMonth() === m;
     }
-    if (periode === 'annee') return d.getFullYear() === now.getFullYear();
+    if (periode === '6mois'){
+      var seuil = new Date(now.getFullYear(), now.getMonth() - 5, 1);
+      return d >= seuil;
+    }
+    if (periode === 'annee' || periode === 'exercice') return d.getFullYear() === now.getFullYear();
+    if (periode === 'personnalise'){
+      var debutEl = document.getElementById('dfx-periode-debut'), finEl = document.getElementById('dfx-periode-fin');
+      var debut = debutEl && debutEl.value ? new Date(debutEl.value + 'T00:00:00') : null;
+      var fin = finEl && finEl.value ? new Date(finEl.value + 'T23:59:59') : null;
+      if (debut && d < debut) return false;
+      if (fin && d > fin) return false;
+      return true;
+    }
     return true;
   }
   function dfxComparator(a, b){
     var da = new Date(a.date || 0).getTime() || 0, db = new Date(b.date || 0).getTime() || 0;
     return dfxSortDir === 'asc' ? (da - db) : (db - da);
-  }
-  // Validite : uniquement les devis Jarvis natifs -- 60 jours, la REGLE ACTUELLE affichee en
-  // toutes lettres dans le vrai formulaire "Creer un devis" de cet ecran (dv-date-validite,
-  // dfhint) au moment de ce chantier -- jamais inventee. (Un ancien PDF genere le 04/08/2026
-  // affichait encore "30 jours" -- la regle a change depuis ; on suit la version EN VIGUEUR
-  // aujourd'hui, celle du formulaire de creation reellement utilise.) Un devis MEG n'exporte
-  // aucune date de validite -- honnete "-" plutot qu'une estimation.
-  function dfxValiditeDevis(dv){
-    if (dv.source !== 'jarvis' || !dv.date) return '—';
-    try { var d = new Date(dv.date); d.setDate(d.getDate() + 60); return fmtDevisDateSimple(d.toISOString()); }
-    catch (e){ return '—'; }
   }
   function dfxReference(dv){
     var r = (dv.reference != null && dv.reference !== '') ? dv.reference : (dv.objet || '');
@@ -10589,7 +10699,8 @@
     return b;
   }
   var DFX_PASTILLE_DEVIS = {
-    brouillon: ['Brouillon', 'dfx-pastille--brouillon'], envoye: ['Envoyé', 'dfx-pastille--envoye'],
+    brouillon: ['Brouillon', 'dfx-pastille--brouillon'], valide: ['Émis', 'dfx-pastille--envoye'],
+    envoye: ['Envoyé', 'dfx-pastille--envoye'],
     accepte: ['Accepté', 'dfx-pastille--accepte'], intervention_faite: ['Intervention faite', 'dfx-pastille--intervention'],
     rejete: ['Rejeté', 'dfx-pastille--rejete'],
   };
@@ -10607,17 +10718,18 @@
     return '<span class="dfx-pastille ' + m[1] + '">' + escHtml(m[0]) + '</span>';
   }
   function dfxMontantCell(v){ return (v !== undefined && v !== null && v !== '') ? escHtml(fmtEuros(v)) : '—'; }
-  // Ligne tableau (donnees) + ligne actions juste en dessous (colspan) -- reutilise TELLES
-  // QUELLES les fonctions devisRenderRowDevis/devisRenderRowFacture(x, true) ci-dessus (memes
-  // boutons, meme etat, aucune logique dupliquee), toujours VISIBLES (pas de repli/expand qui
-  // casserait le tutoriel existant .dv-intervention-btn/.dv-facturer-btn, cf. TUTO_CONFIGS.devis).
+  // Ligne tableau (donnees) + ligne actions repliable juste en dessous (colspan) -- reutilise
+  // TELLES QUELLES les fonctions devisRenderRowDevis/devisRenderRowFacture(x, true) ci-dessus
+  // (memes boutons, meme etat, aucune logique dupliquee). Repliee par defaut (retour Dorian
+  // 09/09/2026 : "Le client a accepte" en bandeau permanent entre les lignes + "Gerer ce devis"
+  // qui ne faisait rien) -- revelee par le crayon .dfx-pencil-btn, cf. TUTO_CONFIGS.devis (mis a
+  // jour en consequence, `open` clique le crayon avant de spotlighter .dv-facturer-btn).
   function dfxBuildDevisRow(dv){
     var tr = document.createElement('tr'); tr.className = 'dfx-tr-data';
     function td(html, cls){ var d = document.createElement('td'); if (cls) d.className = cls; d.innerHTML = html; tr.appendChild(d); return d; }
     td(dfxPastilleDevis(dv));
     td(escHtml(dv.numero || '—'), 'dfx-num-nom');
     td(escHtml(fmtDevisDateSimple(dv.date) || '—'));
-    td(escHtml(dfxValiditeDevis(dv)));
     td(escHtml(dv.nom || '(client non précisé)'), 'dfx-num-nom');
     td(escHtml(dfxReference(dv)));
     td(dfxMontantCell(dv.montantHt), 'dfx-num-montant');
@@ -10626,24 +10738,62 @@
     var iconRow = document.createElement('div'); iconRow.className = 'dfx-icon-row';
     var pdfHref = dv.url ? ('https://n8n-self-hosted-t0pz.onrender.com' + dv.url + '&code=' + encodeURIComponent(String(read('jarvisCode') || '').trim())) : '';
     var trAct;
-    iconRow.appendChild(dfxIconBtn(DFX_ICON_MAIL, dv.email ? 'Envoyer par mail' : 'Email du client inconnu', function(){
-      var corps = 'Bonjour,%0D%0A%0D%0AVeuillez trouver ci-joint votre devis' + (pdfHref ? (' : ' + encodeURIComponent(pdfHref)) : '') + '.%0D%0A%0D%0ACordialement.';
-      location.href = 'mailto:' + encodeURIComponent(dv.email) + '?subject=' + encodeURIComponent('Votre devis') + '&body=' + corps;
-    }, !dv.email));
+    // Retour Dorian (09/09/2026) : "le bouton mail ne doit pas ouvrir Outlook -- il doit passer
+    // par le mecanisme d'envoi de l'application, avec apercu du mail pre-rempli, deja existant
+    // ailleurs dans Jarvis". Reutilise dvChargerDevis (deja construit pour "Voir mes devis") --
+    // charge ce devis precis dans le VRAI formulaire (identite/lignes/PDF), qui affiche son
+    // propre panneau d'envoi trace (destinataire pre-rempli, TEST_MODE) des qu'il est emis/
+    // envoye -- jamais un mailto: qui contourne l'application. Uniquement les devis Jarvis
+    // (source==='jarvis', un devis MEG n'a pas de brouillon chez nous a recharger).
+    iconRow.appendChild(dfxIconBtn(DFX_ICON_MAIL, dv.source === 'jarvis' ? 'Gérer et envoyer par mail' : 'Envoi non disponible pour un devis MEG', function(){
+      dvChargerDevis(dv.token);
+    }, dv.source !== 'jarvis' || !dv.token));
     iconRow.appendChild(dfxIconBtn(DFX_ICON_PDF, pdfHref ? 'Voir le PDF' : (dv.source === 'meg' ? 'Importer le PDF' : 'PDF indisponible'), function(){
       if (pdfHref) window.open(pdfHref, '_blank');
       else if (dv.source === 'meg'){ dvPdfImportTarget = dv; dvPdfImportInput.value = ''; dvPdfImportInput.click(); }
     }, !pdfHref && dv.source !== 'meg'));
-    iconRow.appendChild(dfxIconBtn(DFX_ICON_PENCIL, 'Gérer ce devis', function(){
-      trAct.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
-      trAct.classList.add('dfx-flash'); setTimeout(function(){ trAct.classList.remove('dfx-flash'); }, 900);
-    }, false));
+    var pencilBtn = dfxIconBtn(DFX_ICON_PENCIL, 'Gérer ce devis', function(){
+      var open = trAct.classList.toggle('dfx-open');
+      pencilBtn.classList.toggle('dfx-icon-btn-active', open);
+      if (open) trAct.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+    }, false);
+    pencilBtn.classList.add('dfx-pencil-btn');
+    iconRow.appendChild(pencilBtn);
     tdActions.appendChild(iconRow);
     trAct = document.createElement('tr'); trAct.className = 'dfx-tr-actions';
-    var tdAct = document.createElement('td'); tdAct.colSpan = 9;
+    var tdAct = document.createElement('td'); tdAct.colSpan = 8;
     tdAct.appendChild(devisRenderRowDevis(dv, true));
     trAct.appendChild(tdAct);
     return [tr, trAct];
+  }
+  // Panneau d'envoi d'une facture (09/09/2026, action manquante signalee par Dorian) -- meme
+  // mecanisme trace que dv-envoi-panel (postDf, TEST_MODE, jamais mailto:), construit ici en
+  // ligne (pas de nouveau modal global) car aucun panneau d'envoi dedie n'existait pour les
+  // factures avant ce jour. Toggle : un 2e clic sur l'enveloppe referme le panneau deja ouvert.
+  function dfxOuvrirEnvoiFacture(f, container){
+    var existing = container.querySelector('.dfx-envoi-facture');
+    if (existing){ existing.remove(); return; }
+    var panel = document.createElement('div'); panel.className = 'dfx-envoi-facture';
+    var label = document.createElement('label'); label.textContent = 'Destinataire';
+    var input = document.createElement('input'); input.type = 'email'; input.value = f.email || ''; input.placeholder = 'client@exemple.fr';
+    label.appendChild(input);
+    var row = document.createElement('div'); row.className = 'dfx-envoi-facture-row';
+    var cancelBtn = document.createElement('button'); cancelBtn.type = 'button'; cancelBtn.className = 'vc-no'; cancelBtn.textContent = 'Annuler';
+    var sendBtn = document.createElement('button'); sendBtn.type = 'button'; sendBtn.className = 'vc-ok vc-envoi-reel'; sendBtn.textContent = 'Envoyer';
+    cancelBtn.addEventListener('click', function(){ panel.remove(); });
+    sendBtn.addEventListener('click', function(){
+      var dest = input.value.trim();
+      if (!dest || dest.indexOf('@') === -1){ toast('Adresse email invalide.'); return; }
+      sendBtn.disabled = true; sendBtn.textContent = 'Envoi…';
+      postDf({ type: 'envoyer-facture', token: f.pdfToken, numeroComplet: f.numeroComplet, destinataireEmail: dest }, function(r){
+        sendBtn.disabled = false; sendBtn.textContent = 'Envoyer';
+        if (r && r.ok){ toast('✅ Facture envoyée' + (r.testMode ? ' (mode test → ' + r.destinataire + ')' : ' à ' + r.destinataire)); panel.remove(); }
+        else { toast('❌ ' + ((r && r.message) || 'Envoi impossible.')); }
+      }, function(err){ sendBtn.disabled = false; sendBtn.textContent = 'Envoyer'; toast('❌ ' + err); });
+    });
+    row.appendChild(cancelBtn); row.appendChild(sendBtn);
+    panel.appendChild(label); panel.appendChild(row);
+    container.appendChild(panel);
   }
   function dfxBuildFactureRow(f){
     var tr = document.createElement('tr'); tr.className = 'dfx-tr-data';
@@ -10662,14 +10812,29 @@
     var href = f.pdfUrl ? ('https://n8n-self-hosted-t0pz.onrender.com' + f.pdfUrl + '&code=' + encodeURIComponent(String(read('jarvisCode') || '').trim())) : (f.megUrl || '');
     var trAct;
     iconRow.appendChild(dfxIconBtn(DFX_ICON_PDF, href ? (f.pdfUrl ? 'Voir la facture' : 'Ouvrir dans MEG') : 'Indisponible', function(){ window.open(href, '_blank'); }, !href));
-    iconRow.appendChild(dfxIconBtn(DFX_ICON_PENCIL, 'Gérer cette facture', function(){
+    var trAct;
+    var inner; // declare avant le bouton mail, qui l'utilise comme conteneur du panneau d'envoi
+    // Retour Dorian (09/09/2026) : "sur une facture, il n'y a aucune action d'envoi -- elle
+    // manque purement et simplement". Meme mecanisme d'envoi trace que les devis (postDf ->
+    // route additive 'envoyer-facture', TEST_MODE, jamais mailto:) -- uniquement les factures
+    // Jarvis avec un PDF connu (f.pdfToken) ; les factures MEG (deja envoyees via MEG) n'ont
+    // pas cette action, cf. dfxOuvrirEnvoiFacture.
+    iconRow.appendChild(dfxIconBtn(DFX_ICON_MAIL, f.pdfToken ? 'Envoyer par mail' : 'Envoi non disponible pour cette facture', function(){
+      if (!trAct.classList.contains('dfx-open')){ trAct.classList.add('dfx-open'); pencilBtnF.classList.add('dfx-icon-btn-active'); }
+      dfxOuvrirEnvoiFacture(f, inner);
       trAct.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
-      trAct.classList.add('dfx-flash'); setTimeout(function(){ trAct.classList.remove('dfx-flash'); }, 900);
-    }, f.typeDoc === 'avoir'));
+    }, !f.pdfToken || f.typeDoc === 'avoir'));
+    var pencilBtnF = dfxIconBtn(DFX_ICON_PENCIL, 'Gérer cette facture', function(){
+      var open = trAct.classList.toggle('dfx-open');
+      pencilBtnF.classList.toggle('dfx-icon-btn-active', open);
+      if (open) trAct.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+    }, f.typeDoc === 'avoir');
+    pencilBtnF.classList.add('dfx-pencil-btn');
+    iconRow.appendChild(pencilBtnF);
     tdActions.appendChild(iconRow);
     trAct = document.createElement('tr'); trAct.className = 'dfx-tr-actions';
     var tdAct = document.createElement('td'); tdAct.colSpan = 10;
-    var inner = devisRenderRowFacture(f, true);
+    inner = devisRenderRowFacture(f, true);
     tdAct.appendChild(inner);
     trAct.appendChild(tdAct);
     return [tr, trAct];
@@ -10822,7 +10987,7 @@
     // sans attendre MEG -- backend deja etendu (mcs-devis-valider, source:'meg', memes garde-fous
     // patron-seul et anti-double-facturation que le reste de la chaine MEG).
     if ((dv.source === 'jarvis' && dv.statut === 'envoye' && dv.token) || (dv.source === 'meg' && dv.statut === 'brouillon')){
-      var accBtn = document.createElement('button'); accBtn.type = 'button'; accBtn.className = 'vc-ok'; accBtn.style.marginTop = '8px'; accBtn.style.width = '100%';
+      var accBtn = document.createElement('button'); accBtn.type = 'button'; accBtn.className = 'vc-ok dfx-row-action-btn';
       accBtn.innerHTML = ICON_CHECK_DV + 'Le client a accepté';
       accBtn.addEventListener('click', function(){
         // 08/09/2026 soir -- meme bug de reference perimee que Contrats (mission Mickael/Dorian) :
@@ -10841,44 +11006,25 @@
       });
       row.appendChild(accBtn);
     }
-    // Point 2a (31/08/2026, gros chantier) : "Intervention faite" -- avant, SEUL Bruno pouvait
-    // le declarer, et uniquement sur les devis QU'IL avait dictes. Un devis dicte/envoye par
-    // Mickael lui-meme, accepte par le client, ne pouvait alors JAMAIS devenir facturable
-    // (personne n'avait le bouton). Mickael peut desormais le faire lui-meme, sur N'IMPORTE
-    // QUEL devis accepte (le sien ou celui de Bruno) -- le geste de Bruno reste inchange par
-    // ailleurs. Identifiant = token (jarvis) ou numero (meg, avec les champs deja connus du
-    // devis, evite un aller-retour supplementaire).
-    if (dv.statut === 'accepte' && (dv.token || dv.numero)){
-      var intBtn = document.createElement('button'); intBtn.type = 'button'; intBtn.className = 'vc-ok dv-intervention-btn';
-      intBtn.style.marginTop = '8px'; intBtn.style.width = '100%';
-      var intBtnIdleHtml = ICON_CHECK_DV + 'Intervention faite — facturer le client';
-      intBtn.innerHTML = intBtnIdleHtml;
-      intBtn.addEventListener('click', function(){
-        // 08/09/2026 soir -- meme migration que accBtn ci-dessus.
-        demarrerEnvoi(intBtn, 'Enregistrement…', []);
-        var payload = dv.source === 'meg'
-          ? { type: 'terminer', source: 'meg', numero: dv.numero, client_nom: dv.nom, objet: dv.objet, montant: dv.montant }
-          : { type: 'terminer', token: dv.token };
-        postDevisIntervention(payload, function(r){
-          if (r && r.ok){ toast('✅ Intervention déclarée terminée'); finDenvoi(intBtn, [], devisResynchroniser); }
-          else { finDenvoi(intBtn, [], null); intBtn.innerHTML = intBtnIdleHtml; toast('❌ ' + ((r && r.message) || 'Impossible.')); }
-        }, function(err){ finDenvoi(intBtn, [], null); intBtn.innerHTML = intBtnIdleHtml; toast('❌ ' + err); });
-      });
-      row.appendChild(intBtn);
-    }
-    // Point 4/2b (30-31/08/2026, gros chantier) : "Facturer ce devis". Ordre impose : accepte ->
-    // intervention faite -> facturable. Reprend TOUT du devis (client/lignes/prix/TVA) via
-    // mcs-devis-facturer -- si un champ manque, refus honnete et nomme, jamais de saisie a
-    // l'aveugle. Fonctionne desormais sur JARVIS (token) ET MEG (numero) : un devis MEG n'a chez
-    // nous que son en-tete, pas ses lignes -- si "preparer" repond manque:'lignes', un petit
-    // editeur de lignes (reutilise l'editeur de "Facture directe", cf. lignesEditorRow) permet a
-    // Mickael de les saisir une fois ; elles sont memorisees sur le devis (mcs_devis_meg_etat),
-    // jamais un montant global invente dans une ligne sans designation. L'emission reelle (le
-    // vrai clic qui consomme un numero) passe par postFacturation, EXACTEMENT le meme chemin
-    // deja utilise par l'avoir et la facture directe.
-    if (dv.statut === 'intervention_faite' && (dv.token || dv.numero) && !dv.dejaFacturee){
-      var facBtn = document.createElement('button'); facBtn.type = 'button'; facBtn.className = 'vc-ok dv-facturer-btn';
-      facBtn.style.marginTop = '8px'; facBtn.style.width = '100%';
+    // Point 4/2b (30-31/08/2026, gros chantier) puis revu le 09/09/2026 (retour Dorian --
+    // "Intervention faite" est un geste de l'onglet Contrats, pas de cet ecran) : "Facturer ce
+    // devis" apparait desormais directement sur un devis ACCEPTE (plus besoin du bouton
+    // intermediaire "Intervention faite", retire de cet ecran) -- Mickael clique UNE fois. La
+    // regle serveur "accepte -> intervention_faite -> facturable" n'a PAS change (mcs-devis-
+    // facturer la verifie toujours, cf. "Preparer facturer devis" -- jamais touche) : le clic
+    // declenche silencieusement postDevisIntervention (meme appel qu'avant, invisible) PUIS
+    // enchaine sur le recap habituel, cf. facBtn plus bas. Un devis deja intervention_faite
+    // (marque par Bruno depuis son propre ecran, ailleurs) saute directement au recap. Reprend
+    // TOUT du devis (client/lignes/prix/TVA) via mcs-devis-facturer -- si un champ manque, refus
+    // honnete et nomme, jamais de saisie a l'aveugle. Fonctionne desormais sur JARVIS (token) ET
+    // MEG (numero) : un devis MEG n'a chez nous que son en-tete, pas ses lignes -- si "preparer"
+    // repond manque:'lignes', un petit editeur de lignes (reutilise l'editeur de "Facture
+    // directe", cf. lignesEditorRow) permet a Mickael de les saisir une fois ; elles sont
+    // memorisees sur le devis (mcs_devis_meg_etat), jamais un montant global invente dans une
+    // ligne sans designation. L'emission reelle (le vrai clic qui consomme un numero) passe par
+    // postFacturation, EXACTEMENT le meme chemin deja utilise par l'avoir et la facture directe.
+    if ((dv.statut === 'accepte' || dv.statut === 'intervention_faite') && (dv.token || dv.numero) && !dv.dejaFacturee){
+      var facBtn = document.createElement('button'); facBtn.type = 'button'; facBtn.className = 'vc-ok dv-facturer-btn dfx-row-action-btn';
       var facBtnIdleHtml = ICON_DOC_DV + 'Facturer ce devis';
       facBtn.innerHTML = facBtnIdleHtml;
       var facRecap = document.createElement('div'); facRecap.className = 'dv-fac-recap';
@@ -10935,7 +11081,23 @@
           facRecap.classList.add('open');
         }, function(err){ facBtn.disabled = false; facBtn.innerHTML = facBtnIdleHtml; toast('❌ ' + err); });
       }
-      facBtn.addEventListener('click', facPreparer);
+      // Un clic sur un devis "accepte" (pas encore intervention_faite) declare d'abord
+      // l'intervention terminee (silencieusement, meme appel qu'avant), PUIS enchaine sur le
+      // recap habituel -- c'est ce qui fait de "Facturer ce devis" un geste UNIQUE aux yeux de
+      // Mickael. Un devis deja intervention_faite saute directement a facPreparer().
+      facBtn.addEventListener('click', function(){
+        if (dv.statut !== 'accepte'){ facPreparer(); return; }
+        facBtn.disabled = true; facBtn.textContent = 'Préparation…';
+        var payloadInt = dv.source === 'meg'
+          ? { type: 'terminer', source: 'meg', numero: dv.numero, client_nom: dv.nom, objet: dv.objet, montant: dv.montant }
+          : { type: 'terminer', token: dv.token };
+        postDevisIntervention(payloadInt, function(r){
+          facBtn.disabled = false; facBtn.innerHTML = facBtnIdleHtml;
+          if (!r || !r.ok){ toast('❌ ' + ((r && r.message) || "Impossible de déclarer l'intervention terminée.")); return; }
+          dv.statut = 'intervention_faite'; // reference locale -- coherent avec facPreparer/facIdentifiant ci-dessous
+          facPreparer();
+        }, function(err){ facBtn.disabled = false; facBtn.innerHTML = facBtnIdleHtml; toast('❌ ' + err); });
+      });
       facLignesSave.addEventListener('click', function(){
         var lecture = lignesEditorRead(facLignesWrap);
         if (lecture.invalide){ toast('Chaque ligne veut une désignation, une quantité et un prix HT.'); return; }
@@ -11074,7 +11236,7 @@
       if (!itemsD.length){
         // Point 2a (31/08/2026) : un etat vide montre le CHEMIN, pas une liste blanche muette.
         var trE = document.createElement('tr'); var tdE = document.createElement('td');
-        tdE.colSpan = 9; tdE.className = 'dfx-empty-cell';
+        tdE.colSpan = 8; tdE.className = 'dfx-empty-cell';
         tdE.textContent = 'Aucun devis trouvé pour ces filtres.';
         trE.appendChild(tdE); tbodyD.appendChild(trE);
       } else {
@@ -11086,10 +11248,14 @@
       filtresDevisEl.style.display = 'none'; filtresFacturesEl.style.display = '';
       tableDevis.style.display = 'none'; tableFactures.style.display = '';
       var totalF = (devisData.factures || []).length;
-      // Sujet 2.5 (01/09/2026 soir) : un avoir n'est ni payé ni impayé -- toujours affiché, quel
-      // que soit l'état des filtres (sinon decocher une case le ferait disparaître a tort).
+      // Filtre Type (09/09/2026, filtres plus complets facon MEG) : Facture/Avoir, en plus de
+      // l'Etat. Sujet 2.5 (01/09/2026 soir) : un avoir n'a jamais d'Etat Payee/Impayee -- son
+      // seul filtre pertinent reste desormais le Type, jamais l'Etat (sinon decocher une case
+      // d'Etat le ferait disparaître a tort, comme avant).
       var itemsF = (devisData.factures || []).filter(function(f){
-        if (f.typeDoc !== 'avoir' && !dfxFiltresFactures[dfxFactureStatutKey(f)]) return false;
+        var estAvoir = f.typeDoc === 'avoir';
+        if (!dfxFiltresTypesFactures[estAvoir ? 'avoir' : 'facture']) return false;
+        if (!estAvoir && !dfxFiltresFactures[dfxFactureStatutKey(f)]) return false;
         if (!dfxInPeriode(f.date, dfxPeriodeVal)) return false;
         return !q || normDoc(f.nom).indexOf(q) !== -1;
       }).sort(dfxComparator);
@@ -11159,31 +11325,67 @@
     document.getElementById('dfx-breadcrumb-page').textContent = DFX_PAGE_LABEL[tab] || tab;
     document.getElementById('dfx-page-title').textContent = DFX_PAGE_TITLE[tab] || tab;
     devisApplyFilter();
+    dfxFlyoutClose(); // choisir une page referme le menu (geste standard)
   }
   document.querySelectorAll('.devis-tab, .dfx-flyout-item').forEach(function(btn){
     btn.addEventListener('click', function(){ devisGoTab(btn.dataset.tab); });
   });
-  // Rail "Ventes" (>=760px) : ouvre/ferme le flyout -- ouvert par defaut (une seule entree chez
-  // nous, contre 9 chez MEG, autant la laisser visible d'entree ; le clic reste fonctionnel).
+  // Rail "Ventes" (>=760px) : ouvre/ferme le flyout -- FERME par defaut depuis le 09/09/2026
+  // (retour Dorian, cf. CSS #dfflyout : overlay flottant qui ne pousse plus le tableau, un
+  // flyout ouvert d'entree l'aurait quand meme recouvert sans raison). dfxFlyoutClose()
+  // reutilisee par devisGoTab (choisir une page referme le menu, geste standard) et par le
+  // clic en dehors du flyout/du rail (juste en dessous).
+  function dfxFlyoutClose(){
+    document.getElementById('dfflyout').classList.remove('open');
+    document.getElementById('dfrail-ventes').setAttribute('aria-expanded', 'false');
+  }
   document.getElementById('dfrail-ventes').addEventListener('click', function(){
     var fly = document.getElementById('dfflyout');
     var willOpen = !fly.classList.contains('open');
     fly.classList.toggle('open', willOpen);
     this.setAttribute('aria-expanded', willOpen ? 'true' : 'false');
   });
+  // Clic/tap en dehors du rail ET du flyout -- referme (geste MEG). N'interfere jamais avec les
+  // autres clics de l'app (le listener ne fait rien si le flyout est deja ferme, et ne stoppe
+  // jamais la propagation -- le clic continue d'agir normalement sur sa propre cible).
+  // Meme geste pour le menu "Filtres" (09/09/2026, retour Dorian : "le menu Filtres ne se
+  // referme pas quand on clique ailleurs") -- <details> natif ne le fait jamais tout seul,
+  // referme ici tout <details class="dfx-filtres"> ouvert des qu'un clic tombe hors de lui.
+  document.addEventListener('click', function(e){
+    var fly = document.getElementById('dfflyout');
+    if (fly.classList.contains('open') && !fly.contains(e.target) && !document.getElementById('dfrail-ventes').contains(e.target)){
+      dfxFlyoutClose();
+    }
+    document.querySelectorAll('details.dfx-filtres[open]').forEach(function(det){
+      if (!det.contains(e.target)) det.removeAttribute('open');
+    });
+  }, true);
   document.querySelectorAll('#dfx-filtres-devis input[type="checkbox"]').forEach(function(cb){
     cb.addEventListener('change', function(){ dfxFiltresDevis[cb.dataset.statut] = cb.checked; devisApplyFilter(); });
   });
   document.querySelectorAll('#dfx-filtres-factures input[type="checkbox"]').forEach(function(cb){
-    cb.addEventListener('change', function(){ dfxFiltresFactures[cb.dataset.statut] = cb.checked; devisApplyFilter(); });
+    cb.addEventListener('change', function(){
+      if (cb.dataset.type) dfxFiltresTypesFactures[cb.dataset.type] = cb.checked;
+      else dfxFiltresFactures[cb.dataset.statut] = cb.checked;
+      devisApplyFilter();
+    });
   });
-  document.getElementById('dfx-periode').addEventListener('change', function(){ dfxPeriodeVal = this.value; devisApplyFilter(); });
+  document.getElementById('dfx-periode').addEventListener('change', function(){
+    dfxPeriodeVal = this.value;
+    document.getElementById('dfx-periode-custom').style.display = dfxPeriodeVal === 'personnalise' ? '' : 'none';
+    devisApplyFilter();
+  });
+  document.getElementById('dfx-periode-debut').addEventListener('change', devisApplyFilter);
+  document.getElementById('dfx-periode-fin').addEventListener('change', devisApplyFilter);
   document.getElementById('dfx-reset').addEventListener('click', function(){
     devisSearchInput.value = '';
     Object.keys(dfxFiltresDevis).forEach(function(k){ dfxFiltresDevis[k] = true; });
     Object.keys(dfxFiltresFactures).forEach(function(k){ dfxFiltresFactures[k] = true; });
+    Object.keys(dfxFiltresTypesFactures).forEach(function(k){ dfxFiltresTypesFactures[k] = true; });
     document.querySelectorAll('#dfx-filtres-devis input[type="checkbox"], #dfx-filtres-factures input[type="checkbox"]').forEach(function(cb){ cb.checked = true; });
     dfxPeriodeVal = 'tout'; document.getElementById('dfx-periode').value = 'tout';
+    document.getElementById('dfx-periode-custom').style.display = 'none';
+    document.getElementById('dfx-periode-debut').value = ''; document.getElementById('dfx-periode-fin').value = '';
     dfxSortField = 'date'; dfxSortDir = 'desc';
     document.querySelectorAll('.dfx-table thead th.dfx-sortable .dfx-sort-ic').forEach(function(ic){ ic.textContent = '↕'; });
     document.querySelectorAll('.dfx-table thead th.dfx-sortable').forEach(function(h){ h.classList.remove('dfx-sort-active'); });
@@ -19967,8 +20169,24 @@
   // frequent dans mcs_contacts.adresse) -- doit aller dans "Represente par", jamais dans
   // "Adresse de facturation" (bug reel signale : "SDC Espace Pyla E" -> remplissait
   // Adresse de facturation avec tout le bloc "represente par PIM'S ADB agence...").
+  // Encodage casse trouve en testant (09/09/2026 apres-midi, signale par Dorian sur le
+  // formulaire de creation, contact reel "SDC PATIO D'ARGUIN") : le CONTACT MEG id 8 a son
+  // adresse corrompue depuis un import passe -- "Repr�sent� par PIMS ADB [...]"
+  // (2 caracteres de remplacement U+FFFD la ou "Represente" attend un e accentue, confirme en
+  // scannant les 1591 fiches du catalogue : SEULE cette fiche est touchee, aucune autre
+  // corruption trouvee). Un octet perdu a la decodification UTF-8 ne se recupere JAMAIS --
+  // impossible de retrouver le "e" d'origine depuis cette valeur -- mais "Represente" est un
+  // mot fixe qu'on reconnait deja explicitement (pas une donnee client arbitraire) : on
+  // accepte U+FFFD a la place d'un e accentue pour la RECONNAISSANCE (sinon le pattern rate et
+  // TOUT le bloc corrompu partait tel quel dans "Adresse de facturation", cause exacte du bug
+  // signale), et normalisePrefixeRepresente() ci-dessous reecrit le prefixe reconnu en texte
+  // propre avant de l'utiliser -- jamais une invention sur le reste de l'adresse (elle,
+  // parfaitement lisible : "PIMS ADB LA Teste de Buch 6 rue Francois Legallais...").
   function isRepresentePar(s){
-    return /^\s*(repr[eé]sent[eé]e?\s+par|p\s*\/\s*o\b|c\s*\/\s*o\b)/i.test(s || '');
+    return /^\s*(repr[eé�]sent[eé�]e?\s+par|p\s*\/\s*o\b|c\s*\/\s*o\b)/i.test(s || '');
+  }
+  function normalisePrefixeRepresente(s){
+    return String(s || '').replace(/repr[eé�]sent[eé�]e?(\s+par)/i, 'Représenté$1');
   }
 
   // Coupe le texte composite "represente par X, adresse Y" en {contact, adresse} -- avant ce
@@ -19982,7 +20200,7 @@
   // adresse trop courte/atypique), adresse reste vide plutot que de deviner -- mieux vaut une
   // case vide qu'une adresse tronquee ou fausse.
   function splitRepresentePar(raw){
-    var s = String(raw || '').trim();
+    var s = normalisePrefixeRepresente(String(raw || '').trim());
     var m = /^\s*(?:repr[eé]sent[eé]e?\s+par|p\s*\/\s*o\b\.?|c\s*\/\s*o\b\.?)\s*/i.exec(s);
     var rest = m ? s.slice(m[0].length).trim() : s;
     var STREET = '(?:rue|avenue|av\\.?|cours|boulevard|bd\\.?|blvd\\.?|place|chemin|all[ée]e|impasse|quai|square|route|villa|passage|esplanade|rond-point)';
@@ -20826,7 +21044,12 @@
       dvErr.textContent = ''; dvErr.classList.remove('show');
       dvSetStatutBadge();
       dvEmettreRow.classList.toggle('show', dvStatut === 'brouillon');
-      dvEnvoiPanel.classList.remove('open');
+      // Retour Dorian (09/09/2026) : rouvrir un devis deja EMIS (numerote, PDF final) mais pas
+      // encore ENVOYE doit presenter directement le panneau d'envoi -- avant ce fix, seule une
+      // emission FRAICHE (dans la meme session) l'ouvrait, un devis "valide" rouvert plus tard
+      // (ex. depuis l'icone mail de la liste) n'avait plus aucun moyen visible de l'envoyer.
+      dvEnvoiPanel.classList.toggle('open', dvStatut === 'valide');
+      if (dvStatut === 'valide') dvEnvoiDest.value = dvEmail.value.trim();
       dvFormBg.classList.add('open'); dvForm.classList.add('open');
     }, function(err){ toast(err || 'Impossible de charger ce devis.'); });
   }
