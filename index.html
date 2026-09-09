@@ -2079,9 +2079,13 @@
      reportés sur AUCUN document réel (ni devis ni facture) -- tant que ce n'est pas corrigé
      côté serveur, mieux vaut un champ visiblement inactif qu'un total faux. readonly (pas
      disabled, pour que .value reste lisible/cohérent partout où il est déjà lu) + grisé. */
+  /* Retour Dorian (tournee build 36) : cursor:not-allowed affiche le symbole d'interdiction
+     (rond barre rouge) au survol -- lu comme "c'est bloque/casse", pas "c'est desactive pour
+     de bonnes raisons". cursor:default (fleche normale) reste neutre/calme, le grisé + la
+     mention explicative suffisent deja a dire "inactif". */
   .dfx-tot-row.dfx-tot-input input[readonly]{
     background:var(--surface); color:var(--muted); border-color:var(--hairline) !important;
-    cursor:not-allowed;
+    cursor:default;
   }
   .dfx-tot-row.dfx-tot-net{font-size:15px; font-weight:700; border-top:0.5px solid var(--hairline); padding-top:8px; margin-top:4px}
   .dfx-tot-hint{font-size:11px; color:var(--muted); line-height:1.4; margin-top:8px}
@@ -4411,6 +4415,16 @@
   .fd-ligne-warn{display:none; align-self:flex-start}
   .fd-ligne-qte, .fd-ligne-prix, .fd-ligne-remise, .fd-ligne-tva{flex:1 1 60px; min-width:56px}
   .fd-ligne-total{flex:1 1 100%; order:5; text-align:right; font-size:12.5px; font-weight:600; color:var(--muted); padding:2px 2px 0}
+  /* Retour Dorian (tournee build 36, nuit 09-10/09) : "100" tape dans le champ remise en le
+     croyant etre le prix -- aucun intitule visible au-dessus des 5 champs (le placeholder
+     disparait a la frappe). En-tete de colonnes AU-DESSUS de #dv-lignes/#fd-lignes (une seule
+     fois pour tout le bloc, jamais a l'interieur -- le wrap est vide/repeuple par JS a chaque
+     ajout/suppression de ligne, un en-tete a l'interieur y serait efface). Reutilise les MEMES
+     classes que les champs reels (fd-ligne-qte/prix/remise/tva/desig-wrap/total, deja flex avec
+     les memes largeurs) pour un alignement pixel garanti sans dupliquer de largeurs. */
+  .fd-lignes-head{display:flex; flex-wrap:wrap; gap:6px; padding:0 2px 2px}
+  .fd-lignes-head-cell{font-size:10.5px; font-weight:700; color:var(--muted); text-transform:uppercase; letter-spacing:.02em; line-height:1.3}
+  .fd-lignes-head .fd-ligne-total{text-transform:uppercase; letter-spacing:.02em; font-size:10.5px; font-weight:700}
   .fd-ligne-del{
     flex:0 0 auto; width:32px; height:32px; margin-top:1px; border-radius:8px; border:0;
     background:rgba(255,69,58,.13); color:#FF453A; font-size:14px; cursor:pointer; -webkit-tap-highlight-color:transparent;
@@ -7400,6 +7414,14 @@
     </div>
     <div class="ctf-section">
       <p class="ctf-section-titre">Lignes</p>
+      <div class="fd-lignes-head" aria-hidden="true">
+        <div class="fd-ligne-desig-wrap"><span class="fd-lignes-head-cell">Désignation</span></div>
+        <span class="fd-ligne-qte fd-lignes-head-cell">Qté</span>
+        <span class="fd-ligne-prix fd-lignes-head-cell">P.U. HT</span>
+        <span class="fd-ligne-remise fd-lignes-head-cell">Remise (%)</span>
+        <span class="fd-ligne-tva fd-lignes-head-cell">TVA (%)</span>
+        <span class="fd-ligne-total">Total ligne</span>
+      </div>
       <div id="fd-lignes"></div>
       <button id="fd-ligne-add" type="button" class="fd-ligne-add-btn">+ Ajouter une ligne</button>
       <button id="fd-ligne-multi" type="button" class="fd-ligne-add-btn">🔍 Ajouter plusieurs articles</button>
@@ -7494,6 +7516,14 @@
     </div>
     <div class="ctf-section">
       <p class="ctf-section-titre">Lignes</p>
+      <div class="fd-lignes-head" aria-hidden="true">
+        <div class="fd-ligne-desig-wrap"><span class="fd-lignes-head-cell">Désignation</span></div>
+        <span class="fd-ligne-qte fd-lignes-head-cell">Qté</span>
+        <span class="fd-ligne-prix fd-lignes-head-cell">P.U. HT</span>
+        <span class="fd-ligne-remise fd-lignes-head-cell">Remise (%)</span>
+        <span class="fd-ligne-tva fd-lignes-head-cell">TVA (%)</span>
+        <span class="fd-ligne-total">Total ligne</span>
+      </div>
       <div id="dv-lignes"></div>
       <div id="dv-lignes-actions">
         <button id="dv-ligne-add" type="button" class="fd-ligne-add-btn">+ Ajouter une ligne</button>
@@ -7509,7 +7539,6 @@
     <div class="ctf-section" id="dv-totaux-panel">
       <p class="ctf-section-titre">Totaux</p>
       <div class="dfx-tot-row dfx-tot-sub"><span>Remise article(s)</span><b id="dv-tot-remise-art">0,00 €</b></div>
-      <p class="dfx-tot-hint" id="dv-remise-alerte" style="display:none">⚠️ Remise saisie sur une ligne, mais pas encore appliquée par le serveur sur le PDF réel du devis (vérifié ce soir) — le document envoyé au client affichera le prix plein tant que ce n'est pas corrigé côté serveur.</p>
       <div class="dfx-tot-row"><span>Total brut HT</span><b id="dv-tot-brut">0,00 €</b></div>
       <div class="dfx-tot-row dfx-tot-input"><span>Remise Sup. HT</span><input id="dv-remise-sup" type="number" min="0" step="0.01" value="0" readonly aria-readonly="true"></div>
       <div class="dfx-tot-row dfx-tot-input"><span>Frais de port HT</span><input id="dv-frais-port" type="number" min="0" step="0.01" value="0" readonly aria-readonly="true"></div>
@@ -7638,7 +7667,7 @@
          comparaison de chaine de version par tenant. */
   var APPV_MCS = '4.54';
   var APPV_LABO = '1.00';
-  var BUILD = 36;
+  var BUILD = 37;
   // displayVersion()/displayVersionShort() lisent isMcsCode() (definie plus bas dans cette
   // meme IIFE -- declaration de fonction, donc disponible ici par hoisting) : le TENANT
   // affiche depend du code de connexion, jamais d'un simple "APPV" global qui ne dirait ni
@@ -21651,7 +21680,12 @@
   }
 
   function dvLigneRow(){ return lignesEditorRow(dvLignesWrap, function(){ dvRecalcTotaux(); dvRenderApercuLive(); }); }
-  var dvRemiseAlerte = document.getElementById('dv-remise-alerte');
+  // Retour Dorian (tournee build 36) : le serveur applique desormais la remise par ligne sur le
+  // PDF reel du devis (verifie sur un vrai document genere : 250€ remises a 10% -> 225€ HT,
+  // TVA/TTC suivent) -- le bandeau d'alerte ci-dessous (pose le 09/09, quand le bug etait reel)
+  // est devenu FAUX et decourageait Mickael d'utiliser une fonction qui marche. Retire (element
+  // #dv-remise-alerte laisse dans le HTML mais plus jamais affiche -- pas de raison de le
+  // supprimer du DOM, juste de ne plus jamais le montrer).
   function dvRecalcTotaux(){
     var d = dfxCalcTotauxDetail(dvLignesWrap, dvRemiseSup.value, dvFraisPort.value);
     dvTotRemiseArt.textContent = fmtEuros(d.remiseArt);
@@ -21659,13 +21693,6 @@
     dvTotalHt.textContent = fmtEuros(d.netHt);
     dvTotalTva.textContent = fmtEuros(d.tva);
     dvTotalTtc.textContent = fmtEuros(d.ttc);
-    // Bug backend réel confirmé ce soir (09/09/2026) : la remise par ligne n'est PAS appliquée
-    // par le générateur de PDF serveur pour un devis (vérifié octet par octet sur un vrai PDF
-    // renvoyé -- 300€ de ligne + 10% de remise ressort à 360€ TTC, comme si la remise était
-    // nulle). Le panneau/l'aperçu ici restent honnêtes (ils calculent ce qui DEVRAIT sortir) --
-    // ce bandeau évite que Mickael/Dorian ne se fient à ce calcul tant que le serveur (hors de
-    // mon périmètre ce soir : aucun workflow n8n touché) n'est pas corrigé.
-    dvRemiseAlerte.style.display = d.remiseArt > 0 ? 'block' : 'none';
   }
   [dvRemiseSup, dvFraisPort].forEach(function(el){
     el.addEventListener('input', function(){ dvRecalcTotaux(); dvRenderApercuLive(); });
@@ -21867,13 +21894,28 @@
   function dvFormClose(){
     dvFormBg.classList.remove('open');
     dvForm.classList.remove('open');
-    // Coeur du sujet (10/09/2026 nuit) : un devis de Bruno traité (enregistré/émis) depuis cet
-    // écran doit disparaître de "Devis à valider" en refermant -- jamais un doublon entre les
-    // deux écrans. Rafraîchit la MÊME liste que celle déjà affichée derrière (devisview reste
-    // ouvert tout ce temps, jamais fermé par ce chemin).
+    // Coeur du sujet, corrige (retour Dorian, tournee build 36) : le 1er jet (10/09 nuit)
+    // refetchait toute la liste depuis le serveur en refermant -- or "Enregistrer" fait passer
+    // le statut serveur de 'attente_validation' a 'brouillon', donc ce refetch re-classait le
+    // devis HORS de "Devis a valider" apres une simple correction, avant meme que Mickael ait
+    // confirme/rejete quoi que ce soit. Fix : ne plus jamais re-bucketer la file depuis le
+    // serveur sur cette seule fermeture -- on met a jour l'entree EXISTANTE en place (nom/objet/
+    // montant, avec ce que Mickael vient de saisir), sans jamais la retirer. Elle ne quitte
+    // desormais la file que par une VRAIE action de traitement (Confirmer et envoyer / Rejeter,
+    // deja gerees par devisAgir plus haut) -- jamais par un simple enregistrement.
     if (dvOpenedFromAValider){
       dvOpenedFromAValider = false;
-      devisChargerListe(function(j){ devisApplyData(j); }, function(){});
+      if (dvToken && devisData && devisData.aValider){
+        var entry = devisData.aValider.find(function(e){ return e.token === dvToken; });
+        if (entry){
+          entry.nom = dvNom.value.trim() || entry.nom;
+          entry.objet = dvObjet.value.trim() || entry.objet;
+          var ttcNum = parseFloat(String(dvTotalTtc.textContent || '').replace(/[^\d,.-]/g, '').replace(',', '.'));
+          if (!isNaN(ttcNum)) entry.montant = ttcNum.toFixed(2).replace('.', ',');
+          devisApplyFilter();
+          devisUpdateBadge();
+        }
+      }
     }
   }
   dvFormBg.addEventListener('click', dvFormClose);
