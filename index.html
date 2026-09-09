@@ -1982,6 +1982,8 @@
   .fcf-ap-hline{position:absolute; border-top:1px solid #000; height:0}
   .fcf-ap-vline{position:absolute; border-left:1px solid #000; width:0}
   .fcf-ap-strokerect{position:absolute; border:1px solid #000; box-sizing:border-box; background:transparent}
+  .fcf-ap-strokerect.fcf-ap-red-border{border-color:#CC1414}
+  .fcf-ap-red{color:#CC1414}
   .fcf-ap-logo{position:absolute; width:335.7px; height:100.8px; object-fit:contain}
   /* Point 4 (Session 15) -- +3%/-3% en un clic, ancien/nouveau prix affiches avant validation. */
   .fcf-reindex-row{display:flex; gap:8px; margin-top:8px}
@@ -7328,9 +7330,9 @@
          c'est ce qui supprime le conflit humain sur cette ligne precise. Sert aussi de cle
          unique de detection de mise a jour (voir checkUpdate ci-dessous), plus fiable qu'une
          comparaison de chaine de version par tenant. */
-  var APPV_MCS = '4.48';
+  var APPV_MCS = '4.49';
   var APPV_LABO = '1.00';
-  var BUILD = 30;
+  var BUILD = 31;
   // displayVersion()/displayVersionShort() lisent isMcsCode() (definie plus bas dans cette
   // meme IIFE -- declaration de fonction, donc disponible ici par hoisting) : le TENANT
   // affiche depend du code de connexion, jamais d'un simple "APPV" global qui ne dirait ni
@@ -11978,8 +11980,13 @@
     var totalHt = quantite * prixHt, tvaMontant = totalHt * tva, totalTtc = totalHt + tvaMontant;
     // 08/09/2026 (mission Mickael) : la residence prime toujours sur le client/gestionnaire --
     // "On ne facture jamais le gestionnaire. On facture toujours la residence."
-    var nomAffiche = residence || client || adresse || '(non identifié)';
+    var nomAffiche = residence || client || '(non identifié)';
     var dateFr = new Date().toLocaleDateString('fr-FR');
+    // 09/09/2026 (mission Mickael, six demandes) -- meme interrupteur, meme valeur, meme texte
+    // que cote n8n (const AVIS_CHANGEMENT_RIB, dupliquee a l'identique dans les 5 noeuds
+    // generateurs de "MCS · Contrats" : generation (web/cron), envoi, tva lot, apercu). Si l'un
+    // change, les 6 (les 5 noeuds + celui-ci) doivent changer ensemble.
+    var AVIS_CHANGEMENT_RIB = true;
 
     // ---- constantes de mise en page, copiees a l'identique de buildFacturePdf (n8n) ----
     var PAGE_W = 595, PAGE_H = 842, ML = 18, MR = 577;
@@ -12029,8 +12036,8 @@
     function RECT(xPdf, yPdfBottom, w, h, headbg){
       els.push('<div class="fcf-ap-rect' + (headbg?' fcf-ap-headbg':'') + '" style="left:' + xPdf.toFixed(2) + 'px;top:' + (PAGE_H-yPdfBottom-h).toFixed(2) + 'px;width:' + w.toFixed(2) + 'px;height:' + h.toFixed(2) + 'px;"></div>');
     }
-    function STROKERECT(xPdf, yPdfBottom, w, h){
-      els.push('<div class="fcf-ap-strokerect" style="left:' + xPdf.toFixed(2) + 'px;top:' + (PAGE_H-yPdfBottom-h).toFixed(2) + 'px;width:' + w.toFixed(2) + 'px;height:' + h.toFixed(2) + 'px;"></div>');
+    function STROKERECT(xPdf, yPdfBottom, w, h, colorClass){
+      els.push('<div class="fcf-ap-strokerect' + (colorClass?(' '+colorClass):'') + '" style="left:' + xPdf.toFixed(2) + 'px;top:' + (PAGE_H-yPdfBottom-h).toFixed(2) + 'px;width:' + w.toFixed(2) + 'px;height:' + h.toFixed(2) + 'px;"></div>');
     }
     function HLINE(x1, x2, yPdf){
       els.push('<div class="fcf-ap-hline" style="left:' + x1.toFixed(2) + 'px;top:' + (PAGE_H-yPdf).toFixed(2) + 'px;width:' + (x2-x1).toFixed(2) + 'px;"></div>');
@@ -12069,12 +12076,26 @@
     var cy = blockTop;
     T(cx, cy, 10, true, nomAffiche); cy -= LH;
     var adresseClientTxt = [adresse, ville].filter(Boolean).join(', ');
-    if (adresseClientTxt){ T(cx, cy, 8.5, false, adresseClientTxt); cy -= LH; }
-    if (residence && gestionnaire){
-      T(cx, cy, 8.5, false, 'P/O : ' + gestionnaire); cy -= LH;
-      if (gestionnaireAdresse){ T(cx, cy, 8.5, false, gestionnaireAdresse); cy -= LH; }
+    // 09/09/2026 (mission Mickael, six demandes -- copie a l'identique de la meme regle cote
+    // generateur PDF n8n, "Construire facture contrat apercu/generation/envoi/tva lot (contrats)",
+    // workflow MCS · Contrats) : bloc destinataire aere, une ligne vide devant CHAQUE element
+    // affiche (rien si l'element est absent). Adresse de la residence retiree ici (deja imprimee
+    // dans le bloc de reference en bas a gauche, "Adresse" -- pur doublon) mais CONSERVEE pour un
+    // client direct (residence vide -- Bread Storming, Forever Padel, Luso Alimentation...).
+    // "P/O" SANS les deux points (verbatim MEG). Email retire de l'AFFICHAGE uniquement -- dest
+    // reste la vraie destination de l'envoi, inchange ailleurs.
+    if (adresseClientTxt && !residence){
+      cy -= LH;
+      T(cx, cy, 8.5, false, adresseClientTxt); cy -= LH;
     }
-    T(cx, cy, 8.5, false, 'Email : ' + (dest||'NC')); cy -= LH;
+    if (residence && gestionnaire){
+      cy -= LH;
+      T(cx, cy, 8.5, false, 'P/O ' + gestionnaire); cy -= LH;
+      if (gestionnaireAdresse){
+        cy -= LH;
+        T(cx, cy, 8.5, false, gestionnaireAdresse); cy -= LH;
+      }
+    }
 
     var mcsBlockBottom = blockTop - 4*LH;
     var y = Math.min(cy, mcsBlockBottom) - 20;
@@ -12166,7 +12187,16 @@
     // ---- Conditions de reglement (gauche) / RIB (droite) -- Point 6 : deplace APRES Totaux/TVA
     // (etait avant, au milieu de la facture -- signale par Mickael/Dorian). ----
     var boxGap = 3, boxW = (cols[5]-cols[0]-boxGap)/2, boxHeadH = 13.7, boxH = 52.3;
+    // 09/09/2026 (mission Mickael, six demandes, demande 2) -- a AVIS_CHANGEMENT_RIB=true,
+    // encadre ROUGE + titre rouge court AU-DESSUS du bloc RIB seul (jamais le bloc Conditions,
+    // ni les valeurs NOM/IBAN/BIC, qui restent identiques et a la meme place). A false : rendu
+    // strictement identique a avant cette mission. Copie a l'identique (memes coordonnees) de la
+    // meme regle cote generateur PDF n8n (workflow MCS · Contrats).
+    if (AVIS_CHANGEMENT_RIB){ y -= 12; }
     var leftX = cols[0], rightX = cols[0]+boxW+boxGap;
+    if (AVIS_CHANGEMENT_RIB){
+      T(rightX, y+boxH+2, 8, true, 'Nouvelles coordonnées bancaires depuis le 01/09/2026', 'fcf-ap-red');
+    }
     STROKERECT(leftX, y-boxH, boxW, boxH);
     RECT(leftX, y-boxHeadH, boxW, boxHeadH, true);
     HLINE(leftX, leftX+boxW, y-boxHeadH);
@@ -12174,7 +12204,7 @@
     T(leftX+4, y-boxHeadH-11.8, 8.5, false, conditions);
     T(leftX+4, y-boxHeadH-23.7, 8.5, false, 'Aucun escompte pour règlement anticipé');
     if (echeanceFr){ T(leftX+4, y-boxHeadH-35.6, 8.5, false, 'Échéance : ' + echeanceFr); }
-    STROKERECT(rightX, y-boxH, boxW, boxH);
+    STROKERECT(rightX, y-boxH, boxW, boxH, AVIS_CHANGEMENT_RIB ? 'fcf-ap-red-border' : null);
     RECT(rightX, y-boxHeadH, boxW, boxHeadH, true);
     HLINE(rightX, rightX+boxW, y-boxHeadH);
     T(rightX+boxW/2, y-11, 9, true, 'RIB', null, 'center', boxW);
