@@ -7667,7 +7667,7 @@
          comparaison de chaine de version par tenant. */
   var APPV_MCS = '4.54';
   var APPV_LABO = '1.00';
-  var BUILD = 37;
+  var BUILD = 38;
   // displayVersion()/displayVersionShort() lisent isMcsCode() (definie plus bas dans cette
   // meme IIFE -- declaration de fonction, donc disponible ici par hoisting) : le TENANT
   // affiche depend du code de connexion, jamais d'un simple "APPV" global qui ne dirait ni
@@ -12517,8 +12517,16 @@
       cy -= LH;
       T(cx, cy, 8.5, false, 'P/O ' + gestionnaire); cy -= LH;
       if (gestionnaireAdresse){
+        var adrGestSplit = splitAdressePostale(gestionnaireAdresse);
         cy -= LH;
-        T(cx, cy, 8.5, false, gestionnaireAdresse); cy -= LH;
+        if (adrGestSplit.found){
+          if (adrGestSplit.rue){
+            T(cx, cy, 8.5, false, adrGestSplit.rue); cy -= LH;
+          }
+          T(cx, cy, 8.5, false, adrGestSplit.ville); cy -= LH;
+        } else {
+          T(cx, cy, 8.5, false, gestionnaireAdresse); cy -= LH;
+        }
       }
     }
 
@@ -12979,6 +12987,34 @@
     var info = GESTIONNAIRE_INFOS[cle];
     var nomAffiche = (info && info.nom) || GESTIONNAIRE_NOM_AFFICHE_ALIAS[cle] || String(nomBrut || '').trim();
     return { nom: nomAffiche, adresse: (info && info.adresse) || '' };
+  }
+  // 10/09/2026 (mission Mickael, bloc destinataire P/O -- code postal/ville sur leur propre
+  // ligne) : COPIE IDENTIQUE de la fonction server-side du meme nom (les 5 noeuds "Construire
+  // facture contrat ... (contrats)" du workflow MCS · Contrats) -- meme discipline que
+  // gestionnaireInfos deja dupliquee a l'identique entre l'app et n8n. Ne devine JAMAIS : si
+  // aucun code postal francais (5 chiffres isoles) n'est trouve, renvoie la chaine originale
+  // intacte sur une seule ligne (found:false). Si plusieurs, retient le DERNIER (un numero de
+  // rue/d'immeuble en tete de chaine peut ressembler a un code postal). Respecte un retour a la
+  // ligne deja present -- ne decoupe QUE la derniere ligne.
+  function splitAdressePostale(str){
+    str = String(str || '');
+    if (!str) return { rue: '', ville: '', found: false };
+    var lignes = str.split(/\r\n|\r|\n/);
+    var derniere = lignes[lignes.length - 1];
+    var avant = lignes.slice(0, -1);
+    var re = /\d{5}(?!\d)/g;
+    var m, dernierMatch = null;
+    while ((m = re.exec(derniere)) !== null){
+      var precedeParChiffre = m.index > 0 && /\d/.test(derniere.charAt(m.index - 1));
+      if (!precedeParChiffre) dernierMatch = m;
+    }
+    if (!dernierMatch) return { rue: '', ville: str, found: false };
+    var cp = dernierMatch[0];
+    var idx = dernierMatch.index;
+    var ruePart = derniere.slice(0, idx).replace(/[\s,]+$/, '');
+    var villePart = (cp + derniere.slice(idx + 5)).trim();
+    var rueFinal = avant.concat(ruePart ? [ruePart] : []).join('\n');
+    return { rue: rueFinal, ville: villePart, found: true };
   }
   function demarrerEnvoi(btn, texteEnCours, autresBoutons){
     if (btn){
