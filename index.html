@@ -1316,34 +1316,6 @@
     background:var(--surface); color:var(--ink); font-size:14px; padding:9px 10px; font:inherit;
     -webkit-appearance:none;
   }
-  /* Chantier tableau catalogue (11/09/2026) : "A completer" -- meme famille visuelle que
-     #contrats-mois-selector (mois/annee), une carte par ligne, un champ par valeur manquante. */
-  #manquants-view{display:flex; flex-direction:column; flex:1; min-height:0}
-  #manquants-mois-selector{display:flex; flex:0 0 auto; gap:8px; padding:10px 14px 0}
-  #manquants-mois-selector select{
-    flex:1; box-sizing:border-box; border:0.5px solid rgba(255,255,255,.18); border-radius:12px;
-    background:var(--surface); color:var(--ink); font-size:14px; padding:9px 10px; font:inherit;
-    -webkit-appearance:none;
-  }
-  #manquants-list{flex:1; overflow-y:auto; -webkit-overflow-scrolling:touch; padding:10px 14px}
-  .mq-carte{
-    background:var(--surface); border-radius:14px; padding:12px 14px; margin-bottom:10px;
-  }
-  .mq-carte-nom{font-weight:700; font-size:15px; margin-bottom:2px}
-  .mq-carte-sub{font-size:12.5px; color:var(--muted); margin-bottom:8px}
-  .mq-champ{margin-top:8px}
-  .mq-champ label{display:block; font-size:13px; color:var(--muted); margin-bottom:4px}
-  .mq-champ input{
-    width:100%; box-sizing:border-box; border:0.5px solid rgba(255,255,255,.18); border-radius:10px;
-    background:var(--bg); color:var(--ink); font-size:16px; padding:9px 10px; font:inherit;
-    -webkit-appearance:none;
-  }
-  #manquants-save-btn{
-    flex:0 0 auto; margin:10px 14px calc(10px + env(safe-area-inset-bottom));
-    padding:13px; font-size:16px; min-height:44px; border-radius:12px; border:0;
-    display:flex; align-items:center; justify-content:center; gap:8px; cursor:pointer;
-  }
-  html.mcs-theme #manquants-save-btn{background:var(--blue); color:#fff}
   #contrats-previsionnel-banniere{
     flex:0 0 auto; margin:10px 14px 0; padding:10px 12px; border-radius:12px;
     background:rgba(var(--gold-rgb),.12); color:var(--gold-a); font-size:12.5px; line-height:1.4;
@@ -6555,7 +6527,6 @@
     <button class="devis-tab active" data-tab="mois" type="button">Facturation</button>
     <button class="devis-tab" data-tab="catalogue" type="button">Catalogue</button>
     <button class="devis-tab" data-tab="calendrier" type="button">Calendrier</button>
-    <button class="devis-tab" data-tab="manquants" type="button">À compléter</button>
   </div>
   <p id="contrats-testmode-banniere" class="testmode-banniere" style="display:none">🧪 Mode test : les factures de contrat partent chez Altaestima, jamais chez le client.</p>
   <!-- Fenetre 1 (08/09/2026) : les 2 puces "Designations a confirmer" / "TVA VMC" retirees sur
@@ -6600,26 +6571,6 @@
     <!-- Sujet 2.5 (01/09/2026) : compteur "N faits sur M" -- visible d'un coup d'oeil pour ce mois. -->
     <div id="cal-compteur-fait" style="display:none"></div>
     <div id="cal-list"></div>
-  </div>
-
-  <!-- Chantier tableau catalogue (11/09/2026, mission Mickael) : "Compléter les données
-       manquantes" -- l'ecran ne liste QUE les lignes ayant au moins un champ vide, et pour
-       chaque ligne SEULEMENT les champs vides. Un seul bouton d'enregistrement pour tout
-       l'ecran ; l'enregistrement n'ecrit JAMAIS la ligne entiere, uniquement les champs
-       reellement saisis (voir manquantsEnregistrer). Aucune valeur n'est jamais cherchee,
-       deduite ni pre-remplie ici -- ce sont des champs vides en attente d'une vraie saisie
-       humaine. -->
-  <div id="manquants-view" style="display:none">
-    <div id="manquants-mois-selector">
-      <select id="manquants-mois-select" aria-label="Mois"></select>
-      <select id="manquants-annee-select" aria-label="Année"></select>
-    </div>
-    <p id="manquants-compte" class="contrats-total-banniere" style="display:none"></p>
-    <div id="manquants-list"></div>
-    <button id="manquants-save-btn" type="button" style="display:none">
-      <svg class="hicon-sm" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="9"/><polyline points="8,12.5 10.7,15.2 16,9.5"/></svg>
-      Enregistrer
-    </button>
   </div>
 </div>
 
@@ -7766,7 +7717,7 @@
          comparaison de chaine de version par tenant. */
   var APPV_MCS = '4.54';
   var APPV_LABO = '1.00';
-  var BUILD = 42;
+  var BUILD = 43;
   // displayVersion()/displayVersionShort() lisent isMcsCode() (definie plus bas dans cette
   // meme IIFE -- declaration de fonction, donc disponible ici par hoisting) : le TENANT
   // affiche depend du code de connexion, jamais d'un simple "APPV" global qui ne dirait ni
@@ -11963,106 +11914,6 @@
     });
   });
 
-  // Chantier tableau catalogue (11/09/2026, mission Mickael) : onglet "A completer" -- meme
-  // mois de depart que Facturation, mais un ETAT SEPARE (jamais partage) : changer de mois ici
-  // n'affecte jamais l'onglet Facturation, et inversement. La liste ne montre QUE les lignes
-  // avec au moins un champ vide, et pour chaque ligne SEULEMENT les champs vides -- jamais une
-  // valeur devinee, cherchee ou pre-remplie : ce sont des champs vides en attente d'une vraie
-  // saisie humaine.
-  var manquantsAnnee = contratsMoisAnnee;
-  var manquantsMois = contratsMoisMois;
-  var manquantsSelectorsReady = false;
-  var manquantsData = null;
-  function manquantsSelectorsInit(){
-    if (manquantsSelectorsReady) return;
-    manquantsSelectorsReady = true;
-    var moisSel = document.getElementById('manquants-mois-select');
-    CONTRATS_MOIS_NOMS.forEach(function(nom, idx){
-      var opt = document.createElement('option'); opt.value = String(idx + 1); opt.textContent = nom;
-      if (idx + 1 === manquantsMois) opt.selected = true;
-      moisSel.appendChild(opt);
-    });
-    var anneeSel = document.getElementById('manquants-annee-select');
-    for (var y = contratsMoisAnnee - 1; y <= contratsMoisAnnee + 1; y++){
-      var optY = document.createElement('option'); optY.value = String(y); optY.textContent = String(y);
-      if (y === manquantsAnnee) optY.selected = true;
-      anneeSel.appendChild(optY);
-    }
-    moisSel.addEventListener('change', function(){ manquantsMois = Number(moisSel.value); manquantsCharger(); });
-    anneeSel.addEventListener('change', function(){ manquantsAnnee = Number(anneeSel.value); manquantsCharger(); });
-  }
-  function manquantsCharger(){
-    manquantsSelectorsInit();
-    var list = document.getElementById('manquants-list');
-    var compte = document.getElementById('manquants-compte');
-    var saveBtn = document.getElementById('manquants-save-btn');
-    list.innerHTML = '<p id="contrats-loading">Chargement…</p>';
-    saveBtn.style.display = 'none';
-    compte.style.display = 'none';
-    postContrats({ type: 'catalogue-manquants-liste', annee: manquantsAnnee, mois: manquantsMois }, function(j){
-      manquantsData = j;
-      manquantsRender();
-    }, function(err){ list.innerHTML = '<p id="contrats-empty">' + escHtml(err) + '</p>'; });
-  }
-  function manquantsRender(){
-    var list = document.getElementById('manquants-list');
-    var compte = document.getElementById('manquants-compte');
-    var saveBtn = document.getElementById('manquants-save-btn');
-    list.innerHTML = '';
-    var lignes = (manquantsData && manquantsData.lignes) || [];
-    if (!lignes.length){
-      list.innerHTML = '<p id="contrats-empty">Rien à compléter pour ce mois — toutes les données connues sont renseignées.</p>';
-      saveBtn.style.display = 'none';
-      compte.style.display = 'none';
-      return;
-    }
-    var totalChamps = lignes.reduce(function(s, l){ return s + l.champs.length; }, 0);
-    compte.textContent = lignes.length + (lignes.length === 1 ? ' contrat, ' : ' contrats, ') + totalChamps + (totalChamps === 1 ? ' champ à compléter' : ' champs à compléter');
-    compte.style.display = '';
-    // Ordre de lecture naturel du DOM (aucun tabindex explicite necessaire) : on tape, on
-    // tabule, on tape -- carte par carte, champ par champ, dans l'ordre ou le serveur les a
-    // renvoyees (meme ordre que le tableau du catalogue).
-    lignes.forEach(function(ligne){
-      var carte = document.createElement('div'); carte.className = 'mq-carte';
-      var nom = document.createElement('div'); nom.className = 'mq-carte-nom'; nom.textContent = ligne.nom;
-      carte.appendChild(nom);
-      if (ligne.gestionnaire){
-        var sub = document.createElement('div'); sub.className = 'mq-carte-sub'; sub.textContent = 'P/O ' + ligne.gestionnaire;
-        carte.appendChild(sub);
-      }
-      ligne.champs.forEach(function(champ){
-        var wrap = document.createElement('div'); wrap.className = 'mq-champ';
-        var idChamp = 'mq-' + ligne.id + '-' + champ.colonne;
-        var label = document.createElement('label'); label.textContent = champ.label; label.setAttribute('for', idChamp);
-        var input = document.createElement('input'); input.type = 'text'; input.id = idChamp;
-        input.dataset.id = ligne.id; input.dataset.colonne = champ.colonne;
-        if (champ.colonne.indexOf('code_postal') !== -1) input.setAttribute('inputmode', 'numeric');
-        if (champ.colonne === 'telephone_facturation') input.setAttribute('inputmode', 'tel');
-        wrap.appendChild(label); wrap.appendChild(input);
-        carte.appendChild(wrap);
-      });
-      list.appendChild(carte);
-    });
-    saveBtn.style.display = 'flex';
-  }
-  // Enregistrement : un SEUL bouton pour tout l'ecran, mais l'ecriture reste champ par champ
-  // cote serveur (voir catalogue-manquants-enregistrer) -- jamais la ligne entiere. Seuls les
-  // champs REELLEMENT saisis (non vides) sont envoyes ; un champ laisse vide n'est jamais
-  // transmis, donc jamais ecrit (pas de risque d'ecraser une valeur par une chaine vide).
-  document.getElementById('manquants-save-btn').addEventListener('click', function(){
-    var btn = this;
-    var inputs = Array.prototype.slice.call(document.querySelectorAll('#manquants-list input[data-id]'));
-    var champs = inputs.filter(function(inp){ return inp.value.trim(); }).map(function(inp){
-      return { id: Number(inp.dataset.id), colonne: inp.dataset.colonne, valeur: inp.value.trim() };
-    });
-    if (!champs.length){ toast('Aucune valeur saisie.'); return; }
-    btn.disabled = true; var htmlDefaut = btn.innerHTML; btn.textContent = 'Enregistrement…';
-    postContrats({ type: 'catalogue-manquants-enregistrer', champs: champs }, function(){
-      toast('✅ ' + champs.length + ' valeur(s) enregistrée(s)');
-      btn.disabled = false; btn.innerHTML = htmlDefaut;
-      manquantsCharger();
-    }, function(err){ btn.disabled = false; btn.innerHTML = htmlDefaut; toast(err); });
-  });
   // Catalogue en "vue tableur" avec 2 onglets par activité (demande explicite : Mickael doit
   // retrouver ses onglets Excel habituels -- Dératisation/désinsectisation vs VMC -- au lieu
   // d'une seule liste mélangée).
@@ -14143,28 +13994,8 @@
 
   function contratsApplyFilter(){
     // Chantier 6 : le Calendrier a son propre rendu (calRender), pas base sur #contrats-list ni
-    // la recherche texte -- on masque tout le reste de ce panneau et on sort tot. Meme principe
-    // pour "A completer" (manquants-view, chantier tableau catalogue 11/09/2026).
+    // la recherche texte -- on masque tout le reste de ce panneau et on sort tot.
     var calView = document.getElementById('cal-view');
-    var manquantsView = document.getElementById('manquants-view');
-    if (contratsActiveTab === 'manquants'){
-      manquantsView.style.display = 'flex';
-      calView.style.display = 'none';
-      contratsList.style.display = 'none';
-      if (designationsGroupeBtn) designationsGroupeBtn.style.display = 'none';
-      contratsSearchInput.parentNode.style.display = 'none';
-      contratsAddBtn.style.display = 'none';
-      document.getElementById('contrats-cat-subtabs').style.display = 'none';
-      document.getElementById('contrats-mois-selector').style.display = 'none';
-      document.getElementById('contrats-mois-substatuts').style.display = 'none';
-      document.getElementById('contrats-previsionnel-banniere').style.display = 'none';
-      document.getElementById('contrats-generer-btn').style.display = 'none';
-      document.getElementById('contrats-tva-lot-btn').style.display = 'none';
-      document.getElementById('contrats-testmode-banniere').style.display = 'none';
-      document.getElementById('contrats-total-a-traiter').style.display = 'none';
-      return;
-    }
-    manquantsView.style.display = 'none';
     if (contratsActiveTab === 'calendrier'){
       calView.style.display = 'flex';
       contratsList.style.display = 'none';
@@ -14302,7 +14133,6 @@
     }, function(){});
   }
   function contratsLoadTab(useCache){
-    if (contratsActiveTab === 'manquants'){ contratsApplyFilter(); manquantsCharger(); return; }
     if (contratsActiveTab === 'calendrier'){ contratsApplyFilter(); calOpen(); return; }
     if (contratsActiveTab === 'mois'){
       contratsMoisSelectorsInit();
