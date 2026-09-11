@@ -2167,6 +2167,16 @@
   /* Point 5 (Session 15) -- message d'AVERTISSEMENT (pas de blocage reel), distinct de
      .ct-motif-blocage qui reste rouge pour un VRAI blocage d'envoi. Ambre, jamais rouge. */
   .fcf-avertissement{font-size:14px; color:#B25E00; line-height:1.4; background:rgba(255,159,10,.12); border-radius:10px; padding:8px 10px; margin:6px 0}
+  /* Mission verrouillage envoi (11/09/2026) -- bandeau d'etat pendant/apres l'envoi. En-cours =
+     ambre (identique a .fcf-avertissement, "patientez"), succes = vert, erreur = rouge. Jamais
+     de 4e couleur : ce sont les 3 seules issues possibles d'un envoi. */
+  .fcf-envoi-statut{font-size:14px; line-height:1.4; border-radius:10px; padding:10px 14px; margin:0 14px; flex:0 0 auto}
+  .fcf-envoi-statut.envoi-en-cours{color:#B25E00; background:rgba(255,159,10,.12)}
+  .fcf-envoi-statut.envoi-erreur{color:#FF453A; background:rgba(255,69,58,.12)}
+  .fcf-envoi-statut.envoi-succes{color:#34C759; background:rgba(52,199,89,.12)}
+  /* Verrouille : la croix devient visuellement et fonctionnellement inerte, jamais juste masquee
+     (Mickael doit comprendre POURQUOI elle ne repond pas, pas croire a un bug). */
+  #fcf-close.verrouille{opacity:.35; pointer-events:none}
   /* Fenetre 1 (08/09/2026), Point 3 : champ obligatoire vide au clic Envoyer -- encadre en rouge,
      jamais une paire rouge/vert (erreur de validation, pas un choix confirmer/annuler). */
   .fcf-champ-manquant{border:2px solid #FF453A !important; box-shadow:0 0 0 3px rgba(255,69,58,.18)}
@@ -6788,6 +6798,7 @@
     <b id="fcf-titre">Facture à traiter</b>
     <button id="fcf-close" type="button" aria-label="Fermer">✕</button>
   </div>
+  <div id="fcf-envoi-statut" class="fcf-envoi-statut" style="display:none"></div>
   <div id="fcf-body">
   <div id="fcf-form-col">
   <div class="contrat-form" id="facture-contrat-form">
@@ -8879,13 +8890,21 @@
   // (2 fenetres qui enverraient au meme instant, cas non exclu par ce fix de cablage).
   var CONTRATS_RETRY_COLLISION_MAX = 2; // 2 reessais = 3 tentatives au total
   var CONTRATS_RETRY_COLLISION_DELAI_MS = 700;
-  function postContratsAvecRetryCollision(payload, onOk, onErr, tentativesRestantes){
+  // onTentative(numero, total) : ajoute le 11/09/2026 (mission verrouillage envoi) -- appele
+  // juste AVANT chaque reessai (jamais avant le tout premier appel, silencieux comme prevu a
+  // l'origine) pour permettre a l'ecran d'afficher "tentative 2 sur 3". Optionnel, les appelants
+  // existants qui ne le passent pas gardent le comportement silencieux d'origine.
+  function postContratsAvecRetryCollision(payload, onOk, onErr, tentativesRestantes, onTentative){
     if (tentativesRestantes == null) tentativesRestantes = CONTRATS_RETRY_COLLISION_MAX;
     postContrats(payload, onOk, function(err){
       var estCollision = String(err || '').indexOf('collision') !== -1;
       if (estCollision && tentativesRestantes > 0){
+        if (typeof onTentative === 'function'){
+          var numero = (CONTRATS_RETRY_COLLISION_MAX - tentativesRestantes) + 2;
+          onTentative(numero, CONTRATS_RETRY_COLLISION_MAX + 1);
+        }
         setTimeout(function(){
-          postContratsAvecRetryCollision(payload, onOk, onErr, tentativesRestantes - 1);
+          postContratsAvecRetryCollision(payload, onOk, onErr, tentativesRestantes - 1, onTentative);
         }, CONTRATS_RETRY_COLLISION_DELAI_MS);
         return;
       }
@@ -12414,8 +12433,33 @@
   // automatique/silencieux vers le contrat catalogue.
   var fcfBg = document.getElementById('facture-contrat-form-bg');
   var fcfClose = document.getElementById('fcf-close');
-  if (fcfClose) fcfClose.addEventListener('click', function(){ fcfBg.classList.remove('open'); });
-  if (fcfBg) fcfBg.addEventListener('click', function(e){ if (e.target === fcfBg) fcfBg.classList.remove('open'); });
+  var fcfStatut = document.getElementById('fcf-envoi-statut');
+  // Mission verrouillage envoi (11/09/2026), point 1 -- le bouton Envoyer se verrouillait deja ;
+  // la croix et le clic-hors-panneau, non. Hier : clic sur Envoyer, 2-3 secondes d'attente, puis
+  // fermeture par la croix pendant que l'envoi tournait encore -- le numero deja reserve a ete
+  // perdu. Tant que l'issue de l'envoi n'est pas connue (succes ou echec prouve), CES DEUX
+  // SORTIES deviennent inertes. Le panneau est plein ecran (z-index 56, couvre tout le reste) :
+  // le verrouiller suffit a empecher aussi tout changement d'onglet, aucune autre sortie n'existe
+  // tant qu'il est ouvert.
+  function fcfEnvoiVerrouille(){ return fcfBg.dataset.verrouille === '1'; }
+  function fcfVerrouiller(){
+    fcfBg.dataset.verrouille = '1';
+    if (fcfClose) fcfClose.classList.add('verrouille');
+  }
+  // Deverrouille TOUJOURS -- quelle que soit l'issue (succes, echec prouve, ou timeout de
+  // securite ci-dessous) : jamais de blocage sans issue, regle absolue de cette mission.
+  function fcfDeverrouiller(){
+    fcfBg.dataset.verrouille = '';
+    if (fcfClose) fcfClose.classList.remove('verrouille');
+  }
+  function fcfAfficherStatut(texte, classe){
+    if (!fcfStatut) return;
+    fcfStatut.textContent = texte;
+    fcfStatut.className = 'fcf-envoi-statut' + (classe ? ' ' + classe : '');
+    fcfStatut.style.display = texte ? '' : 'none';
+  }
+  if (fcfClose) fcfClose.addEventListener('click', function(){ if (fcfEnvoiVerrouille()) return; fcfBg.classList.remove('open'); });
+  if (fcfBg) fcfBg.addEventListener('click', function(e){ if (fcfEnvoiVerrouille()) return; if (e.target === fcfBg) fcfBg.classList.remove('open'); });
 
   // Point 3d (Session 15) -- un textarea qui montre TOUT son contenu, jamais une fenêtre à
   // faire défiler : grandit avec le texte (même mécanisme que corpsAutoGrow déjà en place
@@ -13207,6 +13251,10 @@
     // d'un envoi non-bloquant precedent (deja lu par Mickael, plus la peine de le garder affiche
     // sur la carte une fois qu'il retente).
     f._envoiEchec = null;
+    // Mission verrouillage envoi (11/09/2026) -- garde defensive : a chaque ouverture, repart
+    // sur un etat propre (deverrouille, aucun bandeau residuel d'un envoi precedent).
+    fcfDeverrouiller();
+    fcfAfficherStatut('');
     document.getElementById('fcf-titre').textContent = contratNomAffiche(f);
     document.getElementById('fcf-residence').value = f.residence || '';
     document.getElementById('fcf-client').value = f.client || '';
@@ -13622,34 +13670,56 @@
     // eliminent ce piege : le HTML par defaut est capture UNE SEULE FOIS sur l'element
     // (btn.dataset.htmlDefaut), jamais recapture, et finDenvoi restaure systematiquement dans LES
     // DEUX CAS (succes ET erreur) -- avant, seul le chemin d'erreur restaurait.
+    // Mission verrouillage envoi (11/09/2026), point 1 -- l'envoi "non-bloquant" du 08/09
+    // (fermeture immediate du panneau, carte en "envoi en cours") est ABANDONNE pour ce bouton :
+    // c'est exactement le geste qui a coute un numero le 10/09 (clic Envoyer, fermeture par la
+    // croix 2-3 secondes plus tard, pendant que la reservation venait d'etre posee). Desormais
+    // le panneau RESTE OUVERT et VERROUILLE (croix + clic-hors-panneau inertes, voir
+    // fcfVerrouiller plus haut) jusqu'a connaitre l'issue -- succes ou echec prouve. JAMAIS DE
+    // BLOCAGE SANS ISSUE : le verrou se leve toujours, quel que soit le resultat, y compris sur
+    // un timeout de securite si la connexion ne repond plus du tout (voir plus bas).
+    var FCF_TIMEOUT_SECURITE_MS = 3 * 60 * 1000; // largement au-dessus du pire cas connu (~90s)
     okBtn.onclick = function(){
       if (bloque && !designationInput.value.trim()){ toast('Saisissez une désignation avant d\'envoyer.'); return; }
       if (!fcfValiderAvantEnvoi()) return;
       var payload = fcfPayloadActuel(f);
       payload.type = 'mois-action'; payload.choix = 'envoyer';
-      var fid = f.id;
       var nomPourToast = contratNomAffiche(f);
-      // Fenetre 1 (08/09/2026), Point 2 : envoi NON-BLOQUANT -- Mickael n'attend plus la reponse
-      // serveur pour passer au contrat suivant. Le panneau se ferme immediatement, la carte
-      // affiche tout de suite un etat transitoire (f._envoiEnCours, rendu dans
-      // contratsBuildMoisCard), et la vraie confirmation arrive via contratsResynchroniser()
-      // (rechargement serveur complet, seule source de verite -- jamais une mutation optimiste
-      // de f.statut, meme piege de reference perimee deja documente/corrige ailleurs dans ce
-      // fichier pour Relances/Devis). En cas d'echec, la carte repasse en "a traiter" avec un
-      // message d'erreur explicite -- jamais un etat intermediaire silencieux.
-      var cible = (contratsMoisData || []).find(function(c){ return c.id === fid; });
-      if (cible){ cible._envoiEnCours = true; cible._envoiEchec = null; }
-      fcfBg.classList.remove('open');
-      toast('✉️ Envoi en cours pour ' + nomPourToast + '…');
-      contratsApplyFilter();
+      fcfVerrouiller();
+      demarrerEnvoi(okBtn, 'Envoi…', [skipBtn, enregistrerBtn]);
+      fcfAfficherStatut('✉️ Envoi en cours pour ' + nomPourToast + '… Ne fermez pas cet écran (jusqu\'à 1 min 30).', 'envoi-en-cours');
+      var reglee = false;
+      var securite = setTimeout(function(){
+        if (reglee) return;
+        reglee = true;
+        fcfDeverrouiller();
+        finDenvoi(okBtn, [skipBtn, enregistrerBtn]);
+        fcfAfficherStatut('⚠️ Toujours aucune réponse du serveur après plusieurs minutes — on ne sait pas si cette facture est partie. Vérifiez dans « Devis et factures » avant de renvoyer.', 'envoi-erreur');
+      }, FCF_TIMEOUT_SECURITE_MS);
       postContratsAvecRetryCollision(payload, function(j){
+        if (reglee) return;
+        reglee = true;
+        clearTimeout(securite);
+        fcfDeverrouiller();
+        finDenvoi(okBtn, [skipBtn, enregistrerBtn]);
+        fcfAfficherStatut(j.testMode ? '✅ Facture envoyée (mode test → Altaestima)' : '✅ Facture envoyée.', 'envoi-succes');
         toast(j.testMode ? '✅ Facture envoyée (mode test → Altaestima)' : '✅ Facture envoyée');
+        fcfBg.classList.remove('open');
         contratsResynchroniser();
       }, function(err){
-        var c2 = (contratsMoisData || []).find(function(c){ return c.id === fid; });
-        if (c2){ c2._envoiEnCours = false; c2._envoiEchec = String(err || 'Échec de l\'envoi.'); }
-        contratsApplyFilter();
+        if (reglee) return;
+        reglee = true;
+        clearTimeout(securite);
+        fcfDeverrouiller();
+        finDenvoi(okBtn, [skipBtn, enregistrerBtn]);
+        // Panneau laisse OUVERT (pas de fcfBg.classList.remove) : Mickael voit l'erreur, decide
+        // lui-meme -- fermer maintenant (sans risque, plus rien n'est en vol) ou reessayer (sans
+        // risque non plus : point 2 de cette meme mission garantit qu'un nouvel essai retrouve
+        // la reservation encore vivante au lieu d'en consommer une seconde).
+        fcfAfficherStatut('❌ ' + err, 'envoi-erreur');
         toast('❌ ' + err);
+      }, null, function(numero, total){
+        fcfAfficherStatut('✉️ Nouvelle tentative (' + numero + ' sur ' + total + ') pour ' + nomPourToast + '… Ne fermez pas cet écran.', 'envoi-en-cours');
       });
     };
     skipBtn.onclick = function(){
