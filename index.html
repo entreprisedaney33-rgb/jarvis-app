@@ -6672,9 +6672,24 @@
       <label>Résidence</label><input id="cf-residence" type="text">
     </div>
     <div class="ctf-section">
-      <p class="ctf-section-titre">Adresse</p>
+      <p class="ctf-section-titre">Résidence</p>
       <label>Adresse</label><input id="cf-adresse" type="text">
-      <label>Ville</label><input id="cf-ville" type="text">
+      <div class="cf-row">
+        <div><label>Code postal</label><input id="cf-code-postal" type="text" inputmode="numeric" placeholder="ex : 33000"></div>
+        <div><label>Ville</label><input id="cf-ville" type="text"></div>
+      </div>
+    </div>
+    <!-- Chantier catalogue (11/09/2026, mission Mickael) : bloc Gestionnaire (le P/O) -- distinct
+         du bloc Résidence, jamais confondu avec lui (un client direct sans gestionnaire laisse
+         ce bloc entièrement vide, ce qui est la valeur correcte, pas une donnée manquante). -->
+    <div class="ctf-section">
+      <p class="ctf-section-titre">Gestionnaire (P/O)</p>
+      <label>Gestionnaire</label><input id="cf-gestionnaire" type="text" placeholder="ex : Foncia Chabaneau">
+      <label>Adresse du gestionnaire</label><input id="cf-gestionnaire-adresse" type="text">
+      <div class="cf-row">
+        <div><label>Code postal</label><input id="cf-gestionnaire-code-postal" type="text" inputmode="numeric" placeholder="ex : 33000"></div>
+        <div><label>Ville</label><input id="cf-gestionnaire-ville" type="text"></div>
+      </div>
     </div>
     <div class="ctf-section">
       <p class="ctf-section-titre">Prestation</p>
@@ -6725,9 +6740,16 @@
         <button type="button" class="ctf-actif-opt" id="cf-actif-non">Non (résilié)</button>
       </div>
     </div>
+    <!-- Chantier catalogue (11/09/2026, mission Mickael) : "a qui part la facture" est UNE seule
+         notion (le gestionnaire s'il y en a un, le client direct sinon) -- une seule paire de
+         champs mail_facturation/telephone_facturation, jamais 2 colonnes paralleles pour la meme
+         idee (c'est exactement ce qui avait produit le mauvais mail du contrat 670). L'ancienne
+         colonne "email" du catalogue n'est plus editee ici : elle reste en base, intacte, comme
+         trace, jamais reaffichee ni reecrite par cet ecran. -->
     <div class="ctf-section">
-      <p class="ctf-section-titre">Contact</p>
-      <label>Email de facturation</label><input id="cf-email" type="email">
+      <p class="ctf-section-titre">Contact (à qui part la facture)</p>
+      <label>Email de facturation</label><input id="cf-mail-facturation" type="email">
+      <label>Téléphone de facturation</label><input id="cf-telephone-facturation" type="tel" placeholder="à saisir à la main, aucune source ne le connaît">
     </div>
     <div class="ctf-section" id="ctf-historique-section" style="display:none">
       <p class="ctf-section-titre">Historique des modifications</p>
@@ -6765,12 +6787,28 @@
       <label>Nom de la résidence (nom facturé)</label><input id="fcf-residence" type="text">
       <label>Client facturé (si pas de résidence -- société directe, ex Bread Storming)</label><input id="fcf-client" type="text">
       <label>P/O : gestionnaire (syndic, si résidence)</label><input id="fcf-gestionnaire" type="text" placeholder="ex : Foncia Chabaneau">
-      <label>Adresse du gestionnaire (ligne sous P/O) -- obligatoire dès qu'il y a un gestionnaire, à renseigner avant l'envoi (jamais inventée : uniquement une adresse réellement connue)</label><input id="fcf-gestionnaire-adresse" type="text" placeholder="ex : 61 quai Lawton, 33000 Bordeaux">
+      <!-- Chantier catalogue (11/09/2026, mission Mickael) : code postal et ville separes de la
+           rue pour une saisie plus sure -- recomposes en UNE SEULE chaine "rue, cp ville" a
+           l'enregistrement, EXACTEMENT comme avant (mcs_factures_contrats.adresse_gestionnaire
+           reste un seul champ texte, jamais restructure : le generateur PDF (splitAdressePostale)
+           n'est pas touche, zero risque de regression sur le bloc P/O deja correct). -->
+      <label>Adresse du gestionnaire (rue) -- obligatoire dès qu'il y a un gestionnaire, à renseigner avant l'envoi (jamais inventée : uniquement une adresse réellement connue)</label><input id="fcf-gestionnaire-adresse" type="text" placeholder="ex : 61 quai Lawton">
+      <div class="cf-row">
+        <div><label>Code postal du gestionnaire</label><input id="fcf-gestionnaire-code-postal" type="text" inputmode="numeric" placeholder="ex : 33000"></div>
+        <div><label>Ville du gestionnaire</label><input id="fcf-gestionnaire-ville" type="text" placeholder="ex : Bordeaux"></div>
+      </div>
     </div>
     <div class="ctf-section">
       <p class="ctf-section-titre">Adresse</p>
       <label>Adresse (de la résidence)</label><input id="fcf-adresse" type="text">
-      <label>Ville</label><input id="fcf-ville" type="text">
+      <div class="cf-row">
+        <!-- Additif pur : mcs_factures_contrats.code_postal existe deja (colonne ajoutee le
+             10/09/2026), jamais exposee jusqu'ici sur cet ecran -- aucune valeur existante a
+             perdre, ce champ est vide pour les 30 lignes de septembre tant que Mickael ne l'a
+             pas saisi a la main. -->
+        <div><label>Code postal</label><input id="fcf-code-postal" type="text" inputmode="numeric" placeholder="ex : 33000"></div>
+        <div><label>Ville</label><input id="fcf-ville" type="text"></div>
+      </div>
       <label id="fcf-dest-label">Destinataire (email)</label><input id="fcf-dest" type="text">
       <p id="fcf-dest-preuve" class="fcf-avertissement" style="display:none"></p>
     </div>
@@ -7667,7 +7705,7 @@
          comparaison de chaine de version par tenant. */
   var APPV_MCS = '4.54';
   var APPV_LABO = '1.00';
-  var BUILD = 40;
+  var BUILD = 41;
   // displayVersion()/displayVersionShort() lisent isMcsCode() (definie plus bas dans cette
   // meme IIFE -- declaration de fonction, donc disponible ici par hoisting) : le TENANT
   // affiche depend du code de connexion, jamais d'un simple "APPV" global qui ne dirait ni
@@ -7857,11 +7895,11 @@
           text: 'Le nombre de passages par an, et le mois du premier passage juste à côté.' },
         { selector: '#cf-prix', open: '#contrats-add-btn', close: '#ctf-cancel', title: 'Le prix',
           text: 'Le prix HT, et le taux de TVA juste à côté (20% ou 10% selon la prestation).' },
-        { selector: '#cf-email', open: '#contrats-add-btn', close: '#ctf-cancel', title: 'Email de facturation',
+        { selector: '#cf-mail-facturation', open: '#contrats-add-btn', close: '#ctf-cancel', title: 'Email de facturation',
           text: 'L’adresse qui recevra les factures générées pour ce contrat.' },
         // Point 7 (31/08/2026, gros chantier) : "la memorisation" (memoireAppliquer, deja active
         // sur ce meme champ email de contrat depuis un chantier anterieur) n'avait aucune etape.
-        { selector: '#cf-email', open: '#contrats-add-btn', close: '#ctf-cancel', title: 'Jarvis retient',
+        { selector: '#cf-mail-facturation', open: '#contrats-add-btn', close: '#ctf-cancel', title: 'Jarvis retient',
           text: 'Une fois cette adresse enregistrée pour cette résidence, Jarvis s’en souvient — elle se pré-remplira toute seule la prochaine fois, ici comme ailleurs dans l’app (devis, factures directes…).' },
         { selector: '#cf-renouv', open: '#contrats-add-btn', close: '#ctf-cancel', title: 'Renouvellement',
           text: 'Tacite reconduction, 3 ans… comme convenu avec le client.' },
@@ -12433,13 +12471,51 @@
     if (cur) lines.push(cur);
     return lines;
   }
+  // Chantier catalogue (11/09/2026, mission Mickael) : "Modifier et traiter" presente rue/code
+  // postal/ville du gestionnaire en 3 champs distincts pour une saisie plus sure, mais
+  // mcs_factures_contrats.adresse_gestionnaire reste UN SEUL champ texte cote serveur (jamais
+  // restructure -- le generateur PDF, splitAdressePostale, n'est pas touche : zero risque sur le
+  // bloc P/O deja correct). Cette fonction recompose les 3 champs en une seule chaine "rue, cp
+  // ville" (ou "rue, ville" si CP absent, ou juste "rue" si tout le reste est vide) au moment de
+  // l'apercu ET de l'enregistrement -- verifie sans perte sur les 25 vraies adresses gestionnaire
+  // de septembre avant deploiement (round-trip splitAdressePostale -> recompose = meme contenu).
+  function fcfRecomposerAdresse(rue, cp, ville){
+    var villeAvecCp = [cp, ville].filter(Boolean).join(' ');
+    return [rue, villeAvecCp].filter(Boolean).join(', ');
+  }
+  // Sens inverse (prefill uniquement) : decoupe la chaine unique existante en 3 champs separes.
+  // Meme regex que splitAdressePostale (code postal francais a 5 chiffres, non precede/suivi d'un
+  // autre chiffre) mais separe EN PLUS le code postal de la ville -- jamais devine si absent.
+  function fcfDecomposerAdresse(str){
+    str = String(str||'').trim();
+    if (!str) return { rue:'', cp:'', ville:'' };
+    var re = /\d{5}(?!\d)/g, m, dernierMatch = null;
+    while ((m = re.exec(str)) !== null){
+      var precedeParChiffre = m.index > 0 && /\d/.test(str.charAt(m.index-1));
+      if (!precedeParChiffre) dernierMatch = m;
+    }
+    if (dernierMatch){
+      var cp = dernierMatch[0];
+      var idx = dernierMatch.index;
+      var rue = str.slice(0, idx).replace(/[\s,]+$/, '').trim();
+      var ville = str.slice(idx+5).trim().replace(/^,\s*/, '');
+      return { rue: rue, cp: cp, ville: ville };
+    }
+    var idxVirgule = str.lastIndexOf(',');
+    if (idxVirgule > -1) return { rue: str.slice(0, idxVirgule).trim(), cp:'', ville: str.slice(idxVirgule+1).trim() };
+    return { rue: str, cp:'', ville:'' };
+  }
   function fcfRenderApercu(){
     var page = document.getElementById('fcf-apercu-page');
     if (!page) return;
     var val = function(id){ var el = document.getElementById(id); return el ? el.value.trim() : ''; };
     var residence = val('fcf-residence'), client = val('fcf-client'), gestionnaire = val('fcf-gestionnaire');
-    var gestionnaireAdresse = val('fcf-gestionnaire-adresse');
+    // Chantier catalogue (11/09/2026) : rue/CP/ville du gestionnaire recomposes en UNE SEULE
+    // chaine, exactement comme l'enregistrement (fcfRecomposerAdresse) -- l'apercu doit rendre
+    // ce que le PDF rendra reellement, jamais une approximation locale differente.
+    var gestionnaireAdresse = fcfRecomposerAdresse(val('fcf-gestionnaire-adresse'), val('fcf-gestionnaire-code-postal'), val('fcf-gestionnaire-ville'));
     var adresse = val('fcf-adresse'), ville = val('fcf-ville'), dest = val('fcf-dest');
+    var codePostal = val('fcf-code-postal');
     var designation = val('fcf-designation') || 'Prestation';
     var designationLignes = designation.split('\n').filter(Boolean);
     var sousLignesTexte = val('fcf-souslignes').split('\n').filter(Boolean);
@@ -12500,7 +12576,7 @@
     // fidele au vrai document.
     var cy = blockTop;
     T(cx, cy, 10, true, nomAffiche); cy -= LH;
-    var adresseClientTxt = [adresse, ville].filter(Boolean).join(', ');
+    var adresseClientTxt = [adresse, [codePostal, ville].filter(Boolean).join(' ')].filter(Boolean).join(', ');
     // 09/09/2026 (mission Mickael, six demandes -- copie a l'identique de la meme regle cote
     // generateur PDF n8n, "Construire facture contrat apercu/generation/envoi/tva lot (contrats)",
     // workflow MCS · Contrats) : bloc destinataire aere, une ligne vide devant CHAQUE element
@@ -12511,7 +12587,18 @@
     // reste la vraie destination de l'envoi, inchange ailleurs.
     if (adresseClientTxt && !residence){
       cy -= LH;
-      T(cx, cy, 8.5, false, adresseClientTxt); cy -= LH;
+      // 10/09/2026 (mission Mickael, Point 3) : meme decoupage que le generateur PDF n8n
+      // (Construire facture contrat .../ workflow MCS · Contrats) -- rue puis ville sur leur
+      // propre ligne (code postal ajoute automatiquement des qu'il existe en base, jamais
+      // invente ici). adresseClientTxt est "rue, ville" (ou "rue, cp ville") -- decoupe sur
+      // la DERNIERE virgule, jamais de ligne vide, jamais de fusion sur une seule ligne.
+      var dernVirguleClient = adresseClientTxt.lastIndexOf(', ');
+      if (dernVirguleClient > -1){
+        T(cx, cy, 8.5, false, adresseClientTxt.slice(0, dernVirguleClient)); cy -= LH;
+        T(cx, cy, 8.5, false, adresseClientTxt.slice(dernVirguleClient + 2)); cy -= LH;
+      } else {
+        T(cx, cy, 8.5, false, adresseClientTxt); cy -= LH;
+      }
     }
     if (residence && gestionnaire){
       cy -= LH;
@@ -13056,9 +13143,17 @@
     var gInfos = gestionnaireInfos(gestionnaireBrut);
     document.getElementById('fcf-gestionnaire').value = gestionnaireBrut ? gInfos.nom : '';
     var gestAdrInput = document.getElementById('fcf-gestionnaire-adresse');
-    gestAdrInput.value = f.gestionnaire_adresse || gInfos.adresse || '';
+    var gestAdrCpInput = document.getElementById('fcf-gestionnaire-code-postal');
+    var gestAdrVilleInput = document.getElementById('fcf-gestionnaire-ville');
+    // Decompose la chaine existante (facturation, ou a defaut le dictionnaire gestionnaireInfos)
+    // en 3 champs -- verifie sans perte sur les 25 vraies adresses avant deploiement.
+    var gestDecompose = fcfDecomposerAdresse(f.gestionnaire_adresse || gInfos.adresse || '');
+    gestAdrInput.value = gestDecompose.rue;
+    gestAdrCpInput.value = gestDecompose.cp;
+    gestAdrVilleInput.value = gestDecompose.ville;
     document.getElementById('fcf-adresse').value = f.adresse || '';
     document.getElementById('fcf-ville').value = f.ville || '';
+    document.getElementById('fcf-code-postal').value = f.code_postal || '';
     var destInput = document.getElementById('fcf-dest');
     destInput.value = f.destinataire_email || f.destinataire_candidat || '';
     var destLabel = document.getElementById('fcf-dest-label');
@@ -13224,7 +13319,7 @@
 
     // ---- Aperçu (Point 2) : rendu fidèle, mis à jour à chaque frappe pertinente ----
     [document.getElementById('fcf-residence'), document.getElementById('fcf-client'), document.getElementById('fcf-gestionnaire'),
-     gestAdrInput, document.getElementById('fcf-adresse'), document.getElementById('fcf-ville'), destInput, designationInput,
+     gestAdrInput, gestAdrCpInput, gestAdrVilleInput, document.getElementById('fcf-adresse'), document.getElementById('fcf-code-postal'), document.getElementById('fcf-ville'), destInput, designationInput,
      quantiteInput, uniteInput, numeroInput, anneeInput, echeanceInput, conditionsInput].forEach(function(el){
       el.addEventListener('input', function(){ fcfRenderApercu(f); });
     });
@@ -13320,8 +13415,16 @@
         residence: document.getElementById('fcf-residence').value.trim(),
         adresse: document.getElementById('fcf-adresse').value.trim(),
         ville: document.getElementById('fcf-ville').value.trim(),
+        code_postal: document.getElementById('fcf-code-postal').value.trim(),
         gestionnaire: document.getElementById('fcf-gestionnaire').value.trim(),
-        gestionnaire_adresse: document.getElementById('fcf-gestionnaire-adresse').value.trim(),
+        // Recompose les 3 champs de saisie en une seule chaine -- EXACTEMENT le format que le
+        // serveur attend deja dans adresse_gestionnaire (verifie sans perte sur les 25 vraies
+        // adresses de septembre avant deploiement, cf. commentaire de fcfRecomposerAdresse).
+        gestionnaire_adresse: fcfRecomposerAdresse(
+          document.getElementById('fcf-gestionnaire-adresse').value.trim(),
+          document.getElementById('fcf-gestionnaire-code-postal').value.trim(),
+          document.getElementById('fcf-gestionnaire-ville').value.trim()
+        ),
         numero_contrat: numeroInput.value.trim(),
         annee: parseInt(anneeInput.value, 10) || f.annee,
         quantite: parseFloat(quantiteInput.value) || 1,
@@ -14506,6 +14609,12 @@
     document.getElementById('cf-residence').value = c ? c.residence : '';
     document.getElementById('cf-adresse').value = c ? c.adresse : '';
     document.getElementById('cf-ville').value = c ? c.ville : '';
+    document.getElementById('cf-code-postal').value = c ? (c.code_postal || '') : '';
+    document.getElementById('cf-gestionnaire').value = c ? (c.gestionnaire || '') : '';
+    document.getElementById('cf-gestionnaire-adresse').value = c ? (c.gestionnaire_adresse || '') : '';
+    document.getElementById('cf-gestionnaire-code-postal').value = c ? (c.gestionnaire_code_postal || '') : '';
+    document.getElementById('cf-gestionnaire-ville').value = c ? (c.gestionnaire_ville || '') : '';
+    document.getElementById('cf-telephone-facturation').value = c ? (c.telephone_facturation || '') : '';
     document.getElementById('cf-prestation').value = c ? c.prestation : '';
     document.getElementById('cf-passages').value = c ? (c.passages_an || 1) : 1;
     document.getElementById('cf-passage1').value = c ? c.passage_1 : '';
@@ -14514,7 +14623,7 @@
     document.getElementById('cf-passage4').value = c ? c.passage_4 : '';
     document.getElementById('cf-prix').value = c ? c.prix_ht : '';
     document.getElementById('cf-tva').value = c ? String(c.tva) : '0.2';
-    document.getElementById('cf-email').value = c ? c.email : '';
+    document.getElementById('cf-mail-facturation').value = c ? (c.mail_facturation || '') : '';
     document.getElementById('cf-renouv').value = c ? c.renouvellement : '';
     document.getElementById('cf-numero').value = c ? (c.numero_contrat || '') : '';
     document.getElementById('cf-datesign').value = c && c.date_signature ? String(c.date_signature).slice(0, 10) : '';
@@ -14522,7 +14631,7 @@
     document.getElementById('ctf-delete').style.display = c ? '' : 'none';
     // Point 2 (session suite, 29/08/2026) : mémoire commune -- uniquement à la CRÉATION (c===null) ;
     // en édition on affiche les vraies valeurs du contrat, jamais une suggestion de mémoire par-dessus.
-    delete document.getElementById('cf-email').dataset.memValeur;
+    delete document.getElementById('cf-mail-facturation').dataset.memValeur;
     contratFormBg.querySelectorAll('.mem-badge').forEach(function(b){ b.style.display = 'none'; });
     contratFormDeratContrat = c;
     contratDeratRender();
@@ -14589,7 +14698,7 @@
   (function(){
     var cfResidence = document.getElementById('cf-residence');
     var cfClient = document.getElementById('cf-client');
-    var cfEmail = document.getElementById('cf-email');
+    var cfEmail = document.getElementById('cf-mail-facturation');
     var identifiantContrat = function(){ return cfResidence.value.trim() || cfClient.value.trim(); };
     var essayerMemoire = function(){
       if (contratFormEditingId) return;
@@ -14610,6 +14719,13 @@
       residence: document.getElementById('cf-residence').value.trim(),
       adresse: document.getElementById('cf-adresse').value.trim(),
       ville: document.getElementById('cf-ville').value.trim(),
+      code_postal: document.getElementById('cf-code-postal').value.trim(),
+      gestionnaire: document.getElementById('cf-gestionnaire').value.trim(),
+      gestionnaire_adresse: document.getElementById('cf-gestionnaire-adresse').value.trim(),
+      gestionnaire_code_postal: document.getElementById('cf-gestionnaire-code-postal').value.trim(),
+      gestionnaire_ville: document.getElementById('cf-gestionnaire-ville').value.trim(),
+      mail_facturation: document.getElementById('cf-mail-facturation').value.trim(),
+      telephone_facturation: document.getElementById('cf-telephone-facturation').value.trim(),
       prestation: document.getElementById('cf-prestation').value.trim(),
       passages_an: parseInt(document.getElementById('cf-passages').value, 10) || 1,
       passage_1: document.getElementById('cf-passage1').value.trim(),
@@ -14618,7 +14734,6 @@
       passage_4: document.getElementById('cf-passage4').value.trim(),
       prix_ht: parseFloat(document.getElementById('cf-prix').value) || 0,
       tva: parseFloat(document.getElementById('cf-tva').value),
-      email: document.getElementById('cf-email').value.trim(),
       renouvellement: document.getElementById('cf-renouv').value.trim(),
       numero_contrat: document.getElementById('cf-numero').value.trim(),
       date_signature: document.getElementById('cf-datesign').value.trim(),
