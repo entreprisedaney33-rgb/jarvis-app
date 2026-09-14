@@ -1919,6 +1919,33 @@
   }
   #facture-contrat-form-bg.open{display:flex; transform:translateY(0)}
   @media (prefers-reduced-motion: reduce){#facture-contrat-form-bg{transition:none}}
+  /* Mission renvoi facture (14/09/2026) -- meme gabarit plein ecran que #facture-contrat-form-bg
+     ci-dessus, une seule colonne (pas d'apercu PDF ici : le PDF joint est celui deja envoye,
+     jamais regenere, rien a previsualiser). */
+  #facture-renvoi-form-bg{
+    position:fixed; inset:0; z-index:56; background:var(--bg);
+    display:none; flex-direction:column;
+    transform:translateY(100%); transition:transform .28s cubic-bezier(.2,.9,.25,1);
+  }
+  #facture-renvoi-form-bg.open{display:flex; transform:translateY(0)}
+  @media (prefers-reduced-motion: reduce){#facture-renvoi-form-bg{transition:none}}
+  #frv-head{
+    flex:0 0 auto; display:flex; align-items:center; gap:10px;
+    padding:calc(10px + env(safe-area-inset-top)) 14px 12px;
+    border-bottom:0.5px solid var(--hairline);
+  }
+  #frv-head #frv-titre{font-size:17px; flex:1; margin:0}
+  #frv-close{
+    width:44px; height:44px; border-radius:50%; border:0; flex:0 0 auto;
+    font-size:18px; font-weight:700;
+    display:flex; align-items:center; justify-content:center; cursor:pointer;
+    -webkit-tap-highlight-color:transparent;
+  }
+  /* Verrouille pendant l'envoi : meme traitement visuel que #fcf-close (mission verrouillage
+     envoi du 11/09/2026), reutilise ici a l'identique. */
+  #frv-close.verrouille{opacity:.35; pointer-events:none}
+  #frv-body{flex:1; overflow-y:auto; -webkit-overflow-scrolling:touch; padding:14px 16px calc(20px + env(safe-area-inset-bottom))}
+  #frv-destinataire{width:100%; box-sizing:border-box}
   #fcf-head{
     flex:0 0 auto; display:flex; align-items:center; gap:10px;
     padding:calc(10px + env(safe-area-inset-top)) 14px 12px;
@@ -6929,6 +6956,41 @@
   </div>
 </div>
 
+<!-- Mission renvoi facture (14/09/2026) -- renvoyer une facture DEJA envoyee a une adresse
+     corrigee. Meme gabarit plein ecran que #facture-contrat-form-bg (verrouillage identique :
+     croix + clic-hors-panneau inertes pendant l'envoi, jamais de blocage sans issue). Ne
+     touche JAMAIS a la reservation de numero ni au depot MEG -- le backend garantit deja ca
+     par construction (chemin cable en parallele, sans ces noeuds). -->
+<div id="facture-renvoi-form-bg">
+  <div id="frv-head">
+    <b id="frv-titre">Renvoyer la facture</b>
+    <button id="frv-close" type="button" aria-label="Fermer">✕</button>
+  </div>
+  <div id="frv-envoi-statut" class="fcf-envoi-statut" style="display:none"></div>
+  <div id="frv-body">
+    <div class="contrat-form">
+      <div class="ctf-section" id="frv-etape-formulaire">
+        <p class="ctf-section-titre">Facture</p>
+        <p class="dv-meta" id="frv-recap"></p>
+        <p class="dv-meta" id="frv-pdf-nom"></p>
+        <label>Adresse d'envoi</label>
+        <input id="frv-destinataire" type="email" inputmode="email" autocapitalize="off" autocorrect="off">
+        <div class="cf-actions" style="display:flex; gap:10px; margin-top:14px;">
+          <button id="frv-envoyer" type="button" class="vc-ok">Envoyer</button>
+        </div>
+      </div>
+      <div class="ctf-section" id="frv-etape-question" style="display:none">
+        <p class="ctf-section-titre">Adresse par défaut</p>
+        <p class="dv-meta">Souhaitez-vous enregistrer cette adresse comme adresse de facturation par défaut pour ce client ?</p>
+        <div class="cf-actions" style="display:flex; gap:10px; margin-top:14px;">
+          <button id="frv-adresse-oui" type="button" class="vc-ok">Oui</button>
+          <button id="frv-adresse-non" type="button" class="vc-no">Non</button>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
 <!-- 31/08/2026 (chantier A, vocabulaire des prestations) : saisie groupee -- tous les libelles
      'a_confirmer' d'un coup, pour que Mickael les remplisse en une fois plutot que carte par
      carte. Meme gabarit visuel que le formulaire catalogue juste au-dessus. -->
@@ -7728,7 +7790,7 @@
          comparaison de chaine de version par tenant. */
   var APPV_MCS = '4.54';
   var APPV_LABO = '1.00';
-  var BUILD = 43;
+  var BUILD = 44;
   // displayVersion()/displayVersionShort() lisent isMcsCode() (definie plus bas dans cette
   // meme IIFE -- declaration de fonction, donc disponible ici par hoisting) : le TENANT
   // affiche depend du code de connexion, jamais d'un simple "APPV" global qui ne dirait ni
@@ -12418,6 +12480,14 @@
         }, function(err){ undoBtn.disabled = false; toast(err); });
       });
       right.appendChild(undoBtn);
+    } else if (f.statut === 'envoyee'){
+      // Mission renvoi facture (14/09/2026) : uniquement sur une facture REELLEMENT envoyee
+      // (jamais sur "a traiter"/"skip") -- renvoie le PDF deja parti, jamais un document
+      // regenere, a une adresse corrigee. Voir factureRenvoiFormOpen.
+      var renvoyerBtn = document.createElement('button'); renvoyerBtn.type = 'button'; renvoyerBtn.className = 'ct-toggle';
+      renvoyerBtn.innerHTML = ICON_UNDO_CT + 'Renvoyer';
+      renvoyerBtn.addEventListener('click', function(){ factureRenvoiFormOpen(f); });
+      right.appendChild(renvoyerBtn);
     }
     head.appendChild(right);
     card.appendChild(head);
@@ -12460,6 +12530,107 @@
   }
   if (fcfClose) fcfClose.addEventListener('click', function(){ if (fcfEnvoiVerrouille()) return; fcfBg.classList.remove('open'); });
   if (fcfBg) fcfBg.addEventListener('click', function(e){ if (fcfEnvoiVerrouille()) return; if (e.target === fcfBg) fcfBg.classList.remove('open'); });
+
+  // Mission renvoi facture (14/09/2026) -- panneau "Renvoyer la facture", uniquement sur une
+  // facture DEJA envoyee. Meme mecanisme de verrouillage que le panneau "Facture a traiter"
+  // (fcfVerrouiller/fcfDeverrouiller/fcfAfficherStatut ci-dessus) mais sur SES PROPRES elements
+  // -- jamais partage avec fcfBg, sinon un renvoi verrouillerait/deverrouillerait le mauvais
+  // panneau si les deux etaient ouverts l'un apres l'autre.
+  var frvBg = document.getElementById('facture-renvoi-form-bg');
+  var frvClose = document.getElementById('frv-close');
+  var frvStatut = document.getElementById('frv-envoi-statut');
+  function frvEnvoiVerrouille(){ return frvBg.dataset.verrouille === '1'; }
+  function frvVerrouiller(){
+    frvBg.dataset.verrouille = '1';
+    if (frvClose) frvClose.classList.add('verrouille');
+  }
+  function frvDeverrouiller(){
+    frvBg.dataset.verrouille = '';
+    if (frvClose) frvClose.classList.remove('verrouille');
+  }
+  function frvAfficherStatut(texte, classe){
+    if (!frvStatut) return;
+    frvStatut.textContent = texte;
+    frvStatut.className = 'fcf-envoi-statut' + (classe ? ' ' + classe : '');
+    frvStatut.style.display = texte ? '' : 'none';
+  }
+  if (frvClose) frvClose.addEventListener('click', function(){ if (frvEnvoiVerrouille()) return; frvBg.classList.remove('open'); });
+  if (frvBg) frvBg.addEventListener('click', function(e){ if (frvEnvoiVerrouille()) return; if (e.target === frvBg) frvBg.classList.remove('open'); });
+
+  function factureRenvoiFormOpen(f){
+    frvDeverrouiller();
+    frvAfficherStatut('');
+    document.getElementById('frv-etape-formulaire').style.display = '';
+    document.getElementById('frv-etape-question').style.display = 'none';
+    document.getElementById('frv-recap').textContent = contratNomAffiche(f) + ' — ' + Number(f.prix_ttc).toFixed(2) + ' € TTC — N° ' + (f.numero_facture || '');
+    // Nom du PDF joint : celui REELLEMENT deja envoye (numero_facture + .pdf), jamais un nom
+    // recalcule -- pour que Mickael voie que c'est bien le bon document avant d'envoyer.
+    document.getElementById('frv-pdf-nom').textContent = 'Pièce jointe : ' + (f.numero_facture || '?') + '.pdf';
+    // Pre-rempli avec l'adresse REELLE d'envoi (destinataire_email), pas l'adresse du
+    // catalogue -- c'est cette adresse-la qui a ete rejetee, c'est elle qu'on corrige.
+    document.getElementById('frv-destinataire').value = f.destinataire_email || '';
+    frvBg.dataset.factureId = f.id;
+    frvBg.classList.add('open');
+  }
+
+  var frvEnvoyerBtn = document.getElementById('frv-envoyer');
+  var FRV_TIMEOUT_SECURITE_MS = 3 * 60 * 1000;
+  if (frvEnvoyerBtn) frvEnvoyerBtn.onclick = function(){
+    var destinataire = String(document.getElementById('frv-destinataire').value || '').trim();
+    if (!destinataire || destinataire.indexOf('@') === -1){ toast('Adresse email invalide.'); return; }
+    var factureId = frvBg.dataset.factureId;
+    frvVerrouiller();
+    frvEnvoyerBtn.disabled = true;
+    frvAfficherStatut('✉️ Envoi en cours… Ne fermez pas cet écran (jusqu\'à 1 min 30).', 'envoi-en-cours');
+    var reglee = false;
+    var securite = setTimeout(function(){
+      if (reglee) return; reglee = true;
+      frvDeverrouiller(); frvEnvoyerBtn.disabled = false;
+      frvAfficherStatut('⚠️ Toujours aucune réponse du serveur — on ne sait pas si cette facture est partie. Vérifiez avant de renvoyer.', 'envoi-erreur');
+    }, FRV_TIMEOUT_SECURITE_MS);
+    postContrats({ type: 'mois-action', id: factureId, choix: 'renvoyer', destinataire: destinataire }, function(j){
+      if (reglee) return; reglee = true;
+      clearTimeout(securite);
+      frvDeverrouiller(); frvEnvoyerBtn.disabled = false;
+      frvAfficherStatut('');
+      toast('✅ Facture renvoyée à ' + destinataire);
+      // Question posee APRES succes, jamais automatique : par defaut rien n'est modifie. Ce
+      // meme panneau sert aussi a renvoyer a un tiers ponctuel (une copie demandee par le
+      // cabinet) -- dans ce cas l'adresse par defaut ne doit surtout pas changer.
+      frvBg.dataset.factureId = j.factureRowId || factureId;
+      frvBg.dataset.contratId = j.contratId || '';
+      frvBg.dataset.nouvelleAdresse = destinataire;
+      document.getElementById('frv-etape-formulaire').style.display = 'none';
+      document.getElementById('frv-etape-question').style.display = '';
+    }, function(err){
+      if (reglee) return; reglee = true;
+      clearTimeout(securite);
+      frvDeverrouiller(); frvEnvoyerBtn.disabled = false;
+      frvAfficherStatut('❌ ' + err, 'envoi-erreur');
+      toast('❌ ' + err);
+    });
+  };
+
+  var frvOuiBtn = document.getElementById('frv-adresse-oui');
+  var frvNonBtn = document.getElementById('frv-adresse-non');
+  if (frvOuiBtn) frvOuiBtn.onclick = function(){
+    frvOuiBtn.disabled = true; if (frvNonBtn) frvNonBtn.disabled = true;
+    postContrats({
+      type: 'mois-action', choix: 'renvoyer-adresse-defaut',
+      id: frvBg.dataset.factureId, contratId: frvBg.dataset.contratId, destinataire: frvBg.dataset.nouvelleAdresse
+    }, function(){
+      toast('💾 Adresse enregistrée comme adresse par défaut.');
+      frvBg.classList.remove('open');
+      contratsResynchroniser();
+    }, function(err){
+      frvOuiBtn.disabled = false; if (frvNonBtn) frvNonBtn.disabled = false;
+      toast('❌ ' + err);
+    });
+  };
+  if (frvNonBtn) frvNonBtn.onclick = function(){
+    // Non == rien ne change, exactement comme demande -- aucun appel serveur.
+    frvBg.classList.remove('open');
+  };
 
   // Point 3d (Session 15) -- un textarea qui montre TOUT son contenu, jamais une fenêtre à
   // faire défiler : grandit avec le texte (même mécanisme que corpsAutoGrow déjà en place
