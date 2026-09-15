@@ -3310,6 +3310,12 @@
   html.mcs-theme .rt-ca-detail{flex-direction:column; align-items:flex-end; gap:2px; white-space:normal}
   html.mcs-theme .rt-ca-ligne{font-size:11px; font-weight:600; color:var(--ink)}
   html.mcs-theme .rt-ca-total{font-size:12.5px; font-weight:800; color:var(--gold-a)}
+  /* Point 1 (15/09/2026, mission MEG septembre) : date d'extraction de l'export MEG, meme
+     convention de fraicheur que le panneau Relances (server: joursEcoulesExport/fraicheurEtat,
+     seuils 7/20j) -- jamais une promesse de completude, juste "de quand date cette donnee". */
+  html.mcs-theme .rt-meg-fraicheur{font-size:10.5px; font-weight:600; color:var(--muted); margin-top:1px}
+  html.mcs-theme .rt-meg-fraicheur.a_verifier{color:#B25E00}
+  html.mcs-theme .rt-meg-fraicheur.perime{color:var(--no)}
   html.mcs-theme .rt-reste-facturer{
     grid-column:1 / -1; font-size:12.5px; color:var(--ink); font-weight:600;
     padding:6px 10px 10px; text-align:left;
@@ -7839,9 +7845,9 @@
          c'est ce qui supprime le conflit humain sur cette ligne precise. Sert aussi de cle
          unique de detection de mise a jour (voir checkUpdate ci-dessous), plus fiable qu'une
          comparaison de chaine de version par tenant. */
-  var APPV_MCS = '4.55';
+  var APPV_MCS = '4.56';
   var APPV_LABO = '1.02';
-  var BUILD = 49;
+  var BUILD = 50;
   // displayVersion()/displayVersionShort() lisent isMcsCode() (definie plus bas dans cette
   // meme IIFE -- declaration de fonction, donc disponible ici par hoisting) : le TENANT
   // affiche depend du code de connexion, jamais d'un simple "APPV" global qui ne dirait ni
@@ -15908,7 +15914,18 @@
   // apparait en plus, explicitement etiquete provisoire. Si l'ecran Contrats n'a jamais ete
   // ouvert (contratsMoisData === null), on ne montre que ce qui est reellement connu (le CA
   // MEG deja charge), sans inventer une composante Jarvis a 0.
-  function rentaBuildLigneCourante(courant){
+  function rentaMegFraicheurTexte(meg){
+    if (!meg || !meg.dateMaxFacture) return null;
+    var d = new Date(meg.dateMaxFacture + 'T00:00:00');
+    var txt = 'Dernière facture connue : ' + (isNaN(d.getTime()) ? meg.dateMaxFacture : (
+      String(d.getDate()).padStart(2,'0') + '/' + String(d.getMonth()+1).padStart(2,'0') + '/' + d.getFullYear()
+    ));
+    if (typeof meg.joursEcoulesExport === 'number'){
+      txt += ' — export vieux de ' + meg.joursEcoulesExport + (meg.joursEcoulesExport > 1 ? ' jours' : ' jour');
+    }
+    return txt;
+  }
+  function rentaBuildLigneCourante(courant, megExtraction){
     var row = document.createElement('div'); row.className = 'rt-row rt-courant rt-provisoire';
     var moisCell = document.createElement('div'); moisCell.className = 'rt-cell rt-mois';
     moisCell.appendChild(document.createTextNode(moisLabelCourt(courant.mois) + ' ·'));
@@ -15940,6 +15957,13 @@
     } else {
       caCell.textContent = fmtEuros(courant.ca) + ' (MEG)';
     }
+    var fraicheurTxt = rentaMegFraicheurTexte(megExtraction);
+    if (fraicheurTxt){
+      var lFraicheur = document.createElement('div');
+      lFraicheur.className = 'rt-meg-fraicheur' + (megExtraction && megExtraction.fraicheurEtat ? (' ' + megExtraction.fraicheurEtat) : '');
+      lFraicheur.textContent = fraicheurTxt;
+      caCell.appendChild(lFraicheur);
+    }
     row.appendChild(caCell);
 
     row.appendChild(rentaCell('rt-val dep rt-attente', 'en attente'));
@@ -15968,7 +15992,7 @@
     table.appendChild(head);
 
     if (courant){
-      table.appendChild(rentaBuildLigneCourante(courant));
+      table.appendChild(rentaBuildLigneCourante(courant, d.megExtraction));
       table.appendChild(rentaResteAFacturer(cleCourante));
     } else {
       var rowVide = document.createElement('div'); rowVide.className = 'rt-row rt-courant';
