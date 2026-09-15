@@ -6202,14 +6202,20 @@
   <div class="sh-handle"></div>
   <div class="sh-grid">
     <button class="sh-tile" id="sh-emails" type="button" style="display:none"><span class="sh-tile-ic">✉️</span><span class="sh-tile-label">Emails</span><span class="badge-count" id="menu-email-badge" style="display:none"></span></button>
+    <!-- sh-calendar : bouton PARTAGE avec l'accueil MCS -- pour le patron MCS, .sh-grid (ce
+         conteneur) est deplace tel quel dans #mcsAccueil (cf. commentaire ligne ~6164), donc
+         CE bouton EST la tuile Agenda que Mickael utilise. Masque uniquement pour labo (JS plus
+         bas, jamais pour mcs) suite a la demande de Mathéo le 15/09 ("l'agenda ne me sert a
+         rien") -- ne JAMAIS le supprimer/masquer sans condition, ca casserait l'accueil MCS. -->
     <button class="sh-tile" id="sh-calendar" type="button"><span class="sh-tile-ic"><svg class="hicon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="3" y="5" width="18" height="16" rx="2"/><line x1="8" y1="3" x2="8" y2="7"/><line x1="16" y1="3" x2="16" y2="7"/><line x1="3" y1="10" x2="21" y2="10"/></svg></span><span class="sh-tile-label">Agenda</span></button>
     <button class="sh-tile" id="sh-docs" type="button"><span class="sh-tile-ic">📄</span><span class="sh-tile-label">Mes documents</span></button>
     <button class="sh-tile" id="sh-couts" type="button"><span class="sh-tile-ic">💰</span><span class="sh-tile-label">Coûts</span></button>
     <button class="sh-tile" id="sh-crypto" type="button"><span class="sh-tile-ic">💰</span><span class="sh-tile-label">Crypto x402</span></button>
-    <!-- Onglet "Rentabilite (demonstration)" (15/09/2026) -- labo uniquement, meme icone que
-         sh-rentabilite (reutilisee telle quelle). Masque/affiche par le meme mecanisme que
-         sh-couts/sh-crypto juste au-dessus (liste JS plus bas, jamais mcs). -->
-    <button class="sh-tile" id="sh-rentabilite-demo" type="button"><span class="sh-tile-ic"><svg class="hicon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><polyline points="3,20 9,13 13,16 21,6"/><polyline points="15,6 21,6 21,12"/><text x="2.5" y="10" font-size="8" font-weight="800" stroke="none" fill="currentColor" font-family="inherit">€</text></svg></span><span class="sh-tile-label">Rentabilité (démo)</span></button>
+    <!-- Onglet "Rentabilite (demonstration)" (15/09/2026, retire du menu le 15/09 -- demande de
+         Mathéo "ca ne sert a rien" une fois la demo Groupe Demonchy en place). Bouton et panneau
+         laisses en place (code mort inoffensif, jamais affiche), display:none inconditionnel --
+         plus besoin du mecanisme JS labo-only ci-dessous pour cette tuile. -->
+    <button class="sh-tile" id="sh-rentabilite-demo" type="button" style="display:none"><span class="sh-tile-ic"><svg class="hicon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><polyline points="3,20 9,13 13,16 21,6"/><polyline points="15,6 21,6 21,12"/><text x="2.5" y="10" font-size="8" font-weight="800" stroke="none" fill="currentColor" font-family="inherit">€</text></svg></span><span class="sh-tile-label">Rentabilité (démo)</span></button>
     <!-- Demo commerciale "Groupe Demonchy" (15/09/2026) -- labo uniquement, meme mecanisme de
          masquage que sh-rentabilite-demo juste au-dessus. Prospect reel (RDV 16/09/2026 17h),
          AUCUNE donnee reelle transmise par lui a ce stade -- voir rentaDemonchyDataset() plus
@@ -6218,7 +6224,11 @@
     <button class="sh-tile" id="sh-meute" type="button"><span class="sh-tile-ic">🐺</span><span class="sh-tile-label">Meute</span><span class="badge-count" id="menu-meute-badge" style="display:none"></span></button>
     <button class="sh-tile" id="sh-site" type="button"><span class="sh-tile-ic">🏗️</span><span class="sh-tile-label">Site</span></button>
     <button class="sh-tile" id="sh-notes" type="button"><span class="sh-tile-ic"><svg class="hicon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="4" y="6" width="16" height="15" rx="2"/><line x1="8" y1="3" x2="8" y2="8"/><line x1="12" y1="3" x2="12" y2="8"/><line x1="16" y1="3" x2="16" y2="8"/><line x1="7" y1="12" x2="17" y2="12"/><line x1="7" y1="16" x2="14" y2="16"/></svg></span><span class="sh-tile-label">Notes</span></button>
-    <button class="sh-tile" id="sh-clients" type="button"><span class="sh-tile-ic">🏢</span><span class="sh-tile-label">Clients</span></button>
+    <!-- sh-clients (observation MCS) retire du menu le 15/09/2026 -- demande de Mathéo "ca ne
+         sert a rien". Deja labo-only (jamais visible cote MCS), display:none inconditionnel --
+         plus besoin du mecanisme JS labo-only ci-dessous pour cette tuile. Panneau/fonction
+         clientsOpen() laisses en place (code mort inoffensif). -->
+    <button class="sh-tile" id="sh-clients" type="button" style="display:none"><span class="sh-tile-ic">🏢</span><span class="sh-tile-label">Clients</span></button>
     <button class="sh-tile" id="sh-devis-attente" type="button" style="display:none"><span class="sh-tile-ic"><svg class="hicon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><path d="M14 2v6h6"/><line x1="8" y1="13" x2="16" y2="13"/><line x1="8" y1="17" x2="16" y2="17"/><line x1="8" y1="9" x2="10" y2="9"/></svg></span><span class="sh-tile-label">Devis et factures</span><span class="badge-count" id="menu-devis-badge" style="display:none"></span></button>
     <button class="sh-tile" id="sh-rentabilite" type="button" style="display:none"><span class="sh-tile-ic"><svg class="hicon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><polyline points="3,20 9,13 13,16 21,6"/><polyline points="15,6 21,6 21,12"/><text x="2.5" y="10" font-size="8" font-weight="800" stroke="none" fill="currentColor" font-family="inherit">€</text></svg></span><span class="sh-tile-label">Rentabilité</span></button>
     <button class="sh-tile" id="sh-contrats" type="button" style="display:none"><span class="sh-tile-ic"><svg class="hicon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M13 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h7"/><path d="M13 2v5a1 1 0 0 0 1 1h4"/><line x1="7.5" y1="12" x2="12" y2="12"/><line x1="7.5" y1="16" x2="10.5" y2="16"/><circle cx="17.5" cy="17.5" r="4.5"/><polyline points="15.7,17.6 17,18.8 19.4,16.3"/></svg></span><span class="sh-tile-label">Contrats</span><span class="badge-count" id="menu-contrats-badge" style="display:none"></span></button>
@@ -7802,7 +7812,7 @@
          comparaison de chaine de version par tenant. */
   var APPV_MCS = '4.54';
   var APPV_LABO = '1.02';
-  var BUILD = 47;
+  var BUILD = 49;
   // displayVersion()/displayVersionShort() lisent isMcsCode() (definie plus bas dans cette
   // meme IIFE -- declaration de fonction, donc disponible ici par hoisting) : le TENANT
   // affiche depend du code de connexion, jamais d'un simple "APPV" global qui ne dirait ni
@@ -9560,13 +9570,11 @@
     // compte principal, un code de tenant secondaire y échoue proprement) mais l'appel
     // échouerait quand même — plus honnête de le cacher tant qu'un tenant secondaire n'a
     // pas son propre assistant vocal (téléphonie hors périmètre).
-    // sh-clients (observation) masqué aussi côté tenant secondaire — n'a de sens que pour
-    // le compte principal. La vraie protection reste côté serveur (code d'observation
-    // dédié, jamais donné aux comptes clients, table séparée) : masquer ici n'est qu'un
-    // confort visuel, pas la garantie — voir la doc privée du dépôt.
+    // sh-clients/sh-rentabilite-demo : retires du menu le 15/09/2026 (display:none
+    // inconditionnel pose directement dans le HTML), plus besoin de les lister ici.
     // sh-couts (gestion des coûts labo-ia) masqué côté tenant secondaire : données internes
-    // à Mathéo/Dorian, sans aucun rapport avec un client — même logique que sh-clients.
-    ['sh-meute', 'sh-site', 'sh-vitrine', 'sh-plume', 'hcallbtn', 'sh-clients', 'sh-couts', 'sh-crypto', 'sh-rentabilite-demo', 'sh-rentabilite-demonchy'].forEach(function(id){
+    // à Mathéo/Dorian, sans aucun rapport avec un client.
+    ['sh-meute', 'sh-site', 'sh-vitrine', 'sh-plume', 'hcallbtn', 'sh-couts', 'sh-crypto', 'sh-rentabilite-demonchy'].forEach(function(id){
       var el = document.getElementById(id);
       if (el) el.style.display = mcs ? 'none' : '';
     });
@@ -9605,11 +9613,13 @@
     // Notifications : PAS masquées pour un salarié MCS (chantier 12 audit) — Bruno doit pouvoir
     // les activer pour recevoir rappels et invitations de rendez-vous (poussés par le cron/la
     // synchro d'invités côté serveur), même s'il n'a pas d'écran Calendrier visuel.
-    // Calendrier : visible pour le compte principal (inchangé) ET pour un patron de tenant
-    // secondaire (chantier 12 audit MCS) — jamais pour un salarié (même garde que Devis/Rentabilité).
+    // Calendrier : reserve au patron d'un tenant secondaire (chantier 12 audit MCS) — jamais
+    // pour un salarié. Retire du menu du compte principal le 15/09/2026 (demande de Mathéo,
+    // "l'agenda ne me sert a rien") -- ce bouton EST la tuile Agenda de l'accueil MCS (cf.
+    // commentaire sur le bouton, ligne ~6205), donc jamais masque pour mcs+patron.
     // Backend indépendant côté MCS (table mcs_rdv_terrain, pas de vrai Google Agenda).
     var calBtn = document.getElementById('sh-calendar');
-    if (calBtn) calBtn.style.display = (!mcs || role === 'patron') ? '' : 'none';
+    if (calBtn) calBtn.style.display = (mcs && role === 'patron') ? '' : 'none';
     // "Notes" (vide-cerveau) : visible côté compte principal (inchangé) ET côté patron d'un
     // tenant secondaire (même garde que Calendrier) — jamais pour un salarié. Backend séparé
     // par tenant (notes-liste pour le principal, mcs-notes-liste pour MCS, cf. postNotes()).
