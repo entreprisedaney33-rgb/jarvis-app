@@ -7802,7 +7802,7 @@
          comparaison de chaine de version par tenant. */
   var APPV_MCS = '4.54';
   var APPV_LABO = '1.02';
-  var BUILD = 46;
+  var BUILD = 47;
   // displayVersion()/displayVersionShort() lisent isMcsCode() (definie plus bas dans cette
   // meme IIFE -- declaration de fonction, donc disponible ici par hoisting) : le TENANT
   // affiche depend du code de connexion, jamais d'un simple "APPV" global qui ne dirait ni
@@ -15644,15 +15644,7 @@
     infoBtn.addEventListener('click', function(){ detail.classList.toggle('open'); });
     return card;
   }
-  var rentaDemonchyThemeOn = false;
-  function rentaAttenteClose(){
-    rentaview.classList.remove('open');
-    // Demo "Groupe Demonchy" (15/09/2026) force le theme clair mcs-theme le temps du panneau
-    // (demande explicite "sobre, blanc, comme Michael") -- jamais laisse actif au-dela de ce
-    // panneau : isMcsCode() ne lit jamais cette classe (uniquement le prefixe du code stocke),
-    // donc l'ajout/retrait est purement visuel, aucun risque sur le routage/la logique tenant.
-    if (rentaDemonchyThemeOn){ document.documentElement.classList.remove('mcs-theme'); rentaDemonchyThemeOn = false; }
-  }
+  function rentaAttenteClose(){ rentaview.classList.remove('open'); }
 
   function rentaBuildOverview(d){
     var wrap = document.createElement('div'); wrap.id = 'renta-overview';
@@ -16031,13 +16023,14 @@
   // donnee reelle n'existe (Demonchy ne nous a rien transmis) : tout est fige en local, melange
   // de (a) chiffres PUBLICS et verifies -- comptes consolides du groupe exercice 2024 (34,6M EUR
   // de CA, 3,65M EUR d'EBITDA soit 10,5%, 1,44M EUR de resultat net, deposes au greffe de
-  // Bordeaux le 23/01/2026, Bodacc C n°20260015 -- et comptes ICB 2023/2024, le "coeur" du
-  // groupe) et (b) d'une repartition par societe ESTIMEE pour completer le CA consolide reel
-  // faute de detail public par filiale (plusieurs filiales deposent avec confidentialite
-  // legale, art. L.232-25) -- jamais presentee comme certifiee, bandeau explicite en tete de
-  // panneau. Theme force en clair (mcs-theme, cf. rentaAttenteClose) le temps du panneau,
-  // demande explicite de Mathéo ("sobre, blanc, comme Michael") pour que Didier Demonchy lise
-  // confortablement ses propres societes pendant la demonstration.
+  // Bordeaux le 23/01/2026, Bodacc C n°20260015 ; masse salariale 5,22M EUR reelle) et (b) 2
+  // repartitions ESTIMEES (par societe ET par poste de charge) pour completer le CA/les charges
+  // consolides reels faute de detail public -- jamais presentees comme certifiees, court bandeau
+  // en tete de panneau. Theme LAISSE SOMBRE (retour explicite de Mathéo le 15/09 : "on s'en fout"
+  // du theme clair demande la 1ere fois) -- meme rendu que le reste du Jarvis labo, aucun forcage
+  // de html.mcs-theme ici (contrairement a une 1ere version de ce panneau). Retour de Mathéo
+  // apres 1er essai : moins de texte/paragraphes explicatifs (le "redressement ICB" retire), les
+  // 2 repartitions cote a cote, des couleurs distinctes par barre pour un rendu plus lisible.
   function rentaDemonchyDataset(){
     // Repartition par societe : la plus grosse en tete (le rendu trie de toute facon par valeur
     // decroissante), somme exactement egale au CA consolide reel de 34 600 000 EUR.
@@ -16054,6 +16047,19 @@
       'Promotion & foncier — une centaine de SCI / SCCV': 630000,
       'Gesprim Property — property management': 500000,
       'CSPS — coordination sécurité de chantier': 400000
+    };
+    // Repartition des charges par poste : somme exactement egale aux charges reelles consolidees
+    // (33 160 000 EUR = 34,6M CA - 1,44M resultat net, chiffres reels) -- SEULE la ligne Salaires
+    // est reelle (5,22M EUR, chiffre publie), les 6 autres postes sont estimes pour illustrer
+    // l'outil (demande explicite de Mathéo : "meme si c'est des chiffres inventes").
+    var postes = {
+      'Salaires, rémunération dirigeants & charges sociales': 5220000,
+      'Achats matières, sous-traitance & prestations': 14500000,
+      'Foncier & opérations en cours (SCI / SCCV)': 6000000,
+      'Locations, véhicules & matériel de chantier': 2200000,
+      'Frais généraux, honoraires & assurances': 2100000,
+      'Dotations aux amortissements & provisions': 1900000,
+      'Charges financières & exceptionnelles': 1240000
     };
     // Rythme mensuel 2026 illustratif (simulation, pas un releve reel) cale sur le rythme annuel
     // reel de 34,6M EUR/an avec une saisonnalite BTP plausible (creux janvier/aout) ; marge nette
@@ -16080,7 +16086,7 @@
           caNet: 34600000,
           chargesNet: 33160000,
           resultatNet: 1440000,
-          redressement: { resultat8MoisAnneePrecedente: 433000, resultat8MoisAnneeCourante: 288000, delta: 288000 - 433000 },
+          chargesParPoste: postes,
           caParPrestation: entites,
           periodeDebut: '2024-01-01',
           periodeFin: '2024-12-31',
@@ -16094,25 +16100,29 @@
   function rentaDemonchyPrependNote(){
     var note = document.createElement('div');
     note.id = 'renta-demo-note';
-    note.textContent = '🏗️ Démonstration commerciale — Groupe Demonchy. Chiffres du groupe réels (comptes consolidés déposés au greffe de Bordeaux le 23/01/2026) ; répartition par société et rythme mensuel 2026 estimés pour illustrer l\'outil, en l\'absence de vos données réelles. Deviendra exact dès connexion à votre comptabilité.';
+    note.textContent = '🏗️ Démonstration commerciale — Groupe Demonchy. Chiffre d’affaires réel.';
     if (rentaList.firstChild) rentaList.insertBefore(note, rentaList.firstChild);
     else rentaList.appendChild(note);
   }
-  // Renomme les libelles generiques (ecrits pour MCS/le panier moyen d'une seule societe) en
-  // libelles "groupe multi-societes" -- purement textuel, ne touche a aucune fonction de rendu
-  // partagee (donc zero risque de regression sur MCS/la demo x12), fait UNE FOIS juste apres
-  // rentaApplyData() pour ce dataset precis.
+  // Palette de couleurs distinctes pour les barres de repartition (societe/poste) -- inline,
+  // scope a CE panneau uniquement (jamais touche la regle CSS partagee .rc-list-fill, donc zero
+  // risque de regression sur MCS/la demo x12, qui gardent leur unique couleur or). Demande
+  // explicite de Mathéo ("des codes couleurs... que ce soit incroyable").
+  var RENTA_DEMONCHY_PALETTE = ['#0A84FF','#E8B96A','#30D158','#FF453A','#BF5AF2','#64D2FF','#FF9F0A','#5E5CE6','#FF375F','#32D74B','#66D4CF','#FFD60A'];
+  function rentaDemonchyColorer(){
+    rentaList.querySelectorAll('.rc-list-box').forEach(function(box){
+      var fills = box.querySelectorAll('.rc-list-fill');
+      fills.forEach(function(fill, i){ fill.style.background = RENTA_DEMONCHY_PALETTE[i % RENTA_DEMONCHY_PALETTE.length]; });
+    });
+  }
+  // Renomme/allege les libelles generiques (ecrits pour MCS/une seule societe) en libelles
+  // "groupe multi-societes", et retire les paragraphes explicatifs -- purement textuel, ne
+  // touche a aucune fonction de rendu partagee (donc zero risque de regression sur MCS/la demo
+  // x12), fait UNE FOIS juste apres rentaApplyData() pour ce dataset precis. Retour de Mathéo
+  // apres 1er essai : "on regarde les chiffres, on veut pas trop de texte" -- les notes/paragraphes
+  // explicatifs sont masques (pas juste vides, pour ne pas laisser d'espace residuel), les
+  // libelles de titres/tuiles restent (courts, factuels, necessaires pour s'y retrouver).
   function rentaDemonchyRelabel(){
-    function setText(sel, from, to, all){
-      var nodes = rentaList.querySelectorAll(sel);
-      for (var i = 0; i < nodes.length; i++){
-        if (!all && nodes[i].textContent.trim() !== from) continue;
-        nodes[i].textContent = to;
-      }
-    }
-    setText('.rr-label', 'Sur les 8 memes mois (oct. -> mai), un an plus tot vs cette annee :', 'Sur ICB (la moitié du CA du groupe), résultat net entre 2023 et 2024 :');
-    var rrDelta = rentaList.querySelector('.rr-delta');
-    if (rrDelta) rrDelta.textContent = 'Le CA d’ICB a progressé de +9 % sur un an — mais le résultat net a reculé de 33 %. La marge se perd chantier par chantier.';
     var roLabels = rentaList.querySelectorAll('.ro-label');
     roLabels.forEach(function(el){
       if (el.textContent.trim() === 'CA sur la période (HT)') el.textContent = 'Chiffre d’affaires consolidé — Groupe (2024)';
@@ -16123,22 +16133,20 @@
       if (el.textContent.trim() === 'Vue d\'ensemble de l\'entreprise') el.textContent = 'Vue d’ensemble du groupe';
       if (el.textContent.trim() === 'Résultat comptable réel (relevé de la comptable)') el.textContent = 'Solidité financière du groupe (exercice 2024)';
     });
-    var roNotes = rentaList.querySelectorAll('p#ro-note');
-    if (roNotes[0]) roNotes[0].textContent = 'Comptes consolidés réels, déposés au greffe de Bordeaux le 23/01/2026 (Bodacc C n°20260015) — +2,9 % sur un an.';
-    if (roNotes[1]) roNotes[1].textContent = 'Fonds propres 41,8 M€ et trésorerie 21 M€ (chiffres réels, comptes consolidés 2024) — de quoi investir largement.';
-    var listTitle = rentaList.querySelector('.rc-list-title');
-    if (listTitle && listTitle.textContent.trim() === 'CA par type de prestation') listTitle.textContent = 'Le groupe, société par société (CA 2024 — la plus grosse en tête)';
+    rentaList.querySelectorAll('p#ro-note').forEach(function(el){ el.style.display = 'none'; });
+    rentaList.querySelectorAll('.rc-list-title').forEach(function(el){
+      if (el.textContent.trim() === 'CA par type de prestation') el.textContent = 'Le groupe, société par société (CA 2024 — la plus grosse en tête)';
+    });
     var maj = rentaList.querySelector('#renta-maj');
-    if (maj) maj.textContent = '* rythme mensuel 2026 simulé pour la démonstration, calé sur le CA annuel réel du groupe (34,6 M€).';
+    if (maj) maj.style.display = 'none';
   }
   function rentabiliteDemonchyOpen(){
     var titreEl = document.getElementById('renta-title-txt');
     if (titreEl) titreEl.textContent = 'Rentabilité — Groupe Demonchy';
-    document.documentElement.classList.add('mcs-theme');
-    rentaDemonchyThemeOn = true;
     rentaview.classList.add('open');
     rentaApplyData(rentaDemonchyDataset(), null);
     rentaDemonchyRelabel();
+    rentaDemonchyColorer();
     rentaDemonchyPrependNote();
   }
   document.getElementById('sh-rentabilite-demonchy').addEventListener('click', function(){ sheetOpen(false); rentabiliteDemonchyOpen(); });
