@@ -6086,6 +6086,99 @@
      secondaire general (14px, .hint/.sh-ver) : 16px + contraste texte courant (7:1), sur ces
      2 ID PRECIS uniquement, sans changer les autres usages de .hint/.sh-ver ailleurs. */
   html.mcs-theme #loginver, html.mcs-theme #subline{font-size:16px; color:var(--ink)}
+  /* ==== MISSION "Rentabilité illisible sur téléphone" (15/09/2026) ====
+     Sous ~600px, le tableau mensuel de #renta-table cesse d'être un tableau (grid desktop) :
+     chaque mois devient une carte pleine largeur (mois + badge en tête, 3 montants
+     libellé-gauche/valeur-droite en dessous), le Total devient sa propre carte détachée, et
+     les 2 grilles de tuiles ("Vue d'ensemble de l'entreprise", "Résultat comptable réel")
+     passent à 1 colonne. TOUT est scopé sous html.mcs-theme + cette media query : jamais sur
+     :root, jamais sur un sélecteur partagé, jamais sur table/td nus -- le panneau "Rentabilité
+     (démonstration)" du labo (même JS/DOM partagés, #rentaview/#renta-list réutilisés tels
+     quels) reste pixel-identique, y compris sur téléphone.
+     Règles vérifiées en conditions réelles (Browser pane, 360/390/430px portrait, pas
+     supposées) : aucun défilement horizontal, aucun texte < 14px, aucun montant < 16px, aucun
+     montant coupé en 2 lignes, aucun chevauchement, marge ≥16px de chaque côté pour le texte
+     explicatif. Libellés des montants ciblés par classe SÉMANTIQUE (.ca/.dep/.benef), jamais
+     par position -- reste correct sur la ligne dégénérée "pas encore exporté" (2 cellules
+     seulement, dont une sans classe .rt-val). */
+  @media (max-width: 599.98px){
+    html.mcs-theme #renta-list{ padding-left:16px; padding-right:16px; }
+    html.mcs-theme #renta-table{ display:block; background:transparent; border:0; border-radius:0; margin-bottom:0; }
+    html.mcs-theme .rt-head{ display:none; }
+    html.mcs-theme .rt-row, html.mcs-theme .rt-total{
+      display:block; background:var(--surface); border:0.5px solid var(--hairline);
+      border-radius:14px; padding:12px 14px; margin-bottom:10px;
+    }
+    html.mcs-theme .rt-total{ margin-top:14px; border:1px solid rgba(var(--gold-rgb),.5); }
+    html.mcs-theme .rt-cell{
+      border:0; padding:6px 0; background:transparent; min-width:0; overflow:visible; text-overflow:clip;
+    }
+    /* En-tête de carte : le mois + son badge de provenance, séparés du corps par un trait. */
+    html.mcs-theme .rt-cell.rt-mois{
+      justify-content:flex-start; flex-wrap:wrap; gap:6px; padding:0 0 8px; margin-bottom:8px;
+      border-bottom:0.5px solid var(--hairline); font-size:15px;
+    }
+    html.mcs-theme .rt-total .rt-cell.rt-mois{ border-bottom-color:rgba(var(--gold-rgb),.35); }
+    html.mcs-theme .rt-badge{ font-size:14px; padding:3px 9px; }
+    /* Montant simple : libellé à gauche (::before), valeur à droite, jamais coupée en 2 lignes
+       (white-space:nowrap + overflow:visible -- pas d'ellipsis qui tronquerait silencieusement). */
+    html.mcs-theme .rt-cell.rt-val:not(.rt-ca-detail){
+      display:flex; flex-direction:row; justify-content:space-between; align-items:baseline;
+      gap:10px; font-size:16px; white-space:nowrap;
+    }
+    html.mcs-theme .rt-cell.rt-val:not(.rt-ca-detail)::before{
+      font-size:14px; font-weight:600; color:var(--muted); white-space:normal; text-align:left;
+    }
+    html.mcs-theme .rt-cell.rt-val.ca::before{ content:"Rentrées (HT)"; }
+    html.mcs-theme .rt-cell.rt-val.dep::before{ content:"Sorties (HT)"; }
+    html.mcs-theme .rt-cell.rt-val.benef::before{ content:"Reste (HT)"; }
+    html.mcs-theme .rt-val.rt-attente{ font-size:16px; }
+    /* Cellule CA du mois en cours : reste un bloc empilé (Jarvis + MEG jamais côte à côte, déjà
+       garanti par .rt-ca-detail en base) -- le libellé devient un petit titre au-dessus, pas un
+       label à gauche (structure différente d'un simple montant). */
+    html.mcs-theme .rt-cell.rt-val.rt-ca-detail{ font-size:16px; }
+    html.mcs-theme .rt-cell.rt-val.rt-ca-detail::before{
+      content:"Rentrées (HT)"; display:block; font-size:14px; font-weight:600; color:var(--muted);
+      margin-bottom:2px;
+    }
+    html.mcs-theme .rt-ca-ligne{ font-size:16px; }
+    html.mcs-theme .rt-ca-total{ font-size:17px; }
+    html.mcs-theme .rt-meg-fraicheur{ font-size:14px; white-space:normal; margin-top:4px; }
+    html.mcs-theme #renta-mois-courant-vide{ font-size:14px; white-space:normal; }
+    /* Distinction visuelle du mois en cours : UNE SEULE bordure pointillée autour de toute la
+       carte -- les 4 bordures par cellule du desktop fragmenteraient la pile en petites boîtes
+       empilées, neutralisées explicitement ci-dessous. */
+    html.mcs-theme .rt-row.rt-courant{
+      border-bottom-width:0; border-bottom-left-radius:0; border-bottom-right-radius:0; margin-bottom:0;
+    }
+    html.mcs-theme .rt-row.rt-provisoire{
+      border-color:rgba(var(--gold-rgb),.55); border-style:dashed; border-width:1px;
+      border-bottom-width:0; background:rgba(var(--gold-rgb),.06);
+    }
+    html.mcs-theme .rt-row.rt-provisoire .rt-cell,
+    html.mcs-theme .rt-row.rt-provisoire .rt-cell:first-child,
+    html.mcs-theme .rt-row.rt-provisoire .rt-cell:last-child{ border:0; }
+    /* "Contrats -- reste à facturer" est un SIBLING du .rt-row (jamais imbriqué dans le DOM) --
+       fusionné visuellement avec la carte du mois en cours juste au-dessus (bordure haute à 0 +
+       coins arrondis coupés en 2) pour se lire comme une seule carte en 2 parties. */
+    html.mcs-theme .rt-row.rt-courant + .rt-reste-facturer{
+      display:block; grid-column:unset;
+      border:0.5px solid var(--hairline); border-top-width:0; border-radius:0 0 14px 14px;
+      margin:0 0 14px; padding:10px 14px 12px; background:var(--surface);
+      font-size:14px; white-space:normal;
+    }
+    html.mcs-theme .rt-row.rt-provisoire + .rt-reste-facturer{
+      border-color:rgba(var(--gold-rgb),.55); border-style:dashed; border-top-width:0;
+      background:rgba(var(--gold-rgb),.06);
+    }
+    /* Les 2 grilles de tuiles ("Vue d'ensemble de l'entreprise", "Résultat comptable réel")
+       passent en pleine largeur, empilées. La 2e grille (3 tuiles) est régie par une règle de
+       base plus spécifique (#renta-resultat-comptable .ro-grid, un ID) que .ro-grid seul --
+       trouvé en testant en réel (elle restait à 3 colonnes malgré la règle ci-dessous), donc
+       explicitement re-ciblée ici avec le même ID pour gagner en spécificité. */
+    html.mcs-theme .ro-grid{ grid-template-columns:1fr; }
+    html.mcs-theme #renta-resultat-comptable .ro-grid{ grid-template-columns:1fr; }
+  }
 </style>
 </head>
 <body>
@@ -7847,7 +7940,7 @@
          comparaison de chaine de version par tenant. */
   var APPV_MCS = '4.58';
   var APPV_LABO = '1.03';
-  var BUILD = 54;
+  var BUILD = 55;
   // displayVersion()/displayVersionShort() lisent isMcsCode() (definie plus bas dans cette
   // meme IIFE -- declaration de fonction, donc disponible ici par hoisting) : le TENANT
   // affiche depend du code de connexion, jamais d'un simple "APPV" global qui ne dirait ni
