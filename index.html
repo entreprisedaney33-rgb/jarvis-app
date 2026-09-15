@@ -3286,6 +3286,35 @@
   .rt-total .rt-cell{position:sticky; bottom:0; z-index:2; background:rgba(var(--gold-rgb),.18); font-weight:800}
   .rt-total .rt-mois{color:var(--gold-a); font-size:11.5px}
   #renta-mois-courant-vide{font-size:12px; color:var(--muted); line-height:1.3}
+  /* Chantier Rentabilite MCS (15/09/2026) -- badges de provenance + ligne du mois en cours
+     enrichie + indicateur "reste a facturer". Tout ici est scope sous html.mcs-theme : le
+     panneau Rentabilite existe aussi cote labo (onglet "demonstration" juste en dessous),
+     jamais touche par ces regles -- le Jarvis du labo reste pixel-identique. */
+  html.mcs-theme .rt-badge{
+    display:inline-block; margin-left:6px; padding:2px 7px; border-radius:20px;
+    font-size:9.5px; font-weight:800; letter-spacing:.01em; vertical-align:middle;
+    white-space:nowrap;
+  }
+  html.mcs-theme .rt-badge-comptable{background:rgba(var(--blue-rgb,10,132,255),.14); color:var(--blue)}
+  html.mcs-theme .rt-badge-meg{background:rgba(160,160,160,.18); color:var(--muted)}
+  html.mcs-theme .rt-badge-jarvis{background:rgba(var(--gold-rgb),.20); color:var(--gold-a)}
+  /* La ligne du mois en cours se distingue sur toute sa largeur, pas seulement par une pastille --
+     bordure en pointilles + fond legerement plus marque que le simple survol .rt-courant deja
+     existant (regle de base, inchangee, toujours valable pour le labo). */
+  html.mcs-theme .rt-row.rt-provisoire .rt-cell{
+    border-top:1px dashed rgba(var(--gold-rgb),.55);
+    border-bottom:1px dashed rgba(var(--gold-rgb),.55);
+  }
+  html.mcs-theme .rt-row.rt-provisoire .rt-cell:first-child{border-left:1px dashed rgba(var(--gold-rgb),.55)}
+  html.mcs-theme .rt-row.rt-provisoire .rt-cell:last-child{border-right:1px dashed rgba(var(--gold-rgb),.55)}
+  html.mcs-theme .rt-ca-detail{flex-direction:column; align-items:flex-end; gap:2px; white-space:normal}
+  html.mcs-theme .rt-ca-ligne{font-size:11px; font-weight:600; color:var(--ink)}
+  html.mcs-theme .rt-ca-total{font-size:12.5px; font-weight:800; color:var(--gold-a)}
+  html.mcs-theme .rt-reste-facturer{
+    grid-column:1 / -1; font-size:12.5px; color:var(--ink); font-weight:600;
+    padding:6px 10px 10px; text-align:left;
+  }
+  html.mcs-theme .rt-reste-facturer.rt-reste-inconnu{color:var(--muted); font-weight:500; font-style:italic}
   /* Onglet "Rentabilite (demonstration)" (15/09/2026, labo uniquement) -- bandeau explicite,
      jamais discret comme #renta-maj (c'est un rappel important : donnees reelles d'un tiers). */
   #renta-demo-note{font-size:12.5px; line-height:1.45; color:var(--gold-a); background:rgba(var(--gold-rgb),.12); border:1px solid rgba(var(--gold-rgb),.35); border-radius:12px; padding:10px 12px; margin:0 0 16px}
@@ -7810,7 +7839,7 @@
          c'est ce qui supprime le conflit humain sur cette ligne precise. Sert aussi de cle
          unique de detection de mise a jour (voir checkUpdate ci-dessous), plus fiable qu'une
          comparaison de chaine de version par tenant. */
-  var APPV_MCS = '4.54';
+  var APPV_MCS = '4.55';
   var APPV_LABO = '1.02';
   var BUILD = 49;
   // displayVersion()/displayVersionShort() lisent isMcsCode() (definie plus bas dans cette
@@ -15762,7 +15791,7 @@
       subHead.appendChild(rentaCell(null, 'Reste'));
       subTable.appendChild(subHead);
       rc.exercicePrecedent.mois.forEach(function(m){
-        subTable.appendChild(rentaTableRow('', m.label, { ca: m.entrees, depenses: m.sorties, benefice: m.resultat }));
+        subTable.appendChild(rentaTableRow('', m.label, { ca: m.entrees, depenses: m.sorties, benefice: m.resultat, provenance: 'comptable' }));
       });
       sub.appendChild(subTable);
       wrap.appendChild(sub);
@@ -15823,14 +15852,98 @@
     if (txt != null) c.textContent = txt;
     return c;
   }
-  function rentaTableRow(rowCls, moisTxt, m, estime){
+  // Chantier Rentabilite (15/09/2026) : 3 badges de provenance, lus depuis le champ ecrit en
+  // base (m.provenance, jamais deduits d'un emplacement ou d'une heuristique cote affichage).
+  // "comptable" vient de moisRentabiliteReel (import reel de la balance) ; "meg" vient du
+  // pipeline mcs_rentabilite_exports_bruts (export MEG) ; "jarvis" est ajoute explicitement
+  // sur la ligne du mois en cours quand une composante de facturation Jarvis existe.
+  function rentaBadgeLabel(prov){
+    return prov === 'comptable' ? 'Comptable' : prov === 'meg' ? 'MEG' : prov === 'jarvis' ? 'Jarvis (provisoire)' : null;
+  }
+  function rentaBadge(prov){
+    var label = rentaBadgeLabel(prov);
+    if (!label) return null;
+    var b = document.createElement('span');
+    b.className = 'rt-badge rt-badge-' + prov;
+    b.textContent = label;
+    return b;
+  }
+  function rentaTableRow(rowCls, moisTxt, m){
     var row = document.createElement('div'); row.className = 'rt-row ' + (rowCls || '');
-    row.appendChild(rentaCell('rt-mois', moisTxt));
+    var moisCell = document.createElement('div'); moisCell.className = 'rt-cell rt-mois';
+    moisCell.appendChild(document.createTextNode(moisTxt));
+    var badge = rentaBadge(m.provenance);
+    if (badge) moisCell.appendChild(badge);
+    row.appendChild(moisCell);
     row.appendChild(rentaCell('rt-val ca', fmtEuros(m.ca)));
     row.appendChild(rentaCell('rt-val dep' + (m.depenses == null ? ' rt-attente' : ''), m.depenses == null ? 'en attente' : fmtEuros(m.depenses)));
     var beneficeTxt = m.benefice == null ? 'en attente' : fmtEuros(m.benefice);
     var beneficeCls = 'rt-val benef' + (m.benefice == null ? ' rt-attente' : (m.benefice >= 0 ? ' pos' : ' neg'));
     row.appendChild(rentaCell(beneficeCls, beneficeTxt));
+    return row;
+  }
+  // Contrats -- reste a facturer, pour le mois cle (ex "2026-09"). Trois etats obligatoires :
+  // contratsMoisData === null (ecran Contrats jamais ouvert dans cette session) -> aucun
+  // montant, jamais un faux "0 EUR restant" ; tableau charge et vide -> "0" affiche
+  // explicitement, c'est une vraie donnee ; tableau charge avec des lignes -> le vrai compte.
+  function rentaResteAFacturer(cleMois){
+    var wrap = document.createElement('div'); wrap.className = 'rt-reste-facturer';
+    if (contratsMoisData === null){
+      wrap.classList.add('rt-reste-inconnu');
+      wrap.textContent = 'Contrats — reste à facturer : à charger (ouvrez l’onglet Contrats une fois).';
+      return wrap;
+    }
+    var parts = cleMois.split('-');
+    var annee = parseInt(parts[0], 10), mois = parseInt(parts[1], 10);
+    var restants = contratsMoisData.filter(function(f){
+      return f && f.statut === 'a_traiter' && Number(f.annee) === annee && Number(f.mois) === mois;
+    });
+    var totalHt = restants.reduce(function(s, f){ return s + (Number(f.prix_ht) || 0); }, 0);
+    wrap.textContent = 'Contrats — reste à facturer : ' + fmtEuros(Math.round(totalHt * 100) / 100) +
+      ' (' + restants.length + (restants.length > 1 ? ' contrats' : ' contrat') + ')';
+    return wrap;
+  }
+  // Ligne du mois en cours : rentrees Jarvis (contrats factures) et MEG (ventes saisies
+  // directement) affichees separement, jamais fondues en un seul montant -- un total combine
+  // apparait en plus, explicitement etiquete provisoire. Si l'ecran Contrats n'a jamais ete
+  // ouvert (contratsMoisData === null), on ne montre que ce qui est reellement connu (le CA
+  // MEG deja charge), sans inventer une composante Jarvis a 0.
+  function rentaBuildLigneCourante(courant){
+    var row = document.createElement('div'); row.className = 'rt-row rt-courant rt-provisoire';
+    var moisCell = document.createElement('div'); moisCell.className = 'rt-cell rt-mois';
+    moisCell.appendChild(document.createTextNode(moisLabelCourt(courant.mois) + ' ·'));
+    var badgeMeg = rentaBadge('meg'); if (badgeMeg) moisCell.appendChild(badgeMeg);
+
+    var caJarvis = null, nbJarvis = 0;
+    if (contratsMoisData !== null){
+      var parts = courant.mois.split('-');
+      var annee = parseInt(parts[0], 10), mois = parseInt(parts[1], 10);
+      var emises = contratsMoisData.filter(function(f){
+        return f && f.statut === 'envoyee' && Number(f.annee) === annee && Number(f.mois) === mois;
+      });
+      caJarvis = Math.round(emises.reduce(function(s, f){ return s + (Number(f.prix_ht) || 0); }, 0) * 100) / 100;
+      nbJarvis = emises.length;
+      var badgeJarvis = rentaBadge('jarvis'); if (badgeJarvis) moisCell.appendChild(badgeJarvis);
+    }
+    row.appendChild(moisCell);
+
+    var caCell = document.createElement('div'); caCell.className = 'rt-cell rt-val ca rt-ca-detail';
+    if (caJarvis !== null && nbJarvis > 0){
+      var lJarvis = document.createElement('div'); lJarvis.className = 'rt-ca-ligne';
+      lJarvis.textContent = fmtEuros(caJarvis) + ' (Jarvis, ' + nbJarvis + (nbJarvis > 1 ? ' contrats' : ' contrat') + ')';
+      var lMeg = document.createElement('div'); lMeg.className = 'rt-ca-ligne';
+      lMeg.textContent = '+ ' + fmtEuros(courant.ca) + ' (MEG, saisies directes)';
+      var total = Math.round((caJarvis + courant.ca) * 100) / 100;
+      var lTotal = document.createElement('div'); lTotal.className = 'rt-ca-total';
+      lTotal.textContent = '= ' + fmtEuros(total) + ' — provisoire';
+      caCell.appendChild(lJarvis); caCell.appendChild(lMeg); caCell.appendChild(lTotal);
+    } else {
+      caCell.textContent = fmtEuros(courant.ca) + ' (MEG)';
+    }
+    row.appendChild(caCell);
+
+    row.appendChild(rentaCell('rt-val dep rt-attente', 'en attente'));
+    row.appendChild(rentaCell('rt-val benef rt-attente', 'en attente'));
     return row;
   }
   function rentaBuildHero(d){
@@ -15855,7 +15968,8 @@
     table.appendChild(head);
 
     if (courant){
-      table.appendChild(rentaTableRow('rt-courant', moisLabelCourt(courant.mois) + ' ·', courant));
+      table.appendChild(rentaBuildLigneCourante(courant));
+      table.appendChild(rentaResteAFacturer(cleCourante));
     } else {
       var rowVide = document.createElement('div'); rowVide.className = 'rt-row rt-courant';
       var cMois = document.createElement('div'); cMois.className = 'rt-cell rt-mois'; cMois.style.color = 'var(--gold-a)'; cMois.textContent = moisLabelCourt(cleCourante) + ' ·';
@@ -15865,6 +15979,7 @@
       cVide.appendChild(vide);
       rowVide.appendChild(cMois); rowVide.appendChild(cVide);
       table.appendChild(rowVide);
+      table.appendChild(rentaResteAFacturer(cleCourante));
     }
 
     var moisAvecDepense = mois.filter(function(m){ return m.depenses != null; });
