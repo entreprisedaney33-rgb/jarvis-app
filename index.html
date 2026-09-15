@@ -3286,6 +3286,9 @@
   .rt-total .rt-cell{position:sticky; bottom:0; z-index:2; background:rgba(var(--gold-rgb),.18); font-weight:800}
   .rt-total .rt-mois{color:var(--gold-a); font-size:11.5px}
   #renta-mois-courant-vide{font-size:12px; color:var(--muted); line-height:1.3}
+  /* Onglet "Rentabilite (demonstration)" (15/09/2026, labo uniquement) -- bandeau explicite,
+     jamais discret comme #renta-maj (c'est un rappel important : donnees reelles d'un tiers). */
+  #renta-demo-note{font-size:12.5px; line-height:1.45; color:var(--gold-a); background:rgba(var(--gold-rgb),.12); border:1px solid rgba(var(--gold-rgb),.35); border-radius:12px; padding:10px 12px; margin:0 0 16px}
   #renta-maj{font-size:13px; color:var(--muted); text-align:center; margin:4px 0 18px; line-height:1.4}
   #renta-overview{margin-bottom:18px}
   #renta-overview .ro-title{font-size:12.5px; font-weight:700; color:var(--gold-a); text-transform:uppercase; letter-spacing:.03em; margin-bottom:8px}
@@ -6203,6 +6206,10 @@
     <button class="sh-tile" id="sh-docs" type="button"><span class="sh-tile-ic">📄</span><span class="sh-tile-label">Mes documents</span></button>
     <button class="sh-tile" id="sh-couts" type="button"><span class="sh-tile-ic">💰</span><span class="sh-tile-label">Coûts</span></button>
     <button class="sh-tile" id="sh-crypto" type="button"><span class="sh-tile-ic">💰</span><span class="sh-tile-label">Crypto x402</span></button>
+    <!-- Onglet "Rentabilite (demonstration)" (15/09/2026) -- labo uniquement, meme icone que
+         sh-rentabilite (reutilisee telle quelle). Masque/affiche par le meme mecanisme que
+         sh-couts/sh-crypto juste au-dessus (liste JS plus bas, jamais mcs). -->
+    <button class="sh-tile" id="sh-rentabilite-demo" type="button"><span class="sh-tile-ic"><svg class="hicon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><polyline points="3,20 9,13 13,16 21,6"/><polyline points="15,6 21,6 21,12"/><text x="2.5" y="10" font-size="8" font-weight="800" stroke="none" fill="currentColor" font-family="inherit">€</text></svg></span><span class="sh-tile-label">Rentabilité (démo)</span></button>
     <button class="sh-tile" id="sh-meute" type="button"><span class="sh-tile-ic">🐺</span><span class="sh-tile-label">Meute</span><span class="badge-count" id="menu-meute-badge" style="display:none"></span></button>
     <button class="sh-tile" id="sh-site" type="button"><span class="sh-tile-ic">🏗️</span><span class="sh-tile-label">Site</span></button>
     <button class="sh-tile" id="sh-notes" type="button"><span class="sh-tile-ic"><svg class="hicon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="4" y="6" width="16" height="15" rx="2"/><line x1="8" y1="3" x2="8" y2="8"/><line x1="12" y1="3" x2="12" y2="8"/><line x1="16" y1="3" x2="16" y2="8"/><line x1="7" y1="12" x2="17" y2="12"/><line x1="7" y1="16" x2="14" y2="16"/></svg></span><span class="sh-tile-label">Notes</span></button>
@@ -7075,7 +7082,7 @@
 
 <div id="rentaview">
   <div id="renta-head">
-    <b id="renta-title"><svg class="hicon-sm" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><polyline points="3,20 9,13 13,16 21,6"/><polyline points="15,6 21,6 21,12"/><text x="2.5" y="10" font-size="8" font-weight="800" stroke="none" fill="currentColor" font-family="inherit">€</text></svg>Rentabilité</b>
+    <b id="renta-title"><svg class="hicon-sm" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><polyline points="3,20 9,13 13,16 21,6"/><polyline points="15,6 21,6 21,12"/><text x="2.5" y="10" font-size="8" font-weight="800" stroke="none" fill="currentColor" font-family="inherit">€</text></svg><span id="renta-title-txt">Rentabilité</span></b>
     <button id="renta-close" type="button" aria-label="Fermer">✕</button>
   </div>
   <div id="renta-list"></div>
@@ -7789,8 +7796,8 @@
          unique de detection de mise a jour (voir checkUpdate ci-dessous), plus fiable qu'une
          comparaison de chaine de version par tenant. */
   var APPV_MCS = '4.54';
-  var APPV_LABO = '1.00';
-  var BUILD = 44;
+  var APPV_LABO = '1.01';
+  var BUILD = 45;
   // displayVersion()/displayVersionShort() lisent isMcsCode() (definie plus bas dans cette
   // meme IIFE -- declaration de fonction, donc disponible ici par hoisting) : le TENANT
   // affiche depend du code de connexion, jamais d'un simple "APPV" global qui ne dirait ni
@@ -8504,6 +8511,15 @@
   // utilise par l'avoir et la facture directe -- jamais duplique.
   var API_DEVIS_FACTURER = 'https://n8n-self-hosted-t0pz.onrender.com/webhook/mcs-devis-facturer';
   var API_RENTABILITE = 'https://n8n-self-hosted-t0pz.onrender.com/webhook/mcs-rentabilite';
+  // Onglet "Rentabilite (demonstration)", labo uniquement (15/09/2026) -- webhook DEDIE et
+  // SEPARE de mcs-rentabilite (jamais le meme point d'entree) : ce nouveau webhook n'existe que
+  // sur le tenant labo, authentifie contre le web_acces du labo (jamais un code mcs-*), et fait
+  // lui-meme un appel serveur-a-serveur en lecture seule vers mcs-rentabilite (aucune ecriture,
+  // aucun nœud du cerveau/des workflows MCS touche ou modifie). But : montrer a Matheo/Dorian, a
+  // titre de demonstration, l'outil de rentabilite deja construit pour MCS, avec de vraies
+  // donnees (feu vert explicite de Matheo, "on s'en fout"), avant de decider si ca vaut la peine
+  // de le proposer plus largement.
+  var API_RENTABILITE_DEMO = 'https://n8n-self-hosted-t0pz.onrender.com/webhook/jarvis-rentabilite-demo';
   var API_RELANCES = 'https://n8n-self-hosted-t0pz.onrender.com/webhook/mcs-relances';
   var API_RELANCES_ACTION = 'https://n8n-self-hosted-t0pz.onrender.com/webhook/mcs-relances-action';
   var API_CARNET = 'https://n8n-self-hosted-t0pz.onrender.com/webhook/mcs-carnet';
@@ -8934,6 +8950,7 @@
   function postDevisIntervention(payload, onOk, onErr){ postDevisWeb(API_DEVIS_INTERVENTION, payload, onOk, onErr); }
   function postDevisFacturer(payload, onOk, onErr){ postDevisWeb(API_DEVIS_FACTURER, payload, onOk, onErr); }
   function postRentabilite(payload, onOk, onErr){ postDevisWeb(API_RENTABILITE, payload, onOk, onErr); }
+  function postRentabiliteDemo(payload, onOk, onErr){ postDevisWeb(API_RENTABILITE_DEMO, payload, onOk, onErr); }
   function postRelances(payload, onOk, onErr){ postDevisWeb(API_RELANCES, payload, onOk, onErr); }
   function postRelancesAction(payload, onOk, onErr){ postDevisWeb(API_RELANCES_ACTION, payload, onOk, onErr); }
   function postCarnet(payload, onOk, onErr){ postDevisWeb(API_CARNET, payload, onOk, onErr); }
@@ -9544,7 +9561,7 @@
     // confort visuel, pas la garantie — voir la doc privée du dépôt.
     // sh-couts (gestion des coûts labo-ia) masqué côté tenant secondaire : données internes
     // à Mathéo/Dorian, sans aucun rapport avec un client — même logique que sh-clients.
-    ['sh-meute', 'sh-site', 'sh-vitrine', 'sh-plume', 'hcallbtn', 'sh-clients', 'sh-couts', 'sh-crypto'].forEach(function(id){
+    ['sh-meute', 'sh-site', 'sh-vitrine', 'sh-plume', 'hcallbtn', 'sh-clients', 'sh-couts', 'sh-crypto', 'sh-rentabilite-demo'].forEach(function(id){
       var el = document.getElementById(id);
       if (el) el.style.display = mcs ? 'none' : '';
     });
@@ -15929,6 +15946,71 @@
   }
   document.getElementById('renta-close').addEventListener('click', rentaAttenteClose);
   document.getElementById('sh-rentabilite').addEventListener('click', function(){ sheetOpen(false); rentabiliteOpen(); });
+
+  // Onglet "Rentabilite (demonstration)" (15/09/2026, labo uniquement) -- reutilise TEL QUEL le
+  // meme panneau (#rentaview) et les memes fonctions de rendu que MCS (rentaApplyData/
+  // rentaBuildHero/rentaBuildOverview/rentaBuildResultatComptable...), deja generiques (aucune
+  // n'affiche jamais "MCS"/un nom de client) -- seul le point d'entree reseau change (webhook
+  // dedie, jamais mcs-rentabilite directement) et un bandeau explicite rappelle que ce sont de
+  // vraies donnees d'un client pilote, montrees a titre de demonstration.
+  function rentaDemoPrependNote(){
+    var note = document.createElement('div');
+    note.id = 'renta-demo-note';
+    note.textContent = '🔬 Démonstration — données d\'un client pilote réel, montants et volumes multipliés ×12 pour simuler une entreprise plus grande (jamais les vrais chiffres du client). Sert à juger si cet outil vaut la peine d\'être proposé à d\'autres clients.';
+    if (rentaList.firstChild) rentaList.insertBefore(note, rentaList.firstChild);
+    else rentaList.appendChild(note);
+  }
+  // Multiplie par 12 les totaux/volumes reels du client pilote (jamais les moyennes/ratios/dates)
+  // pour simuler une entreprise plus grande dans cette demo -- demande explicite de Mathéo le
+  // 15/09/2026. Totaux et compteurs mis a l'echelle ENSEMBLE (ex. CA total ET nombre de factures)
+  // afin que les moyennes qui en decoulent (panier moyen, valeur client recurrent) restent
+  // coherentes SANS etre elles-memes touchees. Jamais applique aux curseurs (0-1, bornes de
+  // leviers), aux jours ecoules, ni aux dates.
+  function rentaDemoScaleX12(j){
+    if (!j || !j.donnees) return j;
+    var F = 12;
+    var d = JSON.parse(JSON.stringify(j.donnees));
+    function mul(obj, keys){ if (!obj) return; keys.forEach(function(k){ if (typeof obj[k]==='number') obj[k]*=F; }); }
+    function mulAll(obj){ if (!obj) return; Object.keys(obj).forEach(function(k){ if (typeof obj[k]==='number') obj[k]*=F; }); }
+    mul(d.ca, ['reelHT','annualiseHT','nbFactures']);
+    if (d.levier1_impayes){ mul(d.levier1_impayes, ['montantRisque','totalImpaye']); mulAll(d.levier1_impayes.detail); }
+    if (d.levier2_devis){ mul(d.levier2_devis, ['stockPondere','stockBrut','nbDevis']); mulAll(d.levier2_devis.detailAge); }
+    if (d.levier3_saisonnalite){ mul(d.levier3_saisonnalite, ['gapTotal','moyenneMoisPleins']); mulAll(d.levier3_saisonnalite.moisPleins); }
+    mul(d.levier4_contrats, ['nbClientsUnAchat','nbClientsTotal','caClientsUnAchat']);
+    mul(d.achats, ['achatsPeriode','achatsAnnualise']);
+    if (d.resultatComptable){
+      mul(d.resultatComptable, ['chargesNet','caNet','resultatNet']);
+      mulAll(d.resultatComptable.chargesParPoste);
+      mulAll(d.resultatComptable.caParPrestation);
+    }
+    if (Array.isArray(d.moisRentabilite)){
+      d.moisRentabilite = d.moisRentabilite.map(function(m){
+        var m2 = Object.assign({}, m);
+        ['ca','depenses','benefice'].forEach(function(k){ if (typeof m2[k]==='number') m2[k]*=F; });
+        return m2;
+      });
+    }
+    return Object.assign({}, j, { donnees: d });
+  }
+  function rentabiliteDemoOpen(){
+    var titreEl = document.getElementById('renta-title-txt');
+    if (titreEl) titreEl.textContent = 'Rentabilité (démonstration)';
+    rentaview.classList.add('open');
+    var cached = panelCacheLoad('rentabilite-demo');
+    if (cached){
+      rentaApplyData(cached.data, panelCacheBanner(cached.savedAt));
+      rentaDemoPrependNote();
+    } else {
+      rentaList.innerHTML = '<p id="renta-loading">Chargement…</p>';
+    }
+    postRentabiliteDemo({}, function(j){
+      var scaled = rentaDemoScaleX12(j);
+      panelCacheSave('rentabilite-demo', scaled);
+      rentaApplyData(scaled, null);
+      rentaDemoPrependNote();
+    }, function(err){ if (!cached) rentaList.innerHTML = '<p id="renta-empty">' + escHtml(err) + '</p>'; });
+  }
+  document.getElementById('sh-rentabilite-demo').addEventListener('click', function(){ sheetOpen(false); rentabiliteDemoOpen(); });
 
   // ---- Relances clients (chantier 3 audit MCS, patron d'un tenant secondaire uniquement) ----
   // Detection R1 (30j) / R2 (~50j) faite cote serveur depuis les factures MEG deja importees
