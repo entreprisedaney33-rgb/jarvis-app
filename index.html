@@ -7845,9 +7845,9 @@
          c'est ce qui supprime le conflit humain sur cette ligne precise. Sert aussi de cle
          unique de detection de mise a jour (voir checkUpdate ci-dessous), plus fiable qu'une
          comparaison de chaine de version par tenant. */
-  var APPV_MCS = '4.56';
+  var APPV_MCS = '4.57';
   var APPV_LABO = '1.02';
-  var BUILD = 50;
+  var BUILD = 51;
   // displayVersion()/displayVersionShort() lisent isMcsCode() (definie plus bas dans cette
   // meme IIFE -- declaration de fonction, donc disponible ici par hoisting) : le TENANT
   // affiche depend du code de connexion, jamais d'un simple "APPV" global qui ne dirait ni
@@ -15691,6 +15691,27 @@
   }
   function rentaAttenteClose(){ rentaview.classList.remove('open'); }
 
+  // Point 1 (15/09/2026, mission Mathéo) : l'exercice comptable de MCS court du 1er octobre au
+  // 30 septembre -- jamais une date dictée par la 1ère facture connue d'un export MEG (un
+  // artefact de données, pas une période qui veut dire quelque chose pour Mickael). Calculé
+  // depuis la vraie date du jour, jamais une année en dur : reste correct après le prochain
+  // changement d'exercice sans qu'on ait besoin d'y retoucher.
+  function rentaExerciceDebutDate(){
+    var now = new Date();
+    var anneeDebut = now.getMonth() >= 9 ? now.getFullYear() : now.getFullYear() - 1; // getMonth() 0-indexe, 9 = octobre
+    return new Date(anneeDebut, 9, 1);
+  }
+  function rentaExerciceFinDate(debut){
+    return new Date(debut.getFullYear() + 1, 8, 30); // 30 septembre suivant
+  }
+  function rentaDateCourteFr(d){
+    return String(d.getDate()).padStart(2,'0') + '/' + String(d.getMonth()+1).padStart(2,'0') + '/' + d.getFullYear();
+  }
+  function rentaMoisIndexExercice(cleMois, debut){
+    var p = cleMois.split('-');
+    var y = parseInt(p[0],10), m = parseInt(p[1],10);
+    return (y - debut.getFullYear()) * 12 + (m - 1 - debut.getMonth()) + 1;
+  }
   function rentaBuildOverview(d){
     var wrap = document.createElement('div'); wrap.id = 'renta-overview';
     var titre = document.createElement('div'); titre.className = 'ro-title'; titre.textContent = 'Vue d\'ensemble de l\'entreprise';
@@ -15707,19 +15728,60 @@
       }
       return t;
     }
-    var periodeTxt = (d.periode && d.periode.debut && d.periode.fin)
-      ? (fmtDevisDateSimple(d.periode.debut) + ' → ' + fmtDevisDateSimple(d.periode.fin))
-      : null;
     // Point 5 (audit UX 29/08/2026) : panier moyen / nb factures / nb clients retires de
     // l'affichage (demande explicite) -- suppression d'affichage uniquement, d.ca.panierMoyenHT/
     // d.ca.nbFactures/d.levier4_contrats.nbClientsTotal restent calcules cote serveur, plus
     // aucun usage cote client apres ce changement (signale, pas supprime -- pourraient resservir).
-    grid.appendChild(tile('CA sur la période (HT)', fmtEuros(d.ca.reelHT), periodeTxt));
-    grid.appendChild(tile('Total actuellement impayé (TTC)', fmtEuros(d.levier1_impayes.totalImpaye)));
+    // d.ca.reelHT/d.periode (accumulation MEG depuis la 1ere facture connue) ne sont plus
+    // affiches ICI depuis le Point 1 (15/09/2026) -- toujours calcules cote serveur (aucun
+    // autre usage dans ce fichier, verifie), remplaces par le CA de l'EXERCICE ci-dessous.
+    var exDebut = rentaExerciceDebutDate();
+    var exFin = rentaExerciceFinDate(exDebut);
+    var cleCourante = rentaMoisCourantCle();
+    var courant = (d.moisRentabilite || []).filter(function(m){ return m.mois === cleCourante; })[0] || null;
+    var rc = d.resultatComptable || null;
+
+    // Meme calcul, meme source (contratsMoisData) que la ligne du mois en cours du tableau
+    // mensuel (rentaBuildLigneCourante) -- jamais une 2e formule qui pourrait diverger. Comme
+    // la-bas : contratsMoisData===null (onglet Contrats jamais ouvert cette session) -> on ne
+    // prétend jamais connaître la composante Jarvis, jamais un 0 invente.
+    var caJarvisCourant = null, nbJarvisCourant = 0;
+    if (courant && contratsMoisData !== null){
+      var pc = courant.mois.split('-');
+      var anneeC = parseInt(pc[0], 10), moisC = parseInt(pc[1], 10);
+      var emisesC = contratsMoisData.filter(function(f){
+        return f && f.statut === 'envoyee' && Number(f.annee) === anneeC && Number(f.mois) === moisC;
+      });
+      caJarvisCourant = Math.round(emisesC.reduce(function(s, f){ return s + (Number(f.prix_ht) || 0); }, 0) * 100) / 100;
+      nbJarvisCourant = emisesC.length;
+    }
+
+    var totalExercice = (rc ? (rc.caNet || 0) : 0) + (courant ? ((courant.ca || 0) + (caJarvisCourant || 0)) : 0);
+    var labelCa = 'CA de l\'exercice (' + rentaDateCourteFr(exDebut) + ' → ' + rentaDateCourteFr(exFin) + ')';
+    var captionParts = [];
+    captionParts.push('Compté jusqu\'au ' + rentaDateCourteFr(new Date()) + ' (' + rentaMoisIndexExercice(cleCourante, exDebut) + 'e mois) — dernier mois provisoire.');
+    if (courant){
+      if (caJarvisCourant !== null && nbJarvisCourant > 0){
+        captionParts.push(moisLabel(courant.mois) + ' (provisoire) : ' + fmtEuros(caJarvisCourant) + ' Jarvis (' + nbJarvisCourant + (nbJarvisCourant > 1 ? ' contrats' : ' contrat') + ') + ' + fmtEuros(courant.ca) + ' MEG.');
+      } else {
+        captionParts.push(moisLabel(courant.mois) + ' (provisoire) : ' + fmtEuros(courant.ca) + ' MEG' + (contratsMoisData === null ? ' — ouvrez Contrats pour inclure les contrats déjà facturés' : '') + '.');
+      }
+    } else {
+      captionParts.push(moisLabel(cleCourante) + ' : pas encore de chiffre exporté.');
+    }
+    grid.appendChild(tile(labelCa, fmtEuros(Math.round(totalExercice * 100) / 100), captionParts.join(' ')));
+
+    // "Total actuellement impayé" est un instantané (vrai au moment ou l'export MEG a ete pris),
+    // jamais un cumul de periode -- ne doit plus jamais heriter silencieusement de la periode de
+    // la tuile voisine. Meme source/meme date que megExtraction (Point 1, 15/09/2026) : les deux
+    // viennent de la meme ligne d'export ventes, jamais 2 fraicheurs differentes affichees sans
+    // lien entre elles.
+    var captionImpaye = 'Instantané' + (d.megExtraction && d.megExtraction.dateMaxFacture ? (', données MEG du ' + fmtDevisDateSimple(d.megExtraction.dateMaxFacture)) : '') + ' — indépendant de la période de la tuile ci-contre.';
+    grid.appendChild(tile('Total actuellement impayé (TTC)', fmtEuros(d.levier1_impayes.totalImpaye), captionImpaye));
     wrap.appendChild(grid);
 
     var note = document.createElement('p'); note.id = 'ro-note';
-    note.textContent = 'Le CA ci-dessus couvre les factures réellement émises sur sa période (aucun document ne manque : la 1ère facture MEG date du tout début de cette période). Un vrai résultat (basé sur TOUTES les charges, pas une estimation) est disponible juste en dessous — mais sur la période couverte par le relevé de la comptable, différente de celle-ci.';
+    note.textContent = 'Le CA de l\'exercice combine le relevé comptable réel (mois déjà couverts par un relevé) et le mois en cours en provisoire (contrats Jarvis facturés + ventes MEG directes), avec les mêmes composantes que la ligne du mois en cours du tableau ci-dessus.';
     wrap.appendChild(note);
     return wrap;
   }
@@ -15771,7 +15833,7 @@
     wrap.appendChild(grid);
 
     var note = document.createElement('p'); note.id = 'ro-note';
-    note.textContent = 'Chiffres réels tirés du relevé comptable complet (toutes les charges, pas seulement les achats de matières) — aucune estimation ici, contrairement au tableau mensuel plus haut.' + (rc.misAJourLe ? (' Relevé reçu le ' + fmtDevisDateSimple(rc.misAJourLe) + '.') : '');
+    note.textContent = 'Ce bloc et le tableau mensuel ci-dessus viennent tous les deux du relevé de la comptable' + (rc.misAJourLe ? (', reçu le ' + fmtDevisDateSimple(rc.misAJourLe)) : '') + ' : le tableau le détaille mois par mois, ce bloc le consolide sur toute la période (toutes les charges, pas seulement les achats de matières).';
     wrap.appendChild(note);
 
     if (rc.chargesParPoste) wrap.appendChild(rentaBuildRepartitionList('Répartition des charges par poste', rc.chargesParPoste, rc.chargesNet));
