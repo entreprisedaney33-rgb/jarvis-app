@@ -7847,7 +7847,7 @@
          comparaison de chaine de version par tenant. */
   var APPV_MCS = '4.58';
   var APPV_LABO = '1.03';
-  var BUILD = 53;
+  var BUILD = 54;
   // displayVersion()/displayVersionShort() lisent isMcsCode() (definie plus bas dans cette
   // meme IIFE -- declaration de fonction, donc disponible ici par hoisting) : le TENANT
   // affiche depend du code de connexion, jamais d'un simple "APPV" global qui ne dirait ni
@@ -16407,12 +16407,38 @@
     var maj = rentaList.querySelector('#renta-maj');
     if (maj) maj.style.display = 'none';
   }
+  // Bug trouve le 15/09/2026 (retour Mathéo sur telephone, juste apres le bandeau ICB) :
+  // rentaBuildHero() (partagee avec MCS) construit TOUJOURS une ligne "mois en cours" speciale
+  // (rentaBuildLigneCourante -- badge "MEG" pose sans condition -- + rentaResteAFacturer,
+  // "Contrats -- reste a facturer") des que le premier mois du dataset correspond au vrai mois
+  // calendaire -- ce qui est TOUJOURS le cas ici (moisCa se termine volontairement au mois en
+  // cours pour rester credible). Ces 2 widgets sont MCS-only (le CSS de .rt-reste-facturer
+  // n'existe que sous html.mcs-theme, cf. CLAUDE.md) : sur le labo (sans mcs-theme) ils
+  // s'affichent SANS AUCUN style, d'ou le texte qui se chevauche vu par Mathéo. Plutot que de
+  // toucher au code partage (livre et teste par Dorian le jour meme pour MCS, risque de
+  // regression), la ligne speciale est remplacee ICI par une ligne NORMALE (memes classes que
+  // tous les autres mois du tableau, deja stylees correctement sur le labo) et le widget
+  // "Contrats -- reste a facturer" (aucun sens hors MCS) est retire.
+  function rentaDemonchyFixLigneCourante(data){
+    var reste = rentaList.querySelector('.rt-reste-facturer');
+    if (reste && reste.parentNode) reste.parentNode.removeChild(reste);
+    var ligne = rentaList.querySelector('.rt-row.rt-courant');
+    if (!ligne || !ligne.parentNode) return;
+    var courant = ((data.donnees || {}).moisRentabilite || [])[0];
+    if (courant){
+      ligne.parentNode.replaceChild(rentaTableRow('', moisLabelCourt(courant.mois), courant), ligne);
+    } else {
+      ligne.parentNode.removeChild(ligne);
+    }
+  }
   function rentabiliteDemonchyOpen(){
     var titreEl = document.getElementById('renta-title-txt');
     if (titreEl) titreEl.textContent = 'Rentabilité — Groupe Demonchy';
     rentaview.classList.add('open');
-    rentaApplyData(rentaDemonchyDataset(), null);
+    var data = rentaDemonchyDataset();
+    rentaApplyData(data, null);
     rentaDemonchyRelabel();
+    rentaDemonchyFixLigneCourante(data);
     rentaDemonchyColorer();
     rentaDemonchyPrependNote();
     rentaDemonchyPrependICBBandeau();
