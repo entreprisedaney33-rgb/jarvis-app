@@ -7845,9 +7845,9 @@
          c'est ce qui supprime le conflit humain sur cette ligne precise. Sert aussi de cle
          unique de detection de mise a jour (voir checkUpdate ci-dessous), plus fiable qu'une
          comparaison de chaine de version par tenant. */
-  var APPV_MCS = '4.57';
+  var APPV_MCS = '4.58';
   var APPV_LABO = '1.02';
-  var BUILD = 51;
+  var BUILD = 52;
   // displayVersion()/displayVersionShort() lisent isMcsCode() (definie plus bas dans cette
   // meme IIFE -- declaration de fonction, donc disponible ici par hoisting) : le TENANT
   // affiche depend du code de connexion, jamais d'un simple "APPV" global qui ne dirait ni
@@ -15741,19 +15741,16 @@
     var courant = (d.moisRentabilite || []).filter(function(m){ return m.mois === cleCourante; })[0] || null;
     var rc = d.resultatComptable || null;
 
-    // Meme calcul, meme source (contratsMoisData) que la ligne du mois en cours du tableau
-    // mensuel (rentaBuildLigneCourante) -- jamais une 2e formule qui pourrait diverger. Comme
-    // la-bas : contratsMoisData===null (onglet Contrats jamais ouvert cette session) -> on ne
-    // prétend jamais connaître la composante Jarvis, jamais un 0 invente.
+    // Chantier Rentabilite (15/09/2026, correction urgente) : meme source que la ligne du mois
+    // en cours du tableau mensuel (d.contratsMoisEnCours, servie par le backend depuis
+    // mcs_factures_contrats) -- plus aucune dependance a contratsMoisData (rempli seulement si
+    // l'onglet Contrats avait ete ouvert dans la session, ce qui amputait cette tuile des
+    // contrats deja factures et envoyes a de vrais clients). "cle" verifie par securite.
+    var cm = d.contratsMoisEnCours || null;
     var caJarvisCourant = null, nbJarvisCourant = 0;
-    if (courant && contratsMoisData !== null){
-      var pc = courant.mois.split('-');
-      var anneeC = parseInt(pc[0], 10), moisC = parseInt(pc[1], 10);
-      var emisesC = contratsMoisData.filter(function(f){
-        return f && f.statut === 'envoyee' && Number(f.annee) === anneeC && Number(f.mois) === moisC;
-      });
-      caJarvisCourant = Math.round(emisesC.reduce(function(s, f){ return s + (Number(f.prix_ht) || 0); }, 0) * 100) / 100;
-      nbJarvisCourant = emisesC.length;
+    if (courant && cm && cm.cle === courant.mois){
+      caJarvisCourant = cm.factureHT;
+      nbJarvisCourant = cm.nbFacture;
     }
 
     var totalExercice = (rc ? (rc.caNet || 0) : 0) + (courant ? ((courant.ca || 0) + (caJarvisCourant || 0)) : 0);
@@ -15764,7 +15761,7 @@
       if (caJarvisCourant !== null && nbJarvisCourant > 0){
         captionParts.push(moisLabel(courant.mois) + ' (provisoire) : ' + fmtEuros(caJarvisCourant) + ' Jarvis (' + nbJarvisCourant + (nbJarvisCourant > 1 ? ' contrats' : ' contrat') + ') + ' + fmtEuros(courant.ca) + ' MEG.');
       } else {
-        captionParts.push(moisLabel(courant.mois) + ' (provisoire) : ' + fmtEuros(courant.ca) + ' MEG' + (contratsMoisData === null ? ' — ouvrez Contrats pour inclure les contrats déjà facturés' : '') + '.');
+        captionParts.push(moisLabel(courant.mois) + ' (provisoire) : ' + fmtEuros(courant.ca) + ' MEG.');
       }
     } else {
       captionParts.push(moisLabel(cleCourante) + ' : pas encore de chiffre exporté.');
@@ -15950,32 +15947,30 @@
     row.appendChild(rentaCell(beneficeCls, beneficeTxt));
     return row;
   }
-  // Contrats -- reste a facturer, pour le mois cle (ex "2026-09"). Trois etats obligatoires :
-  // contratsMoisData === null (ecran Contrats jamais ouvert dans cette session) -> aucun
-  // montant, jamais un faux "0 EUR restant" ; tableau charge et vide -> "0" affiche
-  // explicitement, c'est une vraie donnee ; tableau charge avec des lignes -> le vrai compte.
-  function rentaResteAFacturer(cleMois){
+  // Contrats -- reste a facturer, pour le mois cle (ex "2026-09"). Chantier Rentabilite
+  // (15/09/2026, correction urgente) : calcule desormais EXCLUSIVEMENT depuis
+  // d.contratsMoisEnCours (servi par le backend, source mcs_factures_contrats) -- plus aucune
+  // dependance a contratsMoisData (rempli seulement si l'onglet Contrats a ete ouvert dans la
+  // session). "cle" verifie par securite (edge case minuit, serveur vs client) avant d'afficher
+  // le montant -- si absent/desaligne, message honnete plutot qu'un chiffre potentiellement faux.
+  function rentaResteAFacturer(cleMois, contratsMoisEnCours){
     var wrap = document.createElement('div'); wrap.className = 'rt-reste-facturer';
-    if (contratsMoisData === null){
+    if (!contratsMoisEnCours || contratsMoisEnCours.cle !== cleMois){
       wrap.classList.add('rt-reste-inconnu');
-      wrap.textContent = 'Contrats — reste à facturer : à charger (ouvrez l’onglet Contrats une fois).';
+      wrap.textContent = 'Contrats — reste à facturer : indisponible pour le moment.';
       return wrap;
     }
-    var parts = cleMois.split('-');
-    var annee = parseInt(parts[0], 10), mois = parseInt(parts[1], 10);
-    var restants = contratsMoisData.filter(function(f){
-      return f && f.statut === 'a_traiter' && Number(f.annee) === annee && Number(f.mois) === mois;
-    });
-    var totalHt = restants.reduce(function(s, f){ return s + (Number(f.prix_ht) || 0); }, 0);
-    wrap.textContent = 'Contrats — reste à facturer : ' + fmtEuros(Math.round(totalHt * 100) / 100) +
-      ' (' + restants.length + (restants.length > 1 ? ' contrats' : ' contrat') + ')';
+    wrap.textContent = 'Contrats — reste à facturer : ' + fmtEuros(contratsMoisEnCours.resteHT) +
+      ' (' + contratsMoisEnCours.nbReste + (contratsMoisEnCours.nbReste > 1 ? ' contrats' : ' contrat') + ')';
     return wrap;
   }
   // Ligne du mois en cours : rentrees Jarvis (contrats factures) et MEG (ventes saisies
   // directement) affichees separement, jamais fondues en un seul montant -- un total combine
-  // apparait en plus, explicitement etiquete provisoire. Si l'ecran Contrats n'a jamais ete
-  // ouvert (contratsMoisData === null), on ne montre que ce qui est reellement connu (le CA
-  // MEG deja charge), sans inventer une composante Jarvis a 0.
+  // apparait en plus, explicitement etiquete provisoire. La composante Jarvis vient desormais du
+  // backend (d.contratsMoisEnCours, calculee a la source sur mcs_factures_contrats) -- des
+  // factures reellement envoyees a de vrais clients sont du CA acquis, independant de ce que
+  // Mickael a consulte avant sur cet ecran (bug corrige le 15/09/2026 : la composante etait
+  // avant deduite de contratsMoisData, rempli seulement si l'onglet Contrats avait ete ouvert).
   function rentaMegFraicheurTexte(meg){
     if (!meg || !meg.dateMaxFacture) return null;
     var d = new Date(meg.dateMaxFacture + 'T00:00:00');
@@ -15987,22 +15982,19 @@
     }
     return txt;
   }
-  function rentaBuildLigneCourante(courant, megExtraction){
+  function rentaBuildLigneCourante(courant, megExtraction, contratsMoisEnCours){
     var row = document.createElement('div'); row.className = 'rt-row rt-courant rt-provisoire';
     var moisCell = document.createElement('div'); moisCell.className = 'rt-cell rt-mois';
     moisCell.appendChild(document.createTextNode(moisLabelCourt(courant.mois) + ' ·'));
     var badgeMeg = rentaBadge('meg'); if (badgeMeg) moisCell.appendChild(badgeMeg);
 
     var caJarvis = null, nbJarvis = 0;
-    if (contratsMoisData !== null){
-      var parts = courant.mois.split('-');
-      var annee = parseInt(parts[0], 10), mois = parseInt(parts[1], 10);
-      var emises = contratsMoisData.filter(function(f){
-        return f && f.statut === 'envoyee' && Number(f.annee) === annee && Number(f.mois) === mois;
-      });
-      caJarvis = Math.round(emises.reduce(function(s, f){ return s + (Number(f.prix_ht) || 0); }, 0) * 100) / 100;
-      nbJarvis = emises.length;
-      var badgeJarvis = rentaBadge('jarvis'); if (badgeJarvis) moisCell.appendChild(badgeJarvis);
+    if (contratsMoisEnCours && contratsMoisEnCours.cle === courant.mois){
+      caJarvis = contratsMoisEnCours.factureHT;
+      nbJarvis = contratsMoisEnCours.nbFacture;
+      if (nbJarvis > 0){
+        var badgeJarvis = rentaBadge('jarvis'); if (badgeJarvis) moisCell.appendChild(badgeJarvis);
+      }
     }
     row.appendChild(moisCell);
 
@@ -16054,8 +16046,8 @@
     table.appendChild(head);
 
     if (courant){
-      table.appendChild(rentaBuildLigneCourante(courant, d.megExtraction));
-      table.appendChild(rentaResteAFacturer(cleCourante));
+      table.appendChild(rentaBuildLigneCourante(courant, d.megExtraction, d.contratsMoisEnCours));
+      table.appendChild(rentaResteAFacturer(cleCourante, d.contratsMoisEnCours));
     } else {
       var rowVide = document.createElement('div'); rowVide.className = 'rt-row rt-courant';
       var cMois = document.createElement('div'); cMois.className = 'rt-cell rt-mois'; cMois.style.color = 'var(--gold-a)'; cMois.textContent = moisLabelCourt(cleCourante) + ' ·';
@@ -16065,7 +16057,7 @@
       cVide.appendChild(vide);
       rowVide.appendChild(cMois); rowVide.appendChild(cVide);
       table.appendChild(rowVide);
-      table.appendChild(rentaResteAFacturer(cleCourante));
+      table.appendChild(rentaResteAFacturer(cleCourante, d.contratsMoisEnCours));
     }
 
     var moisAvecDepense = mois.filter(function(m){ return m.depenses != null; });
