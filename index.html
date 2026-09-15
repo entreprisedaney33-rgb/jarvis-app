@@ -6210,6 +6210,11 @@
          sh-rentabilite (reutilisee telle quelle). Masque/affiche par le meme mecanisme que
          sh-couts/sh-crypto juste au-dessus (liste JS plus bas, jamais mcs). -->
     <button class="sh-tile" id="sh-rentabilite-demo" type="button"><span class="sh-tile-ic"><svg class="hicon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><polyline points="3,20 9,13 13,16 21,6"/><polyline points="15,6 21,6 21,12"/><text x="2.5" y="10" font-size="8" font-weight="800" stroke="none" fill="currentColor" font-family="inherit">€</text></svg></span><span class="sh-tile-label">Rentabilité (démo)</span></button>
+    <!-- Demo commerciale "Groupe Demonchy" (15/09/2026) -- labo uniquement, meme mecanisme de
+         masquage que sh-rentabilite-demo juste au-dessus. Prospect reel (RDV 16/09/2026 17h),
+         AUCUNE donnee reelle transmise par lui a ce stade -- voir rentaDemonchyDataset() plus
+         bas, bandeau explicite dans le panneau lui-meme. -->
+    <button class="sh-tile" id="sh-rentabilite-demonchy" type="button"><span class="sh-tile-ic"><svg class="hicon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><polyline points="3,20 9,13 13,16 21,6"/><polyline points="15,6 21,6 21,12"/><text x="2.5" y="10" font-size="8" font-weight="800" stroke="none" fill="currentColor" font-family="inherit">€</text></svg></span><span class="sh-tile-label">Démo — Demonchy</span></button>
     <button class="sh-tile" id="sh-meute" type="button"><span class="sh-tile-ic">🐺</span><span class="sh-tile-label">Meute</span><span class="badge-count" id="menu-meute-badge" style="display:none"></span></button>
     <button class="sh-tile" id="sh-site" type="button"><span class="sh-tile-ic">🏗️</span><span class="sh-tile-label">Site</span></button>
     <button class="sh-tile" id="sh-notes" type="button"><span class="sh-tile-ic"><svg class="hicon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="4" y="6" width="16" height="15" rx="2"/><line x1="8" y1="3" x2="8" y2="8"/><line x1="12" y1="3" x2="12" y2="8"/><line x1="16" y1="3" x2="16" y2="8"/><line x1="7" y1="12" x2="17" y2="12"/><line x1="7" y1="16" x2="14" y2="16"/></svg></span><span class="sh-tile-label">Notes</span></button>
@@ -7796,8 +7801,8 @@
          unique de detection de mise a jour (voir checkUpdate ci-dessous), plus fiable qu'une
          comparaison de chaine de version par tenant. */
   var APPV_MCS = '4.54';
-  var APPV_LABO = '1.01';
-  var BUILD = 45;
+  var APPV_LABO = '1.02';
+  var BUILD = 46;
   // displayVersion()/displayVersionShort() lisent isMcsCode() (definie plus bas dans cette
   // meme IIFE -- declaration de fonction, donc disponible ici par hoisting) : le TENANT
   // affiche depend du code de connexion, jamais d'un simple "APPV" global qui ne dirait ni
@@ -9561,7 +9566,7 @@
     // confort visuel, pas la garantie — voir la doc privée du dépôt.
     // sh-couts (gestion des coûts labo-ia) masqué côté tenant secondaire : données internes
     // à Mathéo/Dorian, sans aucun rapport avec un client — même logique que sh-clients.
-    ['sh-meute', 'sh-site', 'sh-vitrine', 'sh-plume', 'hcallbtn', 'sh-clients', 'sh-couts', 'sh-crypto', 'sh-rentabilite-demo'].forEach(function(id){
+    ['sh-meute', 'sh-site', 'sh-vitrine', 'sh-plume', 'hcallbtn', 'sh-clients', 'sh-couts', 'sh-crypto', 'sh-rentabilite-demo', 'sh-rentabilite-demonchy'].forEach(function(id){
       var el = document.getElementById(id);
       if (el) el.style.display = mcs ? 'none' : '';
     });
@@ -15639,7 +15644,15 @@
     infoBtn.addEventListener('click', function(){ detail.classList.toggle('open'); });
     return card;
   }
-  function rentaAttenteClose(){ rentaview.classList.remove('open'); }
+  var rentaDemonchyThemeOn = false;
+  function rentaAttenteClose(){
+    rentaview.classList.remove('open');
+    // Demo "Groupe Demonchy" (15/09/2026) force le theme clair mcs-theme le temps du panneau
+    // (demande explicite "sobre, blanc, comme Michael") -- jamais laisse actif au-dela de ce
+    // panneau : isMcsCode() ne lit jamais cette classe (uniquement le prefixe du code stocke),
+    // donc l'ajout/retrait est purement visuel, aucun risque sur le routage/la logique tenant.
+    if (rentaDemonchyThemeOn){ document.documentElement.classList.remove('mcs-theme'); rentaDemonchyThemeOn = false; }
+  }
 
   function rentaBuildOverview(d){
     var wrap = document.createElement('div'); wrap.id = 'renta-overview';
@@ -16011,6 +16024,124 @@
     }, function(err){ if (!cached) rentaList.innerHTML = '<p id="renta-empty">' + escHtml(err) + '</p>'; });
   }
   document.getElementById('sh-rentabilite-demo').addEventListener('click', function(){ sheetOpen(false); rentabiliteDemoOpen(); });
+
+  // ---- Demo commerciale "Groupe Demonchy" (15/09/2026, labo uniquement) ----
+  // Prospect reel (RDV commercial 16/09/2026 17h). Reutilise ENCORE une fois le meme panneau
+  // (#rentaview) et les memes fonctions de rendu generiques -- mais ici AUCUN backend/aucune
+  // donnee reelle n'existe (Demonchy ne nous a rien transmis) : tout est fige en local, melange
+  // de (a) chiffres PUBLICS et verifies -- comptes consolides du groupe exercice 2024 (34,6M EUR
+  // de CA, 3,65M EUR d'EBITDA soit 10,5%, 1,44M EUR de resultat net, deposes au greffe de
+  // Bordeaux le 23/01/2026, Bodacc C n°20260015 -- et comptes ICB 2023/2024, le "coeur" du
+  // groupe) et (b) d'une repartition par societe ESTIMEE pour completer le CA consolide reel
+  // faute de detail public par filiale (plusieurs filiales deposent avec confidentialite
+  // legale, art. L.232-25) -- jamais presentee comme certifiee, bandeau explicite en tete de
+  // panneau. Theme force en clair (mcs-theme, cf. rentaAttenteClose) le temps du panneau,
+  // demande explicite de Mathéo ("sobre, blanc, comme Michael") pour que Didier Demonchy lise
+  // confortablement ses propres societes pendant la demonstration.
+  function rentaDemonchyDataset(){
+    // Repartition par societe : la plus grosse en tete (le rendu trie de toute facon par valeur
+    // decroissante), somme exactement egale au CA consolide reel de 34 600 000 EUR.
+    var entites = {
+      'ICB — construction, contractant général (le cœur du groupe)': 17500000,
+      'Vegetek / Green Factory — végétalisation, pépinière R&D': 3200000,
+      'Financière Demonchy — holding, services groupe': 2370000,
+      'BAT-SM — désamiantage, couverture (Qualibat 1552)': 2800000,
+      'DUOCLOSE — équipement self-stockage, export Europe/Asie': 2100000,
+      'ICAI — aménagement intérieur': 1600000,
+      'Exploitation self-stockage — Stockinvest + Locabox affiliés': 1500000,
+      'AISB 33 — bureau d’études structure': 1100000,
+      'Consultimo — transaction immobilière d’entreprise': 900000,
+      'Promotion & foncier — une centaine de SCI / SCCV': 630000,
+      'Gesprim Property — property management': 500000,
+      'CSPS — coordination sécurité de chantier': 400000
+    };
+    // Rythme mensuel 2026 illustratif (simulation, pas un releve reel) cale sur le rythme annuel
+    // reel de 34,6M EUR/an avec une saisonnalite BTP plausible (creux janvier/aout) ; marge nette
+    // alignee sur la marge nette reelle du groupe (~4,16%, 1,44M/34,6M).
+    var moisCa = [['2026-01',2100000],['2026-02',2400000],['2026-03',2900000],['2026-04',3100000],
+                  ['2026-05',3300000],['2026-06',3400000],['2026-07',3200000],['2026-08',1600000],
+                  ['2026-09',3000000]];
+    var margeNette = 1440000 / 34600000;
+    var moisRentabilite = moisCa.map(function(mc){
+      var ca = mc[1], benefice = Math.round(ca * margeNette);
+      return { mois: mc[0], ca: ca, depenses: ca - benefice, benefice: benefice, estime: false };
+    }).reverse();
+    return {
+      donnees: {
+        sourceLabel: 'Comptes consolidés Groupe Demonchy, exercice 2024 (dépôt Bodacc du 23/01/2026)',
+        periode: { debut: '2024-01-01', fin: '2024-12-31' },
+        ca: { reelHT: 34600000, annualiseHT: 34600000, panierMoyenHT: 0, nbFactures: 0 },
+        levier1_impayes: { totalImpaye: 3650000, montantRisque: 0, detail: {}, curseurDefaut: 0, curseurMin: 0, curseurMax: 1 },
+        levier2_devis: { stockPondere: 0, stockBrut: 0, detailAge: {}, nbDevis: 0, curseurDefaut: 0, curseurMin: 0, curseurMax: 1 },
+        levier3_saisonnalite: { gapTotal: 0, moyenneMoisPleins: 0, moisPleins: {}, curseurDefaut: 0, curseurMin: 0, curseurMax: 1 },
+        levier4_contrats: { nbClientsUnAchat: 0, nbClientsTotal: 0, caClientsUnAchat: 0, valeurClientRecurrentAn: 0, saisieDefaut: 0, saisieMax: 1 },
+        achats: { achatsPeriode: 0, achatsAnnualise: 0, periodeDebut: '2024-01-01', periodeFin: '2024-12-31', misAJourLe: '2026-01-23' },
+        resultatComptable: {
+          caNet: 34600000,
+          chargesNet: 33160000,
+          resultatNet: 1440000,
+          redressement: { resultat8MoisAnneePrecedente: 433000, resultat8MoisAnneeCourante: 288000, delta: 288000 - 433000 },
+          caParPrestation: entites,
+          periodeDebut: '2024-01-01',
+          periodeFin: '2024-12-31',
+          misAJourLe: '2026-01-23'
+        },
+        moisRentabilite: moisRentabilite
+      },
+      calculeLe: new Date().toISOString()
+    };
+  }
+  function rentaDemonchyPrependNote(){
+    var note = document.createElement('div');
+    note.id = 'renta-demo-note';
+    note.textContent = '🏗️ Démonstration commerciale — Groupe Demonchy. Chiffres du groupe réels (comptes consolidés déposés au greffe de Bordeaux le 23/01/2026) ; répartition par société et rythme mensuel 2026 estimés pour illustrer l\'outil, en l\'absence de vos données réelles. Deviendra exact dès connexion à votre comptabilité.';
+    if (rentaList.firstChild) rentaList.insertBefore(note, rentaList.firstChild);
+    else rentaList.appendChild(note);
+  }
+  // Renomme les libelles generiques (ecrits pour MCS/le panier moyen d'une seule societe) en
+  // libelles "groupe multi-societes" -- purement textuel, ne touche a aucune fonction de rendu
+  // partagee (donc zero risque de regression sur MCS/la demo x12), fait UNE FOIS juste apres
+  // rentaApplyData() pour ce dataset precis.
+  function rentaDemonchyRelabel(){
+    function setText(sel, from, to, all){
+      var nodes = rentaList.querySelectorAll(sel);
+      for (var i = 0; i < nodes.length; i++){
+        if (!all && nodes[i].textContent.trim() !== from) continue;
+        nodes[i].textContent = to;
+      }
+    }
+    setText('.rr-label', 'Sur les 8 memes mois (oct. -> mai), un an plus tot vs cette annee :', 'Sur ICB (la moitié du CA du groupe), résultat net entre 2023 et 2024 :');
+    var rrDelta = rentaList.querySelector('.rr-delta');
+    if (rrDelta) rrDelta.textContent = 'Le CA d’ICB a progressé de +9 % sur un an — mais le résultat net a reculé de 33 %. La marge se perd chantier par chantier.';
+    var roLabels = rentaList.querySelectorAll('.ro-label');
+    roLabels.forEach(function(el){
+      if (el.textContent.trim() === 'CA sur la période (HT)') el.textContent = 'Chiffre d’affaires consolidé — Groupe (2024)';
+      if (el.textContent.trim() === 'Total actuellement impayé (TTC)') el.textContent = 'EBITDA consolidé (10,5 % du CA)';
+    });
+    var roTitles = rentaList.querySelectorAll('.ro-title');
+    roTitles.forEach(function(el){
+      if (el.textContent.trim() === 'Vue d\'ensemble de l\'entreprise') el.textContent = 'Vue d’ensemble du groupe';
+      if (el.textContent.trim() === 'Résultat comptable réel (relevé de la comptable)') el.textContent = 'Solidité financière du groupe (exercice 2024)';
+    });
+    var roNotes = rentaList.querySelectorAll('p#ro-note');
+    if (roNotes[0]) roNotes[0].textContent = 'Comptes consolidés réels, déposés au greffe de Bordeaux le 23/01/2026 (Bodacc C n°20260015) — +2,9 % sur un an.';
+    if (roNotes[1]) roNotes[1].textContent = 'Fonds propres 41,8 M€ et trésorerie 21 M€ (chiffres réels, comptes consolidés 2024) — de quoi investir largement.';
+    var listTitle = rentaList.querySelector('.rc-list-title');
+    if (listTitle && listTitle.textContent.trim() === 'CA par type de prestation') listTitle.textContent = 'Le groupe, société par société (CA 2024 — la plus grosse en tête)';
+    var maj = rentaList.querySelector('#renta-maj');
+    if (maj) maj.textContent = '* rythme mensuel 2026 simulé pour la démonstration, calé sur le CA annuel réel du groupe (34,6 M€).';
+  }
+  function rentabiliteDemonchyOpen(){
+    var titreEl = document.getElementById('renta-title-txt');
+    if (titreEl) titreEl.textContent = 'Rentabilité — Groupe Demonchy';
+    document.documentElement.classList.add('mcs-theme');
+    rentaDemonchyThemeOn = true;
+    rentaview.classList.add('open');
+    rentaApplyData(rentaDemonchyDataset(), null);
+    rentaDemonchyRelabel();
+    rentaDemonchyPrependNote();
+  }
+  document.getElementById('sh-rentabilite-demonchy').addEventListener('click', function(){ sheetOpen(false); rentabiliteDemonchyOpen(); });
 
   // ---- Relances clients (chantier 3 audit MCS, patron d'un tenant secondaire uniquement) ----
   // Detection R1 (30j) / R2 (~50j) faite cote serveur depuis les factures MEG deja importees
