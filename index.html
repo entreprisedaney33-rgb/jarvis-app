@@ -7846,8 +7846,8 @@
          unique de detection de mise a jour (voir checkUpdate ci-dessous), plus fiable qu'une
          comparaison de chaine de version par tenant. */
   var APPV_MCS = '4.58';
-  var APPV_LABO = '1.02';
-  var BUILD = 52;
+  var APPV_LABO = '1.03';
+  var BUILD = 53;
   // displayVersion()/displayVersionShort() lisent isMcsCode() (definie plus bas dans cette
   // meme IIFE -- declaration de fonction, donc disponible ici par hoisting) : le TENANT
   // affiche depend du code de connexion, jamais d'un simple "APPV" global qui ne dirait ni
@@ -16307,6 +16307,70 @@
     if (rentaList.firstChild) rentaList.insertBefore(note, rentaList.firstChild);
     else rentaList.appendChild(note);
   }
+  // Bandeau ICB (15/09/2026, demande explicite de Mathéo) : la marge d'EBE d'ICB (le coeur du
+  // groupe) et sa trajectoire sur 4 ans, sourcees dans clients/demonchy/analyse-groupe/
+  // GROUPE-DEMONCHY-synthese-analyse-2026-09-15.md section 6.3 (comptes ICB 437 957 962, [V]) --
+  // PAS une donnee inventee comme le reste du dataset Demonchy (cf. commentaire au-dessus de
+  // rentaDemonchyDataset). Marge d'EBE (EBITDA) : 2021 2,7% / 2022 5,2% / 2023 4,3% / 2024 2,4%.
+  // "Un point vaut 175 000 EUR" = 1% de 17,5M EUR de CA ICB 2024, deja coherent avec le dataset.
+  function rentaDemonchyPrependICBBandeau(){
+    var wrap = document.createElement('div');
+    wrap.id = 'renta-demonchy-icb-bandeau';
+    wrap.style.cssText = 'background:#3A0D0D;border:1px solid #FF453A;border-radius:14px;padding:14px 16px 12px;margin:0 0 12px;';
+    var texte = document.createElement('div');
+    texte.style.cssText = 'color:#FF6961;font-weight:800;font-size:15px;line-height:1.35;';
+    texte.textContent = 'ICB, marge d’EBE 2,4 % contre 5,2 % en 2022, un point vaut 175 000 €';
+    wrap.appendChild(texte);
+    var trajTitre = document.createElement('div');
+    trajTitre.style.cssText = 'color:#FF453A;opacity:.85;font-size:11px;font-weight:600;margin-top:10px;letter-spacing:.02em;text-transform:uppercase;';
+    trajTitre.textContent = 'Marge d’EBE ICB — trajectoire 2021-2024';
+    wrap.appendChild(trajTitre);
+    var pts = [['2021','2,7 %',2.7], ['2022','5,2 %',5.2], ['2023','4,3 %',4.3], ['2024','2,4 %',2.4]];
+    var maxV = 5.2, minV = 2.4, top = 10, bot = 46;
+    var coords = pts.map(function(p){
+      var y = bot - ((p[2] - minV) / (maxV - minV)) * (bot - top);
+      return y;
+    });
+    var xs = [26, 112, 198, 284];
+    var poly = xs.map(function(x, i){ return x + ',' + coords[i].toFixed(1); }).join(' ');
+    var svgNS = 'http://www.w3.org/2000/svg';
+    var svg = document.createElementNS(svgNS, 'svg');
+    svg.setAttribute('viewBox', '0 0 310 56');
+    svg.style.cssText = 'width:100%;height:56px;display:block;margin-top:6px;overflow:visible;';
+    var polyline = document.createElementNS(svgNS, 'polyline');
+    polyline.setAttribute('points', poly);
+    polyline.setAttribute('fill', 'none');
+    polyline.setAttribute('stroke', '#FF453A');
+    polyline.setAttribute('stroke-width', '2.5');
+    polyline.setAttribute('stroke-linejoin', 'round');
+    polyline.setAttribute('stroke-linecap', 'round');
+    svg.appendChild(polyline);
+    xs.forEach(function(x, i){
+      var c = document.createElementNS(svgNS, 'circle');
+      c.setAttribute('cx', x); c.setAttribute('cy', coords[i].toFixed(1)); c.setAttribute('r', '3.5');
+      c.setAttribute('fill', '#FF453A');
+      svg.appendChild(c);
+      var t = document.createElementNS(svgNS, 'text');
+      t.setAttribute('x', x); t.setAttribute('y', coords[i] - 7);
+      t.setAttribute('text-anchor', 'middle');
+      t.setAttribute('font-size', '9.5'); t.setAttribute('font-weight', '700');
+      t.setAttribute('fill', '#FF9D97');
+      t.textContent = pts[i][1];
+      svg.appendChild(t);
+    });
+    wrap.appendChild(svg);
+    var lignAns = document.createElement('div');
+    lignAns.style.cssText = 'display:flex;justify-content:space-between;margin-top:2px;padding:0 4px;';
+    pts.forEach(function(p){
+      var a = document.createElement('span');
+      a.style.cssText = 'font-size:11px;color:#FF453A;opacity:.8;';
+      a.textContent = p[0];
+      lignAns.appendChild(a);
+    });
+    wrap.appendChild(lignAns);
+    if (rentaList.firstChild) rentaList.insertBefore(wrap, rentaList.firstChild);
+    else rentaList.appendChild(wrap);
+  }
   // Palette de couleurs distinctes pour les barres de repartition (societe/poste) -- inline,
   // scope a CE panneau uniquement (jamais touche la regle CSS partagee .rc-list-fill, donc zero
   // risque de regression sur MCS/la demo x12, qui gardent leur unique couleur or). Demande
@@ -16351,6 +16415,7 @@
     rentaDemonchyRelabel();
     rentaDemonchyColorer();
     rentaDemonchyPrependNote();
+    rentaDemonchyPrependICBBandeau();
   }
   document.getElementById('sh-rentabilite-demonchy').addEventListener('click', function(){ sheetOpen(false); rentabiliteDemonchyOpen(); });
 
