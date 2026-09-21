@@ -2273,6 +2273,9 @@
   html.mcs-theme #facture-directe-form input,
   html.mcs-theme #facture-directe-form select,
   html.mcs-theme #facture-directe-form textarea,
+  html.mcs-theme #avoir-contrat-form-bg input,
+  html.mcs-theme #avoir-contrat-form-bg select,
+  html.mcs-theme #avoir-contrat-form-bg textarea,
   html.mcs-theme #dv-totaux-panel input,
   html.mcs-theme #fd-totaux-panel input{
     border:2px solid var(--blue); background:#fff;
@@ -2284,13 +2287,16 @@
   html.mcs-theme #devis-form-corps input:disabled,
   html.mcs-theme #devis-form-corps textarea:disabled,
   html.mcs-theme #facture-directe-form input:disabled,
-  html.mcs-theme #facture-directe-form textarea:disabled{
+  html.mcs-theme #facture-directe-form textarea:disabled,
+  html.mcs-theme #avoir-contrat-form-bg input:disabled,
+  html.mcs-theme #avoir-contrat-form-bg textarea:disabled{
     border-color:var(--hairline); color:var(--muted);
   }
   html.mcs-theme #facture-contrat-form .ctf-section,
   html.mcs-theme #contrat-catalogue-form .ctf-section,
   html.mcs-theme #devis-form-corps .ctf-section,
   html.mcs-theme #facture-directe-form .ctf-section,
+  html.mcs-theme #avoir-contrat-form-bg .ctf-section,
   html.mcs-theme #dv-totaux-panel,
   html.mcs-theme #fd-totaux-panel{
     background:#fff; border:1px solid rgba(10,132,255,.25); border-radius:14px;
@@ -8006,7 +8012,7 @@
          comparaison de chaine de version par tenant. */
   var APPV_MCS = '4.59';
   var APPV_LABO = '1.03';
-  var BUILD = 58;
+  var BUILD = 59;
   // displayVersion()/displayVersionShort() lisent isMcsCode() (definie plus bas dans cette
   // meme IIFE -- declaration de fonction, donc disponible ici par hoisting) : le TENANT
   // affiche depend du code de connexion, jamais d'un simple "APPV" global qui ne dirait ni
@@ -12914,6 +12920,7 @@
   if (avcBg) avcBg.addEventListener('click', function(e){ if (avcEnvoiVerrouille()) return; if (e.target === avcBg) avcBg.classList.remove('open'); });
   if (avcVoirPdfBtn) avcVoirPdfBtn.onclick = function(){ if (avcPdfBlobUrl) window.open(avcPdfBlobUrl, '_blank'); };
   if (avcMailCorps) avcMailCorps.oninput = function(){ fcfAutoGrow(avcMailCorps); };
+  if (avcMotif) avcMotif.addEventListener('input', function(){ avcMotif.classList.remove('fcf-champ-manquant'); });
 
   // L'apercu (document ET mail) se charge automatiquement a l'ouverture (aucune donnee a saisir
   // avant -- la reference vient entierement de la facture choisie), le motif reste a remplir
@@ -12922,6 +12929,7 @@
     avcDeverrouiller();
     avcAfficherStatut('');
     avcMotif.value = '';
+    avcMotif.classList.remove('fcf-champ-manquant');
     avcRecap.textContent = contratNomAffiche(f) + ' — N° ' + (f.numero_facture || '') + ' — ' + Number(f.prix_ttc).toFixed(2) + ' € TTC';
     avcBg.dataset.factureId = f.id;
     avcBg.dataset.numeroFacture = f.numero_facture || '';
@@ -12983,7 +12991,14 @@
   var AVC_TIMEOUT_SECURITE_MS = 3 * 60 * 1000;
   if (avcEnvoyerBtn) avcEnvoyerBtn.onclick = function(){
     var motif = String(avcMotif.value || '').trim();
-    if (!motif){ toast('Précise le motif de l\'avoir.'); return; }
+    if (!motif){
+      // Correction 5 (21/09/2026) : le refus se VOIT (champ cerclé de rouge + curseur dedans),
+      // meme classe .fcf-champ-manquant que "Modifier et traiter" -- plus un simple toast furtif.
+      avcMotif.classList.add('fcf-champ-manquant');
+      avcMotif.focus();
+      toast('Précise le motif de l\'avoir.');
+      return;
+    }
     var factureId = avcBg.dataset.factureId;
     var numeroFacture = avcBg.dataset.numeroFacture;
     var contratId = avcBg.dataset.contratId;
