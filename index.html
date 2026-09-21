@@ -3353,7 +3353,7 @@
   /* Onglet "Rentabilite (demonstration)" (15/09/2026, labo uniquement) -- bandeau explicite,
      jamais discret comme #renta-maj (c'est un rappel important : donnees reelles d'un tiers). */
   #renta-demo-note{font-size:12.5px; line-height:1.45; color:var(--gold-a); background:rgba(var(--gold-rgb),.12); border:1px solid rgba(var(--gold-rgb),.35); border-radius:12px; padding:10px 12px; margin:0 0 16px}
-  #renta-maj{font-size:13px; color:var(--muted); text-align:center; margin:4px 0 18px; line-height:1.4}
+  #renta-maj, #renta-regle-avoirs{font-size:13px; color:var(--muted); text-align:center; margin:4px 0 18px; line-height:1.4}
   #renta-overview{margin-bottom:18px}
   #renta-overview .ro-title{font-size:12.5px; font-weight:700; color:var(--gold-a); text-transform:uppercase; letter-spacing:.03em; margin-bottom:8px}
   .ro-grid{display:grid; grid-template-columns:1fr 1fr; gap:10px}
@@ -5371,6 +5371,7 @@
   html.mcs-theme .docref-actions .vc-no,
   html.mcs-theme #docreff-file-chip,
   html.mcs-theme #renta-maj,
+  html.mcs-theme #renta-regle-avoirs,
   html.mcs-theme .doc-folder-count,
   html.mcs-theme .meute-argumentaire,
   html.mcs-theme .meute-act-btn,
@@ -8012,7 +8013,7 @@
          comparaison de chaine de version par tenant. */
   var APPV_MCS = '4.59';
   var APPV_LABO = '1.03';
-  var BUILD = 59;
+  var BUILD = 60;
   // displayVersion()/displayVersionShort() lisent isMcsCode() (definie plus bas dans cette
   // meme IIFE -- declaration de fonction, donc disponible ici par hoisting) : le TENANT
   // affiche depend du code de connexion, jamais d'un simple "APPV" global qui ne dirait ni
@@ -16111,7 +16112,8 @@
     captionParts.push('Compté jusqu\'au ' + rentaDateCourteFr(new Date()) + ' (' + rentaMoisIndexExercice(cleCourante, exDebut) + 'e mois) — dernier mois provisoire.');
     if (courant){
       if (caJarvisCourant !== null && nbJarvisCourant > 0){
-        captionParts.push(moisLabel(courant.mois) + ' (provisoire) : ' + fmtEuros(caJarvisCourant) + ' Jarvis (' + nbJarvisCourant + (nbJarvisCourant > 1 ? ' contrats' : ' contrat') + ') + ' + fmtEuros(courant.ca) + ' MEG.');
+        var netAvoirsTxt = (cm && Number(cm.nbAvoirs) > 0) ? ', net de ' + fmtEuros(cm.avoirsHT) + ' d\'avoirs' : '';
+        captionParts.push(moisLabel(courant.mois) + ' (provisoire) : ' + fmtEuros(caJarvisCourant) + ' Jarvis (' + nbJarvisCourant + (nbJarvisCourant > 1 ? ' contrats' : ' contrat') + netAvoirsTxt + ') + ' + fmtEuros(courant.ca) + ' MEG.');
       } else {
         captionParts.push(moisLabel(courant.mois) + ' (provisoire) : ' + fmtEuros(courant.ca) + ' MEG.');
       }
@@ -16305,16 +16307,36 @@
   // dependance a contratsMoisData (rempli seulement si l'onglet Contrats a ete ouvert dans la
   // session). "cle" verifie par securite (edge case minuit, serveur vs client) avant d'afficher
   // le montant -- si absent/desaligne, message honnete plutot qu'un chiffre potentiellement faux.
+  // Trois etats, jamais un montant quand la donnee n'est pas chargee (un faux zero ferait croire a
+  // Mickael qu'il a tout facture) :
+  //  1. non charge (rien recu, mois different, ou chiffres non numeriques) -> "indisponible" ;
+  //  2. charge, reste > 0 -> le montant et le nombre de contrats ;
+  //  3. charge, reste = 0 -> "tout est facture" (un vrai zero, sur des lignes reellement lues).
+  // Le serveur renvoie null (donc l'etat 1) tant qu'aucune ligne REELLE du mois n'est chargee.
   function rentaResteAFacturer(cleMois, contratsMoisEnCours){
     var wrap = document.createElement('div'); wrap.className = 'rt-reste-facturer';
-    if (!contratsMoisEnCours || contratsMoisEnCours.cle !== cleMois){
+    var cm = contratsMoisEnCours;
+    var charge = !!cm && cm.cle === cleMois && typeof cm.resteHT === 'number' && isFinite(cm.resteHT)
+      && typeof cm.nbReste === 'number' && isFinite(cm.nbReste);
+    if (!charge){
       wrap.classList.add('rt-reste-inconnu');
       wrap.textContent = 'Contrats — reste à facturer : indisponible pour le moment.';
       return wrap;
     }
-    wrap.textContent = 'Contrats — reste à facturer : ' + fmtEuros(contratsMoisEnCours.resteHT) +
-      ' (' + contratsMoisEnCours.nbReste + (contratsMoisEnCours.nbReste > 1 ? ' contrats' : ' contrat') + ')';
+    if (cm.nbReste === 0){
+      wrap.textContent = 'Contrats — reste à facturer : rien, tous les contrats du mois sont facturés.';
+      return wrap;
+    }
+    wrap.textContent = 'Contrats — reste à facturer : ' + fmtEuros(cm.resteHT) +
+      ' (' + cm.nbReste + (cm.nbReste > 1 ? ' contrats' : ' contrat') + ')';
     return wrap;
+  }
+  // Regle de rattachement des avoirs, ecrite une fois pour toutes (MCS uniquement : le tableau est
+  // partage avec la demo Demonchy du labo, qui ne doit pas changer).
+  function rentaRegleAvoirs(){
+    var p = document.createElement('p'); p.id = 'renta-regle-avoirs';
+    p.textContent = 'Un avoir est déduit du mois de la facture qu\'il annule, pas du mois où il est émis.';
+    return p;
   }
   // Ligne du mois en cours : rentrees Jarvis (contrats factures) et MEG (ventes saisies
   // directement) affichees separement, jamais fondues en un seul montant -- un total combine
@@ -16340,26 +16362,50 @@
     moisCell.appendChild(document.createTextNode(moisLabelCourt(courant.mois) + ' ·'));
     var badgeMeg = rentaBadge('meg'); if (badgeMeg) moisCell.appendChild(badgeMeg);
 
-    var caJarvis = null, nbJarvis = 0;
+    var caJarvis = null, nbJarvis = 0, nbAvoirsJ = 0;
     if (contratsMoisEnCours && contratsMoisEnCours.cle === courant.mois){
-      caJarvis = contratsMoisEnCours.factureHT;
+      caJarvis = contratsMoisEnCours.factureHT;   // = le NET (factures emises moins avoirs)
       nbJarvis = contratsMoisEnCours.nbFacture;
-      if (nbJarvis > 0){
+      nbAvoirsJ = Number(contratsMoisEnCours.nbAvoirs) || 0;
+      if (nbJarvis > 0 || nbAvoirsJ > 0){
         var badgeJarvis = rentaBadge('jarvis'); if (badgeJarvis) moisCell.appendChild(badgeJarvis);
       }
     }
     row.appendChild(moisCell);
 
     var caCell = document.createElement('div'); caCell.className = 'rt-cell rt-val ca rt-ca-detail';
-    if (caJarvis !== null && nbJarvis > 0){
+    if (caJarvis !== null && (nbJarvis > 0 || nbAvoirsJ > 0)){
       var lJarvis = document.createElement('div'); lJarvis.className = 'rt-ca-ligne';
-      lJarvis.textContent = fmtEuros(caJarvis) + ' (Jarvis, ' + nbJarvis + (nbJarvis > 1 ? ' contrats' : ' contrat') + ')';
+      lJarvis.textContent = fmtEuros(caJarvis) + (nbAvoirsJ > 0 ? ' net' : '') + ' (Jarvis, ' + nbJarvis + (nbJarvis > 1 ? ' contrats' : ' contrat') + ')';
+      caCell.appendChild(lJarvis);
+      // Composition visible, jamais une soustraction cachee : facture - avoirs = net. Rien du tout
+      // (pas une ligne a zero) quand le mois n'a aucun avoir.
+      if (nbAvoirsJ > 0){
+        var cmJ = contratsMoisEnCours;
+        var lCompo = document.createElement('div'); lCompo.className = 'rt-ca-ligne rt-ca-compo';
+        lCompo.textContent = 'facturé ' + fmtEuros(cmJ.brutHT) + ' − avoirs ' + fmtEuros(cmJ.avoirsHT) +
+          (nbAvoirsJ > 1 ? ' (' + nbAvoirsJ + ')' : '') + ' = ' + fmtEuros(cmJ.factureHT);
+        caCell.appendChild(lCompo);
+      }
+      // Anomalies rares, signalees plutot que devinees (jamais affichees si tout va bien).
+      var nbNonRatt = Number(contratsMoisEnCours.avoirsNonRattaches) || 0;
+      var nbNonRemis = Number(contratsMoisEnCours.avoirsNonRemisATraiter) || 0;
+      if (nbNonRatt > 0){
+        var lNr = document.createElement('div'); lNr.className = 'rt-meg-fraicheur a_verifier';
+        lNr.textContent = '⚠ ' + nbNonRatt + (nbNonRatt > 1 ? ' avoirs non rattachés' : ' avoir non rattaché') + ' à un mois : non déduit' + (nbNonRatt > 1 ? 's' : '') + '.';
+        caCell.appendChild(lNr);
+      }
+      if (nbNonRemis > 0){
+        var lNm = document.createElement('div'); lNm.className = 'rt-meg-fraicheur a_verifier';
+        lNm.textContent = '⚠ ' + nbNonRemis + (nbNonRemis > 1 ? ' avoirs émis sans remise du contrat à traiter.' : ' avoir émis sans remise du contrat à traiter.');
+        caCell.appendChild(lNm);
+      }
       var lMeg = document.createElement('div'); lMeg.className = 'rt-ca-ligne';
       lMeg.textContent = '+ ' + fmtEuros(courant.ca) + ' (MEG, saisies directes)';
       var total = Math.round((caJarvis + courant.ca) * 100) / 100;
       var lTotal = document.createElement('div'); lTotal.className = 'rt-ca-total';
       lTotal.textContent = '= ' + fmtEuros(total) + ' — provisoire';
-      caCell.appendChild(lJarvis); caCell.appendChild(lMeg); caCell.appendChild(lTotal);
+      caCell.appendChild(lMeg); caCell.appendChild(lTotal);
     } else {
       caCell.textContent = fmtEuros(courant.ca) + ' (MEG)';
     }
@@ -16423,6 +16469,7 @@
       var totalBenef = moisAvecDepense.length === mois.length ? (totalCa - totalDep) : null;
       table.appendChild(rentaTableRow('rt-total', 'Total', { ca: totalCa, depenses: moisAvecDepense.length ? totalDep : null, benefice: totalBenef }));
     }
+    if (isMcsCode()) wrap.appendChild(rentaRegleAvoirs());
     wrap.appendChild(table);
     if (mois.length && moisAvecDepense.length < mois.length){
       var noteTot = document.createElement('p'); noteTot.id = 'renta-maj';
