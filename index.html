@@ -2276,6 +2276,9 @@
   html.mcs-theme #avoir-contrat-form-bg input,
   html.mcs-theme #avoir-contrat-form-bg select,
   html.mcs-theme #avoir-contrat-form-bg textarea,
+  html.mcs-theme #facture-renvoi-form-bg input,
+  html.mcs-theme #facture-renvoi-form-bg select,
+  html.mcs-theme #facture-renvoi-form-bg textarea,
   html.mcs-theme #dv-totaux-panel input,
   html.mcs-theme #fd-totaux-panel input{
     border:2px solid var(--blue); background:#fff;
@@ -2289,7 +2292,9 @@
   html.mcs-theme #facture-directe-form input:disabled,
   html.mcs-theme #facture-directe-form textarea:disabled,
   html.mcs-theme #avoir-contrat-form-bg input:disabled,
-  html.mcs-theme #avoir-contrat-form-bg textarea:disabled{
+  html.mcs-theme #avoir-contrat-form-bg textarea:disabled,
+  html.mcs-theme #facture-renvoi-form-bg input:disabled,
+  html.mcs-theme #facture-renvoi-form-bg textarea:disabled{
     border-color:var(--hairline); color:var(--muted);
   }
   html.mcs-theme #facture-contrat-form .ctf-section,
@@ -2297,6 +2302,7 @@
   html.mcs-theme #devis-form-corps .ctf-section,
   html.mcs-theme #facture-directe-form .ctf-section,
   html.mcs-theme #avoir-contrat-form-bg .ctf-section,
+  html.mcs-theme #facture-renvoi-form-bg .ctf-section,
   html.mcs-theme #dv-totaux-panel,
   html.mcs-theme #fd-totaux-panel{
     background:#fff; border:1px solid rgba(10,132,255,.25); border-radius:14px;
@@ -7079,6 +7085,7 @@
       <p class="ctf-section-titre">Message</p>
       <label>Objet</label><input id="fcf-objet" type="text">
       <label>Corps du mail</label><textarea id="fcf-corps"></textarea>
+      <div id="fcf-corps-info" class="fcf-avertissement" style="display:none" role="status"></div>
     </div>
     <!-- Point 4 (Fenetre 1, 08/09/2026 soir) : commentaire libre demande verbatim par Mickael
          (TRANSCRIPTION-RDV-MICKAEL-04-09-2026.txt : "meme le commentaire. Remettre un
@@ -8013,7 +8020,7 @@
          comparaison de chaine de version par tenant. */
   var APPV_MCS = '4.59';
   var APPV_LABO = '1.03';
-  var BUILD = 60;
+  var BUILD = 61;
   // displayVersion()/displayVersionShort() lisent isMcsCode() (definie plus bas dans cette
   // meme IIFE -- declaration de fonction, donc disponible ici par hoisting) : le TENANT
   // affiche depend du code de connexion, jamais d'un simple "APPV" global qui ne dirait ni
@@ -12842,6 +12849,12 @@
       frvDeverrouiller(); frvEnvoyerBtn.disabled = false;
       frvAfficherStatut('');
       toast('✅ Facture renvoyée à ' + destinataire);
+      // 21/09/2026 : un renvoi ne doit jamais annoncer autre chose que le PDF joint. Si le texte d'origine annonçait des valeurs
+      // différentes, le serveur les a corrigées EN PLACE avant l'envoi (formulation intacte) : on le dit, clairement.
+      if (j.texteCorrige && j.texteCorrige.length){
+        frvAfficherStatut('ℹ️ Le texte du mail d\'origine annonçait des valeurs différentes du PDF joint ; elles ont été corrigées avant cet envoi : ' +
+          j.texteCorrige.map(function(m){ return m.champ + ' ' + m.avant + ' → ' + m.apres; }).join(' ; ') + '.', 'envoi-succes');
+      }
       // Question posee APRES succes, jamais automatique : par defaut rien n'est modifie. Ce
       // meme panneau sert aussi a renvoyer a un tiers ponctuel (une copie demandee par le
       // cabinet) -- dans ce cas l'adresse par defaut ne doit surtout pas changer.
@@ -13051,6 +13064,104 @@
       toast('❌ ' + err);
     });
   };
+
+  // ==== MAIL-FACTURE-LIB (21/09/2026) -- SOURCE UNIQUE du calcul et du controle du corps de mail d'une facture ====
+  // Copie IDENTIQUE dans MCS . Contrats (apercu, envoi, renvoi) et dans l'application (index.html) : n8n ne partage
+  // aucun module, donc le texte de ce fichier est injecte tel quel (voir construire-patch-contrats.py). ES5 volontaire
+  // (l'application n'utilise ni fleches ni const). Aucune dependance, aucun effet de bord.
+  //
+  // PRINCIPE : le montant TTC, la date d'emission et l'echeance annonces dans un mail ne sont JAMAIS recopies d'un texte
+  // stocke ni d'un calcul parallele : ils viennent de mfFaits(), qui reproduit a l'identique l'arithmetique du PDF joint
+  // (Construire facture contrat envoi : ht = prix x quantite ; tva = ht x round(taux x 100)/100 ; ttc = ht + tva ; affiche
+  // par toFixed(2)) -- l'egalite est verifiee par execution du VRAI constructeur (harnais) et par une assertion dans le noeud.
+
+  var MF_NUM_PLACEHOLDER = "[n° attribué à l'envoi]";
+
+  // Faits du document : ce que le PDF imprimera.
+  function mfFaits(prixHt, quantite, tvaFrac, dateEcheanceIso, maintenant) {
+    var q = Number(quantite) || 1;
+    var tvaPct = Math.round((Number(tvaFrac) || 0.2) * 100);
+    var base = (Number(prixHt) || 0) * q;
+    var ttc = base + base * (tvaPct / 100);
+    var m = /^(\d{4})-(\d{2})-(\d{2})$/.exec(String(dateEcheanceIso || '').trim());
+    var plus30 = new Date(maintenant.getTime()); plus30.setDate(plus30.getDate() + 30);
+    return {
+      ttc: (Number(ttc) || 0).toFixed(2).replace('.', ','),
+      dateEmission: maintenant.toLocaleDateString('fr-FR'),
+      dateEcheance: m ? (m[3] + '/' + m[2] + '/' + m[1]) : plus30.toLocaleDateString('fr-FR')
+    };
+  }
+
+  // Texte par defaut d'une facture de contrat, compose depuis les faits (jamais depuis un texte stocke).
+  function mfComposer(faits, ctx) {
+    ctx = ctx || {};
+    var numero = ctx.numero || MF_NUM_PLACEHOLDER;
+    return 'Bonjour,\n\nVeuillez trouver ci-joint la facture ' + numero + ' du ' + faits.dateEmission +
+      ", d'un montant de " + faits.ttc + ' € TTC, concernant ' + (ctx.prestation || '') + ' pour ' + (ctx.nomAffiche || '') +
+      '.\n\nRèglement par virement, échéance au ' + faits.dateEcheance + '. Nos coordonnées bancaires figurent sur la facture.' +
+      '\n\nNous restons à votre disposition.\n\nCordialement,\nMickaël Chantereau\nSARL MCS — 2 Chemin de Belle Étoile, 33370 Tresses\n06 09 16 47 30';
+  }
+
+  // Les trois valeurs verifiables, reperees par leur PHRASE (jamais toute date ou tout montant du texte : une mention
+  // legitime -- date d'intervention, montant HT, ancienne facture -- ne doit jamais bloquer un envoi).
+  var MF_RE_MONTANT = /((?:montant|total|somme|net\s+à\s+payer)[^.\n€]{0,40}?)(\d[\d\s  ]*,\d{2})(\s*€)/i;
+  var MF_RE_EMISSION = /(facture\b[^\n]{0,80}?\bdu\s+)(\d{2}\/\d{2}\/\d{4})/i;
+  var MF_RE_ECHEANCE = /([eé]ch[eé]ance[^\n\d]{0,25})(\d{2}\/\d{2}\/\d{4})/i;
+
+  function mfNormMontant(s) { return String(s || '').replace(/[\s  ]/g, ''); }
+
+  function mfExtraire(texte) {
+    var t = String(texte || '');
+    var a = MF_RE_MONTANT.exec(t), b = MF_RE_EMISSION.exec(t), c = MF_RE_ECHEANCE.exec(t);
+    return { montant: a ? mfNormMontant(a[2]) : null, dateEmission: b ? b[2] : null, dateEcheance: c ? c[2] : null };
+  }
+
+  // Ecarts entre le texte et le document. Vide = coherent. Une valeur absente du texte n'est pas un ecart.
+  function mfEcarts(texte, faits) {
+    var v = mfExtraire(texte), e = [];
+    if (v.montant !== null && v.montant !== mfNormMontant(faits.ttc)) e.push({ champ: 'montant TTC', texte: v.montant + ' €', document: faits.ttc + ' €' });
+    if (v.dateEmission !== null && v.dateEmission !== faits.dateEmission) e.push({ champ: "date d'émission", texte: v.dateEmission, document: faits.dateEmission });
+    if (v.dateEcheance !== null && v.dateEcheance !== faits.dateEcheance) e.push({ champ: 'échéance', texte: v.dateEcheance, document: faits.dateEcheance });
+    return e;
+  }
+
+  function mfMessageEcarts(ecarts) {
+    return ecarts.map(function (x) { return x.champ + ' : le texte annonce ' + x.texte + ', le document indique ' + x.document; }).join(' ; ');
+  }
+
+  // Le texte a-t-il la MEME STRUCTURE que le texte par defaut (seules les valeurs changent) ? Alors il n'a pas ete
+  // retouche a la main et peut etre recompose sans rien perdre. On neutralise montants, dates, numeros et le segment
+  // "concernant X pour Y." (qui vient des donnees : designation et residence, pas de la prose de l'utilisateur).
+  function mfStructure(texte) {
+    return String(texte || '')
+      .replace(/\[n°[^\]]*\]|\b[A-Z]{3,4}\d{6}\b/g, '{N}')
+      .replace(/\d[\d\s  ]*,\d{2}\s*€(\s*TTC)?/gi, '{M}')
+      .replace(/\d{2}\/\d{2}\/\d{4}/g, '{D}')
+      .replace(/\[date d'émission\]|\[échéance\]/g, '{D}')
+      .replace(/concernant[^\n]*?\bpour\b[^\n]*?\./i, 'concernant {P}.')
+      .replace(/\s+/g, ' ').trim();
+  }
+  function mfMemeStructure(texteA, texteB) { return mfStructure(texteA) === mfStructure(texteB); }
+
+  // Renvoi d'un document deja parti : aucune saisie possible, le texte doit rester fidele au PDF joint. On corrige EN PLACE
+  // les seules trois valeurs reperees (la formulation n'est jamais touchee) et on rend la liste de ce qui a change.
+  function mfCorriger(texte, faits) {
+    var t = String(texte || ''), modifs = [];
+    t = t.replace(MF_RE_MONTANT, function (tout, avant, val, apres) {
+      if (mfNormMontant(val) === mfNormMontant(faits.ttc)) return tout;
+      modifs.push({ champ: 'montant TTC', avant: mfNormMontant(val) + ' €', apres: faits.ttc + ' €' }); return avant + faits.ttc + apres;
+    });
+    t = t.replace(MF_RE_EMISSION, function (tout, avant, val) {
+      if (val === faits.dateEmission) return tout;
+      modifs.push({ champ: "date d'émission", avant: val, apres: faits.dateEmission }); return avant + faits.dateEmission;
+    });
+    t = t.replace(MF_RE_ECHEANCE, function (tout, avant, val) {
+      if (val === faits.dateEcheance) return tout;
+      modifs.push({ champ: 'échéance', avant: val, apres: faits.dateEcheance }); return avant + faits.dateEcheance;
+    });
+    return { texte: t, modifs: modifs };
+  }
+  // ==== FIN MAIL-FACTURE-LIB ====
 
   // Point 3d (Session 15) -- un textarea qui montre TOUT son contenu, jamais une fenêtre à
   // faire défiler : grandit avec le texte (même mécanisme que corpsAutoGrow déjà en place
@@ -13953,7 +14064,9 @@
     // Point 3d -- sous-lignes et corps du mail montrent TOUT leur contenu, jamais une fenêtre à
     // faire défiler (même mécanisme, étendu au 2 champs).
     souslignesInput.oninput = function(){ fcfAutoGrow(souslignesInput); fcfRenderApercu(f); };
-    corpsInput.oninput = function(){ fcfAutoGrow(corpsInput); };
+    // 21/09/2026 : dès que Mickael écrit dans le champ, le texte n'est plus « automatique » -- il ne sera plus jamais
+    // recomposé en silence (voir fcfMailAppliquer) ; s'il devient faux, on le signale, on ne l'écrase pas.
+    corpsInput.oninput = function(){ fcfAutoGrow(corpsInput); mailTouche = true; corpsInput.classList.remove('fcf-champ-manquant'); fcfMailReevaluer(); };
 
     // ---- TVA : mêmes 2 choix fixes 10%/20% que l'ancien inline (Sujet 3, 02/09/2026). ----
     var tvaWrap = document.getElementById('fcf-tva-wrap');
@@ -13996,6 +14109,105 @@
     tvaSource.textContent = 'Votre tableau indique ' + (registreVal*100).toFixed(0) + ' %.' + (f.tva_meg_reel != null ? (' (Vos factures réelles : ' + (f.tva_meg_reel*100).toFixed(0) + ' %.)') : '');
     tvaWrap.appendChild(tvaSource);
 
+    // ---- 21/09/2026 -- Le corps du mail est RECOMPOSE depuis l'état réel du document, jamais repris d'un texte stocké ----
+    // Cause du défaut (cas Camponac) : le texte était composé UNE fois à la génération du brouillon, stocké, puis ré-affiché tel quel
+    // (après un avoir, c'était le texte de la facture d'origine) ; ni le changement de TVA ni celui de l'échéance ne le touchaient.
+    // Désormais : à l'ouverture et à chaque changement (TVA, prix, quantité, échéance, désignation, résidence, client), le serveur
+    // renvoie les FAITS du document (mêmes que le PDF) et le texte composé. Texte non retouché -> recomposé en silence (avec
+    // « Annuler » si une valeur change). Texte retouché à la main -> jamais écrasé : on signale l'écart et on propose de régénérer.
+    var mailFaits = null;        // faits du dernier aperçu serveur : {ttc, dateEmission, dateEcheance}
+    var mailAuto = '';           // dernier texte composé par le serveur et posé dans le champ
+    var mailObjetAuto = '';
+    var mailTouche = false;      // l'utilisateur a écrit dans le champ depuis la dernière composition
+    var objetTouche = false;
+    var mailPrecedent = null;    // texte mis de côté avant une recomposition ou une régénération (« Retrouver mon texte »)
+    var mailReq = 0, mailTimer = null, mailEnCours = false, mailDepuis = 0;
+    var mailInfo = document.getElementById('fcf-corps-info');
+    document.getElementById('fcf-objet').addEventListener('input', function(){ objetTouche = true; });
+    function fcfMailInfo(type, texte, boutons){
+      mailInfo.innerHTML = ''; mailInfo.dataset.type = type || '';
+      if (!texte){ mailInfo.style.display = 'none'; return; }
+      var span = document.createElement('span'); span.textContent = texte; mailInfo.appendChild(span);
+      (boutons || []).forEach(function(b){
+        var bt = document.createElement('button'); bt.type = 'button'; bt.className = 'vc-no'; bt.textContent = b.libelle;
+        bt.style.display = 'block'; bt.style.marginTop = '8px'; bt.addEventListener('click', b.action); mailInfo.appendChild(bt);
+      });
+      mailInfo.style.display = '';
+    }
+    function fcfMailEcartsTexte(ecarts){ return ecarts.map(function(x){ return x.champ + ' ' + x.texte + ' → ' + x.document; }).join(' ; '); }
+    function fcfMailRetrouver(){
+      if (mailPrecedent == null) return;
+      corpsInput.value = mailPrecedent; mailTouche = true; fcfAutoGrow(corpsInput); mailPrecedent = null;
+      fcfMailInfo('', ''); fcfMailReevaluer();
+    }
+    function fcfMailRegenerer(){
+      if (!mailAuto) return;
+      mailPrecedent = corpsInput.value; corpsInput.value = mailAuto; mailTouche = false; fcfAutoGrow(corpsInput);
+      corpsInput.classList.remove('fcf-champ-manquant');
+      fcfMailInfo('info', 'Texte régénéré d\'après la facture (montant, date d\'émission et échéance du document).', [{ libelle: 'Retrouver mon texte', action: fcfMailRetrouver }]);
+    }
+    // Le texte actuel est-il cohérent avec les faits connus ? Sinon avertit (sans jamais rien modifier).
+    function fcfMailReevaluer(){
+      if (!mailFaits) return;
+      var e = mfEcarts(corpsInput.value, mailFaits);
+      if (e.length) fcfMailInfo('alerte', 'Ce texte ne correspond plus à la facture : ' + mfMessageEcarts(e) + '. Votre texte est conservé.', [{ libelle: 'Régénérer le texte', action: fcfMailRegenerer }]);
+      else if (mailInfo.dataset.type === 'alerte') fcfMailInfo('', '');
+    }
+    function fcfMailAppliquer(j){
+      mailFaits = j.faits;
+      var apercuTtc = document.getElementById('fcf-ttc-preview');
+      // Le « Recalcul » affiché sous la TVA vient du MÊME calcul que le PDF (plus d'arrondi parallèle côté navigateur).
+      if (apercuTtc && j.faits.ttc) apercuTtc.textContent = apercuTtc.textContent.replace(/Recalcul : [\d.]+ € TTC/, 'Recalcul : ' + j.faits.ttc.replace(',', '.') + ' € TTC');
+      var actuel = corpsInput.value, nouveau = j.corpsDefaut;
+      var sansRetouche = !mailTouche && (actuel.trim() === '' || actuel === mailAuto || (mailAuto === '' && mfMemeStructure(actuel, nouveau)));
+      if (sansRetouche){
+        if (actuel !== nouveau){
+          var ecarts = actuel.trim() ? mfEcarts(actuel, mailFaits) : [];
+          mailPrecedent = actuel; corpsInput.value = nouveau; fcfAutoGrow(corpsInput);
+          if (ecarts.length && mailPrecedent.trim()) fcfMailInfo('info', 'Le texte a été mis à jour d\'après la facture : ' + fcfMailEcartsTexte(ecarts) + '.', [{ libelle: 'Annuler la mise à jour', action: fcfMailRetrouver }]);
+          else fcfMailInfo('', '');
+        } else if (mailInfo.dataset.type === 'alerte') fcfMailInfo('', '');
+        mailAuto = nouveau;
+      } else {
+        mailAuto = nouveau;              // modèle courant, pour « Régénérer »
+        fcfMailReevaluer();              // texte retouché : jamais écrasé, seulement signalé
+      }
+      // Objet : même règle, en silence (le numéro n'y figure que sous forme de repère, posé par le serveur à l'envoi)
+      var objetInputEl = document.getElementById('fcf-objet'), objetActuel = objetInputEl.value, objetNouveau = j.objetDefaut;
+      if (!objetTouche && (objetActuel.trim() === '' || objetActuel === mailObjetAuto || (mailObjetAuto === '' && mfMemeStructure(objetActuel, objetNouveau)))) objetInputEl.value = objetNouveau;
+      mailObjetAuto = objetNouveau;
+    }
+    function fcfMailRafraichir(suite){
+      var payload = fcfPayloadActuel(f); payload.type = 'mois-apercu-pdf'; payload.sans_pdf = true;
+      var n = ++mailReq; mailEnCours = true; mailDepuis = Date.now();
+      postContrats(payload, function(j){
+        if (n === mailReq){
+          mailEnCours = false;
+          if (j && j.faits && j.corpsDefaut) fcfMailAppliquer(j);   // ancien serveur (pas de faits) : comportement d'avant
+        }
+        if (suite) suite();
+      }, function(){ if (n === mailReq) mailEnCours = false; if (suite) suite(); });   // silencieux : le serveur contrôle de toute façon à l'envoi
+    }
+    function fcfMailPlanifier(){ clearTimeout(mailTimer); mailTimer = setTimeout(function(){ mailTimer = null; fcfMailRafraichir(); }, 500); }
+    // Dernier contrôle avant l'envoi : renvoie true si l'envoi doit être stoppé. Ne porte QUE sur montant TTC, date d'émission et
+    // échéance (repérés par leur phrase) -- jamais sur la formulation. Le serveur refait le même contrôle (autoritaire) avant toute
+    // réservation de numéro ; celui-ci évite l'aller-retour et montre l'écart sous le champ.
+    function fcfMailAControler(){
+      if (mailTimer || (mailEnCours && Date.now() - mailDepuis < 8000)){   // un rafraîchissement est en attente : on l'achève d'abord, puis on relance le clic
+        clearTimeout(mailTimer); mailTimer = null;
+        fcfMailRafraichir(function(){ document.getElementById('fcf-envoyer').click(); });
+        return true;
+      }
+      if (!mailFaits) return false;                    // ancien serveur : seul le contrôle serveur s'applique
+      var e = mfEcarts(corpsInput.value, mailFaits);
+      if (!e.length) return false;
+      corpsInput.classList.add('fcf-champ-manquant');
+      fcfMailInfo('alerte', 'Envoi bloqué : le texte du mail ne correspond pas à la facture jointe — ' + mfMessageEcarts(e) + '. Corrigez le texte ou régénérez-le, puis envoyez.', [{ libelle: 'Régénérer le texte', action: fcfMailRegenerer }]);
+      toast('Le texte du mail ne correspond pas à la facture — voir sous le champ.');
+      corpsInput.focus();
+      return true;
+    }
+
     var ttcPreview = document.getElementById('fcf-ttc-preview');
     function recalcPreview(){
       var ht = parseFloat(prixInput.value) || 0;
@@ -14005,6 +14217,7 @@
       var totalHt = ht * qte;
       ttcPreview.textContent = 'Recalcul : ' + (totalHt*(1+tva)).toFixed(2) + ' € TTC (' + totalHt.toFixed(2) + ' € HT + ' + (tva*100).toFixed(0) + ' % TVA)';
       fcfRenderApercu(f);
+      fcfMailPlanifier();      // TVA, prix ou quantité changés -> le texte du mail suit (recomposé ou signalé)
     }
     prixInput.oninput = recalcPreview; quantiteInput.oninput = recalcPreview;
     recalcPreview();
@@ -14037,7 +14250,13 @@
      quantiteInput, uniteInput, numeroInput, anneeInput, echeanceInput, conditionsInput].forEach(function(el){
       el.addEventListener('input', function(){ fcfRenderApercu(f); });
     });
+    // 21/09/2026 : ces champs alimentent aussi le texte du mail (échéance, désignation, résidence/client) -> il suit.
+    [echeanceInput, designationInput, document.getElementById('fcf-residence'), document.getElementById('fcf-client')].forEach(function(el){
+      el.addEventListener('input', fcfMailPlanifier);
+    });
     fcfRenderApercu(f);
+    fcfMailRafraichir();     // à l'ouverture : le texte affiché est recomposé d'après la facture, pas repris du brouillon stocké
+    clearTimeout(mailTimer); mailTimer = null;   // (recalcPreview() venait d'en planifier un second, inutile à l'ouverture)
 
     // ---- Bascule mobile / bouton "Voir le vrai PDF" ----
     var apercuCol = document.getElementById('fcf-apercu-col');
@@ -14273,6 +14492,7 @@
     okBtn.onclick = function(){
       if (bloque && !designationInput.value.trim()){ toast('Saisissez une désignation avant d\'envoyer.'); return; }
       if (!fcfValiderAvantEnvoi()) return;
+      if (fcfMailAControler()) return;       // 21/09/2026 : dernier contrôle -- le texte doit annoncer les valeurs du document joint
       var payload = fcfPayloadActuel(f);
       payload.type = 'mois-action'; payload.choix = 'envoyer';
       var nomPourToast = contratNomAffiche(f);
