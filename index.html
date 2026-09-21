@@ -1961,13 +1961,6 @@
   #avc-close.verrouille{opacity:.35; pointer-events:none}
   #avc-body{flex:1; overflow-y:auto; -webkit-overflow-scrolling:touch; padding:14px 16px calc(20px + env(safe-area-inset-bottom))}
   #avc-motif{width:100%; box-sizing:border-box; min-height:70px; resize:vertical}
-  #avc-apercu-wrap{
-    margin-top:10px; border:1px solid var(--hairline); border-radius:12px; overflow:hidden;
-    background:#fff; min-height:360px; display:flex; align-items:center; justify-content:center;
-  }
-  #avc-apercu-frame{width:100%; height:60vh; min-height:360px; border:0; display:none}
-  #avc-apercu-loading{font-size:13px; color:var(--muted); padding:24px; text-align:center}
-  #avc-apercu-erreur{font-size:13px; color:#FF453A; padding:24px; text-align:center; display:none}
   #avc-envoyer[disabled]{opacity:.5; pointer-events:none}
   /* Bandeau "remise a traiter suite a un avoir" -- meme famille que .ct-motif-blocage (deja
      posee pour les blocages/echecs d'envoi), couleur neutre (pas une erreur : c'est une
@@ -7188,15 +7181,27 @@
         <p class="dv-meta" id="avc-recap"></p>
         <label>Motif de l'avoir (obligatoire)</label>
         <textarea id="avc-motif" placeholder="Ex : erreur de facturation, double émission…"></textarea>
-        <label style="margin-top:12px">Aperçu du document</label>
-        <div id="avc-apercu-wrap">
-          <p id="avc-apercu-loading">Génération de l'aperçu…</p>
-          <p id="avc-apercu-erreur"></p>
-          <iframe id="avc-apercu-frame" title="Aperçu de l'avoir"></iframe>
-        </div>
-        <div class="cf-actions" style="display:flex; gap:10px; margin-top:14px;">
-          <button id="avc-envoyer" type="button" class="vc-ok">Confirmer l'avoir</button>
-        </div>
+      </div>
+      <div class="ctf-section">
+        <p class="ctf-section-titre">Aperçu du document</p>
+        <p id="avc-apercu-statut" style="font-size:13px; color:var(--muted); margin:0 0 8px">Génération de l'aperçu…</p>
+        <p id="avc-apercu-erreur" style="font-size:13px; color:#FF453A; margin:0 0 8px; display:none"></p>
+        <p id="avc-adresse-manquante" class="fcf-avertissement" style="display:none"></p>
+        <button id="avc-voir-pdf" type="button" class="vc-no" style="display:none">📄 Revoir le PDF de l'avoir</button>
+      </div>
+      <div class="ctf-section" id="avc-mail-section" style="display:none">
+        <p class="ctf-section-titre">Aperçu du mail avant envoi</p>
+        <p style="font-size:13px; color:var(--muted); margin:0 0 10px">Ce que vous validez ici est ce qui part réellement — si vous le modifiez, c'est votre texte qui est envoyé et conservé.</p>
+        <label>À</label>
+        <p class="dv-meta" id="avc-mail-dest" style="margin:0 0 10px"></p>
+        <label>Objet</label>
+        <input id="avc-mail-objet" type="text" />
+        <p style="font-size:12px; color:var(--muted); margin:2px 0 10px">Le repère « [Doc: …] » est ajouté automatiquement en fin d'objet, quoi que vous écriviez ici.</p>
+        <label>Corps du mail</label>
+        <textarea id="avc-mail-corps" style="min-height:150px"></textarea>
+      </div>
+      <div class="cf-actions" style="display:flex; gap:10px; margin-top:14px;">
+        <button id="avc-envoyer" type="button" class="vc-ok">Confirmer l'avoir</button>
       </div>
     </div>
   </div>
@@ -8001,7 +8006,7 @@
          comparaison de chaine de version par tenant. */
   var APPV_MCS = '4.59';
   var APPV_LABO = '1.03';
-  var BUILD = 56;
+  var BUILD = 58;
   // displayVersion()/displayVersionShort() lisent isMcsCode() (definie plus bas dans cette
   // meme IIFE -- declaration de fonction, donc disponible ici par hoisting) : le TENANT
   // affiche depend du code de connexion, jamais d'un simple "APPV" global qui ne dirait ni
@@ -12871,15 +12876,31 @@
   // ---- Mission AVC, lot 2 (18/09/2026) -- "Creer un avoir" sur une facture de contrat deja
   // envoyee. Meme mecanisme de verrouillage que le panneau de renvoi ci-dessus (fcfVerrouiller
   // etc.), sur SES PROPRES elements -- jamais partage. ----
+  // Correction 3 (mission AVC, 18/09/2026) -- point 1 : le PDF s'ouvre desormais en GRAND dans
+  // un nouvel onglet, EXACT MEME mecanisme (popup synchrone + blob URL) que "Voir le vrai PDF"
+  // de l'ecran "Modifier et traiter" (voir voirVraiPdfBtn plus haut) -- jamais l'ancien petit
+  // iframe integre, jamais une variante. Point 3 : signale gestionnaireAdresseManquante sans
+  // jamais inventer d'adresse. Point 4 : objet/corps du mail affiches et modifiables avant tout
+  // envoi -- le texte reellement envoye (modifie ou non) est celui-la, jamais le modele
+  // recalcule cote serveur. Le marqueur [Doc: ...] reste garanti car il n'est jamais expose a
+  // l'edition (ajoute par le serveur, en aval, sur le champ "objet" que Mickael ne voit jamais
+  // avec le marqueur dessus).
   var avcBg = document.getElementById('avoir-contrat-form-bg');
   var avcClose = document.getElementById('avc-close');
   var avcStatut = document.getElementById('avc-envoi-statut');
   var avcMotif = document.getElementById('avc-motif');
   var avcRecap = document.getElementById('avc-recap');
   var avcEnvoyerBtn = document.getElementById('avc-envoyer');
-  var avcFrame = document.getElementById('avc-apercu-frame');
-  var avcLoading = document.getElementById('avc-apercu-loading');
+  var avcApercuStatut = document.getElementById('avc-apercu-statut');
   var avcErreur = document.getElementById('avc-apercu-erreur');
+  var avcAdresseManquante = document.getElementById('avc-adresse-manquante');
+  var avcVoirPdfBtn = document.getElementById('avc-voir-pdf');
+  var avcMailSection = document.getElementById('avc-mail-section');
+  var avcMailDest = document.getElementById('avc-mail-dest');
+  var avcMailObjet = document.getElementById('avc-mail-objet');
+  var avcMailCorps = document.getElementById('avc-mail-corps');
+  var avcPdfBlobUrl = null;
+  function avcLibererBlob(){ if (avcPdfBlobUrl) { URL.revokeObjectURL(avcPdfBlobUrl); avcPdfBlobUrl = null; } }
   function avcEnvoiVerrouille(){ return avcBg.dataset.verrouille === '1'; }
   function avcVerrouiller(){ avcBg.dataset.verrouille = '1'; if (avcClose) avcClose.classList.add('verrouille'); }
   function avcDeverrouiller(){ avcBg.dataset.verrouille = ''; if (avcClose) avcClose.classList.remove('verrouille'); }
@@ -12889,12 +12910,14 @@
     avcStatut.className = 'fcf-envoi-statut' + (classe ? ' ' + classe : '');
     avcStatut.style.display = texte ? '' : 'none';
   }
-  if (avcClose) avcClose.addEventListener('click', function(){ if (avcEnvoiVerrouille()) return; avcBg.classList.remove('open'); });
+  if (avcClose) avcClose.addEventListener('click', function(){ if (avcEnvoiVerrouille()) return; avcBg.classList.remove('open'); avcLibererBlob(); });
   if (avcBg) avcBg.addEventListener('click', function(e){ if (avcEnvoiVerrouille()) return; if (e.target === avcBg) avcBg.classList.remove('open'); });
+  if (avcVoirPdfBtn) avcVoirPdfBtn.onclick = function(){ if (avcPdfBlobUrl) window.open(avcPdfBlobUrl, '_blank'); };
+  if (avcMailCorps) avcMailCorps.oninput = function(){ fcfAutoGrow(avcMailCorps); };
 
-  // L'apercu se charge automatiquement a l'ouverture (aucune donnee a saisir avant -- la
-  // reference vient entierement de la facture choisie), le motif reste a remplir avant de
-  // pouvoir confirmer.
+  // L'apercu (document ET mail) se charge automatiquement a l'ouverture (aucune donnee a saisir
+  // avant -- la reference vient entierement de la facture choisie), le motif reste a remplir
+  // avant de pouvoir confirmer.
   function avoirContratFormOpen(f){
     avcDeverrouiller();
     avcAfficherStatut('');
@@ -12904,23 +12927,54 @@
     avcBg.dataset.numeroFacture = f.numero_facture || '';
     avcBg.dataset.contratId = f.contrat_id != null ? f.contrat_id : '';
     avcEnvoyerBtn.disabled = false;
-    avcFrame.style.display = 'none';
-    avcFrame.src = '';
+    avcLibererBlob();
+    avcVoirPdfBtn.style.display = 'none';
+    avcMailSection.style.display = 'none';
+    avcAdresseManquante.style.display = 'none';
     avcErreur.style.display = 'none';
-    avcLoading.style.display = '';
-    avcLoading.textContent = 'Génération de l\'aperçu…';
+    avcApercuStatut.style.display = '';
+    avcApercuStatut.textContent = 'Génération de l\'aperçu…';
     avcBg.classList.add('open');
+    // Meme piege/meme parade que "Voir le vrai PDF" (voirVraiPdfBtn) : la fenetre doit s'ouvrir
+    // de facon SYNCHRONE, dans le meme geste utilisateur que le clic qui a mene jusqu'ici --
+    // un window.open() dans le callback asynchrone serait bloque en silence par le navigateur.
+    var popup = window.open('', '_blank');
     postFacturation({ type: 'apercu_avoir', avoir_de: f.numero_facture }, function(r){
-      avcLoading.style.display = 'none';
+      avcApercuStatut.style.display = 'none';
       if (!r || !r.ok){
+        if (popup && !popup.closed) popup.close();
         avcErreur.style.display = '';
         avcErreur.textContent = '❌ ' + ((r && r.message) || 'Aperçu impossible.');
         return;
       }
-      avcFrame.src = 'data:application/pdf;base64,' + r.pdfBase64;
-      avcFrame.style.display = 'block';
+      try {
+        var bytes = atob(r.pdfBase64); var arr = new Uint8Array(bytes.length);
+        for (var i = 0; i < bytes.length; i++) arr[i] = bytes.charCodeAt(i);
+        var blob = new Blob([arr], { type: 'application/pdf' });
+        avcPdfBlobUrl = URL.createObjectURL(blob);
+        if (popup && !popup.closed) popup.location = avcPdfBlobUrl; else window.open(avcPdfBlobUrl, '_blank');
+        avcVoirPdfBtn.style.display = '';
+      } catch (e) {
+        if (popup && !popup.closed) popup.close();
+        avcErreur.style.display = '';
+        avcErreur.textContent = '❌ Impossible d’ouvrir le PDF pour le moment.';
+      }
+      // Point 3 : signale, jamais n'invente -- l'adresse vient de "Modifier et traiter" ou de
+      // nulle part, jamais deduite ni cherchee ailleurs.
+      if (r.gestionnaireAdresseManquante){
+        avcAdresseManquante.style.display = '';
+        avcAdresseManquante.innerHTML = '<svg class="hicon-sm" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="10.5" cy="10.5" r="6.5"/><line x1="20" y1="20" x2="15.3" y2="15.3"/></svg>L’adresse du gestionnaire n’est pas connue dans « Modifier et traiter » — elle n’a jamais été renseignée, elle n’est pas inventée ici. Demandez à Mickael de la compléter.';
+      }
+      // Point 4 : aperçu du mail, modifiable. Destinataire affiché mais jamais éditable ici
+      // (résolu côté serveur, jamais un texte libre pour un envoi réel).
+      avcMailDest.textContent = r.destinataireDefaut || '(aucun email connu — à renseigner dans « Modifier et traiter » avant d\'envoyer)';
+      avcMailObjet.value = r.objetMailDefaut || '';
+      avcMailCorps.value = r.corpsMailDefaut || '';
+      avcMailSection.style.display = '';
+      setTimeout(function(){ fcfAutoGrow(avcMailCorps); }, 0);
     }, function(err){
-      avcLoading.style.display = 'none';
+      avcApercuStatut.style.display = 'none';
+      if (popup && !popup.closed) popup.close();
       avcErreur.style.display = '';
       avcErreur.textContent = '❌ ' + err;
     });
@@ -12933,6 +12987,10 @@
     var factureId = avcBg.dataset.factureId;
     var numeroFacture = avcBg.dataset.numeroFacture;
     var contratId = avcBg.dataset.contratId;
+    // Point 4 : ce qui part est EXACTEMENT ce qui est affiche a l'ecran a cet instant --
+    // modifie ou non, jamais le modele d'origine recalcule cote serveur.
+    var objetMail = String(avcMailObjet.value || '');
+    var corpsMail = String(avcMailCorps.value || '');
     avcVerrouiller();
     avcEnvoyerBtn.disabled = true;
     avcAfficherStatut('✉️ Émission de l\'avoir en cours… Ne fermez pas cet écran (jusqu\'à 1 min 30).', 'envoi-en-cours');
@@ -12942,7 +13000,7 @@
       avcDeverrouiller(); avcEnvoyerBtn.disabled = false;
       avcAfficherStatut('⚠️ Toujours aucune réponse du serveur — on ne sait pas si l\'avoir est parti. Vérifiez avant de recommencer.', 'envoi-erreur');
     }, AVC_TIMEOUT_SECURITE_MS);
-    postFacturation({ type: 'emettre', type_doc: 'avoir', avoir_de: numeroFacture, avoir_source: 'contrat', motif: motif }, function(r){
+    postFacturation({ type: 'emettre', type_doc: 'avoir', avoir_de: numeroFacture, avoir_source: 'contrat', motif: motif, objet_mail: objetMail, corps_mail: corpsMail }, function(r){
       if (reglee) return;
       if (!r || !r.ok){
         reglee = true; clearTimeout(securite);
@@ -12962,6 +13020,7 @@
         avcAfficherStatut('');
         toast('✅ Avoir ' + r.numero_complet + ' émis — contrat remis à traiter.');
         avcBg.classList.remove('open');
+        avcLibererBlob();
         contratsResynchroniser();
       }, function(err2){
         reglee = true; clearTimeout(securite);
