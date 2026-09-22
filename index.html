@@ -3380,6 +3380,26 @@
   #renta-exercice-clos{font-size:11.5px; color:var(--muted); line-height:1.5; background:var(--surface); border-radius:12px; padding:11px 12px; margin:10px 0 18px}
   #renta-exercice-clos b{color:var(--ink)}
   #renta-mois-manquants{font-size:11.5px; color:var(--muted); line-height:1.4; margin:8px 2px 4px; font-style:italic}
+  /* CA de l'exercice (24/09/2026) -- LE chiffre attendu par Mickael, en tete d'ecran, avant le
+     redressement. Empile tout verticalement (jamais de colonnes cote a cote) : seule mise en page
+     qui garantit 0 debordement horizontal quel que soit le libelle (nom de client, motif de
+     contrat) sur un ecran de telephone etroit (verifie a 375px). Scope html.mcs-theme comme le
+     reste du chantier Rentabilite MCS -- absent cote demo labo (exerciceCA n'existe pas dans sa
+     reponse), donc jamais affiche, jamais besoin d'etre exclu explicitement. */
+  html.mcs-theme #renta-exercice{background:var(--surface); border-radius:14px; padding:16px; margin-bottom:18px; border:1px solid rgba(var(--gold-rgb),.35)}
+  html.mcs-theme #rex-periode{font-size:11.5px; color:var(--muted); margin-bottom:8px; line-height:1.35}
+  html.mcs-theme #rex-total{font-size:22px; font-weight:800; font-variant-numeric:tabular-nums; color:var(--ink); margin-bottom:14px; line-height:1.25; word-break:break-word}
+  html.mcs-theme #rex-total .rex-total-ttc{color:var(--gold-a)}
+  html.mcs-theme #rex-total.rex-indisponible{font-size:13px; font-weight:600; color:var(--muted)}
+  html.mcs-theme #rex-sources{display:flex; flex-direction:column; gap:12px; margin-bottom:14px}
+  html.mcs-theme .rex-source-label{font-size:12.5px; font-weight:700; color:var(--ink); line-height:1.35}
+  html.mcs-theme .rex-source-val{font-size:15px; font-weight:700; font-variant-numeric:tabular-nums; margin-top:2px}
+  html.mcs-theme .rex-source-note{font-size:10.5px; color:var(--muted); margin-top:2px; line-height:1.35}
+  html.mcs-theme #rex-reste{border-top:0.5px solid var(--hairline); padding-top:10px}
+  html.mcs-theme .rex-reste-ligne{font-size:12px; font-weight:600; color:var(--ink); margin-top:6px; line-height:1.4}
+  html.mcs-theme .rex-reste-ligne:first-child{margin-top:0}
+  html.mcs-theme .rex-reste-detail{font-size:11px; color:var(--muted); margin-top:2px; line-height:1.35; padding-left:8px}
+  html.mcs-theme .rex-reste-ligne.rex-reste-inconnu{font-weight:500; font-style:italic; color:var(--muted)}
   #renta-reserve{font-size:11px; color:var(--muted); line-height:1.5; margin:14px 2px 4px; padding-top:10px; border-top:0.5px solid var(--hairline)}
   #renta-recon-jarvis{font-size:11px; color:var(--muted); line-height:1.5; margin:10px 2px 4px}
   .renta-subtable{margin-top:10px}
@@ -8020,7 +8040,7 @@
          comparaison de chaine de version par tenant. */
   var APPV_MCS = '4.59';
   var APPV_LABO = '1.03';
-  var BUILD = 61;
+  var BUILD = 62;
   // displayVersion()/displayVersionShort() lisent isMcsCode() (definie plus bas dans cette
   // meme IIFE -- declaration de fonction, donc disponible ici par hoisting) : le TENANT
   // affiche depend du code de connexion, jamais d'un simple "APPV" global qui ne dirait ni
@@ -16463,6 +16483,105 @@
     return wrap;
   }
 
+  // Chiffre d'affaires de l'exercice (24/09/2026) -- LE fait attendu par Mickael, avant tout le
+  // reste (redressement/tableau mensuel/etc, deja construits, inchanges). Vient de d.exerciceCA,
+  // servi par le backend (MCS . Rentabilite, noeud Formater rentabilite (ok)) -- recalcule a
+  // chaque appel depuis 3 sources deja chargees, aucun montant fige cote app. Absent (ex. cote
+  // demo labo, qui ne sert pas ce champ) -> ne rend rien, jamais une carte vide ou trompeuse.
+  function rentaExSourceLigne(label, prov, ht, ttc, note){
+    var l = document.createElement('div'); l.className = 'rex-source';
+    var lbl = document.createElement('div'); lbl.className = 'rex-source-label';
+    lbl.appendChild(document.createTextNode(label));
+    var badge = rentaBadge(prov); if (badge) lbl.appendChild(badge);
+    l.appendChild(lbl);
+    var val = document.createElement('div'); val.className = 'rex-source-val';
+    val.textContent = fmtEuros(ht) + ' HT · ' + fmtEuros(ttc) + ' TTC';
+    l.appendChild(val);
+    if (note){
+      var n = document.createElement('div'); n.className = 'rex-source-note'; n.textContent = note;
+      l.appendChild(n);
+    }
+    return l;
+  }
+  function rentaBuildExerciceCA(d){
+    var ex = d.exerciceCA;
+    if (!ex) return null;
+    var wrap = document.createElement('div'); wrap.id = 'renta-exercice';
+    var title = document.createElement('div'); title.className = 'ro-title'; title.textContent = "Chiffre d'affaires — exercice";
+    wrap.appendChild(title);
+
+    var periode = document.createElement('div'); periode.id = 'rex-periode';
+    periode.textContent = 'Du ' + fmtDevisDateSimple(ex.exercice.debut) + ' au ' + fmtDevisDateSimple(ex.exercice.fin) +
+      ' — arrêté au ' + fmtDevisDateSimple(ex.arreteAu);
+    wrap.appendChild(periode);
+
+    if (ex.total){
+      var totalWrap = document.createElement('div'); totalWrap.id = 'rex-total';
+      var totalHT = document.createElement('span'); totalHT.className = 'rex-total-ht'; totalHT.textContent = fmtEuros(ex.total.ht) + ' HT';
+      var sep = document.createElement('span'); sep.className = 'rex-total-sep'; sep.textContent = ' / ';
+      var totalTTC = document.createElement('span'); totalTTC.className = 'rex-total-ttc'; totalTTC.textContent = fmtEuros(ex.total.ttc) + ' TTC';
+      totalWrap.appendChild(totalHT); totalWrap.appendChild(sep); totalWrap.appendChild(totalTTC);
+      wrap.appendChild(totalWrap);
+    } else {
+      var indispo = document.createElement('div'); indispo.id = 'rex-total'; indispo.className = 'rex-indisponible';
+      indispo.textContent = 'Total de l\'exercice indisponible pour le moment.';
+      wrap.appendChild(indispo);
+    }
+
+    var sources = document.createElement('div'); sources.id = 'rex-sources';
+    if (ex.comptable){
+      sources.appendChild(rentaExSourceLigne(
+        'Comptable (' + fmtDevisDateSimple(ex.comptable.periodeDebut) + ' → ' + fmtDevisDateSimple(ex.comptable.periodeFin) + ')',
+        'comptable', ex.comptable.ht, ex.comptable.ttc, null));
+    }
+    if (ex.contrats){
+      var noteContrats = null;
+      if (ex.contrats.nbAvoirs > 0){
+        noteContrats = 'facturé ' + fmtEuros(ex.contrats.brutHT) + ' − ' + ex.contrats.nbAvoirs +
+          (ex.contrats.nbAvoirs > 1 ? ' avoirs ' : ' avoir ') + fmtEuros(ex.contrats.avoirsHT) + ' = net ci-dessus';
+      }
+      sources.appendChild(rentaExSourceLigne(
+        'Contrats envoyés en septembre (' + ex.contrats.nb + (ex.contrats.nb > 1 ? ' factures net)' : ' facture net)'),
+        'jarvis', ex.contrats.ht, ex.contrats.ttc, noteContrats));
+    }
+    if (ex.meg){
+      var noteMeg = 'MEG, arrêté au ' + fmtDevisDateSimple(ex.meg.arreteAu) + ' (' + ex.meg.nb + (ex.meg.nb > 1 ? ' factures)' : ' facture)');
+      sources.appendChild(rentaExSourceLigne('Factures ponctuelles', 'meg', ex.meg.ht, ex.meg.ttc, noteMeg));
+    }
+    wrap.appendChild(sources);
+
+    // Reste a facturer -- etats honnetes, jamais un zero trompeur (regle du panneau Rentabilite).
+    var reste = document.createElement('div'); reste.id = 'rex-reste';
+    var aT = ex.contrats && ex.contrats.aTraiter;
+    if (aT && aT.nb > 0){
+      var l1 = document.createElement('div'); l1.className = 'rex-reste-ligne';
+      l1.textContent = aT.nb + (aT.nb > 1 ? ' contrats en attente d\'envoi — ' : ' contrat en attente d\'envoi — ') + fmtEuros(aT.ht) + ' HT';
+      reste.appendChild(l1);
+      (aT.liste || []).forEach(function(c){
+        var dd = document.createElement('div'); dd.className = 'rex-reste-detail';
+        dd.textContent = '· ' + (c.client || '(client non précisé)') + ' — ' + fmtEuros(c.ht) + ' HT';
+        reste.appendChild(dd);
+      });
+    }
+    var skipListe = (ex.contrats && ex.contrats.skip && ex.contrats.skip.liste) || [];
+    if (skipListe.length){
+      var l2 = document.createElement('div'); l2.className = 'rex-reste-ligne';
+      l2.textContent = skipListe.length + (skipListe.length > 1 ? ' contrats volontairement non facturés ce mois-ci :' : ' contrat volontairement non facturé ce mois-ci :');
+      reste.appendChild(l2);
+      skipListe.forEach(function(c){
+        var dd = document.createElement('div'); dd.className = 'rex-reste-detail';
+        dd.textContent = '· ' + (c.client || '(client non précisé)') + ' — ' + (c.motif || 'motif non renseigné');
+        reste.appendChild(dd);
+      });
+    }
+    var l4 = document.createElement('div'); l4.className = 'rex-reste-ligne rex-reste-inconnu';
+    l4.textContent = 'Factures ponctuelles MEG au-delà de celles déjà connues : non suivi pour le moment.';
+    reste.appendChild(l4);
+    wrap.appendChild(reste);
+
+    return wrap;
+  }
+
   // Sujet 1.4 (02/09/2026) : le fait le plus important en tete d'ecran, avant le tableau mensuel.
   function rentaBuildRedressement(d){
     var rc = d.resultatComptable;
@@ -16747,6 +16866,8 @@
     rentaData = d;
     rentaList.innerHTML = '';
     if (banner) rentaList.appendChild(banner);
+    var exerciceCA = rentaBuildExerciceCA(d);
+    if (exerciceCA) rentaList.appendChild(exerciceCA);
     var redressement = rentaBuildRedressement(d);
     if (redressement) rentaList.appendChild(redressement);
     rentaList.appendChild(rentaBuildHero(d));
