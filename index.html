@@ -8094,7 +8094,7 @@
          comparaison de chaine de version par tenant. */
   var APPV_MCS = '4.59';
   var APPV_LABO = '1.03';
-  var BUILD = 63;
+  var BUILD = 64;
   // displayVersion()/displayVersionShort() lisent isMcsCode() (definie plus bas dans cette
   // meme IIFE -- declaration de fonction, donc disponible ici par hoisting) : le TENANT
   // affiche depend du code de connexion, jamais d'un simple "APPV" global qui ne dirait ni
@@ -13086,6 +13086,20 @@
       avoirBtnCT.innerHTML = ICON_UNDO_CT + 'Créer un avoir';
       avoirBtnCT.addEventListener('click', function(){ avoirContratFormOpen(f); });
       right.appendChild(avoirBtnCT);
+      // Etape 3 (23/09/2026) : reglements ouverts aux factures de contrat -- uniquement une
+      // facture reellement numerotee, jamais en mode previsionnel. Reutilise tel quel le
+      // mecanisme de l'etape 2 (dfxOuvrirReglements/dfxRenderReglementsPanel, meme panneau,
+      // meme route serveur qui sait maintenant resoudre un jeton de contrat) -- seul le jeton
+      // differe d'une facture ponctuelle. Cette liste (mois-liste, MCS · Contrats) n'expose pas
+      // la colonne devis_fichier_token telle quelle, seulement fichier_url="...?token=<jeton>"
+      // (verifie en reel le 23/09/2026) -- extrait ici, jamais recalcule ni devine.
+      var jetonContrat = (function(u){ var m = /[?&]token=([a-f0-9]+)/i.exec(String(u||'')); return m ? m[1] : ''; })(f.fichier_url);
+      if (jetonContrat){
+        var reglementsBtnCT = document.createElement('button'); reglementsBtnCT.type = 'button'; reglementsBtnCT.className = 'ct-toggle';
+        reglementsBtnCT.innerHTML = DFX_ICON_EURO + 'Règlements';
+        reglementsBtnCT.addEventListener('click', function(){ dfxOuvrirReglements({ pdfToken: jetonContrat }, card); });
+        right.appendChild(reglementsBtnCT);
+      }
     }
     head.appendChild(right);
     card.appendChild(head);
