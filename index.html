@@ -1224,6 +1224,14 @@
   .dfx-table tbody tr.dfx-tr-data:last-child td, .dfx-table tbody tr.dfx-tr-actions:last-child td{border-bottom:0}
   .dfx-table td.dfx-num-nom{font-weight:700}
   .dfx-table td.dfx-num-montant{font-weight:700; white-space:nowrap}
+  /* Reste du honnete (23-24/09/2026) : le retard/trop-percu/non-suivi passe en 2e ligne, jamais
+     sur la meme ligne que le montant (sinon la cellule etait forcee a s'elargir en largeur de
+     telephone, testee a 375px -- white-space:normal explicite car la cellule parente reste
+     nowrap pour le montant lui-meme). */
+  .dfx-retard, .dfx-non-suivi, .dfx-trop-percu{display:block; white-space:normal; font-weight:600; font-size:10.5px; margin-top:2px}
+  .dfx-retard{color:var(--no)}
+  .dfx-non-suivi{color:var(--muted); font-style:italic; font-weight:500}
+  .dfx-trop-percu{color:var(--gold-a)}
   /* Repli/deploi par ligne (09/09/2026, retour Dorian -- "Gerer ce devis/cette facture" ne
      faisait rien, et "Le client a accepte" s'affichait en bandeau permanent entre les lignes).
      La ligne d'actions est desormais MASQUEE par defaut (display:none, jamais table-row en CSS
@@ -3359,6 +3367,7 @@
   /* Onglet "Rentabilite (demonstration)" (15/09/2026, labo uniquement) -- bandeau explicite,
      jamais discret comme #renta-maj (c'est un rappel important : donnees reelles d'un tiers). */
   #renta-demo-note{font-size:12.5px; line-height:1.45; color:var(--gold-a); background:rgba(var(--gold-rgb),.12); border:1px solid rgba(var(--gold-rgb),.35); border-radius:12px; padding:10px 12px; margin:0 0 16px}
+  #dfx-note-ancien{font-size:11.5px; line-height:1.4; color:var(--muted); background:var(--surface); border-radius:10px; padding:8px 10px; margin:0 0 10px}
   #renta-maj, #renta-regle-avoirs{font-size:13px; color:var(--muted); text-align:center; margin:4px 0 18px; line-height:1.4}
   #renta-overview{margin-bottom:18px}
   #renta-overview .ro-title{font-size:12.5px; font-weight:700; color:var(--gold-a); text-transform:uppercase; letter-spacing:.03em; margin-bottom:8px}
@@ -4656,6 +4665,17 @@
   #dv-envoi-panel.open{display:flex}
   #dv-envoi-actions{display:flex; gap:8px}
   #dv-envoi-actions button{flex:1}
+  /* Facture ponctuelle (23-24/09/2026) -- meme patron d'erreur que #dv-err (celui de #fd-err
+     n'existait pas avant, jamais visible malgre son contenu -- corrige au passage). Panneau mail
+     modifiable : cache tant que le brouillon n'est pas enregistre, empile tout verticalement
+     (label au-dessus de son champ) -- seule disposition garantissant 0 debordement en largeur de
+     telephone, meme convention que le reste des formulaires Contrats/Devis. */
+  #fd-err{color:#FF453A; font-size:12.5px; display:none; margin:8px 0}
+  #fd-err.show{display:block}
+  #fd-mail-panel{display:none; background:var(--surface); border-radius:12px; padding:11px 12px; flex-direction:column; gap:8px; margin:10px 0}
+  #fd-mail-panel.open{display:flex}
+  #fd-mail-panel label{font-size:11.5px; color:var(--muted); font-weight:600}
+  html.mcs-theme #fd-mail-panel input, html.mcs-theme #fd-mail-panel textarea{width:100%; box-sizing:border-box}
   /* V6 : liste des factures emises + bouton "annuler par un avoir" -- meme gabarit que #devis-form
      mais plus large/scrollable (une liste, pas un formulaire court). */
   #mf-view-bg{position:fixed; inset:0; background:rgba(0,0,0,.5); display:none; z-index:52}
@@ -6720,6 +6740,11 @@
         <div id="devis-list"></div>
       </div>
       <div class="dfx-body" id="dfx-body-table" style="display:none">
+        <!-- Bascule 23-24/09/2026 : les listes viennent de la nouvelle chaine -- les documents
+             anterieurs au 18/09/2026 (425 devis) restent dans l'ancienne table, jamais migres
+             (decision non tranchee, CARTE-PASSAGE-REEL-2026-09-22.md §6.1). Jamais cache sans le
+             dire. -->
+        <p id="dfx-note-ancien">📁 Les devis et factures créés avant le 18/09/2026 ne sont pas encore listés ici (migration pas encore décidée) — rien n'est perdu, ils restent dans l'ancien système.</p>
         <div class="dfx-table-wrap">
           <table class="dfx-table" id="dfx-table-devis">
             <thead>
@@ -7724,7 +7749,7 @@
   </button>
   <button id="fc-choice-facture" type="button" class="fc-choice-btn">
     <span class="fc-choice-ic">🧾</span>
-    <span class="fc-choice-txt">Facture directe<span class="fc-choice-sub">Sans devis d'origine — prestation déjà réalisée</span></span>
+    <span class="fc-choice-txt">Facture ponctuelle<span class="fc-choice-sub">Sans devis d'origine — prestation déjà réalisée</span></span>
   </button>
   <button id="fc-choice-mesfactures" type="button" class="fc-choice-link">Voir mes factures émises →</button>
   <button id="fc-choice-cancel" type="button" class="vc-no">Annuler</button>
@@ -7732,7 +7757,7 @@
 
 <div id="fd-form-bg"></div>
 <div id="fd-form">
-  <div id="fd-form-head"><b>Facture directe</b><button id="fd-close" type="button" aria-label="Fermer">✕</button></div>
+  <div id="fd-form-head"><b>Facture ponctuelle</b><button id="fd-close" type="button" aria-label="Fermer">✕</button></div>
   <div id="fd-form-body">
   <p class="dfhint">Sans devis d'origine — pour une prestation déjà réalisée (ex. destruction de nid de frelons). Le reste (identité MCS, RIB, mentions légales) vient automatiquement.</p>
   <div class="dfx-outer-grid">
@@ -7777,7 +7802,7 @@
           <textarea id="fd-objet" rows="2" placeholder="Ex : Destruction nid de frelons"></textarea>
         </div>
         <div class="dfx-card1-side">
-          <span class="dfx-statut-pill">Brouillon</span>
+          <span class="dfx-statut-pill" id="fd-statut-badge">Brouillon</span>
           <label>Adresse</label>
           <textarea id="fd-adresse" rows="3" placeholder="Adresse du client"></textarea>
           <label>Email</label>
@@ -7821,10 +7846,22 @@
     <div class="dfx-apercu-scroll"><div id="fd-apercu-page"></div></div>
   </div>
   <div id="fd-recap"></div>
+  <!-- Mail modifiable avant envoi (23-24/09/2026) -- ce que MEG n'a pas, on le garde : recompose
+       par le serveur (facture-apercu-mail, faits reels du brouillon), mais objet/corps restent
+       de vrais champs texte tant que "Confirmer l'envoi" n'a pas ete clique. -->
+  <div id="fd-mail-panel">
+    <p class="ctf-section-titre">Mail — modifiable avant envoi</p>
+    <label>Destinataire</label>
+    <input id="fd-mail-dest" type="email" placeholder="contact@syndic.fr" autocomplete="off">
+    <label>Objet</label>
+    <input id="fd-mail-objet" type="text">
+    <label>Message</label>
+    <textarea id="fd-mail-corps" rows="7"></textarea>
+  </div>
   <div id="fd-err"></div>
   <div id="df-row">
     <button id="fd-cancel" type="button" class="vc-no">Annuler</button>
-    <button id="fd-save" type="button" class="vc-ok vc-envoi-reel"><svg class="hicon-sm" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><line x1="22" y1="2" x2="11" y2="13"/><polygon points="22 2 15 22 11 13 2 9 22 2"/></svg>Émettre la facture</button>
+    <button id="fd-save" type="button" class="vc-ok vc-envoi-reel"><svg class="hicon-sm" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><line x1="22" y1="2" x2="11" y2="13"/><polygon points="22 2 15 22 11 13 2 9 22 2"/></svg>Enregistrer le brouillon</button>
   </div>
   </div>
 </div>
@@ -8040,7 +8077,7 @@
          comparaison de chaine de version par tenant. */
   var APPV_MCS = '4.59';
   var APPV_LABO = '1.03';
-  var BUILD = 62;
+  var BUILD = 63;
   // displayVersion()/displayVersionShort() lisent isMcsCode() (definie plus bas dans cette
   // meme IIFE -- declaration de fonction, donc disponible ici par hoisting) : le TENANT
   // affiche depend du code de connexion, jamais d'un simple "APPV" global qui ne dirait ni
@@ -11372,6 +11409,16 @@
   // comme "validee" (document fini et réel, juste pas encore payé), jamais "brouillon" (ça
   // laisserait croire qu'elle n'a pas été émise) ni "reglee" (pas encore vrai par défaut).
   function dfxFactureStatutKey(f){
+    // Bascule 23-24/09/2026 : le statut affiche d'une facture de la nouvelle chaine tient
+    // compte du reglement deja calcule en lot par le serveur (f.etat) -- "Reglee" n'attend pas
+    // l'ecran de saisie de reglement (etape 2), il refletera deja un reglement existant des
+    // aujourd'hui si la donnee en contient un.
+    if (f.chaineNouvelle){
+      if (f.statutBrut === 'brouillon') return 'brouillon';
+      if (f.statutBrut === 'annulee_par_avoir') return 'annulee';
+      if (f.etat === 'solde' || f.etat === 'trop_percu') return 'reglee';
+      return 'validee';
+    }
     if (f.source !== 'meg') return 'validee';
     var e = normDoc(f.statut || '');
     if (e.indexOf('regl') !== -1) return 'reglee';
@@ -11452,6 +11499,19 @@
     return '<span class="dfx-pastille ' + m[1] + '">' + escHtml(m[0]) + '</span>';
   }
   function dfxMontantCell(v){ return (v !== undefined && v !== null && v !== '') ? escHtml(fmtEuros(v)) : '—'; }
+  // Reste du honnete (23-24/09/2026) : jamais un "-" ambigu la ou l'information n'existe pas
+  // (regle du lot) -- un trop-percu s'affiche comme tel (jamais un negatif ni un zero), et un
+  // retard visible directement dans la meme cellule (depuis quand, pas seulement le montant).
+  // "non suivi" prepare le jour ou une facture de contrat apparaitra dans cette meme liste
+  // (etape 3, pas encore le cas ici -- aucune ligne de la nouvelle chaine ne peut porter ce
+  // marqueur aujourd'hui, mais l'ecran sait deja le dire plutot que d'inventer un montant).
+  function dfxResteDuCell(f){
+    if (f.resteDuNonSuivi) return '<span class="dfx-non-suivi">non suivi</span>';
+    if (f.tropPercu){ return '<span class="dfx-trop-percu">Trop-perçu ' + escHtml(fmtEuros(f.tropPercu)) + '</span>'; }
+    var txt = dfxMontantCell(f.resteDu);
+    if (f.retardJours){ txt += '<span class="dfx-retard">retard ' + f.retardJours + (f.retardJours > 1 ? ' jours' : ' jour') + '</span>'; }
+    return txt;
+  }
   // Ligne tableau (donnees) + ligne actions repliable juste en dessous (colspan) -- reutilise
   // TELLES QUELLES les fonctions devisRenderRowDevis/devisRenderRowFacture(x, true) ci-dessus
   // (memes boutons, meme etat, aucune logique dupliquee). Repliee par defaut (retour Dorian
@@ -11511,6 +11571,24 @@
     var label = document.createElement('label'); label.textContent = 'Destinataire';
     var input = document.createElement('input'); input.type = 'email'; input.value = f.email || ''; input.placeholder = 'client@exemple.fr';
     label.appendChild(input);
+    panel.appendChild(label);
+    // Bascule 23-24/09/2026 : une facture de la nouvelle chaine passe par facture-envoyer (jamais
+    // envoyer-facture, l'ancienne route -- son jeton ne serait meme pas compatible, table
+    // differente) ET recompose son mail par defaut (facture-apercu-mail) -- objet/corps
+    // MODIFIABLES avant envoi, ce que MEG ne proposait pas (demande explicite, gardee).
+    var objetInput = null, corpsArea = null;
+    if (f.chaineNouvelle){
+      var labelObjet = document.createElement('label'); labelObjet.textContent = 'Objet du mail';
+      objetInput = document.createElement('input'); objetInput.type = 'text'; objetInput.placeholder = 'Chargement…';
+      labelObjet.appendChild(objetInput);
+      var labelCorps = document.createElement('label'); labelCorps.textContent = 'Message';
+      corpsArea = document.createElement('textarea'); corpsArea.rows = 6; corpsArea.placeholder = 'Chargement…';
+      labelCorps.appendChild(corpsArea);
+      panel.appendChild(labelObjet); panel.appendChild(labelCorps);
+      postDf({ type: 'facture-apercu-mail', token: f.pdfToken }, function(r){
+        if (r && r.ok){ objetInput.value = r.objetDefaut || ''; corpsArea.value = r.corpsDefaut || ''; }
+      }, function(){});
+    }
     var row = document.createElement('div'); row.className = 'dfx-envoi-facture-row';
     var cancelBtn = document.createElement('button'); cancelBtn.type = 'button'; cancelBtn.className = 'vc-no'; cancelBtn.textContent = 'Annuler';
     var sendBtn = document.createElement('button'); sendBtn.type = 'button'; sendBtn.className = 'vc-ok vc-envoi-reel'; sendBtn.textContent = 'Envoyer';
@@ -11519,14 +11597,23 @@
       var dest = input.value.trim();
       if (!dest || dest.indexOf('@') === -1){ toast('Adresse email invalide.'); return; }
       sendBtn.disabled = true; sendBtn.textContent = 'Envoi…';
-      postDf({ type: 'envoyer-facture', token: f.pdfToken, numeroComplet: f.numeroComplet, destinataireEmail: dest }, function(r){
+      var payload = f.chaineNouvelle
+        ? { type: 'facture-envoyer', token: f.pdfToken, destinataireEmail: dest, objet: objetInput.value.trim(), corps: corpsArea.value }
+        : { type: 'envoyer-facture', token: f.pdfToken, numeroComplet: f.numeroComplet, destinataireEmail: dest };
+      postDf(payload, function(r){
         sendBtn.disabled = false; sendBtn.textContent = 'Envoyer';
-        if (r && r.ok){ toast('✅ Facture envoyée' + (r.testMode ? ' (mode test → ' + r.destinataire + ')' : ' à ' + r.destinataire)); panel.remove(); }
+        if (r && r.ok){
+          // Verifie en reel le 23/09/2026 : facture-envoyer ne renvoie PAS de champ testMode
+          // explicite (contrairement au devis) -- seul statut:'envoyee_test' le dit.
+          var estTest = r.testMode || r.statut === 'envoyee_test';
+          toast('✅ Facture envoyée' + (estTest ? ' (mode test → ' + (r.destinataireReel || r.destinataire) + ')' : ' à ' + (r.destinataireReel || r.destinataire)));
+          panel.remove(); devisResynchroniser();
+        }
         else { toast('❌ ' + ((r && r.message) || 'Envoi impossible.')); }
       }, function(err){ sendBtn.disabled = false; sendBtn.textContent = 'Envoyer'; toast('❌ ' + err); });
     });
     row.appendChild(cancelBtn); row.appendChild(sendBtn);
-    panel.appendChild(label); panel.appendChild(row);
+    panel.appendChild(row);
     container.appendChild(panel);
   }
   function dfxBuildFactureRow(f){
@@ -11540,7 +11627,7 @@
     td(dfxMontantCell(f.montantHt), 'dfx-num-montant');
     td(dfxMontantCell(f.montantTtc), 'dfx-num-montant');
     td(dfxMontantCell(f.regle), 'dfx-num-montant');
-    td(dfxMontantCell(f.resteDu), 'dfx-num-montant');
+    td(dfxResteDuCell(f), 'dfx-num-montant');
     var tdActions = document.createElement('td'); tr.appendChild(tdActions);
     var iconRow = document.createElement('div'); iconRow.className = 'dfx-icon-row';
     var href = f.pdfUrl ? ('https://n8n-self-hosted-t0pz.onrender.com' + f.pdfUrl + '&code=' + encodeURIComponent(String(read('jarvisCode') || '').trim())) : (f.megUrl || '');
@@ -11553,11 +11640,16 @@
     // route additive 'envoyer-facture', TEST_MODE, jamais mailto:) -- uniquement les factures
     // Jarvis avec un PDF connu (f.pdfToken) ; les factures MEG (deja envoyees via MEG) n'ont
     // pas cette action, cf. dfxOuvrirEnvoiFacture.
-    iconRow.appendChild(dfxIconBtn(DFX_ICON_MAIL, f.pdfToken ? 'Envoyer par mail' : 'Envoi non disponible pour cette facture', function(){
+    // 23-24/09/2026 : une facture de la nouvelle chaine deja envoyee (statutBrut != 'brouillon')
+    // ne repropose plus l'envoi -- facture-envoyer refuserait honnêtement (facture_deja_emise),
+    // autant ne pas presenter un bouton qui echouerait a coup sur.
+    var envoiIndisponibleNouveau = f.chaineNouvelle && f.statutBrut !== 'brouillon';
+    var envoiDesactive = !f.pdfToken || f.typeDoc === 'avoir' || envoiIndisponibleNouveau;
+    iconRow.appendChild(dfxIconBtn(DFX_ICON_MAIL, envoiIndisponibleNouveau ? 'Déjà envoyée' : (f.pdfToken ? 'Envoyer par mail' : 'Envoi non disponible pour cette facture'), function(){
       if (!trAct.classList.contains('dfx-open')){ trAct.classList.add('dfx-open'); pencilBtnF.classList.add('dfx-icon-btn-active'); }
       dfxOuvrirEnvoiFacture(f, inner);
       trAct.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
-    }, !f.pdfToken || f.typeDoc === 'avoir'));
+    }, envoiDesactive));
     var pencilBtnF = dfxIconBtn(DFX_ICON_PENCIL, 'Gérer cette facture', function(){
       var open = trAct.classList.toggle('dfx-open');
       pencilBtnF.classList.toggle('dfx-icon-btn-active', open);
@@ -12058,8 +12150,83 @@
   // Badge menu (2026-08-10) : meme principe que meuteCheckBadge -- un appel leger au demarrage
   // (patron MCS uniquement, cf. enterApp) pour savoir s'il y a des devis/factures en attente
   // sans attendre que le panneau soit ouvert.
+  // Bascule liste (23-24/09/2026, plan CARTE-PASSAGE-REEL-2026-09-22.md §6.1, gestes 3-4) :
+  // Devis/Factures/Avoirs viennent desormais de la nouvelle chaine (mcs-df-formulaire, routes
+  // liste/facture-liste/avoir-liste) -- l'ancien workflow (mcs-devis-factures) ne sert plus qu'a
+  // "A valider" (flux MEG historique, jamais touche, cf. commentaire "garde EXACTEMENT son
+  // rendu" plus haut). Geste 1 du plan (migrer ou non les 425 anciens devis dans
+  // mcs_documents_vente) n'est PAS tranche par ce lot -- decision explicitement laissee a Dorian
+  // dans la carte de bascule -- donc ces 425 devis anterieurs au 18/09/2026 redeviennent
+  // invisibles ICI tant qu'elle ne l'est pas. Jamais caches sans le dire : bandeau
+  // #devis-note-ancien affiche dans les 2 listes (cf. devisApplyFilter).
+  // f.pdfUrl/dv.url au format "/webhook/mcs-devis-fichier?token=..." -- meme route unifiee
+  // (etendue le 22/09/2026 a mcs_documents_vente comme 3e source, cf. VERROU.md) deja utilisee
+  // partout ailleurs dans cet ecran pour les PDF, jamais une 2e route inventee ici.
+  function dfPdfUrlParToken(token){ return token ? ('/webhook/mcs-devis-fichier?token=' + encodeURIComponent(token)) : ''; }
+  function dfMapDevisNouveau(it){
+    return {
+      token: it.token, numero: it.numeroDevis, statut: it.statut, nom: it.clientNom,
+      date: it.createdAt, montantHt: it.montantHt, montant: it.montantTtc,
+      objet: it.objet, reference: it.objet, url: dfPdfUrlParToken(it.token), source: 'jarvis',
+      estExpire: it.estExpire, articlesAVerifier: it.articlesAVerifier,
+    };
+  }
+  function dfCalculerRetardJours(f){
+    if (f.etat !== 'a_regler' && f.etat !== 'partiel') return null;
+    if (!f.dateEcheanceBrute) return null;
+    var ech; try { ech = new Date(f.dateEcheanceBrute.length <= 10 ? f.dateEcheanceBrute + 'T00:00:00' : f.dateEcheanceBrute); } catch (e){ return null; }
+    if (isNaN(ech.getTime())) return null;
+    var jrs = Math.floor((Date.now() - ech.getTime()) / 86400000);
+    return jrs > 0 ? jrs : null;
+  }
+  function dfMapFactureNouvelle(it){
+    var f = {
+      pdfToken: it.token, numero: it.numero, numeroComplet: it.numero, statutBrut: it.statut,
+      nom: it.clientNom, date: it.dateEmission, dateEcheanceBrute: it.dateEcheance,
+      reference: it.residenceNom || it.devisNumero || '',
+      montantHt: it.montantHt, montantTtc: it.montantTtc,
+      regle: it.totalRegle, resteDu: it.resteDu, tropPercu: it.tropPercu, etat: it.etat,
+      typeDoc: 'facture', source: 'jarvis', chaineNouvelle: true,
+      paye: it.etat === 'solde' || it.etat === 'trop_percu',
+      pdfUrl: dfPdfUrlParToken(it.token),
+      dejaAnnuleePar: (it.avoirs && it.avoirs.length) ? it.avoirs[0].numero : null,
+    };
+    f.retardJours = dfCalculerRetardJours(f);
+    return f;
+  }
+  function dfMapAvoirNouveau(it){
+    return {
+      pdfToken: it.token, numero: it.numero, numeroComplet: it.numero, statutBrut: it.statut,
+      nom: it.clientNom, date: it.dateEmission, avoirDe: it.factureNumero, motifAvoir: it.motif,
+      montantHt: it.montantHt, montantTtc: it.montantTtc, typeDoc: 'avoir', source: 'jarvis', chaineNouvelle: true,
+      pdfUrl: dfPdfUrlParToken(it.token),
+    };
+  }
+  // Controle de fumee du 23/09/2026 (relances_clients sous son seuil, 32/200) : les 4 appels
+  // reseau de ce chargeur etaient enchaines l'un apres l'autre (jusqu'a 4x le temps d'un seul
+  // appel) -- assez long pour que l'onglet SUIVANT, ouvert par le test juste apres devis/factures
+  // dans la meme page, voie sa propre reponse arriver hors de sa fenetre de mesure. Reecrit en
+  // parallele (les 3 nouveaux appels partent en meme temps que l'ancien, jamais l'un apres
+  // l'autre) -- meme resultat, temps total ramene a celui du plus lent des 4 au lieu de leur
+  // somme.
+  function dfChargerNouvelleChaine(cb){
+    var devis = [], factures = [], avoirsRestants = null, recus = 0;
+    function fini(){ recus++; if (recus === 3) cb(devis, factures.concat(avoirsRestants || [])); }
+    postDf({ type: 'liste' }, function(rd){ devis = (rd && rd.ok ? rd.items : []).map(dfMapDevisNouveau); fini(); }, function(){ fini(); });
+    postDf({ type: 'facture-liste' }, function(rf){ factures = (rf && rf.ok ? rf.items : []).map(dfMapFactureNouvelle); fini(); }, function(){ fini(); });
+    postDf({ type: 'avoir-liste' }, function(ra){ avoirsRestants = (ra && ra.ok ? ra.items : []).map(dfMapAvoirNouveau); fini(); }, function(){ fini(); });
+  }
+  function devisChargerListeMergee(payload, onOk, onErr){
+    var ancienRecu = false, nouvelleRecue = false, ancienData = null, ancienEchoue = false, devisNouveau = [], facturesNouvelles = [];
+    function fini(){
+      if (!ancienRecu || !nouvelleRecue) return;
+      onOk({ aValider: (ancienData && ancienData.aValider) || [], testMode: true, devis: devisNouveau, factures: facturesNouvelles, ancienIndisponible: ancienEchoue });
+    }
+    postDevisFactures({}, function(ancien){ ancienData = ancien; ancienRecu = true; fini(); }, function(){ ancienEchoue = true; ancienRecu = true; fini(); });
+    dfChargerNouvelleChaine(function(devis, factures){ devisNouveau = devis; facturesNouvelles = factures; nouvelleRecue = true; fini(); });
+  }
   var devisChargeEnVol = {};
-  var devisChargerListe = dedupeAppel(devisChargeEnVol, postDevisFactures, {});
+  var devisChargerListe = dedupeAppel(devisChargeEnVol, devisChargerListeMergee, {});
   function devisCheckBadge(){ devisChargerListe(function(j){ devisData = j; devisUpdateBadge(); }, function(){}); }
   function devisApplyData(j){
     devisData = j;
@@ -23250,11 +23417,27 @@
   });
   var fdRecap = document.getElementById('fd-recap');
   var fdRecapArme = false;
+  // Bascule 23-24/09/2026 : "Facture directe" devient "Facture ponctuelle" sur la nouvelle chaine
+  // (mcs-df-formulaire) -- cycle a 3 temps desormais (recap -> brouillon+mail modifiable ->
+  // envoi), plus le "1 clic = emission" d'avant (postFacturation, MCS . Facturation, laisse
+  // intact et joignable ailleurs -- rien n'est debranche en production, seul CE bouton change de
+  // cible). fdToken = jeton du brouillon une fois enregistre (mcs_documents_vente), jamais un
+  // numero de serie MCS.
+  var fdToken = null;
+  var fdMailPanel = document.getElementById('fd-mail-panel');
+  var fdMailDest = document.getElementById('fd-mail-dest');
+  var fdMailObjet = document.getElementById('fd-mail-objet');
+  var fdMailCorps = document.getElementById('fd-mail-corps');
+  var fdStatutBadge = document.getElementById('fd-statut-badge');
   function fdRecapDesarmer(){
     fdRecapArme = false;
+    fdToken = null;
     fdRecap.classList.remove('open');
     fdRecap.innerHTML = '';
-    fdSave.innerHTML = ICON_ENVOI_REEL + 'Émettre la facture';
+    fdMailPanel.classList.remove('open');
+    fdStatutBadge.textContent = 'Brouillon';
+    fdSave.disabled = false;
+    fdSave.innerHTML = ICON_ENVOI_REEL + 'Enregistrer le brouillon';
   }
   function fdFormOpen(){
     fdNom.value = ''; fdAdresse.value = ''; fdEmail.value = ''; fdObjet.value = '';
@@ -23268,7 +23451,7 @@
     fdLignesWrap.appendChild(fdLigneRow());
     fdRecalcTotal();
     fdRecalcTotauxPanel();
-    fdErr.textContent = '';
+    fdErr.textContent = ''; fdErr.classList.remove('show');
     fdSave.disabled = false;
     fdRecapDesarmer();
     fdFormBg.classList.add('open');
@@ -23302,27 +23485,34 @@
   }
   fdFormBg.addEventListener('click', fdFormClose);
   document.getElementById('fd-cancel').addEventListener('click', fdFormClose);
+  function fdErrAfficher(msg){
+    fdErr.textContent = msg;
+    fdErr.classList.toggle('show', !!msg);
+  }
   fdSave.addEventListener('click', function(){
     var nom = fdNom.value.trim();
     var adresse = fdAdresse.value.trim();
     var email = fdEmail.value.trim();
     var objet = fdObjet.value.trim();
-    fdErr.textContent = '';
-    if (!nom){ fdErr.textContent = 'Le nom du client est obligatoire.'; return; }
-    if (!adresse){ fdErr.textContent = "L'adresse est obligatoire."; return; }
-    if (email && email.indexOf('@') === -1){ fdErr.textContent = 'Adresse email invalide.'; return; }
+    fdErrAfficher('');
+    if (!nom){ fdErrAfficher('Le nom du client est obligatoire.'); return; }
+    if (!adresse){ fdErrAfficher("L'adresse est obligatoire."); return; }
+    if (email && email.indexOf('@') === -1){ fdErrAfficher('Adresse email invalide.'); return; }
     var lecture = lignesEditorRead(fdLignesWrap);
     var lignes = lecture.lignes;
-    if (lecture.invalide){ fdErr.textContent = 'Chaque ligne veut une désignation, une quantité et un prix HT.'; return; }
-    if (!lignes.length){ fdErr.textContent = 'Ajoute au moins une ligne.'; return; }
+    if (lecture.invalide){ fdErrAfficher('Chaque ligne veut une désignation, une quantité et un prix HT.'); return; }
+    if (!lignes.length){ fdErrAfficher('Ajoute au moins une ligne.'); return; }
 
-    // Sujet 4 (02/09/2026) : 1er clic = recap complet (jamais un simple "X€ TTC"), 2e clic =
-    // emission reelle. Le recap montre EXACTEMENT ce que le PDF va porter : destinataire, objet,
-    // chaque ligne (designation/qte/prix HT/TVA/total ligne) et le TTC final.
+    // Bascule 23-24/09/2026, 3 temps (contrat d'interface CONTRAT-INTERFACE-DEVIS-FACTURES.md §2) :
+    // 1er clic = recap complet (jamais un simple "X€ TTC") ; 2e clic = brouillon reellement
+    // enregistre (facture-brouillon-enregistrer) + mail recompose par le serveur depuis l'etat
+    // reel du document (facture-apercu-mail), objet/corps restent modifiables ; 3e clic (bouton
+    // distinct, "Confirmer l'envoi") = facture-envoyer, reserve le numero et envoie seulement si
+    // ca reussit reellement (TEST_MODE tant qu'il reste actif).
     if (!fdRecapArme){
       var totalTtc = lignes.reduce(function(s, l){ return s + l.quantite * l.prix_ht * (1 + l.tva / 100); }, 0);
       fdRecap.innerHTML = '';
-      var titre = document.createElement('b'); titre.textContent = 'Vérifie avant d’émettre — ' + nom + (email ? ' (' + email + ')' : ' — aucun email, à envoyer à la main') + ' — ' + adresse;
+      var titre = document.createElement('b'); titre.textContent = 'Vérifie avant d’enregistrer — ' + nom + (email ? ' (' + email + ')' : ' — aucun email, à envoyer à la main') + ' — ' + adresse;
       fdRecap.appendChild(titre);
       if (objet){ var o = document.createElement('div'); o.className = 'fdr-ligne'; o.textContent = objet; fdRecap.appendChild(o); }
       lignes.forEach(function(l){
@@ -23337,30 +23527,60 @@
       tot.appendChild(tl); tot.appendChild(tv); fdRecap.appendChild(tot);
       fdRecap.classList.add('open');
       fdRecapArme = true;
-      fdSave.innerHTML = ICON_ENVOI_REEL + 'Confirmer l’émission';
+      fdSave.innerHTML = ICON_ENVOI_REEL + 'Enregistrer le brouillon';
       return;
     }
 
+    if (!fdToken){
+      fdSave.disabled = true;
+      fdSave.textContent = 'Enregistrement…';
+      postDf({
+        type: 'facture-brouillon-enregistrer',
+        clientNom: nom, clientEmailFacturation: email, clientAdresseFacturation: adresse,
+        objet: objet, lignes: lignes,
+      }, function(r){
+        fdSave.disabled = false;
+        if (r && r.ok){
+          fdToken = r.token;
+          fdStatutBadge.textContent = 'Brouillon enregistré';
+          fdMailDest.value = email;
+          fdMailObjet.value = ''; fdMailObjet.placeholder = 'Chargement…';
+          fdMailCorps.value = ''; fdMailCorps.placeholder = 'Chargement…';
+          fdMailPanel.classList.add('open');
+          fdSave.innerHTML = ICON_ENVOI_REEL + 'Confirmer l’envoi';
+          postDf({ type: 'facture-apercu-mail', token: fdToken }, function(m){
+            if (m && m.ok){ fdMailObjet.value = m.objetDefaut || ''; fdMailCorps.value = m.corpsDefaut || ''; }
+          }, function(){});
+        } else {
+          fdErrAfficher((r && r.message) || 'Enregistrement du brouillon impossible.');
+        }
+      }, function(err){
+        fdSave.disabled = false;
+        fdErrAfficher(err || "Impossible d'enregistrer le brouillon.");
+      });
+      return;
+    }
+
+    var dest = fdMailDest.value.trim();
+    if (dest && dest.indexOf('@') === -1){ fdErrAfficher('Adresse email invalide.'); return; }
     fdSave.disabled = true;
-    fdSave.textContent = 'Émission…';
-    postFacturation({
-      type: 'emettre', type_doc: 'facture',
-      client: { nom: nom, adresse: adresse, email: email },
-      objet: objet, lignes: lignes,
-      date_prestation: fdDateDebut.value || '', date_prestation_fin: fdDateFin.value || '',
+    fdSave.textContent = 'Envoi…';
+    postDf({
+      type: 'facture-envoyer', token: fdToken,
+      destinataireEmail: dest || undefined, objet: fdMailObjet.value.trim(), corps: fdMailCorps.value,
     }, function(r){
       fdSave.disabled = false;
       if (r && r.ok){
         fdFormClose();
-        toast('✅ Facture émise pour ' + nom);
+        var fdEstTest = r.testMode || r.statut === 'envoyee_test';
+        toast('✅ Facture ' + (r.numeroFacture || '') + (fdEstTest ? ' émise (mode test → ' + r.destinataireReel + ')' : ' envoyée à ' + r.destinataireReel) + ' pour ' + nom);
+        devisResynchroniser();
       } else {
-        fdRecapDesarmer();
-        fdErr.textContent = (r && r.message) || 'Émission impossible.';
+        fdErrAfficher((r && r.message) || 'Envoi impossible.');
       }
     }, function(err){
       fdSave.disabled = false;
-      fdRecapDesarmer();
-      fdErr.textContent = err || "Impossible d'émettre la facture.";
+      fdErrAfficher(err || "Impossible d'envoyer la facture.");
     });
   });
 
@@ -23756,13 +23976,26 @@
     avoirBtn.addEventListener('click', function(){ form.classList.toggle('open'); });
     cancel.addEventListener('click', function(){ form.classList.remove('open'); motif.value = ''; });
     confirm.addEventListener('click', function(){
-      if (!motif.value.trim()){ toast('Précise le motif de l\'avoir.'); return; }
+      var motifTxt = motif.value.trim();
+      if (motifTxt.length < 3){ toast('Le motif doit faire au moins 3 caractères.'); return; }
       confirm.disabled = true;
+      // Bascule 23-24/09/2026 : une facture de la nouvelle chaine (f.chaineNouvelle) passe par
+      // avoir-emettre (postDf), motif obligatoire deja verifie cote client ET revérifié cote
+      // serveur (motif_obligatoire si vide/trop court) -- jamais un 2e mecanisme invente, le
+      // serveur refuse exactement comme documenté dans le contrat d'interface.
+      if (f.chaineNouvelle){
+        postDf({ type: 'avoir-emettre', token: f.pdfToken, motif: motifTxt }, function(r){
+          confirm.disabled = false;
+          if (r && r.ok){ toast('✅ Avoir ' + r.numeroAvoir + ' émis pour ' + f.numeroComplet + (r.testMode ? ' (mode test)' : '')); if (onEmitted) onEmitted(); }
+          else { toast('❌ ' + ((r && r.message) || 'Émission impossible.')); }
+        }, function(err){ confirm.disabled = false; toast('❌ ' + err); });
+        return;
+      }
       // Sujet 2 (01/09/2026 soir) : pour une facture MEG (f.source==='meg'), le serveur n'a AUCUNE
       // ligne dans mcs_factures_emises à relire -- on lui transmet ce que MEG a déjà rapporté et
       // que l'app affiche déjà à l'écran (jamais inventé ici), il construit une référence
       // synthétique et résout l'email du client dans Mes contacts.
-      var payload = { type: 'emettre', type_doc: 'avoir', avoir_de: f.numeroComplet, motif: motif.value.trim() };
+      var payload = { type: 'emettre', type_doc: 'avoir', avoir_de: f.numeroComplet, motif: motifTxt };
       if (f.source === 'meg'){
         payload.avoir_source = 'meg';
         payload.meg_client_nom = f.nom || '';
