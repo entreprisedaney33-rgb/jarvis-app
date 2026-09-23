@@ -1266,6 +1266,23 @@
   html.mcs-theme .dfx-envoi-facture input{border:1.5px solid var(--hairline)}
   .dfx-envoi-facture-row{display:flex; gap:8px}
   .dfx-envoi-facture-row button{flex:1; padding:8px; font-size:13px}
+  /* Panneau reglements (etape 2, 23/09/2026) -- meme grammaire que .dfx-envoi-facture (label/
+     input encadre, boutons vc-ok/vc-no), reutilise telle quelle. */
+  .dfx-reglements-panel{display:flex; flex-direction:column; gap:10px; padding:10px; margin-top:6px; background:var(--surface); border-radius:10px; max-width:420px}
+  .dfx-reglements-panel label{display:flex; flex-direction:column; gap:5px; font-size:12px; color:var(--muted)}
+  .dfx-reglements-panel input, .dfx-reglements-panel select, .dfx-reglements-panel textarea{
+    font:inherit; font-size:15px; color:var(--ink); background:var(--field-bg); border-radius:10px;
+    padding:9px 11px; box-sizing:border-box; border:0.5px solid rgba(255,255,255,.18);
+  }
+  html.mcs-theme .dfx-reglements-panel input, html.mcs-theme .dfx-reglements-panel select, html.mcs-theme .dfx-reglements-panel textarea{border:1.5px solid var(--hairline)}
+  .dfx-reglements-situation{font-size:13.5px; font-weight:600}
+  .dfx-reglements-liste{display:flex; flex-direction:column; gap:6px}
+  .dfx-reglements-ligne{display:flex; align-items:center; gap:8px; font-size:13px; padding:6px 0; border-top:0.5px solid var(--hairline)}
+  .dfx-reglements-ligne-detail{flex:1}
+  .dfx-reglements-ligne.dfx-reglement-annule{opacity:.55; text-decoration:line-through}
+  .dfx-reglements-annuler-btn{flex:0 0 auto; padding:5px 10px; font-size:12px}
+  .dfx-reglements-row{display:flex; gap:8px}
+  .dfx-reglements-row button{flex:1; padding:8px; font-size:13px}
   .dfx-pastille{display:inline-block; font-size:11.5px; font-weight:700; border-radius:99px; padding:3px 10px; white-space:nowrap}
   .dfx-pastille--brouillon{background:rgba(255,255,255,.1); color:var(--muted)}
   html.mcs-theme .dfx-pastille--brouillon{background:var(--field-bg)}
@@ -11466,6 +11483,8 @@
   var DFX_ICON_MAIL = '<svg class="hicon-sm" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="3" y="5" width="18" height="14" rx="2"/><path d="M4 7l8 6 8-6"/></svg>';
   var DFX_ICON_PDF = '<svg class="hicon-sm" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><path d="M14 2v6h6"/><line x1="8" y1="13" x2="16" y2="13"/><line x1="8" y1="17" x2="16" y2="17"/><line x1="8" y1="9" x2="10" y2="9"/></svg>';
   var DFX_ICON_PENCIL = '<svg class="hicon-sm" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 20h9"/><path d="M16.5 3.5a2.1 2.1 0 0 1 3 3L7 19l-4 1 1-4Z"/></svg>';
+  // Etape 2 (23/09/2026) : icone reglements (piece/euro), meme famille visuelle que les 3 autres.
+  var DFX_ICON_EURO = '<svg class="hicon-sm" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M19 7a7.5 7.5 0 1 0 0 10"/><line x1="4" y1="10" x2="15" y2="10"/><line x1="4" y1="14" x2="13" y2="14"/></svg>';
   function dfxIconBtn(html, title, onClick, disabled){
     var b = document.createElement('button'); b.type = 'button';
     b.className = 'dfx-icon-btn' + (disabled ? ' dfx-icon-disabled' : '');
@@ -11616,6 +11635,132 @@
     panel.appendChild(row);
     container.appendChild(panel);
   }
+  // Etape 2 (23/09/2026) : ecran de saisie d'un reglement -- le mecanisme existait cote serveur
+  // depuis le 21/09 (reglement-enregistrer/reglement-annuler/facture-reste-du sur mcs-df-
+  // formulaire, prouve en reel le 23/09 sur une facture ZZZ fraiche avant d'ecrire cet ecran :
+  // partiel -> solde -> annulation -> refus montant negatif/date future/deja annule, tous
+  // conformes a CONTRAT-INTERFACE-DEVIS-FACTURES.md). Perimetre : uniquement les factures
+  // ponctuelles de la nouvelle chaine (mcs_documents_vente) -- jamais une facture de contrat
+  // (etape 3, autre mecanisme, en lecture seule). Les 8 modes MEG sont affiches par leur code
+  // exact (CHQ/PRE/ESP/VIR/LCR/CB/LIB/VP) : aucun libelle francais officiel trouve dans la doc
+  // du projet, mieux vaut le code exact qu'une traduction inventee.
+  var DFX_MODES_REGLEMENT = ['VIR', 'CHQ', 'ESP', 'CB', 'PRE', 'LCR', 'LIB', 'VP'];
+  function dfxFormaterDateReglement(iso){
+    if (!iso) return '';
+    var d = new Date(iso + (iso.length <= 10 ? 'T00:00:00' : ''));
+    return isNaN(d.getTime()) ? iso : d.toLocaleDateString('fr-FR');
+  }
+  function dfxRenderSituationReglement(situation){
+    if (!situation) return '';
+    var e = situation.etat;
+    if (e === 'trop_percu') return '<span class="dfx-reglements-situation dfx-trop-percu">Trop-perçu ' + escHtml(fmtEuros(situation.tropPercu)) + '</span>';
+    if (e === 'solde') return '<span class="dfx-reglements-situation" style="color:var(--ok)">Soldée — réglé ' + escHtml(fmtEuros(situation.totalRegle)) + '</span>';
+    if (e === 'partiel') return '<span class="dfx-reglements-situation">Partiel — reste dû ' + escHtml(fmtEuros(situation.resteDu)) + ' (réglé ' + escHtml(fmtEuros(situation.totalRegle)) + ')</span>';
+    return '<span class="dfx-reglements-situation">À régler — ' + escHtml(fmtEuros(situation.resteDu)) + '</span>';
+  }
+  function dfxOuvrirReglements(f, container){
+    var existing = container.querySelector('.dfx-reglements-panel');
+    if (existing){ existing.remove(); return; }
+    var panel = document.createElement('div'); panel.className = 'dfx-reglements-panel';
+    panel.innerHTML = '<p style="margin:0; font-size:13px; color:var(--muted)">Chargement…</p>';
+    container.appendChild(panel);
+    function recharger(){
+      // Relit l'etat reel a chaque ouverture/apres chaque ecriture -- jamais la donnee deja en
+      // memoire cote client, qui peut avoir change depuis (autre appareil, autre onglet).
+      postDf({ type: 'facture-reste-du', token: f.pdfToken }, function(r){
+        if (!r || !r.ok){ panel.innerHTML = '<p style="margin:0; font-size:13px; color:var(--muted)">' + escHtml((r && r.message) || 'Chargement impossible.') + '</p>'; return; }
+        dfxRenderReglementsPanel(panel, f, r);
+      }, function(err){ panel.innerHTML = '<p style="margin:0; font-size:13px; color:var(--muted)">' + escHtml(err) + '</p>'; });
+    }
+    recharger();
+  }
+  function dfxRenderReglementsPanel(panel, f, r){
+    panel.innerHTML = '';
+    panel.appendChild((function(){ var d = document.createElement('div'); d.innerHTML = dfxRenderSituationReglement(r.situation); return d.firstChild; })());
+    var reglements = (r.reglements || []).slice().sort(function(a, b){ return (b.dateReglement || '').localeCompare(a.dateReglement || ''); });
+    if (reglements.length){
+      var liste = document.createElement('div'); liste.className = 'dfx-reglements-liste';
+      reglements.forEach(function(regl){
+        var ligne = document.createElement('div'); ligne.className = 'dfx-reglements-ligne' + (regl.statut === 'annule' ? ' dfx-reglement-annule' : '');
+        var detail = document.createElement('span'); detail.className = 'dfx-reglements-ligne-detail';
+        detail.textContent = fmtEuros(regl.montant) + ' · ' + dfxFormaterDateReglement(regl.dateReglement) + ' · ' + (regl.mode || 'VIR') + (regl.reference ? ' · ' + regl.reference : '');
+        ligne.appendChild(detail);
+        if (regl.statut === 'annule'){
+          var badgeA = document.createElement('span'); badgeA.style.fontSize = '11px'; badgeA.style.color = 'var(--muted)'; badgeA.textContent = 'annulé';
+          ligne.appendChild(badgeA);
+        } else {
+          var annulerBtn = document.createElement('button'); annulerBtn.type = 'button'; annulerBtn.className = 'vc-no dfx-reglements-annuler-btn'; annulerBtn.textContent = 'Annuler';
+          annulerBtn.addEventListener('click', function(){ dfxOuvrirAnnulationReglement(panel, f, regl, ligne); });
+          ligne.appendChild(annulerBtn);
+        }
+        liste.appendChild(ligne);
+      });
+      panel.appendChild(liste);
+    }
+    var labelMontant = document.createElement('label'); labelMontant.textContent = 'Montant réglé (€)';
+    var montantInput = document.createElement('input'); montantInput.type = 'number'; montantInput.step = '0.01'; montantInput.min = '0.01'; montantInput.placeholder = '0,00';
+    labelMontant.appendChild(montantInput);
+    var labelDate = document.createElement('label'); labelDate.textContent = 'Date du paiement';
+    var dateInput = document.createElement('input'); dateInput.type = 'date';
+    var aujourdhui = new Date().toISOString().slice(0, 10);
+    dateInput.value = aujourdhui; dateInput.max = aujourdhui;
+    labelDate.appendChild(dateInput);
+    var labelMode = document.createElement('label'); labelMode.textContent = 'Mode de paiement';
+    var modeSelect = document.createElement('select');
+    DFX_MODES_REGLEMENT.forEach(function(m){ var o = document.createElement('option'); o.value = m; o.textContent = m; modeSelect.appendChild(o); });
+    labelMode.appendChild(modeSelect);
+    var labelRef = document.createElement('label'); labelRef.textContent = 'Référence (facultatif)';
+    var refInput = document.createElement('input'); refInput.type = 'text'; refInput.maxLength = 100; refInput.placeholder = 'n° de chèque, libellé virement…';
+    labelRef.appendChild(refInput);
+    panel.appendChild(labelMontant); panel.appendChild(labelDate); panel.appendChild(labelMode); panel.appendChild(labelRef);
+    var row = document.createElement('div'); row.className = 'dfx-reglements-row';
+    var closeBtn = document.createElement('button'); closeBtn.type = 'button'; closeBtn.className = 'vc-no'; closeBtn.textContent = 'Fermer';
+    var saveBtn = document.createElement('button'); saveBtn.type = 'button'; saveBtn.className = 'vc-ok'; saveBtn.textContent = 'Enregistrer le règlement';
+    closeBtn.addEventListener('click', function(){ panel.remove(); });
+    saveBtn.addEventListener('click', function(){
+      var montant = Number(String(montantInput.value).replace(',', '.'));
+      if (!montant || montant <= 0){ toast('Montant invalide.'); return; }
+      if (!dateInput.value){ toast('Date obligatoire.'); return; }
+      saveBtn.disabled = true; saveBtn.textContent = 'Enregistrement…';
+      postDf({ type: 'reglement-enregistrer', token: f.pdfToken, montant: montant, dateReglement: dateInput.value, mode: modeSelect.value, reference: refInput.value.trim() }, function(r2){
+        saveBtn.disabled = false; saveBtn.textContent = 'Enregistrer le règlement';
+        if (r2 && r2.ok){
+          toast('✅ Règlement enregistré — ' + dfxRenderSituationReglement(r2.situation).replace(/<[^>]+>/g, ''));
+          dfxRenderReglementsPanel(panel, f, r2);
+          devisResynchroniser();
+        } else { toast('❌ ' + ((r2 && r2.message) || 'Enregistrement impossible.')); }
+      }, function(err){ saveBtn.disabled = false; saveBtn.textContent = 'Enregistrer le règlement'; toast('❌ ' + err); });
+    });
+    row.appendChild(closeBtn); row.appendChild(saveBtn);
+    panel.appendChild(row);
+  }
+  function dfxOuvrirAnnulationReglement(panel, f, regl, ligne){
+    var existing = ligne.querySelector('.dfx-reglements-annulation');
+    if (existing){ existing.remove(); return; }
+    var bloc = document.createElement('div'); bloc.className = 'dfx-reglements-annulation'; bloc.style.width = '100%';
+    var motifInput = document.createElement('textarea'); motifInput.rows = 2; motifInput.placeholder = 'Motif de l’annulation (obligatoire, 3 caractères minimum)…';
+    bloc.appendChild(motifInput);
+    var row = document.createElement('div'); row.className = 'dfx-reglements-row';
+    var cancelBtn = document.createElement('button'); cancelBtn.type = 'button'; cancelBtn.className = 'vc-no'; cancelBtn.textContent = 'Retour';
+    var confirmBtn = document.createElement('button'); confirmBtn.type = 'button'; confirmBtn.className = 'vc-ok'; confirmBtn.textContent = 'Confirmer l’annulation';
+    cancelBtn.addEventListener('click', function(){ bloc.remove(); });
+    confirmBtn.addEventListener('click', function(){
+      var motif = motifInput.value.trim();
+      if (motif.length < 3){ toast('Motif obligatoire (3 caractères minimum).'); return; }
+      confirmBtn.disabled = true; confirmBtn.textContent = 'Annulation…';
+      postDf({ type: 'reglement-annuler', reglementToken: regl.token, motif: motif }, function(r2){
+        confirmBtn.disabled = false; confirmBtn.textContent = 'Confirmer l’annulation';
+        if (r2 && r2.ok){
+          toast('✅ Règlement annulé.');
+          dfxRenderReglementsPanel(panel, f, r2);
+          devisResynchroniser();
+        } else { toast('❌ ' + ((r2 && r2.message) || 'Annulation impossible.')); }
+      }, function(err){ confirmBtn.disabled = false; confirmBtn.textContent = 'Confirmer l’annulation'; toast('❌ ' + err); });
+    });
+    row.appendChild(cancelBtn); row.appendChild(confirmBtn);
+    bloc.appendChild(row);
+    ligne.appendChild(bloc);
+  }
   function dfxBuildFactureRow(f){
     var tr = document.createElement('tr'); tr.className = 'dfx-tr-data';
     function td(html, cls){ var d = document.createElement('td'); if (cls) d.className = cls; d.innerHTML = html; tr.appendChild(d); return d; }
@@ -11650,6 +11795,17 @@
       dfxOuvrirEnvoiFacture(f, inner);
       trAct.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
     }, envoiDesactive));
+    // Etape 2 (23/09/2026) : reglements -- uniquement les factures ponctuelles emises de la
+    // nouvelle chaine (jamais un avoir, jamais un brouillon -- le serveur refuserait de toute
+    // facon via reglement_sur_avoir_interdit/facture_non_emise, autant ne pas proposer un
+    // bouton voue a l'echec). Les factures de contrat n'apparaissent pas dans cette liste
+    // aujourd'hui (etape 3, pas encore le cas).
+    var reglementsDesactive = !f.chaineNouvelle || f.typeDoc === 'avoir' || !f.pdfToken || f.statutBrut === 'brouillon';
+    iconRow.appendChild(dfxIconBtn(DFX_ICON_EURO, reglementsDesactive ? 'Règlements non disponibles' : 'Enregistrer un règlement', function(){
+      if (!trAct.classList.contains('dfx-open')){ trAct.classList.add('dfx-open'); pencilBtnF.classList.add('dfx-icon-btn-active'); }
+      dfxOuvrirReglements(f, inner);
+      trAct.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+    }, reglementsDesactive));
     var pencilBtnF = dfxIconBtn(DFX_ICON_PENCIL, 'Gérer cette facture', function(){
       var open = trAct.classList.toggle('dfx-open');
       pencilBtnF.classList.toggle('dfx-icon-btn-active', open);
