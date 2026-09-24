@@ -1290,6 +1290,9 @@
   .dfx-pastille--accepte, .dfx-pastille--paye, .dfx-pastille--reglee{background:rgba(48,209,88,.15); color:var(--ok)}
   .dfx-pastille--intervention{background:rgba(232,185,106,.2); color:var(--gold-a)}
   .dfx-pastille--rejete, .dfx-pastille--impaye, .dfx-pastille--annulee{background:rgba(255,69,58,.15); color:var(--no)}
+  /* Origine (24/09/2026, correctif regression liste) : discrete, texte seul -- jamais une
+     pastille pleine comme les statuts ci-dessus, pour ne pas rivaliser visuellement avec eux. */
+  .dfx-origine{font-size:10px; font-weight:700; color:var(--muted); margin-left:6px; text-transform:uppercase; letter-spacing:.3px; vertical-align:middle}
   .dfx-side{flex:0 0 auto; width:220px; display:flex; flex-direction:column; gap:12px}
   @media (max-width:759px){.dfx-side{width:100%; flex-direction:row; flex-wrap:wrap}}
   .dfx-card{flex:1 1 auto; min-width:150px; background:var(--surface); border-radius:14px; padding:14px}
@@ -6757,11 +6760,12 @@
         <div id="devis-list"></div>
       </div>
       <div class="dfx-body" id="dfx-body-table" style="display:none">
-        <!-- Bascule 23-24/09/2026 : les listes viennent de la nouvelle chaine -- les documents
-             anterieurs au 18/09/2026 (425 devis) restent dans l'ancienne table, jamais migres
-             (decision non tranchee, CARTE-PASSAGE-REEL-2026-09-22.md §6.1). Jamais cache sans le
-             dire. -->
-        <p id="dfx-note-ancien">📁 Les devis et factures créés avant le 18/09/2026 ne sont pas encore listés ici (migration pas encore décidée) — rien n'est perdu, ils restent dans l'ancien système.</p>
+        <!-- Correctif regression du 23-24/09/2026 (24/09/2026) : les 3 sources (nouvelle chaine,
+             export MEG, factures de contrat) sont desormais fusionnees a l'affichage (cf.
+             devisChargerListeMergee) -- ce bandeau ne reapparait plus que si l'ancien webhook
+             (mcs-devis-factures) est reellement injoignable, jamais par defaut. Jamais cache
+             sans le dire dans ce cas-la non plus. -->
+        <p id="dfx-note-ancien" style="display:none">⚠️ L'historique MEG n'a pas pu être rechargé (connexion indisponible) — seuls les documents créés directement dans Jarvis sont listés ci-dessous pour l'instant.</p>
         <div class="dfx-table-wrap">
           <table class="dfx-table" id="dfx-table-devis">
             <thead>
@@ -8094,7 +8098,7 @@
          comparaison de chaine de version par tenant. */
   var APPV_MCS = '4.59';
   var APPV_LABO = '1.03';
-  var BUILD = 64;
+  var BUILD = 65;
   // displayVersion()/displayVersionShort() lisent isMcsCode() (definie plus bas dans cette
   // meme IIFE -- declaration de fonction, donc disponible ici par hoisting) : le TENANT
   // affiche depend du code de connexion, jamais d'un simple "APPV" global qui ne dirait ni
@@ -11508,6 +11512,14 @@
     brouillon: ['Brouillon', 'dfx-pastille--brouillon'], validee: ['Validée', 'dfx-pastille--envoye'],
     reglee: ['Réglée', 'dfx-pastille--reglee'], annulee: ['Annulée', 'dfx-pastille--annulee'],
   };
+  // Origine visible (24/09/2026, correctif regression liste) : badge discret apres le numero,
+  // uniquement quand la ligne ne vient pas de la nouvelle chaine (celle-ci n'a pas besoin d'etre
+  // signalee, c'est l'etat normal). Libelle fixe, jamais de donnee utilisateur -- pas d'echappement necessaire.
+  var DFX_ORIGINE_LABEL = { meg: 'MEG', contrat: 'Contrat' };
+  function dfxBadgeOrigine(source){
+    var l = DFX_ORIGINE_LABEL[source];
+    return l ? (' <span class="dfx-origine">' + l + '</span>') : '';
+  }
   function dfxPastilleDevis(dv){
     var m = DFX_PASTILLE_DEVIS[dv.statut] || ['—', 'dfx-pastille--brouillon'];
     return '<span class="dfx-pastille ' + m[1] + '">' + escHtml(m[0]) + '</span>';
@@ -11541,7 +11553,7 @@
     var tr = document.createElement('tr'); tr.className = 'dfx-tr-data';
     function td(html, cls){ var d = document.createElement('td'); if (cls) d.className = cls; d.innerHTML = html; tr.appendChild(d); return d; }
     td(dfxPastilleDevis(dv));
-    td(escHtml(dv.numero || '—'), 'dfx-num-nom');
+    td(escHtml(dv.numero || '—') + dfxBadgeOrigine(dv.source), 'dfx-num-nom');
     td(escHtml(fmtDevisDateSimple(dv.date) || '—'));
     td(escHtml(dv.nom || '(client non précisé)'), 'dfx-num-nom');
     td(escHtml(dfxReference(dv)));
@@ -11765,7 +11777,7 @@
     var tr = document.createElement('tr'); tr.className = 'dfx-tr-data';
     function td(html, cls){ var d = document.createElement('td'); if (cls) d.className = cls; d.innerHTML = html; tr.appendChild(d); return d; }
     td(dfxPastilleFacture(f));
-    td(escHtml(f.numero || f.numeroComplet || '—'), 'dfx-num-nom');
+    td(escHtml(f.numero || f.numeroComplet || '—') + dfxBadgeOrigine(f.source), 'dfx-num-nom');
     td(escHtml(fmtDevisDateSimple(f.date) || '—'));
     td(escHtml(f.nom || '(client non précisé)'), 'dfx-num-nom');
     td(escHtml((f.reference || (f.typeDoc === 'avoir' ? ('Annule ' + (f.avoirDe || '')) : '')) || '—'));
@@ -12221,6 +12233,8 @@
     var tableFactures = document.getElementById('dfx-table-factures');
     devisList.innerHTML = '';
     document.getElementById('dfx-totaux-result').innerHTML = '';
+    var noteAncien = document.getElementById('dfx-note-ancien');
+    if (noteAncien) noteAncien.style.display = devisData.ancienIndisponible ? '' : 'none';
 
     if (devisActiveTab === 'avalider'){
       bodyAvalider.style.display = ''; bodyTable.style.display = 'none'; toolbar.style.display = 'none';
@@ -12372,11 +12386,33 @@
     postDf({ type: 'facture-liste' }, function(rf){ factures = (rf && rf.ok ? rf.items : []).map(dfMapFactureNouvelle); fini(); }, function(){ fini(); });
     postDf({ type: 'avoir-liste' }, function(ra){ avoirsRestants = (ra && ra.ok ? ra.items : []).map(dfMapAvoirNouveau); fini(); }, function(){ fini(); });
   }
+  // Regression du 23-24/09/2026 (signalee par Dorian, qui avait vu ces lignes affichees avant) :
+  // cette fonction recevait deja ancienData.devis/factures (86 + 269 lignes reelles, MEG + Jarvis
+  // legacy + factures de contrat deja emises) mais les jetait, ne gardant que ancienData.aValider
+  // -- l'ecran se retrouvait borne a la nouvelle chaine seule (0 document reel a ce jour). Correctif
+  // (24/09/2026) : fusion, jamais migration -- chaque source reste lue la ou elle vit (l'ancien
+  // workflow mcs-devis-factures, jamais touche, jamais desactive). Dedoublonnage par numero
+  // normalise (trim + majuscules) : le numero est le seul identifiant qu'un client/comptable
+  // reconnait, meme cle que celle qui a deja servi a fusionner mcs_rentabilite_exports_bruts sans
+  // perte (incident Relances du 23/09). La ligne de la nouvelle chaine gagne toujours en cas de
+  // meme numero des 2 cotes (elle est la source vivante) -- l'ancien ne comble que ce qui manque.
+  function dfNormNumero(s){ return String(s || '').trim().toUpperCase(); }
+  function dfFusionnerSansDoublon(nouveaux, anciens, champNumero){
+    var connus = {};
+    nouveaux.forEach(function(it){ var k = dfNormNumero(it[champNumero]); if (k) connus[k] = true; });
+    var ajouts = anciens.filter(function(it){
+      var k = dfNormNumero(it[champNumero]);
+      return !k || !connus[k]; // pas de numero exploitable -> jamais ecarte a tort, montre quand meme
+    });
+    return nouveaux.concat(ajouts);
+  }
   function devisChargerListeMergee(payload, onOk, onErr){
     var ancienRecu = false, nouvelleRecue = false, ancienData = null, ancienEchoue = false, devisNouveau = [], facturesNouvelles = [];
     function fini(){
       if (!ancienRecu || !nouvelleRecue) return;
-      onOk({ aValider: (ancienData && ancienData.aValider) || [], testMode: true, devis: devisNouveau, factures: facturesNouvelles, ancienIndisponible: ancienEchoue });
+      var devisFusionnes = dfFusionnerSansDoublon(devisNouveau, (ancienData && ancienData.devis) || [], 'numero');
+      var facturesFusionnees = dfFusionnerSansDoublon(facturesNouvelles, (ancienData && ancienData.factures) || [], 'numeroComplet');
+      onOk({ aValider: (ancienData && ancienData.aValider) || [], testMode: true, devis: devisFusionnes, factures: facturesFusionnees, ancienIndisponible: ancienEchoue });
     }
     postDevisFactures({}, function(ancien){ ancienData = ancien; ancienRecu = true; fini(); }, function(){ ancienEchoue = true; ancienRecu = true; fini(); });
     dfChargerNouvelleChaine(function(devis, factures){ devisNouveau = devis; facturesNouvelles = factures; nouvelleRecue = true; fini(); });
