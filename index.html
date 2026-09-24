@@ -8106,7 +8106,7 @@
          comparaison de chaine de version par tenant. */
   var APPV_MCS = '4.59';
   var APPV_LABO = '1.03';
-  var BUILD = 72;
+  var BUILD = 73;
   // displayVersion()/displayVersionShort() lisent isMcsCode() (definie plus bas dans cette
   // meme IIFE -- declaration de fonction, donc disponible ici par hoisting) : le TENANT
   // affiche depend du code de connexion, jamais d'un simple "APPV" global qui ne dirait ni
@@ -12062,6 +12062,17 @@
     fr.readAsDataURL(f);
   });
 
+  // 25/09/2026 (build 73) : POINT DE RESOLUTION UNIQUE -- "Le client a accepte" et "Facturer ce
+  // devis" existent en double : un mecanisme ancien (postDevisValider/postDevisFacturer, table
+  // devis_fichiers, jamais bascule) et des routes natives de la nouvelle chaine (devis-accepter/
+  // devis-convertir, construites le 22/09 sur mcs_documents_vente, jamais appelees jusqu'a ce
+  // jour). Sans ce point unique, chaque bouton aurait pu deriver sa propre logique de resolution
+  // -- exactement ce que Dorian a demande de ne pas faire ("ne repare pas bouton par bouton").
+  // dv.chaineNouvelle est calcule UNE SEULE FOIS a la fusion des 2 listes (dfMapDevisNouveau) --
+  // c'est le meme raisonnement que celui deja applique cote serveur pour les reglements
+  // (Calculer situation (reglement), qui essaie mcs_documents_vente PUIS mcs_factures_contrats
+  // avant de calculer) : une resolution faite une fois, jamais devinee a chaque geste.
+  function dvUtiliserNouvelleChaine(dv){ return dv.source === 'jarvis' && !!dv.chaineNouvelle; }
   // Ecran "Devis et factures" facon MEG (09/09/2026) : tableMode=true reutilise EXACTEMENT
   // les memes boutons d'action (import PDF/accepter/intervention/facturer -- aucune logique
   // dupliquee ni modifiee) mais saute la construction de l'entete nom/badge/objet/montant, deja
@@ -12132,6 +12143,21 @@
         // resync a eu lieu pendant que cet ecran etait ouvert. demarrerEnvoi/finDenvoi +
         // devisResynchroniser() (vrai rechargement serveur) remplacent la mutation locale seule.
         demarrerEnvoi(accConfirm, null, []);
+        // 25/09/2026 (build 73, defaut trouve en testant la confirmation du build 72) :
+        // postDevisValider (mcs-devis-valider) ne lit QUE l'ancienne table -- point de resolution
+        // unique dvUtiliserNouvelleChaine(dv), meme raisonnement que la resolution deja posee
+        // cote serveur pour les reglements (Calculer situation (reglement), qui essaie les 2
+        // familles de tables avant de calculer). Un devis de la nouvelle chaine appelle desormais
+        // la route native devis-accepter (construite le 22/09, jamais utilisee jusqu'ici, prouvee
+        // de bout en bout le 25/09) ; l'ancien mecanisme (et tout devis MEG) reste inchange.
+        if (dvUtiliserNouvelleChaine(dv)){
+          postDf({ type: 'devis-accepter', token: dv.token }, function(r){
+            if (!r || !r.ok){ finDenvoi(accConfirm, [], null); toast('❌ ' + ((r && r.message) || 'Impossible.')); return; }
+            toast('✅ Devis marqué accepté');
+            finDenvoi(accConfirm, [], devisResynchroniser);
+          }, function(err){ finDenvoi(accConfirm, [], null); toast(err); });
+          return;
+        }
         var payload = dv.source === 'meg'
           ? { source: 'meg', numero: dv.numero, client_nom: dv.nom, objet: dv.objet, montant: dv.montant, choix: 'accepter' }
           : { token: dv.token, choix: 'accepter' };
@@ -12284,6 +12310,20 @@
       // recap habituel -- c'est ce qui fait de "Facturer ce devis" un geste UNIQUE aux yeux de
       // Mickael. Un devis deja intervention_faite saute directement a facPreparer().
       facBtn.addEventListener('click', function(){
+        // 25/09/2026 (build 73, defaut trouve en testant la confirmation du build 72) :
+        // postDevisFacturer (mcs-devis-facturer) ne lit QUE l'ancienne table -- meme point de
+        // resolution unique dvUtiliserNouvelleChaine(dv) que "Le client a accepte" plus haut. La
+        // nouvelle chaine n'a pas d'etape "intervention" intermediaire (devis-convertir verifie
+        // directement statut==='accepte'), donc pas de facPreparer/lignes a completer -- juste un
+        // recap nomme et une confirmation, meme regle que toute mutation d'un document emis.
+        if (dvUtiliserNouvelleChaine(dv)){
+          facTxt.textContent = 'Confirmer : convertir le devis ' + (dv.numero || '') + ' de ' + (dv.nom || '(client non précisé)') + (dv.montant ? ' (' + dv.montant + ' € TTC)' : '') + ' en facture.';
+          facRecap.querySelectorAll('.fdr-ligne, .fdr-total').forEach(function(n){ n.remove(); });
+          facLignesWrap.style.display = 'none'; facLignesAdd.style.display = 'none'; facLignesTotal.style.display = 'none'; facLignesSave.style.display = 'none';
+          facConfirm.style.display = ''; facConfirm.innerHTML = facConfirmIdleHtml;
+          facRecap.classList.toggle('open');
+          return;
+        }
         if (dv.statut !== 'accepte'){ facPreparer(); return; }
         facBtn.disabled = true; facBtn.textContent = 'Préparation…';
         var payloadInt = dv.source === 'meg'
@@ -12307,6 +12347,16 @@
         }, function(err){ facLignesSave.disabled = false; facLignesSave.textContent = 'Enregistrer les lignes'; toast('❌ ' + err); });
       });
       facConfirm.addEventListener('click', function(){
+        if (dvUtiliserNouvelleChaine(dv)){
+          facConfirm.disabled = true; facConfirm.textContent = 'Conversion…';
+          postDf({ type: 'devis-convertir', token: dv.token }, function(r){
+            facConfirm.disabled = false; facConfirm.innerHTML = facConfirmIdleHtml;
+            if (!r || !r.ok){ toast('❌ ' + ((r && r.message) || 'Conversion impossible.')); return; }
+            toast('✅ Devis converti en facture — brouillon visible dans "Factures" (numéro attribué à l’envoi).');
+            devisResynchroniser();
+          }, function(err){ facConfirm.disabled = false; facConfirm.innerHTML = facConfirmIdleHtml; toast('❌ ' + err); });
+          return;
+        }
         if (!facPayload) return;
         facConfirm.disabled = true; facConfirm.textContent = 'Émission…';
         postFacturation({ type: 'emettre', type_doc: 'facture', client: facPayload.client, objet: facPayload.objet, lignes: facPayload.lignes, devis_origine_token: facPayload.devis_origine_token }, function(r){
