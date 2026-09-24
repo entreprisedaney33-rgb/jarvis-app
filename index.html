@@ -6673,6 +6673,10 @@
     <button class="devis-tab" data-tab="factures" type="button">Factures</button>
   </div>
   <p id="devis-testmode-banniere" class="testmode-banniere" style="display:none">🧪 Mode test : les devis et factures partent chez Altaestima, jamais chez le client.</p>
+  <!-- 25/09/2026 (Dorian : "l'export MEG est un instantane, pas du temps reel, Mickael doit
+       savoir de quand elle date") -- affiche uniquement sur l'onglet Factures, uniquement si des
+       lignes MEG sont presentes (cf. devisApplyFilter). -->
+  <p id="dfx-export-meg-date" class="testmode-banniere" style="display:none"></p>
   <div id="dfshell">
     <!-- Rail facon MEG (>=760px) : 1 seule entree "Ventes" (MEG en a 9), clic = ouvre/ferme le
          flyout listant les 3 pages -- meme geste, couleurs 100% Jarvis (rail sombre historique).
@@ -8098,7 +8102,7 @@
          comparaison de chaine de version par tenant. */
   var APPV_MCS = '4.59';
   var APPV_LABO = '1.03';
-  var BUILD = 66;
+  var BUILD = 67;
   // displayVersion()/displayVersionShort() lisent isMcsCode() (definie plus bas dans cette
   // meme IIFE -- declaration de fonction, donc disponible ici par hoisting) : le TENANT
   // affiche depend du code de connexion, jamais d'un simple "APPV" global qui ne dirait ni
@@ -11675,6 +11679,12 @@
   }
   function dfxRenderSituationReglement(situation){
     if (!situation) return '';
+    // 25/09/2026 (Dorian) : "non suivi" plutot qu'un "A regler X€" qui se lirait comme un fait
+    // verifie -- une facture de contrat sur laquelle rien n'a jamais ete saisi n'est pas la meme
+    // chose qu'une facture dont on sait qu'elle n'a rien recu (cf. situation.nonSuivi, calcule
+    // cote serveur, jamais devine ici). Le montant TTC reste affiche : on connait le montant
+    // facture, on ne sait juste pas s'il a deja ete regle par un moyen qu'on ne suit pas.
+    if (situation.nonSuivi) return '<span class="dfx-reglements-situation dfx-non-suivi">Non suivi — ' + escHtml(fmtEuros(situation.montantTtc)) + ' TTC, aucun règlement saisi à ce jour</span>';
     var e = situation.etat;
     if (e === 'trop_percu') return '<span class="dfx-reglements-situation dfx-trop-percu">Trop-perçu ' + escHtml(fmtEuros(situation.tropPercu)) + '</span>';
     if (e === 'solde') return '<span class="dfx-reglements-situation" style="color:var(--ok)">Soldée — réglé ' + escHtml(fmtEuros(situation.totalRegle)) + '</span>';
@@ -12237,6 +12247,25 @@
     if (!devisData) return;
     var q = normDoc(devisSearchInput.value.trim());
     document.getElementById('devis-testmode-banniere').style.display = devisData.testMode ? '' : 'none';
+    // 25/09/2026 : date de l'export MEG, affichee uniquement sur l'onglet Factures -- l'export
+    // est un instantane (Regle/Reste du y sont figes a la date de l'export), jamais du temps
+    // reel. Seuil de 3 jours choisi sur le rythme d'actualisation deja observe sur ce projet
+    // (quasi quotidien pendant les sessions actives) -- pas invente pour ce cas precis.
+    var noteExportMeg = document.getElementById('dfx-export-meg-date');
+    if (noteExportMeg){
+      var dateExport = null;
+      (devisData.factures || []).forEach(function(f){ if (f.source === 'meg' && f.dateExportMeg) dateExport = f.dateExportMeg; });
+      if (devisActiveTab === 'factures' && dateExport){
+        var dExp = new Date(dateExport);
+        var txt = '📅 Données MEG (réglé/reste dû) arrêtées au ' + dExp.toLocaleDateString('fr-FR') + ' à ' + dExp.toLocaleTimeString('fr-FR', {hour:'2-digit', minute:'2-digit'}) + ' — pas en temps réel.';
+        var joursEcoules = Math.floor((Date.now() - dExp.getTime()) / 86400000);
+        if (joursEcoules >= 3) txt += ' Cet export commence à dater (' + joursEcoules + ' j) — un nouvel export MEG serait utile.';
+        noteExportMeg.textContent = txt;
+        noteExportMeg.style.display = '';
+      } else {
+        noteExportMeg.style.display = 'none';
+      }
+    }
     var bodyAvalider = document.getElementById('dfx-body-avalider');
     var bodyTable = document.getElementById('dfx-body-table');
     var toolbar = document.getElementById('dfx-toolbar');
