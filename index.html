@@ -4586,6 +4586,11 @@
   .fd-ligne-warn{display:none; align-self:flex-start}
   .fd-ligne-qte, .fd-ligne-prix, .fd-ligne-remise, .fd-ligne-tva{flex:1 1 60px; min-width:56px}
   .fd-ligne-total{flex:1 1 100%; order:5; text-align:right; font-size:12.5px; font-weight:600; color:var(--muted); padding:2px 2px 0}
+  /* Build 75 (25/09/2026) : bascule de saisie HT/TTC par ligne -- un bouton compact accole au
+     champ prix (jamais un second champ, pour ne rien ajouter a la largeur en usage courant HT). */
+  .fd-ligne-mode{flex:0 0 auto; min-width:40px; padding:0 6px; font-size:11.5px; font-weight:700; border-radius:6px; cursor:pointer}
+  .fd-ligne-mode-info{flex:1 1 100%; order:6; text-align:right; font-size:11px; color:var(--muted); padding:0 2px}
+  .fd-ligne-mode-info.fd-ligne-mode-ecart{color:var(--gold, #b8860b)}
   /* Retour Dorian (tournee build 36, nuit 09-10/09) : "100" tape dans le champ remise en le
      croyant etre le prix -- aucun intitule visible au-dessus des 5 champs (le placeholder
      disparait a la frappe). En-tete de colonnes AU-DESSUS de #dv-lignes/#fd-lignes (une seule
@@ -8106,7 +8111,7 @@
          comparaison de chaine de version par tenant. */
   var APPV_MCS = '4.59';
   var APPV_LABO = '1.03';
-  var BUILD = 73;
+  var BUILD = 74;
   // displayVersion()/displayVersionShort() lisent isMcsCode() (definie plus bas dans cette
   // meme IIFE -- declaration de fonction, donc disponible ici par hoisting) : le TENANT
   // affiche depend du code de connexion, jamais d'un simple "APPV" global qui ne dirait ni
@@ -23769,6 +23774,56 @@
       });
     });
   }
+  // Build 75 (25/09/2026) : saisie TTC par ligne. On ne change JAMAIS le calcul serveur (le taux
+  // porte par la ligne reste la verite, cf. regle TVA close) -- seule la maniere de SAISIR change.
+  // Cette fonction cherche un prix_ht qui, repasse par la MEME formule que le serveur (arrondi de
+  // la TVA par tranche, puis arrondi du total -- copie a l'identique de "Preparer brouillon (df)",
+  // jamais une simple division), reproduit EXACTEMENT le TTC tape. Verifie par preuve exhaustive
+  // (25/09/2026) sur 5,5/10/20% et 0,01 a 3000 EUR au centime : 0 echec a 5,5% et 10%. A 20%,
+  // environ 1 valeur de centime sur 6 est structurellement IMPOSSIBLE a produire par ce calcul,
+  // quel que soit le prix_ht choisi (limite reelle de l'arrondi existant, deja vraie aujourd'hui
+  // pour toute saisie HT qui viserait ce meme montant -- rien de nouveau introduit ici). Dans ce
+  // cas rare, jamais un echec silencieux : on choisit le prix_ht le plus proche et on affiche
+  // l'ecart reel a l'ecran (fdLigneSyncPrixHt, plus bas).
+  function fdRound2(x){ return x >= 0 ? Math.round(x * 100) / 100 : -Math.round(-x * 100) / 100; }
+  function fdTtcDepuisHt(ht, taux){ return fdRound2(ht + fdRound2(ht * (taux / 100))); }
+  function convertirTtcVersHt(ttcUnitaire, taux){
+    var cibleCents = Math.round(ttcUnitaire * 100);
+    var base = ttcUnitaire / (1 + taux / 100);
+    var pas = 0.0001, fenetre = 600; // recherche fine sur +/- 0,06 EUR autour du quotient exact
+    var baseGrille = Math.round(base / pas);
+    for (var i = 0; i <= fenetre; i++){
+      var signes = i === 0 ? [0] : [1, -1];
+      for (var s = 0; s < signes.length; s++){
+        var cand = (baseGrille + signes[s] * i) * pas;
+        if (Math.round(fdTtcDepuisHt(cand, taux) * 100) === cibleCents) return { ht: cand, exact: true, ttcObtenu: ttcUnitaire };
+      }
+    }
+    var proche = fdRound2(base);
+    return { ht: proche, exact: false, ttcObtenu: fdTtcDepuisHt(proche, taux) };
+  }
+  // Tient a jour le prix_ht REEL (champ cache .fd-ligne-prix-ht, seul lu par tous les calculs et
+  // par l'envoi au serveur) a partir de ce qui est affiche (HT ou TTC selon row.dataset.mode).
+  function fdLigneSyncPrixHt(row){
+    var prixEl = row.querySelector('.fd-ligne-prix');
+    var htEl = row.querySelector('.fd-ligne-prix-ht');
+    var infoEl = row.querySelector('.fd-ligne-mode-info');
+    var taux = Number(row.querySelector('.fd-ligne-tva').value) || 0;
+    if (row.dataset.mode === 'ttc'){
+      var conv = convertirTtcVersHt(Number(prixEl.value) || 0, taux);
+      htEl.value = conv.ht;
+      if (infoEl){
+        if (conv.exact){ infoEl.textContent = '= ' + fmtEuros(conv.ht) + ' € HT'; infoEl.classList.remove('fd-ligne-mode-ecart'); }
+        else {
+          infoEl.textContent = '= ' + fmtEuros(conv.ht) + ' € HT — l’arrondi TVA ne permet pas ' + fmtEuros(Number(prixEl.value) || 0) + ' € TTC exactement (déjà vrai aujourd’hui pour toute saisie visant ce montant) : le document affichera ' + fmtEuros(conv.ttcObtenu) + ' € TTC.';
+          infoEl.classList.add('fd-ligne-mode-ecart');
+        }
+      }
+    } else {
+      htEl.value = prixEl.value;
+      if (infoEl){ infoEl.textContent = ''; infoEl.classList.remove('fd-ligne-mode-ecart'); }
+    }
+  }
   // Point 6 (09/09/2026, mission ecran Devis et Factures) : ajout d'une remise par ligne (%) et
   // d'un total de ligne affiche en direct -- champs optionnels (defaut 0/vide), n'affecte aucun
   // consommateur existant (Facture directe, Facturer-ce-devis) au-dela d'un calcul plus juste.
@@ -23784,30 +23839,54 @@
     var sug = document.createElement('ul'); sug.className = 'fd-ligne-sug';
     var warn = document.createElement('span'); warn.className = 'rel-badge rel-badge-averifier fd-ligne-warn';
     var qte = document.createElement('input'); qte.type = 'number'; qte.className = 'fd-ligne-qte'; qte.placeholder = 'Qté'; qte.min = '1'; qte.step = '1'; qte.value = '1';
-    var prix = document.createElement('input'); prix.type = 'number'; prix.className = 'fd-ligne-prix'; prix.placeholder = 'Prix'; prix.min = '0'; prix.step = '0.01';
+    var prix = document.createElement('input'); prix.type = 'number'; prix.className = 'fd-ligne-prix'; prix.placeholder = 'Prix HT'; prix.min = '0'; prix.step = '0.01';
+    // Build 75 : prix_ht REEL, jamais affiche, seul champ lu par les calculs/l'envoi -- tenu a
+    // jour par fdLigneSyncPrixHt a chaque saisie (identique a prix.value en mode HT par defaut).
+    var prixHt = document.createElement('input'); prixHt.type = 'hidden'; prixHt.className = 'fd-ligne-prix-ht';
+    var mode = document.createElement('button'); mode.type = 'button'; mode.className = 'fd-ligne-mode'; mode.textContent = 'HT';
+    mode.title = 'Cliquer pour saisir le prix de cette ligne en TTC plutôt qu’en HT (ou l’inverse)';
+    var modeInfo = document.createElement('span'); modeInfo.className = 'fd-ligne-mode-info';
     var remise = document.createElement('input'); remise.type = 'number'; remise.className = 'fd-ligne-remise'; remise.placeholder = 'Remise %'; remise.min = '0'; remise.max = '100'; remise.step = '0.1'; remise.value = '0';
     var tva = document.createElement('input'); tva.type = 'number'; tva.className = 'fd-ligne-tva'; tva.placeholder = 'TVA %'; tva.min = '0'; tva.step = '0.1'; tva.value = '20';
     var ligneTotal = document.createElement('span'); ligneTotal.className = 'fd-ligne-total';
     var del = document.createElement('button'); del.type = 'button'; del.className = 'fd-ligne-del'; del.textContent = '✕';
+    row.dataset.mode = 'ht';
     function majLigneTotal(){
-      var q = Number(qte.value) || 0, p = Number(prix.value) || 0, r = Number(remise.value) || 0;
+      fdLigneSyncPrixHt(row);
+      var q = Number(qte.value) || 0, p = Number(prixHt.value) || 0, r = Number(remise.value) || 0;
       var t = q * p * (1 - Math.min(100, Math.max(0, r)) / 100);
-      ligneTotal.textContent = fmtEuros(t);
+      ligneTotal.textContent = 'Total HT : ' + fmtEuros(t);
     }
     [desig, qte, prix, remise, tva, commentaire].forEach(function(el){ el.addEventListener('input', function(){ majLigneTotal(); onChange(); }); });
     wireArticleSearch(desig, sug, warn, prix, tva, function(){ majLigneTotal(); onChange(); });
+    // Bascule HT<->TTC : convertit la valeur AFFICHEE pour que Mickael/Bruno ne perdent jamais de
+    // vue le montant qu'ils viennent de taper, jamais un champ qui se vide au clic.
+    mode.addEventListener('click', function(){
+      var taux = Number(tva.value) || 0;
+      if (row.dataset.mode !== 'ttc'){
+        var htActuel = Number(prix.value) || 0;
+        prix.value = fdTtcDepuisHt(htActuel, taux);
+        row.dataset.mode = 'ttc'; mode.textContent = 'TTC'; prix.placeholder = 'Prix TTC';
+      } else {
+        var conv = convertirTtcVersHt(Number(prix.value) || 0, taux);
+        prix.value = conv.ht;
+        row.dataset.mode = 'ht'; mode.textContent = 'HT'; prix.placeholder = 'Prix HT';
+      }
+      majLigneTotal(); onChange();
+    });
     del.addEventListener('click', function(){
       if (wrap.children.length <= 1) return; // toujours au moins 1 ligne
       row.remove(); onChange();
     });
     desigWrap.appendChild(desig); desigWrap.appendChild(commentaire); desigWrap.appendChild(sug); desigWrap.appendChild(warn);
-    row.appendChild(desigWrap); row.appendChild(qte); row.appendChild(prix); row.appendChild(remise); row.appendChild(tva); row.appendChild(ligneTotal); row.appendChild(del);
+    row.appendChild(desigWrap); row.appendChild(qte); row.appendChild(prix); row.appendChild(mode); row.appendChild(prixHt); row.appendChild(remise); row.appendChild(tva); row.appendChild(ligneTotal); row.appendChild(modeInfo); row.appendChild(del);
     majLigneTotal();
     return row;
   }
   function lignesEditorLigneMontant(row){
+    fdLigneSyncPrixHt(row);
     var q = Number(row.querySelector('.fd-ligne-qte').value) || 0;
-    var p = Number(row.querySelector('.fd-ligne-prix').value) || 0;
+    var p = Number(row.querySelector('.fd-ligne-prix-ht').value) || 0;
     var rEl = row.querySelector('.fd-ligne-remise');
     var r = rEl ? (Number(rEl.value) || 0) : 0;
     return q * p * (1 - Math.min(100, Math.max(0, r)) / 100);
@@ -23840,8 +23919,9 @@
   function dfxCalcTotauxDetail(wrap, remiseSup, fraisPort){
     var brut = 0, htLignes = 0, tvaLignes = 0;
     wrap.querySelectorAll('.fd-ligne').forEach(function(row){
+      fdLigneSyncPrixHt(row);
       var q = Number(row.querySelector('.fd-ligne-qte').value) || 0;
-      var p = Number(row.querySelector('.fd-ligne-prix').value) || 0;
+      var p = Number(row.querySelector('.fd-ligne-prix-ht').value) || 0;
       var rEl = row.querySelector('.fd-ligne-remise'); var r = rEl ? Math.min(100, Math.max(0, Number(rEl.value) || 0)) : 0;
       var tEl = row.querySelector('.fd-ligne-tva'); var taux = tEl && tEl.value !== '' ? (Number(tEl.value) || 0) : 20;
       var ligneBrut = q * p, ligneNet = ligneBrut * (1 - r / 100);
@@ -23861,9 +23941,11 @@
   function lignesEditorRead(wrap){
     var lignes = [], ligneInvalide = false;
     wrap.querySelectorAll('.fd-ligne').forEach(function(row){
+      fdLigneSyncPrixHt(row);
       var d = row.querySelector('.fd-ligne-desig').value.trim();
       var q = Number(row.querySelector('.fd-ligne-qte').value) || 0;
-      var p = row.querySelector('.fd-ligne-prix').value;
+      var p = row.querySelector('.fd-ligne-prix').value; // valeur AFFICHEE (HT ou TTC selon le mode), pour la validite seulement
+      var ph = row.querySelector('.fd-ligne-prix-ht').value; // valeur REELLE envoyee au serveur, jamais changee par le mode d'affichage
       var rEl = row.querySelector('.fd-ligne-remise');
       var r = rEl ? (Number(rEl.value) || 0) : 0;
       var tEl = row.querySelector('.fd-ligne-tva');
@@ -23872,7 +23954,7 @@
       var c = cEl ? cEl.value.trim() : '';
       if (!d && !p) return; // ligne vide, ignorée
       if (!d || !p || Number(p) <= 0 || q <= 0){ ligneInvalide = true; return; }
-      var ligne = { designation: d, quantite: q, prix_ht: Number(p), tva: isNaN(t) ? 20 : t };
+      var ligne = { designation: d, quantite: q, prix_ht: Number(ph), tva: isNaN(t) ? 20 : t };
       if (r > 0) ligne.remise = r;
       // Clé EXACTE "commentaire" -- demandée par l'autre fenêtre (workflow n8n) pour l'imprimer
       // sur le document réel, ne jamais renommer.
