@@ -8106,7 +8106,7 @@
          comparaison de chaine de version par tenant. */
   var APPV_MCS = '4.59';
   var APPV_LABO = '1.03';
-  var BUILD = 71;
+  var BUILD = 72;
   // displayVersion()/displayVersionShort() lisent isMcsCode() (definie plus bas dans cette
   // meme IIFE -- declaration de fonction, donc disponible ici par hoisting) : le TENANT
   // affiche depend du code de connexion, jamais d'un simple "APPV" global qui ne dirait ni
@@ -11653,9 +11653,14 @@
     // qui en ecraserait un autre -- "envoyee 2 fois, le X et le Y", jamais juste "envoyee".
     if (f.envois && f.envois.length){
       var histo = document.createElement('div'); histo.className = 'dfx-non-suivi';
+      // 25/09/2026 (build 72, demande Dorian) : les secondes sont affichees -- deux envois separes
+      // seulement par la temporisation de 25s tombaient auparavant sur la MEME minute affichee
+      // ("14h47" et "14h47"), ce qui ne permettait de trancher aucun litige avec un client. Chaque
+      // ligne porte l'instant reel de CET envoi (horodatage pose par $now.toISO() au moment de
+      // l'envoi, jamais la date du document) -- verifie en base : 14:47:26 puis 14:47:51.
       var libelles = f.envois.map(function(e){
         var d = new Date(e.horodatage);
-        var txt = isNaN(d.getTime()) ? e.horodatage : d.toLocaleDateString('fr-FR') + ' à ' + d.toLocaleTimeString('fr-FR', { hour: '2-digit', minute: '2-digit' });
+        var txt = isNaN(d.getTime()) ? e.horodatage : d.toLocaleDateString('fr-FR') + ' à ' + d.toLocaleTimeString('fr-FR', { hour: '2-digit', minute: '2-digit', second: '2-digit' });
         return txt + (e.testMode ? ' (mode test)' : '');
       });
       histo.textContent = (f.envois.length > 1 ? 'Envoyée ' + f.envois.length + ' fois : ' : 'Envoyée le ') + libelles.join(', le ');
@@ -12104,24 +12109,39 @@
     // sans attendre MEG -- backend deja etendu (mcs-devis-valider, source:'meg', memes garde-fous
     // patron-seul et anti-double-facturation que le reste de la chaine MEG).
     if ((dv.source === 'jarvis' && dv.statut === 'envoye' && dv.token) || (dv.source === 'meg' && dv.statut === 'brouillon')){
+      // 25/09/2026 (build 72, demande Dorian) : ce bouton mutait un vrai devis AU PREMIER CLIC,
+      // sans jamais dire ce qui allait changer ni sur quel document -- "une action qu'on n'ose pas
+      // essayer [pour la tester] est une action qui n'aurait pas du etre posee comme ca". Meme
+      // patron que "Refuser" juste en dessous (toggle + recap + Confirmer/Retour), jamais une
+      // boite de dialogue navigateur.
       var accBtn = document.createElement('button'); accBtn.type = 'button'; accBtn.className = 'vc-ok dfx-row-action-btn';
       accBtn.innerHTML = ICON_CHECK_DV + 'Le client a accepté';
-      accBtn.addEventListener('click', function(){
+      var accForm = document.createElement('div'); accForm.className = 'mf-avoir-form';
+      var accRecap = document.createElement('div'); accRecap.className = 'fdr-ligne';
+      accRecap.textContent = 'Confirmer : marquer le devis ' + (dv.numero || '(numéro à venir)') + ' de ' + (dv.nom || '(client non précisé)') + (dv.montant ? ' (' + dv.montant + ' € TTC)' : '') + ' comme accepté par le client.';
+      var accActions = document.createElement('div'); accActions.className = 'rl-form-actions';
+      var accConfirm = document.createElement('button'); accConfirm.type = 'button'; accConfirm.className = 'rl-confirm vc-envoi-reel'; accConfirm.textContent = 'Confirmer l’acceptation';
+      var accCancel = document.createElement('button'); accCancel.type = 'button'; accCancel.className = 'rl-cancel'; accCancel.textContent = 'Retour';
+      accActions.appendChild(accConfirm); accActions.appendChild(accCancel);
+      accForm.appendChild(accRecap); accForm.appendChild(accActions);
+      accBtn.addEventListener('click', function(){ accForm.classList.toggle('open'); });
+      accCancel.addEventListener('click', function(){ accForm.classList.remove('open'); });
+      accConfirm.addEventListener('click', function(){
         // 08/09/2026 soir -- meme bug de reference perimee que Contrats (mission Mickael/Dorian) :
         // dv.statut='accepte' mutait un objet local qui peut ne plus appartenir a devisData si un
         // resync a eu lieu pendant que cet ecran etait ouvert. demarrerEnvoi/finDenvoi +
         // devisResynchroniser() (vrai rechargement serveur) remplacent la mutation locale seule.
-        demarrerEnvoi(accBtn, null, []);
+        demarrerEnvoi(accConfirm, null, []);
         var payload = dv.source === 'meg'
           ? { source: 'meg', numero: dv.numero, client_nom: dv.nom, objet: dv.objet, montant: dv.montant, choix: 'accepter' }
           : { token: dv.token, choix: 'accepter' };
         postDevisValider(payload, function(r){
-          if (!r || !r.ok){ finDenvoi(accBtn, [], null); toast('❌ ' + ((r && r.message) || 'Impossible.')); return; }
+          if (!r || !r.ok){ finDenvoi(accConfirm, [], null); toast('❌ ' + ((r && r.message) || 'Impossible.')); return; }
           toast('✅ Devis marqué accepté');
-          finDenvoi(accBtn, [], devisResynchroniser);
-        }, function(err){ finDenvoi(accBtn, [], null); toast(err); });
+          finDenvoi(accConfirm, [], devisResynchroniser);
+        }, function(err){ finDenvoi(accConfirm, [], null); toast(err); });
       });
-      row.appendChild(accBtn);
+      row.appendChild(accBtn); row.appendChild(accForm);
     }
     // 25/09/2026 (build 71) : Refuser/Dupliquer/le mail modifiable n'agissent que sur un devis de
     // la NOUVELLE chaine (mcs_documents_vente) -- un devis Jarvis plus ancien (avant le 18/09,
