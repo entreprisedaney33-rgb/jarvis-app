@@ -6731,7 +6731,7 @@
           <div class="dfx-filtres-panel">
             <div class="dfx-flyout-title">États</div>
             <label><input type="checkbox" data-statut="brouillon" checked> Brouillon</label>
-            <label><input type="checkbox" data-statut="validee" checked> Validée</label>
+            <label><input type="checkbox" data-statut="validee" checked> Envoyée</label>
             <label><input type="checkbox" data-statut="reglee" checked> Réglée</label>
             <label><input type="checkbox" data-statut="annulee" checked> Annulée</label>
             <div class="dfx-flyout-title">Types</div>
@@ -8098,7 +8098,7 @@
          comparaison de chaine de version par tenant. */
   var APPV_MCS = '4.59';
   var APPV_LABO = '1.03';
-  var BUILD = 65;
+  var BUILD = 66;
   // displayVersion()/displayVersionShort() lisent isMcsCode() (definie plus bas dans cette
   // meme IIFE -- declaration de fonction, donc disponible ici par hoisting) : le TENANT
   // affiche depend du code de connexion, jamais d'un simple "APPV" global qui ne dirait ni
@@ -11440,6 +11440,13 @@
       if (f.etat === 'solde' || f.etat === 'trop_percu') return 'reglee';
       return 'validee';
     }
+    // 25/09/2026 (fermeture d'ecart) : le reglement des factures de contrat est desormais
+    // calcule en lot cote serveur (f.etat) -- meme lecture qu'au-dessus pour la nouvelle chaine.
+    if (f.source === 'contrat'){
+      if (f.annuleeParAvoir && f.etat === 'solde') return 'annulee';
+      if (f.etat === 'solde' || f.etat === 'trop_percu') return 'reglee';
+      return 'validee';
+    }
     if (f.source !== 'meg') return 'validee';
     var e = normDoc(f.statut || '');
     if (e.indexOf('regl') !== -1) return 'reglee';
@@ -11508,8 +11515,12 @@
     // partagent deja cette classe cote factures).
     refuse: ['Refusé', 'dfx-pastille--rejete'], facturee: ['Facturé', 'dfx-pastille--accepte'],
   };
+  // Libelle "Envoyee" (25/09/2026, fermeture d'ecart vs SPEC-DEVIS-FACTURES-JARVIS.md §4 : la
+  // doctrine MCS est explicitement Brouillon/Envoyee/Reglee, jamais "Validee" -- la cle technique
+  // 'validee' reste inchangee (deja utilisee par dfxFactureStatutKey/dfxFiltresFactures), seul le
+  // texte affiche change.
   var DFX_PASTILLE_FACTURE = {
-    brouillon: ['Brouillon', 'dfx-pastille--brouillon'], validee: ['Validée', 'dfx-pastille--envoye'],
+    brouillon: ['Brouillon', 'dfx-pastille--brouillon'], validee: ['Envoyée', 'dfx-pastille--envoye'],
     reglee: ['Réglée', 'dfx-pastille--reglee'], annulee: ['Annulée', 'dfx-pastille--annulee'],
   };
   // Origine visible (24/09/2026, correctif regression liste) : badge discret apres le numero,
@@ -11800,19 +11811,23 @@
     // 23-24/09/2026 : une facture de la nouvelle chaine deja envoyee (statutBrut != 'brouillon')
     // ne repropose plus l'envoi -- facture-envoyer refuserait honnêtement (facture_deja_emise),
     // autant ne pas presenter un bouton qui echouerait a coup sur.
+    // 25/09/2026 (fermeture d'ecart demandee par Dorian) : une facture de contrat reste en
+    // LECTURE SEULE sur cet ecran -- jamais d'envoi ni de conversion depuis ici (MCS . Contrats
+    // n'est jamais touche). Seul le reglement (ci-dessous) s'ouvre pour elle.
     var envoiIndisponibleNouveau = f.chaineNouvelle && f.statutBrut !== 'brouillon';
-    var envoiDesactive = !f.pdfToken || f.typeDoc === 'avoir' || envoiIndisponibleNouveau;
-    iconRow.appendChild(dfxIconBtn(DFX_ICON_MAIL, envoiIndisponibleNouveau ? 'Déjà envoyée' : (f.pdfToken ? 'Envoyer par mail' : 'Envoi non disponible pour cette facture'), function(){
+    var envoiDesactive = !f.pdfToken || f.typeDoc === 'avoir' || envoiIndisponibleNouveau || f.source === 'contrat';
+    iconRow.appendChild(dfxIconBtn(DFX_ICON_MAIL, f.source === 'contrat' ? 'Envoi non disponible ici (facture de contrat)' : (envoiIndisponibleNouveau ? 'Déjà envoyée' : (f.pdfToken ? 'Envoyer par mail' : 'Envoi non disponible pour cette facture')), function(){
       if (!trAct.classList.contains('dfx-open')){ trAct.classList.add('dfx-open'); pencilBtnF.classList.add('dfx-icon-btn-active'); }
       dfxOuvrirEnvoiFacture(f, inner);
       trAct.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
     }, envoiDesactive));
-    // Etape 2 (23/09/2026) : reglements -- uniquement les factures ponctuelles emises de la
-    // nouvelle chaine (jamais un avoir, jamais un brouillon -- le serveur refuserait de toute
-    // facon via reglement_sur_avoir_interdit/facture_non_emise, autant ne pas proposer un
-    // bouton voue a l'echec). Les factures de contrat n'apparaissent pas dans cette liste
-    // aujourd'hui (etape 3, pas encore le cas).
-    var reglementsDesactive = !f.chaineNouvelle || f.typeDoc === 'avoir' || !f.pdfToken || f.statutBrut === 'brouillon';
+    // Etape 2 (23/09/2026) : reglements -- factures ponctuelles emises de la nouvelle chaine.
+    // 25/09/2026 (fermeture d'ecart demandee par Dorian, ecran ouvert : "si le bouton de
+    // reglement n'y est pas, il doit y etre") : etendu aux factures de contrat -- meme route
+    // serveur (facture-reste-du/reglement-enregistrer via f.pdfToken = devis_fichier_token,
+    // deja prouvee identique au mecanisme officiel de l'etape 3 sur une vraie facture reelle,
+    // CTR000029) -- jamais un avoir, jamais un brouillon.
+    var reglementsDesactive = (!f.chaineNouvelle && f.source !== 'contrat') || f.typeDoc === 'avoir' || !f.pdfToken || f.statutBrut === 'brouillon';
     iconRow.appendChild(dfxIconBtn(DFX_ICON_EURO, reglementsDesactive ? 'Règlements non disponibles' : 'Enregistrer un règlement', function(){
       if (!trAct.classList.contains('dfx-open')){ trAct.classList.add('dfx-open'); pencilBtnF.classList.add('dfx-icon-btn-active'); }
       dfxOuvrirReglements(f, inner);
@@ -12412,6 +12427,11 @@
       if (!ancienRecu || !nouvelleRecue) return;
       var devisFusionnes = dfFusionnerSansDoublon(devisNouveau, (ancienData && ancienData.devis) || [], 'numero');
       var facturesFusionnees = dfFusionnerSansDoublon(facturesNouvelles, (ancienData && ancienData.factures) || [], 'numeroComplet');
+      // 25/09/2026 (fermeture d'ecart) : le retard n'etait calcule que pour la nouvelle chaine
+      // (dfMapFactureNouvelle) -- generalise ici a toute facture qui porte une echeance et un
+      // etat de reglement (desormais aussi les factures de contrat, cf. dfxResteDuCell qui sait
+      // deja afficher f.retardJours quelle que soit l'origine).
+      facturesFusionnees.forEach(function(f){ if (f.retardJours === undefined) f.retardJours = dfCalculerRetardJours(f); });
       onOk({ aValider: (ancienData && ancienData.aValider) || [], testMode: true, devis: devisFusionnes, factures: facturesFusionnees, ancienIndisponible: ancienEchoue });
     }
     postDevisFactures({}, function(ancien){ ancienData = ancien; ancienRecu = true; fini(); }, function(){ ancienEchoue = true; ancienRecu = true; fini(); });
