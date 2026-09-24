@@ -1266,6 +1266,16 @@
   html.mcs-theme .dfx-envoi-facture input{border:1.5px solid var(--hairline)}
   .dfx-envoi-facture-row{display:flex; gap:8px}
   .dfx-envoi-facture-row button{flex:1; padding:8px; font-size:13px}
+  /* Build 76 (25/09/2026) : widget pieces jointes, partage devis/facture ponctuelle -- meme
+     grammaire que .dfx-envoi-facture (surface/border-radius), volontairement compact. */
+  .pj-widget{display:flex; flex-direction:column; gap:6px; padding:8px 10px; background:var(--field-bg); border-radius:10px; margin-top:2px}
+  .pj-titre{font-size:11px; color:var(--muted)}
+  .pj-liste{display:flex; flex-direction:column; gap:4px}
+  .pj-item{display:flex; align-items:center; gap:8px; font-size:12.5px}
+  .pj-item-nom{flex:1; overflow:hidden; text-overflow:ellipsis; white-space:nowrap}
+  .pj-item-voir, .pj-item-suppr{flex:0 0 auto; padding:4px 8px; font-size:11.5px; border-radius:6px}
+  .pj-ajouter-btn{align-self:flex-start; padding:6px 10px; font-size:12.5px; border-radius:8px}
+  .pj-msg{font-size:11px; color:var(--muted); font-style:italic}
   /* Panneau reglements (etape 2, 23/09/2026) -- meme grammaire que .dfx-envoi-facture (label/
      input encadre, boutons vc-ok/vc-no), reutilise telle quelle. */
   .dfx-reglements-panel{display:flex; flex-direction:column; gap:10px; padding:10px; margin-top:6px; background:var(--surface); border-radius:10px; max-width:420px}
@@ -8009,6 +8019,7 @@
     <label>Destinataire <input id="dv-envoi-dest" type="email"></label>
     <label>Objet du mail <input id="dv-envoi-objet" type="text" placeholder="Chargement…"></label>
     <label>Message <textarea id="dv-envoi-corps" rows="6" placeholder="Chargement…"></textarea></label>
+    <div id="dv-envoi-pj"></div>
     <div id="dv-envoi-actions">
       <button id="dv-envoi-plustard" type="button" class="vc-no">Plus tard</button>
       <button id="dv-envoi-go" type="button" class="vc-ok vc-envoi-reel">Envoyer</button>
@@ -8111,7 +8122,7 @@
          comparaison de chaine de version par tenant. */
   var APPV_MCS = '4.59';
   var APPV_LABO = '1.03';
-  var BUILD = 75;
+  var BUILD = 76;
   // displayVersion()/displayVersionShort() lisent isMcsCode() (definie plus bas dans cette
   // meme IIFE -- declaration de fonction, donc disponible ici par hoisting) : le TENANT
   // affiche depend du code de connexion, jamais d'un simple "APPV" global qui ne dirait ni
@@ -9307,6 +9318,9 @@
   function postIk(payload, onOk, onErr){ postDevisWeb(API_IK, payload, onOk, onErr); }
   function postMemoire(payload, onOk, onErr){ postDevisWeb(API_MEMOIRE, payload, onOk, onErr); }
   function postDf(payload, onOk, onErr){ postDevisWeb(API_DF, payload, onOk, onErr); }
+  // Build 76 (25/09/2026) : pieces jointes -- workflow dedie, independant du reste (mcs-pj-formulaire).
+  var API_PJ = 'https://n8n-self-hosted-t0pz.onrender.com/webhook/mcs-pj-formulaire';
+  function postPj(payload, onOk, onErr){ postDevisWeb(API_PJ, payload, onOk, onErr); }
 
   // ---- Point A (09/09/2026, mission écran Devis et Factures) : catalogue client/article chargé
   // UNE SEULE FOIS à l'ouverture, filtré en local ensuite. Avant : CHAQUE frappe refaisait un
@@ -11671,6 +11685,12 @@
       histo.textContent = (f.envois.length > 1 ? 'Envoyée ' + f.envois.length + ' fois : ' : 'Envoyée le ') + libelles.join(', le ');
       panel.appendChild(histo);
     }
+    // Build 76 (25/09/2026) : meme widget que le devis (pjMonterWidget, declare plus bas dans ce
+    // fichier mais accessible ici -- simple fonction, aucun souci d'ordre). f.pdfToken existe deja
+    // (facture reelle affichee dans la liste, jamais un brouillon en cours de saisie).
+    var pjHost = document.createElement('div');
+    panel.appendChild(pjHost);
+    pjMonterWidget(pjHost, function(){ return f.pdfToken; });
     // Bascule 23-24/09/2026 : une facture de la nouvelle chaine passe par facture-envoyer (jamais
     // envoyer-facture, l'ancienne route -- son jeton ne serait meme pas compatible, table
     // differente) ET recompose son mail par defaut (facture-apercu-mail) -- objet/corps
@@ -24427,6 +24447,86 @@
       dvErr.textContent = err || 'Émission impossible.'; dvErr.classList.add('show');
     });
   });
+  // Build 76 (25/09/2026) : widget "pieces jointes", PARTAGE entre le panneau d'envoi du devis
+  // et celui de la facture ponctuelle -- une seule implementation, jamais deux (meme discipline
+  // que lignesEditorRow). tokenGetter() est appele a chaque action (jamais fige a l'ouverture),
+  // le jeton du document pouvant ne pas encore exister au premier rendu (brouillon).
+  var PJ_MAX_OCTETS = 5 * 1024 * 1024;
+  var PJ_MIMES_AUTORISES = ['application/pdf', 'image/jpeg', 'image/jpg', 'image/png',
+    'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
+    'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'];
+  function pjFmtTaille(o){
+    var n = Number(o) || 0;
+    return n >= 1024*1024 ? (n/(1024*1024)).toFixed(1) + ' Mo' : Math.ceil(n/1024) + ' Ko';
+  }
+  function pjMonterWidget(hostEl, tokenGetter){
+    hostEl.innerHTML = '';
+    hostEl.className = 'pj-widget';
+    var titre = document.createElement('div'); titre.className = 'pj-titre'; titre.textContent = 'Pièces jointes (max 3, 5 Mo chacune — PDF, JPG, PNG, DOCX, XLSX)';
+    var liste = document.createElement('div'); liste.className = 'pj-liste';
+    var ajoutBtn = document.createElement('button'); ajoutBtn.type = 'button'; ajoutBtn.className = 'pj-ajouter-btn'; ajoutBtn.textContent = '📎 Joindre un fichier';
+    var input = document.createElement('input'); input.type = 'file'; input.accept = '.pdf,.jpg,.jpeg,.png,.docx,.xlsx'; input.style.display = 'none';
+    var msg = document.createElement('div'); msg.className = 'pj-msg';
+    hostEl.appendChild(titre); hostEl.appendChild(liste); hostEl.appendChild(ajoutBtn); hostEl.appendChild(input); hostEl.appendChild(msg);
+
+    function rafraichir(){
+      var token = tokenGetter();
+      if (!token){ liste.innerHTML = ''; return; }
+      postPj({ type: 'pj-liste', token: token }, function(r){
+        liste.innerHTML = '';
+        if (!r || !r.ok) return;
+        r.pieces.forEach(function(p){
+          var row = document.createElement('div'); row.className = 'pj-item';
+          var nom = document.createElement('span'); nom.className = 'pj-item-nom'; nom.textContent = p.nomFichier + ' (' + pjFmtTaille(p.tailleOctets) + ')';
+          row.appendChild(nom);
+          var voir = document.createElement('button'); voir.type = 'button'; voir.className = 'pj-item-voir'; voir.textContent = 'Aperçu';
+          voir.addEventListener('click', function(){
+            postPj({ type: 'pj-apercu', id: p.id }, function(r2){
+              if (!r2 || !r2.ok){ toast('Aperçu impossible.'); return; }
+              var url = 'data:' + r2.mime + ';base64,' + r2.dataBase64;
+              if (r2.mime === 'application/pdf' || r2.mime.indexOf('image/') === 0) window.open(url, '_blank');
+              else { var a = document.createElement('a'); a.href = url; a.download = r2.nomFichier; a.click(); }
+            }, function(err){ toast(err || 'Aperçu impossible.'); });
+          });
+          row.appendChild(voir);
+          var suppr = document.createElement('button'); suppr.type = 'button'; suppr.className = 'pj-item-suppr'; suppr.textContent = '✕ Retirer';
+          suppr.addEventListener('click', function(){
+            postPj({ type: 'pj-supprimer', id: p.id }, function(r2){
+              if (r2 && r2.ok) rafraichir();
+              else toast((r2 && r2.message) || 'Suppression impossible.');
+            }, function(err){ toast(err || 'Suppression impossible.'); });
+          });
+          row.appendChild(suppr);
+          liste.appendChild(row);
+        });
+      }, function(){});
+    }
+
+    ajoutBtn.addEventListener('click', function(){
+      if (!tokenGetter()){ toast('Enregistre d’abord le document avant de joindre un fichier.'); return; }
+      input.click();
+    });
+    input.addEventListener('change', function(){
+      var file = input.files[0]; if (!file) return;
+      if (PJ_MIMES_AUTORISES.indexOf(file.type) === -1){ toast('Type de fichier non autorisé — PDF, JPG, PNG, DOCX ou XLSX uniquement.'); input.value = ''; return; }
+      if (file.size > PJ_MAX_OCTETS){ toast('Fichier trop volumineux (5 Mo maximum).'); input.value = ''; return; }
+      var token = tokenGetter();
+      msg.textContent = 'Envoi en cours…';
+      var reader = new FileReader();
+      reader.onload = function(){
+        var b64 = String(reader.result).split(',')[1] || '';
+        postPj({ type: 'pj-ajouter', token: token, nomFichier: file.name, mime: file.type, dataBase64: b64 }, function(r){
+          msg.textContent = ''; input.value = '';
+          if (r && r.ok) rafraichir();
+          else toast((r && r.message) || 'Ajout impossible.');
+        }, function(err){ msg.textContent = ''; input.value = ''; toast(err || 'Ajout impossible.'); });
+      };
+      reader.readAsDataURL(file);
+    });
+
+    rafraichir();
+    return { rafraichir: rafraichir };
+  }
   // 25/09/2026 (fermeture d'ecart demandee par Dorian, "objet/corps modifiables comme pour la
   // facture") : recompose le mail par defaut depuis l'etat REEL du devis a chaque ouverture du
   // panneau (route devis-apercu-mail, mirroir de facture-apercu-mail deja en production) --
@@ -24437,6 +24537,7 @@
     dvEnvoiObjet.value = ''; dvEnvoiObjet.placeholder = 'Chargement…';
     dvEnvoiCorps.value = ''; dvEnvoiCorps.placeholder = 'Chargement…';
     dvEnvoiPanel.classList.add('open');
+    pjMonterWidget(document.getElementById('dv-envoi-pj'), function(){ return dvToken; });
     postDf({ type: 'devis-apercu-mail', token: dvToken }, function(r){
       if (r && r.ok){ dvEnvoiObjet.value = r.objetDefaut || ''; dvEnvoiCorps.value = r.corpsDefaut || ''; }
     }, function(){});
