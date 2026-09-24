@@ -8102,7 +8102,7 @@
          comparaison de chaine de version par tenant. */
   var APPV_MCS = '4.59';
   var APPV_LABO = '1.03';
-  var BUILD = 67;
+  var BUILD = 68;
   // displayVersion()/displayVersionShort() lisent isMcsCode() (definie plus bas dans cette
   // meme IIFE -- declaration de fonction, donc disponible ici par hoisting) : le TENANT
   // affiche depend du code de connexion, jamais d'un simple "APPV" global qui ne dirait ni
@@ -11548,14 +11548,16 @@
   // Reste du honnete (23-24/09/2026) : jamais un "-" ambigu la ou l'information n'existe pas
   // (regle du lot) -- un trop-percu s'affiche comme tel (jamais un negatif ni un zero), et un
   // retard visible directement dans la meme cellule (depuis quand, pas seulement le montant).
-  // "non suivi" prepare le jour ou une facture de contrat apparaitra dans cette meme liste
-  // (etape 3, pas encore le cas ici -- aucune ligne de la nouvelle chaine ne peut porter ce
-  // marqueur aujourd'hui, mais l'ecran sait deja le dire plutot que d'inventer un montant).
+  // Correctif 25/09/2026 (Dorian) : "non suivi" REMPLACAIT le montant -- resultat vide de sens
+  // pour Mickael, qui doit voir CE QU'IL EST DU (un fait : le TTC moins ce qui est reellement
+  // enregistre) ET une marque distincte quand rien n'a jamais ete enregistre (une inconnue sur
+  // le paiement, pas sur le montant). Le montant reste donc toujours affiche ; resteDuNonSuivi
+  // n'ajoute plus qu'une mention discrete en dessous, jamais un remplacement.
   function dfxResteDuCell(f){
-    if (f.resteDuNonSuivi) return '<span class="dfx-non-suivi">non suivi</span>';
     if (f.tropPercu){ return '<span class="dfx-trop-percu">Trop-perçu ' + escHtml(fmtEuros(f.tropPercu)) + '</span>'; }
     var txt = dfxMontantCell(f.resteDu);
     if (f.retardJours){ txt += '<span class="dfx-retard">retard ' + f.retardJours + (f.retardJours > 1 ? ' jours' : ' jour') + '</span>'; }
+    if (f.resteDuNonSuivi){ txt += '<span class="dfx-non-suivi">non pointé — aucun règlement enregistré</span>'; }
     return txt;
   }
   // Ligne tableau (donnees) + ligne actions repliable juste en dessous (colspan) -- reutilise
@@ -11679,17 +11681,17 @@
   }
   function dfxRenderSituationReglement(situation){
     if (!situation) return '';
-    // 25/09/2026 (Dorian) : "non suivi" plutot qu'un "A regler X€" qui se lirait comme un fait
-    // verifie -- une facture de contrat sur laquelle rien n'a jamais ete saisi n'est pas la meme
-    // chose qu'une facture dont on sait qu'elle n'a rien recu (cf. situation.nonSuivi, calcule
-    // cote serveur, jamais devine ici). Le montant TTC reste affiche : on connait le montant
-    // facture, on ne sait juste pas s'il a deja ete regle par un moyen qu'on ne suit pas.
-    if (situation.nonSuivi) return '<span class="dfx-reglements-situation dfx-non-suivi">Non suivi — ' + escHtml(fmtEuros(situation.montantTtc)) + ' TTC, aucun règlement saisi à ce jour</span>';
+    // Correctif 25/09/2026 (Dorian) : "non suivi" REMPLACAIT le montant a regler -- corrige, le
+    // montant reste toujours affiche (c'est un fait : le TTC moins ce qui est reellement
+    // enregistre), seule une mention distincte s'ajoute quand rien n'a jamais ete saisi (cf.
+    // situation.nonSuivi, calcule cote serveur, jamais devine ici) -- une inconnue sur le
+    // paiement, jamais sur le montant du.
+    var marqueurNonSuivi = situation.nonSuivi ? '<span class="dfx-non-suivi">non pointé — aucun règlement enregistré</span>' : '';
     var e = situation.etat;
     if (e === 'trop_percu') return '<span class="dfx-reglements-situation dfx-trop-percu">Trop-perçu ' + escHtml(fmtEuros(situation.tropPercu)) + '</span>';
     if (e === 'solde') return '<span class="dfx-reglements-situation" style="color:var(--ok)">Soldée — réglé ' + escHtml(fmtEuros(situation.totalRegle)) + '</span>';
     if (e === 'partiel') return '<span class="dfx-reglements-situation">Partiel — reste dû ' + escHtml(fmtEuros(situation.resteDu)) + ' (réglé ' + escHtml(fmtEuros(situation.totalRegle)) + ')</span>';
-    return '<span class="dfx-reglements-situation">À régler — ' + escHtml(fmtEuros(situation.resteDu)) + '</span>';
+    return '<span class="dfx-reglements-situation">À régler — ' + escHtml(fmtEuros(situation.resteDu)) + '</span>' + marqueurNonSuivi;
   }
   function dfxOuvrirReglements(f, container){
     var existing = container.querySelector('.dfx-reglements-panel');
@@ -11865,7 +11867,7 @@
     document.getElementById('dfx-totaux-result').innerHTML = '';
   }
   function dfxCalculerTotaux(){
-    var totHt = 0, totTtc = 0, totReg = 0, totReste = 0;
+    var totHt = 0, totTtc = 0, totReg = 0, totReste = 0, totResteNonPointe = 0;
     dfxCurrentItems.forEach(function(it){
       var ht = Number(it.montantHt); if (!isNaN(ht)) totHt += ht;
       var ttc = Number(devisActiveTab === 'devis' ? it.montant : it.montantTtc); if (!isNaN(ttc)) totTtc += ttc;
@@ -11875,7 +11877,14 @@
       // devis n'est jamais "regle") -- it.regle/it.resteDu valent undefined sur l'onglet Devis,
       // Number(undefined) = NaN, donc les 2 sommes restent a 0 sans branche separee.
       var reg = Number(it.regle); if (!isNaN(reg)) totReg += reg;
-      var reste = Number(it.resteDu); if (!isNaN(reste)) totReste += reste;
+      var reste = Number(it.resteDu);
+      if (!isNaN(reste)){
+        totReste += reste;
+        // Correctif 25/09/2026 (Dorian) : isoler, dans le total, la part qui vient de factures
+        // jamais pointees (aucun reglement enregistre) -- pour que Mickael ne lise pas ce total
+        // comme un impaye confirme de bout en bout.
+        if (it.resteDuNonSuivi) totResteNonPointe += reste;
+      }
     });
     var el = document.getElementById('dfx-totaux-result'); el.innerHTML = '';
     var l1 = document.createElement('div'); l1.className = 'dfx-totaux-ligne'; l1.innerHTML = '<span>Total HT</span><b>' + escHtml(fmtEuros(totHt)) + '</b>';
@@ -11885,6 +11894,11 @@
       var l3 = document.createElement('div'); l3.className = 'dfx-totaux-ligne'; l3.innerHTML = '<span>Total réglé</span><b>' + escHtml(fmtEuros(totReg)) + '</b>';
       var l4 = document.createElement('div'); l4.className = 'dfx-totaux-ligne'; l4.innerHTML = '<span>Total restant dû</span><b>' + escHtml(fmtEuros(totReste)) + '</b>';
       el.appendChild(l3); el.appendChild(l4);
+      if (totResteNonPointe > 0){
+        var l5 = document.createElement('div'); l5.className = 'dfx-totaux-ligne dfx-non-suivi'; l5.style.marginTop = '-4px';
+        l5.innerHTML = '<span>dont non pointé (aucun règlement enregistré)</span><b>' + escHtml(fmtEuros(totResteNonPointe)) + '</b>';
+        el.appendChild(l5);
+      }
     }
   }
   function devisAttenteClose(){ devisview.classList.remove('open'); }
