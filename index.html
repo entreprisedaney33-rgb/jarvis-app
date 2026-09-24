@@ -8122,7 +8122,7 @@
          comparaison de chaine de version par tenant. */
   var APPV_MCS = '4.59';
   var APPV_LABO = '1.03';
-  var BUILD = 76;
+  var BUILD = 77;
   // displayVersion()/displayVersionShort() lisent isMcsCode() (definie plus bas dans cette
   // meme IIFE -- declaration de fonction, donc disponible ici par hoisting) : le TENANT
   // affiche depend du code de connexion, jamais d'un simple "APPV" global qui ne dirait ni
@@ -24481,12 +24481,21 @@
           row.appendChild(nom);
           var voir = document.createElement('button'); voir.type = 'button'; voir.className = 'pj-item-voir'; voir.textContent = 'Aperçu';
           voir.addEventListener('click', function(){
+            // Bug trouve en testant reellement (pas en lisant le code) : ouvrir la fenetre APRES
+            // la reponse du serveur (asynchrone) perd le geste utilisateur -- la plupart des
+            // navigateurs bloquent alors le popup en silence. La fenetre s'ouvre ici tout de
+            // suite (synchrone, dans le clic), le contenu y est charge une fois recu.
+            var fenetre = window.open('', '_blank');
             postPj({ type: 'pj-apercu', id: p.id }, function(r2){
-              if (!r2 || !r2.ok){ toast('Aperçu impossible.'); return; }
+              if (!r2 || !r2.ok){ if (fenetre) fenetre.close(); toast('Aperçu impossible.'); return; }
               var url = 'data:' + r2.mime + ';base64,' + r2.dataBase64;
-              if (r2.mime === 'application/pdf' || r2.mime.indexOf('image/') === 0) window.open(url, '_blank');
-              else { var a = document.createElement('a'); a.href = url; a.download = r2.nomFichier; a.click(); }
-            }, function(err){ toast(err || 'Aperçu impossible.'); });
+              if (r2.mime === 'application/pdf' || r2.mime.indexOf('image/') === 0){
+                if (fenetre) fenetre.location.href = url; else window.open(url, '_blank');
+              } else {
+                if (fenetre) fenetre.close();
+                var a = document.createElement('a'); a.href = url; a.download = r2.nomFichier; a.click();
+              }
+            }, function(err){ if (fenetre) fenetre.close(); toast(err || 'Aperçu impossible.'); });
           });
           row.appendChild(voir);
           var suppr = document.createElement('button'); suppr.type = 'button'; suppr.className = 'pj-item-suppr'; suppr.textContent = '✕ Retirer';
