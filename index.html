@@ -8106,7 +8106,7 @@
          comparaison de chaine de version par tenant. */
   var APPV_MCS = '4.59';
   var APPV_LABO = '1.03';
-  var BUILD = 70;
+  var BUILD = 71;
   // displayVersion()/displayVersionShort() lisent isMcsCode() (definie plus bas dans cette
   // meme IIFE -- declaration de fonction, donc disponible ici par hoisting) : le TENANT
   // affiche depend du code de connexion, jamais d'un simple "APPV" global qui ne dirait ni
@@ -11599,9 +11599,16 @@
     // propre panneau d'envoi trace (destinataire pre-rempli, TEST_MODE) des qu'il est emis/
     // envoye -- jamais un mailto: qui contourne l'application. Uniquement les devis Jarvis
     // (source==='jarvis', un devis MEG n'a pas de brouillon chez nous a recharger).
-    iconRow.appendChild(dfxIconBtn(DFX_ICON_MAIL, dv.source === 'jarvis' ? 'Gérer et envoyer par mail' : 'Envoi non disponible pour un devis MEG', function(){
+    // 25/09/2026 (build 71) : un devis "jarvis" peut venir de l'ANCIEN mecanisme (avant le
+    // 18/09/2026, dv.chaineNouvelle absent) -- dvChargerDevis (route "charger") ne le trouve pas
+    // et ouvrait un formulaire vide, sans un mot d'explication. Desormais visiblement indisponible,
+    // avec une raison lisible, jamais un echec silencieux.
+    var mailTitreDevis = dv.source !== 'jarvis' ? 'Envoi non disponible pour un devis MEG'
+      : (!dv.chaineNouvelle ? 'Indisponible sur ce devis (créé avant la mise à jour du 18/09/2026) — disponible sur tout devis créé après cette date'
+      : 'Gérer et envoyer par mail');
+    iconRow.appendChild(dfxIconBtn(DFX_ICON_MAIL, mailTitreDevis, function(){
       dvChargerDevis(dv.token);
-    }, dv.source !== 'jarvis' || !dv.token));
+    }, dv.source !== 'jarvis' || !dv.token || !dv.chaineNouvelle));
     iconRow.appendChild(dfxIconBtn(DFX_ICON_PDF, pdfHref ? 'Voir le PDF' : (dv.source === 'meg' ? 'Importer le PDF' : 'PDF indisponible'), function(){
       if (pdfHref) window.open(pdfHref, '_blank');
       else if (dv.source === 'meg'){ dvPdfImportTarget = dv; dvPdfImportInput.value = ''; dvPdfImportInput.click(); }
@@ -11628,14 +11635,38 @@
     var existing = container.querySelector('.dfx-envoi-facture');
     if (existing){ existing.remove(); return; }
     var panel = document.createElement('div'); panel.className = 'dfx-envoi-facture';
-    var label = document.createElement('label'); label.textContent = 'Destinataire';
-    var input = document.createElement('input'); input.type = 'email'; input.value = f.email || ''; input.placeholder = 'client@exemple.fr';
+    // 25/09/2026 (build 71, decision Dorian) : renvoyer une facture deja envoyee est un acte de
+    // communication, pas un acte sur le document -- le destinataire reste celui memorise a
+    // l'envoi initial (colonne destinataire_envoi), jamais modifiable depuis ce panneau : une
+    // fiche client changee depuis ne doit jamais rediriger un renvoi. Champ lecture seule, pas
+    // desactive au sens HTML (un champ desactive n'est pas toujours lu comme "figé" par
+    // l'utilisateur) -- readOnly + style visuel dedie.
+    var estRenvoi = f.chaineNouvelle && f.statutBrut !== 'brouillon' && f.statutBrut !== 'annulee_par_avoir';
+    var label = document.createElement('label'); label.textContent = estRenvoi ? 'Destinataire (mémorisé à l’envoi initial, non modifiable)' : 'Destinataire';
+    var input = document.createElement('input'); input.type = 'email';
+    input.value = estRenvoi ? (f.destinataireEnvoi || '') : (f.email || '');
+    input.placeholder = 'client@exemple.fr';
+    if (estRenvoi) input.readOnly = true;
     label.appendChild(input);
     panel.appendChild(label);
+    // Historique des envois (build 71) : chaque envoi reel est trace, jamais un seul horodatage
+    // qui en ecraserait un autre -- "envoyee 2 fois, le X et le Y", jamais juste "envoyee".
+    if (f.envois && f.envois.length){
+      var histo = document.createElement('div'); histo.className = 'dfx-non-suivi';
+      var libelles = f.envois.map(function(e){
+        var d = new Date(e.horodatage);
+        var txt = isNaN(d.getTime()) ? e.horodatage : d.toLocaleDateString('fr-FR') + ' à ' + d.toLocaleTimeString('fr-FR', { hour: '2-digit', minute: '2-digit' });
+        return txt + (e.testMode ? ' (mode test)' : '');
+      });
+      histo.textContent = (f.envois.length > 1 ? 'Envoyée ' + f.envois.length + ' fois : ' : 'Envoyée le ') + libelles.join(', le ');
+      panel.appendChild(histo);
+    }
     // Bascule 23-24/09/2026 : une facture de la nouvelle chaine passe par facture-envoyer (jamais
     // envoyer-facture, l'ancienne route -- son jeton ne serait meme pas compatible, table
     // differente) ET recompose son mail par defaut (facture-apercu-mail) -- objet/corps
-    // MODIFIABLES avant envoi, ce que MEG ne proposait pas (demande explicite, gardee).
+    // MODIFIABLES avant envoi, ce que MEG ne proposait pas (demande explicite, gardee). Fonctionne
+    // identiquement pour un renvoi : facture-apercu-mail lit toujours l'etat REEL du document,
+    // numero deja attribue compris.
     var objetInput = null, corpsArea = null;
     if (f.chaineNouvelle){
       var labelObjet = document.createElement('label'); labelObjet.textContent = 'Objet du mail';
@@ -11651,26 +11682,29 @@
     }
     var row = document.createElement('div'); row.className = 'dfx-envoi-facture-row';
     var cancelBtn = document.createElement('button'); cancelBtn.type = 'button'; cancelBtn.className = 'vc-no'; cancelBtn.textContent = 'Annuler';
-    var sendBtn = document.createElement('button'); sendBtn.type = 'button'; sendBtn.className = 'vc-ok vc-envoi-reel'; sendBtn.textContent = 'Envoyer';
+    var sendBtn = document.createElement('button'); sendBtn.type = 'button'; sendBtn.className = 'vc-ok vc-envoi-reel'; sendBtn.textContent = estRenvoi ? 'Renvoyer' : 'Envoyer';
     cancelBtn.addEventListener('click', function(){ panel.remove(); });
     sendBtn.addEventListener('click', function(){
       var dest = input.value.trim();
-      if (!dest || dest.indexOf('@') === -1){ toast('Adresse email invalide.'); return; }
-      sendBtn.disabled = true; sendBtn.textContent = 'Envoi…';
+      if (!estRenvoi && (!dest || dest.indexOf('@') === -1)){ toast('Adresse email invalide.'); return; }
+      sendBtn.disabled = true; sendBtn.textContent = estRenvoi ? 'Renvoi…' : 'Envoi…';
+      // Renvoi (25/09/2026) : ne transmet jamais destinataireEmail -- le serveur ignore ce champ
+      // sur un renvoi de toute facon (destinataire_envoi fait foi), mais autant ne pas laisser
+      // croire que ce champ lecture seule serait pris en compte.
       var payload = f.chaineNouvelle
-        ? { type: 'facture-envoyer', token: f.pdfToken, destinataireEmail: dest, objet: objetInput.value.trim(), corps: corpsArea.value }
+        ? Object.assign({ type: 'facture-envoyer', token: f.pdfToken, objet: objetInput.value.trim(), corps: corpsArea.value }, estRenvoi ? {} : { destinataireEmail: dest })
         : { type: 'envoyer-facture', token: f.pdfToken, numeroComplet: f.numeroComplet, destinataireEmail: dest };
       postDf(payload, function(r){
-        sendBtn.disabled = false; sendBtn.textContent = 'Envoyer';
+        sendBtn.disabled = false; sendBtn.textContent = estRenvoi ? 'Renvoyer' : 'Envoyer';
         if (r && r.ok){
           // Verifie en reel le 23/09/2026 : facture-envoyer ne renvoie PAS de champ testMode
           // explicite (contrairement au devis) -- seul statut:'envoyee_test' le dit.
           var estTest = r.testMode || r.statut === 'envoyee_test';
-          toast('✅ Facture envoyée' + (estTest ? ' (mode test → ' + (r.destinataireReel || r.destinataire) + ')' : ' à ' + (r.destinataireReel || r.destinataire)));
+          toast('✅ Facture ' + (r.renvoi ? 'renvoyée' : 'envoyée') + (estTest ? ' (mode test → ' + (r.destinataireReel || r.destinataire) + ')' : ' à ' + (r.destinataireReel || r.destinataire)));
           panel.remove(); devisResynchroniser();
         }
         else { toast('❌ ' + ((r && r.message) || 'Envoi impossible.')); }
-      }, function(err){ sendBtn.disabled = false; sendBtn.textContent = 'Envoyer'; toast('❌ ' + err); });
+      }, function(err){ sendBtn.disabled = false; sendBtn.textContent = estRenvoi ? 'Renvoyer' : 'Envoyer'; toast('❌ ' + err); });
     });
     row.appendChild(cancelBtn); row.appendChild(sendBtn);
     panel.appendChild(row);
@@ -11835,12 +11869,19 @@
     // 23-24/09/2026 : une facture de la nouvelle chaine deja envoyee (statutBrut != 'brouillon')
     // ne repropose plus l'envoi -- facture-envoyer refuserait honnêtement (facture_deja_emise),
     // autant ne pas presenter un bouton qui echouerait a coup sur.
+    // 25/09/2026 (build 71, decision Dorian) : renvoyer n'est plus refuse -- seule une facture
+    // annulee par un avoir reste hors d'atteinte (le document n'existe plus commercialement).
+    // Le meme icone bascule sur "Renvoyer par mail", cf. dfxOuvrirEnvoiFacture pour le panneau.
     // 25/09/2026 (fermeture d'ecart demandee par Dorian) : une facture de contrat reste en
     // LECTURE SEULE sur cet ecran -- jamais d'envoi ni de conversion depuis ici (MCS . Contrats
     // n'est jamais touche). Seul le reglement (ci-dessous) s'ouvre pour elle.
-    var envoiIndisponibleNouveau = f.chaineNouvelle && f.statutBrut !== 'brouillon';
+    var estRenvoi = f.chaineNouvelle && f.statutBrut !== 'brouillon' && f.statutBrut !== 'annulee_par_avoir';
+    var envoiIndisponibleNouveau = f.chaineNouvelle && f.statutBrut === 'annulee_par_avoir';
     var envoiDesactive = !f.pdfToken || f.typeDoc === 'avoir' || envoiIndisponibleNouveau || f.source === 'contrat';
-    iconRow.appendChild(dfxIconBtn(DFX_ICON_MAIL, f.source === 'contrat' ? 'Envoi non disponible ici (facture de contrat)' : (envoiIndisponibleNouveau ? 'Déjà envoyée' : (f.pdfToken ? 'Envoyer par mail' : 'Envoi non disponible pour cette facture')), function(){
+    var mailTitreFacture = f.source === 'contrat' ? 'Envoi non disponible ici (facture de contrat)'
+      : (envoiIndisponibleNouveau ? 'Indisponible : cette facture a été annulée par un avoir'
+      : (estRenvoi ? 'Renvoyer par mail' : (f.pdfToken ? 'Envoyer par mail' : 'Envoi non disponible pour cette facture')));
+    iconRow.appendChild(dfxIconBtn(DFX_ICON_MAIL, mailTitreFacture, function(){
       if (!trAct.classList.contains('dfx-open')){ trAct.classList.add('dfx-open'); pencilBtnF.classList.add('dfx-icon-btn-active'); }
       dfxOuvrirEnvoiFacture(f, inner);
       trAct.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
@@ -12082,11 +12123,16 @@
       });
       row.appendChild(accBtn);
     }
+    // 25/09/2026 (build 71) : Refuser/Dupliquer/le mail modifiable n'agissent que sur un devis de
+    // la NOUVELLE chaine (mcs_documents_vente) -- un devis Jarvis plus ancien (avant le 18/09,
+    // dv.chaineNouvelle absent) a l'air identique a l'ecran mais fait echouer ces 3 routes en
+    // silence ("introuvable"). Note visible unique, jamais un bouton qui a l'air de marcher.
+    var devisAncienneChaine = dv.source === 'jarvis' && dv.token && !dv.chaineNouvelle;
     // 25/09/2026 (ecart signale par Dorian : route devis-refuser construite le 22/09, jamais
     // atteignable a l'ecran) -- meme emplacement/famille visuelle que "Le client a accepte"
     // ci-dessus, meme garde (devis Jarvis, emis/envoye, jamais un etat deja terminal). Motif
     // facultatif (le contrat serveur ne l'exige pas) mais saisissable, trace si donne.
-    if (dv.source === 'jarvis' && (dv.statut === 'valide' || dv.statut === 'envoye') && dv.token){
+    if (dv.chaineNouvelle && dv.source === 'jarvis' && (dv.statut === 'valide' || dv.statut === 'envoye') && dv.token){
       var refBtn = document.createElement('button'); refBtn.type = 'button'; refBtn.className = 'vc-no dfx-row-action-btn';
       refBtn.textContent = '✕ Refuser';
       var refForm = document.createElement('div'); refForm.className = 'mf-avoir-form';
@@ -12113,7 +12159,7 @@
     // atteignable a l'ecran) -- depuis n'importe quel etat reel d'un devis Jarvis (le contrat
     // serveur l'autorise explicitement), jamais sur un devis MEG (pas de jeton exploitable ici,
     // meme garde que "Voir le PDF"/"Le client a accepte" plus haut).
-    if (dv.source === 'jarvis' && dv.token){
+    if (dv.chaineNouvelle && dv.source === 'jarvis' && dv.token){
       var dupBtn = document.createElement('button'); dupBtn.type = 'button'; dupBtn.className = 'vc-no dfx-row-action-btn';
       dupBtn.textContent = '⧉ Dupliquer';
       dupBtn.addEventListener('click', function(){
@@ -12126,6 +12172,14 @@
         }, function(err){ dupBtn.disabled = false; toast('❌ ' + err); });
       });
       row.appendChild(dupBtn);
+    }
+    // 25/09/2026 (build 71, regle "une action indisponible se montre indisponible" --
+    // interne/infra/REGLE-ACTION-INDISPONIBLE-VISIBLE.md) : remplace le silence par une phrase
+    // lisible, a l'endroit ou Refuser/Dupliquer seraient normalement apparus.
+    if (devisAncienneChaine){
+      var noteAncien = document.createElement('span'); noteAncien.className = 'dfx-non-suivi';
+      noteAncien.textContent = 'Refuser et Dupliquer : indisponibles sur ce devis (créé avant la mise à jour du 18/09/2026) — disponibles sur tout devis créé après cette date.';
+      row.appendChild(noteAncien);
     }
     // Point 4/2b (30-31/08/2026, gros chantier) puis revu le 09/09/2026 (retour Dorian --
     // "Intervention faite" est un geste de l'onglet Contrats, pas de cet ecran) : "Facturer ce
@@ -12476,6 +12530,15 @@
       date: it.createdAt, montantHt: it.montantHt, montant: it.montantTtc,
       objet: it.objet, reference: it.objet, url: dfPdfUrlParToken(it.token), source: 'jarvis',
       estExpire: it.estExpire, articlesAVerifier: it.articlesAVerifier,
+      // 25/09/2026 (build 71, defaut trouve en marchant l'ecran) : sans ce marqueur, un devis
+      // "jarvis" fusionne depuis l'ANCIEN mecanisme (mcs-devis-factures, ex. DV000006, cree avant
+      // le 18/09) etait indiscernable d'un devis de la nouvelle chaine -- les boutons
+      // Refuser/Dupliquer/Envoyer par mail (qui n'agissent que sur mcs_documents_vente) semblaient
+      // disponibles puis echouaient en silence (charger renvoyait un devis entierement vide,
+      // devis-dupliquer/devis-apercu-mail renvoyaient "introuvable"). Meme marqueur, meme motif
+      // que chaineNouvelle deja pose sur les factures/avoirs (dfMapFactureNouvelle) -- jamais mis
+      // ici avant ce jour, c'est la cause racine du defaut.
+      chaineNouvelle: true,
     };
   }
   function dfCalculerRetardJours(f){
@@ -12497,6 +12560,11 @@
       paye: it.etat === 'solde' || it.etat === 'trop_percu',
       pdfUrl: dfPdfUrlParToken(it.token),
       dejaAnnuleePar: (it.avoirs && it.avoirs.length) ? it.avoirs[0].numero : null,
+      // 25/09/2026 (build 71, decision Dorian -- renvoyer une facture deja envoyee est un acte de
+      // communication, pas un acte sur le document) : destinataireEnvoi sert a l'afficher en
+      // lecture seule (jamais modifiable depuis cet ecran, cf. serveur) ; envois porte l'historique
+      // complet (1er envoi + tout renvoi), jamais un seul horodatage qui en écraserait un autre.
+      destinataireEnvoi: it.destinataireEnvoi || '', envois: it.envois || [],
     };
     f.retardJours = dfCalculerRetardJours(f);
     return f;
