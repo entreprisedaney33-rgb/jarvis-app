@@ -8102,7 +8102,7 @@
          comparaison de chaine de version par tenant. */
   var APPV_MCS = '4.59';
   var APPV_LABO = '1.03';
-  var BUILD = 68;
+  var BUILD = 69;
   // displayVersion()/displayVersionShort() lisent isMcsCode() (definie plus bas dans cette
   // meme IIFE -- declaration de fonction, donc disponible ici par hoisting) : le TENANT
   // affiche depend du code de connexion, jamais d'un simple "APPV" global qui ne dirait ni
@@ -12069,6 +12069,51 @@
         }, function(err){ finDenvoi(accBtn, [], null); toast(err); });
       });
       row.appendChild(accBtn);
+    }
+    // 25/09/2026 (ecart signale par Dorian : route devis-refuser construite le 22/09, jamais
+    // atteignable a l'ecran) -- meme emplacement/famille visuelle que "Le client a accepte"
+    // ci-dessus, meme garde (devis Jarvis, emis/envoye, jamais un etat deja terminal). Motif
+    // facultatif (le contrat serveur ne l'exige pas) mais saisissable, trace si donne.
+    if (dv.source === 'jarvis' && (dv.statut === 'valide' || dv.statut === 'envoye') && dv.token){
+      var refBtn = document.createElement('button'); refBtn.type = 'button'; refBtn.className = 'vc-no dfx-row-action-btn';
+      refBtn.textContent = '✕ Refuser';
+      var refForm = document.createElement('div'); refForm.className = 'mf-avoir-form';
+      var refMotif = document.createElement('textarea'); refMotif.placeholder = 'Motif (facultatif)…'; refMotif.rows = 2;
+      var refActions = document.createElement('div'); refActions.className = 'rl-form-actions';
+      var refConfirm = document.createElement('button'); refConfirm.type = 'button'; refConfirm.className = 'rl-confirm vc-envoi-reel'; refConfirm.textContent = 'Confirmer le refus';
+      var refCancel = document.createElement('button'); refCancel.type = 'button'; refCancel.className = 'rl-cancel'; refCancel.textContent = 'Retour';
+      refActions.appendChild(refConfirm); refActions.appendChild(refCancel);
+      refForm.appendChild(refMotif); refForm.appendChild(refActions);
+      refBtn.addEventListener('click', function(){ refForm.classList.toggle('open'); });
+      refCancel.addEventListener('click', function(){ refForm.classList.remove('open'); refMotif.value = ''; });
+      refConfirm.addEventListener('click', function(){
+        refConfirm.disabled = true;
+        postDf({ type: 'devis-refuser', token: dv.token, motif: refMotif.value.trim() }, function(r){
+          refConfirm.disabled = false;
+          if (!r || !r.ok){ toast('❌ ' + ((r && r.message) || 'Refus impossible.')); return; }
+          toast(r.dejaRefuse ? 'Ce devis était déjà refusé.' : '✅ Devis marqué refusé.');
+          devisResynchroniser();
+        }, function(err){ refConfirm.disabled = false; toast('❌ ' + err); });
+      });
+      row.appendChild(refBtn); row.appendChild(refForm);
+    }
+    // 25/09/2026 (ecart signale par Dorian : route devis-dupliquer construite le 22/09, jamais
+    // atteignable a l'ecran) -- depuis n'importe quel etat reel d'un devis Jarvis (le contrat
+    // serveur l'autorise explicitement), jamais sur un devis MEG (pas de jeton exploitable ici,
+    // meme garde que "Voir le PDF"/"Le client a accepte" plus haut).
+    if (dv.source === 'jarvis' && dv.token){
+      var dupBtn = document.createElement('button'); dupBtn.type = 'button'; dupBtn.className = 'vc-no dfx-row-action-btn';
+      dupBtn.textContent = '⧉ Dupliquer';
+      dupBtn.addEventListener('click', function(){
+        dupBtn.disabled = true;
+        postDf({ type: 'devis-dupliquer', token: dv.token }, function(r){
+          dupBtn.disabled = false;
+          if (!r || !r.ok){ toast('❌ ' + ((r && r.message) || 'Duplication impossible.')); return; }
+          toast('✅ Nouveau brouillon créé (' + fmtEuros(r.montantTtc) + ' TTC) — visible dans "Devis".');
+          devisResynchroniser();
+        }, function(err){ dupBtn.disabled = false; toast('❌ ' + err); });
+      });
+      row.appendChild(dupBtn);
     }
     // Point 4/2b (30-31/08/2026, gros chantier) puis revu le 09/09/2026 (retour Dorian --
     // "Intervention faite" est un geste de l'onglet Contrats, pas de cet ecran) : "Facturer ce
@@ -23960,6 +24005,12 @@
     var suffixe = dvRoleCreateur === 'salarie' ? ' · salarié' : '';
     if (dvStatut === 'envoye'){ dvStatutBadge.textContent = 'Envoyé' + suffixe; dvStatutBadge.classList.add('dfx-pill-envoye'); }
     else if (dvStatut === 'valide'){ dvStatutBadge.textContent = 'Émis' + suffixe; dvStatutBadge.classList.remove('dfx-pill-envoye'); }
+    // 25/09/2026 : les 3 statuts terminaux/intermediaires (accepte/refuse/facture) existent cote
+    // serveur depuis le 22/09 mais n'etaient jamais rendus ici -- un devis accepte ou refuse
+    // rouvert affichait a tort "Brouillon".
+    else if (dvStatut === 'accepte'){ dvStatutBadge.textContent = 'Accepté' + suffixe; dvStatutBadge.classList.remove('dfx-pill-envoye'); }
+    else if (dvStatut === 'refuse'){ dvStatutBadge.textContent = 'Refusé' + suffixe; dvStatutBadge.classList.remove('dfx-pill-envoye'); }
+    else if (dvStatut === 'facture'){ dvStatutBadge.textContent = 'Converti en facture' + suffixe; dvStatutBadge.classList.remove('dfx-pill-envoye'); }
     else { dvStatutBadge.textContent = 'Brouillon' + suffixe; dvStatutBadge.classList.remove('dfx-pill-envoye'); }
   }
   // Points D1/D2 (09/09/2026) : CHOISIR un client dans la liste est un geste explicite --
@@ -24108,7 +24159,12 @@
     var dest = dvEnvoiDest.value.trim();
     if (!dest || dest.indexOf('@') === -1){ toast('Adresse email invalide.'); return; }
     dvEnvoiGo.disabled = true;
-    postDf({ type: 'envoyer', token: dvToken, destinataire: dest }, function(r){
+    // Correctif 25/09/2026 (trouve en marchant le parcours, confirme par lecture du noeud
+    // serveur "Preparer envoi devis (df)") : le champ envoye ici s'appelait "destinataire",
+    // jamais lu par le serveur (qui lit ctrl.body.destinataireEmail, cf. CONTRAT-INTERFACE) --
+    // une adresse modifiee par Mickael dans ce panneau avant envoi etait donc silencieusement
+    // ignoree, le devis repartant toujours vers l'email deja enregistre sur le document.
+    postDf({ type: 'envoyer', token: dvToken, destinataireEmail: dest }, function(r){
       dvEnvoiGo.disabled = false;
       if (r && r.ok){
         dvStatut = 'envoye'; dvSetStatutBadge();
