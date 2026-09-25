@@ -2610,6 +2610,30 @@
   }
   #cx-npm-note{font-size:11.5px; color:var(--muted); padding:0 4px 10px; line-height:1.4}
   #crypto-npm-list{display:flex; gap:8px; margin-bottom:14px}
+  /* Panneau plein ecran "Radar" (25/09/2026, labo uniquement) -- lecture seule, webhook
+     jarvis-radar-recap (n8n, authentifie contre web_acces comme le reste de l'app), qui
+     interroge le Postgres SEPARE du produit produits/radar-opportunites/ (jamais n8n-db). */
+  #radarview{
+    position:fixed; inset:0; z-index:50; background:var(--bg);
+    display:none; flex-direction:column;
+    transform:translateY(100%); transition:transform .28s cubic-bezier(.2,.9,.25,1);
+  }
+  #radarview.open{display:flex; transform:translateY(0)}
+  @media (prefers-reduced-motion: reduce){#radarview{transition:none}}
+  #radar-head{
+    flex:0 0 auto; display:flex; align-items:center; gap:10px;
+    padding:calc(10px + env(safe-area-inset-top)) 14px 12px;
+  }
+  #radar-list{flex:1 1 auto; overflow-y:auto; padding:10px 14px 24px}
+  #radar-loading, #radar-error{padding:16px 4px; color:var(--muted); font-size:13.5px}
+  #radar-error{color:#ff6d5a}
+  #radar-note{font-size:11.5px; color:var(--muted); padding:2px 4px 12px; line-height:1.5}
+  .radar-badge{
+    display:inline-block; font-size:11px; font-weight:700; padding:2px 8px; border-radius:10px;
+    background:var(--surface); color:var(--muted); text-transform:uppercase; letter-spacing:.02em;
+  }
+  .radar-badge.selectionne{background:var(--blue); color:#fff}
+  .radar-badge.rejete{opacity:.55}
   .cx-npm-card{
     flex:1 1 0; min-width:0; background:rgba(10,132,255,.10);
     border:0.5px solid rgba(10,132,255,.30); border-radius:12px; padding:12px 12px 10px;
@@ -6450,6 +6474,10 @@
     <button class="sh-tile" id="sh-docs" type="button"><span class="sh-tile-ic">📄</span><span class="sh-tile-label">Mes documents</span></button>
     <button class="sh-tile" id="sh-couts" type="button"><span class="sh-tile-ic">💰</span><span class="sh-tile-label">Coûts</span></button>
     <button class="sh-tile" id="sh-crypto" type="button"><span class="sh-tile-ic">💰</span><span class="sh-tile-label">Crypto x402</span></button>
+    <!-- Onglet "Radar" (25/09/2026, labo uniquement) -- dossiers du produit interne
+         produits/radar-opportunites/ (base Postgres separee, jamais n8n-db). Masquage
+         labo-only via le meme mecanisme que sh-couts/sh-crypto (tableau plus bas). -->
+    <button class="sh-tile" id="sh-radar" type="button"><span class="sh-tile-ic">📡</span><span class="sh-tile-label">Radar</span></button>
     <!-- Onglet "Rentabilite (demonstration)" (15/09/2026, retire du menu le 15/09 -- demande de
          Mathéo "ca ne sert a rien" une fois la demo Groupe Demonchy en place). Bouton et panneau
          laisses en place (code mort inoffensif, jamais affiche), display:none inconditionnel --
@@ -6606,6 +6634,24 @@
         <div id="cxa-actor-list"></div>
         <div id="cxa-generated"></div>
       </div>
+    </div>
+  </div>
+</div>
+
+<div id="radarview">
+  <div id="radar-head">
+    <b>📡 Radar d'opportunités</b>
+    <button id="radar-close" type="button" aria-label="Fermer" style="margin-left:auto">✕</button>
+  </div>
+  <div id="radar-list">
+    <div id="radar-loading">Chargement…</div>
+    <div id="radar-error" style="display:none"></div>
+    <div id="radar-body" style="display:none">
+      <div id="radar-note">Dernier passage nocturne — dossiers triés par score prudent (voir SCORING.md). Statut « incertain »/« à revoir » = pas encore tranché par un humain.</div>
+      <div class="couts-stats" id="radar-kpis"></div>
+      <div id="couts-svc-head" style="margin-top:6px"><span>📋 Dossiers de la dernière nuit</span></div>
+      <div id="radar-opps-list"></div>
+      <div id="radar-generated"></div>
     </div>
   </div>
 </div>
@@ -8122,7 +8168,7 @@
          comparaison de chaine de version par tenant. */
   var APPV_MCS = '4.59';
   var APPV_LABO = '1.03';
-  var BUILD = 77;
+  var BUILD = 78;
   // displayVersion()/displayVersionShort() lisent isMcsCode() (definie plus bas dans cette
   // meme IIFE -- declaration de fonction, donc disponible ici par hoisting) : le TENANT
   // affiche depend du code de connexion, jamais d'un simple "APPV" global qui ne dirait ni
@@ -9887,7 +9933,7 @@
     // inconditionnel pose directement dans le HTML), plus besoin de les lister ici.
     // sh-couts (gestion des coûts labo-ia) masqué côté tenant secondaire : données internes
     // à Mathéo/Dorian, sans aucun rapport avec un client.
-    ['sh-meute', 'sh-site', 'sh-vitrine', 'sh-plume', 'hcallbtn', 'sh-couts', 'sh-crypto', 'sh-rentabilite-demonchy'].forEach(function(id){
+    ['sh-meute', 'sh-site', 'sh-vitrine', 'sh-plume', 'hcallbtn', 'sh-couts', 'sh-crypto', 'sh-radar', 'sh-rentabilite-demonchy'].forEach(function(id){
       var el = document.getElementById(id);
       if (el) el.style.display = mcs ? 'none' : '';
     });
@@ -11138,6 +11184,100 @@
   }
   document.getElementById('sh-crypto').addEventListener('click', function(){ sheetOpen(false); cryptoOpen(); });
   document.getElementById('crypto-close').addEventListener('click', cryptoClose);
+
+  // Panneau "Radar" (25/09/2026, labo uniquement) -- webhook n8n dedie
+  // (jarvis-radar-recap, workflow "Jarvis Web . Radar (opportunites)"),
+  // authentifie comme le reste de l'app (postDevisWeb attache jarvisCode
+  // automatiquement). Interroge en LECTURE SEULE le Postgres separe du
+  // produit produits/radar-opportunites/ (jamais n8n-db). Aucune mutation
+  // possible depuis ce panneau.
+  var radarview = document.getElementById('radarview');
+  var API_RADAR = 'https://n8n-self-hosted-t0pz.onrender.com/webhook/jarvis-radar-recap';
+  function radarClose(){ radarview.classList.remove('open'); }
+  function postRadarRecap(payload, onOk, onErr){ postDevisWeb(API_RADAR, payload, onOk, onErr); }
+
+  var RADAR_STATUT_LABEL = {
+    nouveau: 'Nouveau', en_analyse: 'En analyse', incertain: 'Incertain',
+    rejete: 'Rejeté', a_revoir: 'À revoir', selectionne: 'Sélectionné',
+  };
+
+  function radarRenderKpis(lignes){
+    var kpis = document.getElementById('radar-kpis');
+    kpis.innerHTML = '';
+    var premiere = lignes[0] || {};
+    var resume = premiere.resume_json || {};
+    var couts = premiere.couts_json || {};
+    var items = [
+      ['Signaux lus', String(resume.signaux_lus != null ? resume.signaux_lus : '—'), 'cette nuit'],
+      ['Dossiers', String(lignes.length), 'issus du dernier passage'],
+      ['Coût de la nuit', (couts.total_eur_estime != null ? couts.total_eur_estime.toFixed(2) : '—') + ' €', 'estimation, pas une facture exacte'],
+      ['État du run', premiere.run_statut || '—', premiere.run_debut ? new Date(premiere.run_debut).toLocaleString('fr-FR') : ''],
+    ];
+    items.forEach(function(it){
+      var d = document.createElement('div');
+      d.className = 'couts-stat';
+      var l = document.createElement('span'); l.className = 'cs-label'; l.textContent = it[0];
+      var v = document.createElement('span'); v.className = 'cs-value'; v.textContent = it[1];
+      var s = document.createElement('span'); s.className = 'cs-sub'; s.textContent = it[2];
+      d.appendChild(l); d.appendChild(v); d.appendChild(s);
+      kpis.appendChild(d);
+    });
+  }
+
+  function radarRenderOpps(lignes){
+    var list = document.getElementById('radar-opps-list');
+    list.innerHTML = '';
+    if (!lignes.length){
+      var empty = document.createElement('div');
+      empty.className = 'couts-svc-row';
+      empty.textContent = 'Aucun dossier sur le dernier passage.';
+      list.appendChild(empty);
+      return;
+    }
+    lignes.forEach(function(o){
+      var row = document.createElement('div');
+      row.className = 'couts-svc-row';
+      var topRow = document.createElement('div');
+      topRow.className = 'couts-svc-top';
+      var nom = document.createElement('span');
+      nom.className = 'couts-svc-nom';
+      nom.textContent = o.titre || '(sans titre)';
+      var badge = document.createElement('span');
+      badge.className = 'radar-badge ' + (o.statut || '');
+      badge.textContent = RADAR_STATUT_LABEL[o.statut] || o.statut || '?';
+      topRow.appendChild(nom); topRow.appendChild(badge);
+      var sub = document.createElement('span');
+      sub.className = 'couts-svc-pct';
+      var score = (o.score_prudent != null ? o.score_prudent : '?') + '/100 prudent (brut ' + (o.score_brut != null ? o.score_brut : '?') + ') — couverture ' + Math.round((o.couverture_preuves || 0) * 100) + '%';
+      sub.textContent = (o.acheteur || '') + ' — ' + (o.secteur || '') + ' — ' + score;
+      row.appendChild(topRow); row.appendChild(sub);
+      list.appendChild(row);
+    });
+  }
+
+  function radarLoad(){
+    document.getElementById('radar-loading').style.display = '';
+    document.getElementById('radar-error').style.display = 'none';
+    document.getElementById('radar-body').style.display = 'none';
+    postRadarRecap({}, function(j){
+      document.getElementById('radar-loading').style.display = 'none';
+      document.getElementById('radar-body').style.display = '';
+      var lignes = (j && j.lignes) || [];
+      radarRenderKpis(lignes);
+      radarRenderOpps(lignes);
+      document.getElementById('radar-generated').textContent = 'Généré le ' + new Date().toLocaleString('fr-FR');
+    }, function(err){
+      document.getElementById('radar-loading').style.display = 'none';
+      document.getElementById('radar-error').style.display = '';
+      document.getElementById('radar-error').textContent = err;
+    });
+  }
+  function radarOpen(){
+    radarview.classList.add('open');
+    radarLoad();
+  }
+  document.getElementById('sh-radar').addEventListener('click', function(){ sheetOpen(false); radarOpen(); });
+  document.getElementById('radar-close').addEventListener('click', radarClose);
 
   // Classement base UNIQUEMENT sur les paiements tiers (payments.tiers.last_7d)
   // — jamais le total (qui inclut le wallet de test + le seed hebdo), pour que
