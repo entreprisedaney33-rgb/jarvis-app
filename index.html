@@ -2634,6 +2634,30 @@
   }
   .radar-badge.selectionne{background:var(--blue); color:#fff}
   .radar-badge.rejete{opacity:.55}
+  .radar-row{cursor:pointer}
+  .radar-detail{
+    background:var(--surface); border-radius:12px; padding:10px 12px; margin:-4px 0 10px;
+    font-size:12.5px; line-height:1.5;
+  }
+  .radar-detail-ligne{margin-bottom:6px; word-break:break-word}
+  .radar-detail-titre{
+    font-size:11.5px; font-weight:700; color:var(--blue); text-transform:uppercase;
+    letter-spacing:.02em; margin:8px 0 4px;
+  }
+  #radar-refresh{background:transparent; border:none; font-size:17px; padding:4px 8px}
+  #radar-etat{
+    display:flex; align-items:center; gap:8px; font-size:13px; font-weight:600;
+    padding:8px 10px; border-radius:10px; background:var(--surface); margin-bottom:10px;
+  }
+  #radar-etat .radar-dot{width:8px; height:8px; border-radius:50%; background:var(--blue); flex:0 0 auto}
+  #radar-etat.radar-etat-encours .radar-dot{animation:radarPulse 1.2s ease-in-out infinite}
+  @keyframes radarPulse{0%,100%{opacity:1} 50%{opacity:.25}}
+  #radar-etat.radar-etat-termine .radar-dot{background:var(--ok)}
+  .radar-download-btn{
+    display:block; width:100%; margin:2px 0 14px; padding:10px; border-radius:10px;
+    background:var(--surface); color:var(--ink); border:0.5px solid var(--hairline);
+    font-size:13px; font-weight:600;
+  }
   .cx-npm-card{
     flex:1 1 0; min-width:0; background:rgba(10,132,255,.10);
     border:0.5px solid rgba(10,132,255,.30); border-radius:12px; padding:12px 12px 10px;
@@ -6641,14 +6665,17 @@
 <div id="radarview">
   <div id="radar-head">
     <b>📡 Radar d'opportunités</b>
-    <button id="radar-close" type="button" aria-label="Fermer" style="margin-left:auto">✕</button>
+    <button id="radar-refresh" type="button" aria-label="Actualiser" style="margin-left:auto">🔄</button>
+    <button id="radar-close" type="button" aria-label="Fermer">✕</button>
   </div>
   <div id="radar-list">
     <div id="radar-loading">Chargement…</div>
     <div id="radar-error" style="display:none"></div>
     <div id="radar-body" style="display:none">
       <div id="radar-note">Dernier passage nocturne — dossiers triés par score prudent (voir SCORING.md). Statut « incertain »/« à revoir » = pas encore tranché par un humain.</div>
+      <div id="radar-etat"></div>
       <div class="couts-stats" id="radar-kpis"></div>
+      <button id="radar-download" type="button" class="radar-download-btn">⬇️ Télécharger le rapport</button>
       <div id="couts-svc-head" style="margin-top:6px"><span>📋 Dossiers de la dernière nuit</span></div>
       <div id="radar-opps-list"></div>
       <div id="radar-generated"></div>
@@ -8168,7 +8195,7 @@
          comparaison de chaine de version par tenant. */
   var APPV_MCS = '4.59';
   var APPV_LABO = '1.03';
-  var BUILD = 78;
+  var BUILD = 79;
   // displayVersion()/displayVersionShort() lisent isMcsCode() (definie plus bas dans cette
   // meme IIFE -- declaration de fonction, donc disponible ici par hoisting) : le TENANT
   // affiche depend du code de connexion, jamais d'un simple "APPV" global qui ne dirait ni
@@ -11201,6 +11228,34 @@
     rejete: 'Rejeté', a_revoir: 'À revoir', selectionne: 'Sélectionné',
   };
 
+  // Bandeau d'etat (25/09/2026, demande Mathéo) : dit en clair si le radar
+  // travaille encore ou s'il a fini, plutot que d'afficher le mot brut
+  // "en_cours"/"termine".
+  function radarRenderEtat(lignes){
+    var etat = document.getElementById('radar-etat');
+    var premiere = lignes[0] || {};
+    var statutRun = premiere.run_statut;
+    etat.className = '';
+    var dot = document.createElement('span'); dot.className = 'radar-dot';
+    var texte = document.createElement('span');
+    if (!lignes.length){
+      texte.textContent = 'Aucun run pour l\'instant.';
+    } else if (statutRun === 'en_cours'){
+      etat.className = 'radar-etat-encours';
+      texte.textContent = 'Je travaille pour vous en ce moment… (les dossiers ci-dessous arrivent au fur et à mesure)';
+    } else if (statutRun === 'termine'){
+      etat.className = 'radar-etat-termine';
+      texte.textContent = 'Terminé pour cette nuit.';
+    } else if (statutRun === 'interrompu'){
+      texte.textContent = 'Interrompu (budget ou temps atteint) — voir le récap ci-dessous.';
+    } else {
+      texte.textContent = 'Statut : ' + (statutRun || '?');
+    }
+    etat.innerHTML = '';
+    etat.appendChild(dot);
+    etat.appendChild(texte);
+  }
+
   function radarRenderKpis(lignes){
     var kpis = document.getElementById('radar-kpis');
     kpis.innerHTML = '';
@@ -11210,8 +11265,8 @@
     var items = [
       ['Signaux lus', String(resume.signaux_lus != null ? resume.signaux_lus : '—'), 'cette nuit'],
       ['Dossiers', String(lignes.length), 'issus du dernier passage'],
-      ['Coût de la nuit', (couts.total_eur_estime != null ? couts.total_eur_estime.toFixed(2) : '—') + ' €', 'estimation, pas une facture exacte'],
-      ['État du run', premiere.run_statut || '—', premiere.run_debut ? new Date(premiere.run_debut).toLocaleString('fr-FR') : ''],
+      ['Coût de la nuit', (couts.total_eur_estime != null ? couts.total_eur_estime.toFixed(2) : '—') + ' €', 'sur 25 € max — estimation, pas une facture exacte'],
+      ['Démarré', premiere.run_debut ? new Date(premiere.run_debut).toLocaleString('fr-FR') : '—', 'heure locale'],
     ];
     items.forEach(function(it){
       var d = document.createElement('div');
@@ -11222,6 +11277,86 @@
       d.appendChild(l); d.appendChild(v); d.appendChild(s);
       kpis.appendChild(d);
     });
+  }
+
+  // Construit le detail complet d'un dossier (25/09/2026) : preuves, objection
+  // du Critic, prochain test -- tout est deja dans la ligne recue (la requete
+  // SQL du webhook les embarque), aucun 2e appel reseau necessaire. Texte
+  // toujours pose via textContent (donnees issues du web/du modele, jamais
+  // injectees comme HTML).
+  function radarBuildDetail(o){
+    var box = document.createElement('div');
+    box.className = 'radar-detail';
+
+    function ligne(label, texte){
+      if (!texte) return;
+      var p = document.createElement('div');
+      p.className = 'radar-detail-ligne';
+      var l = document.createElement('b'); l.textContent = label + ' : ';
+      p.appendChild(l);
+      p.appendChild(document.createTextNode(texte));
+      box.appendChild(p);
+    }
+
+    ligne('Problème', o.probleme);
+    ligne('Mécanisme IA', o.mecanisme_ia);
+
+    var critic = o.critic_payload || {};
+    if (Array.isArray(critic.objections) && critic.objections.length){
+      var t = document.createElement('div');
+      t.className = 'radar-detail-titre';
+      t.textContent = 'Objections du Critic';
+      box.appendChild(t);
+      critic.objections.forEach(function(obj){
+        var p = document.createElement('div');
+        p.className = 'radar-detail-ligne';
+        p.textContent = '• ' + (obj.texte || '');
+        box.appendChild(p);
+      });
+    }
+    ligne('Motif de la décision', critic.motif);
+
+    var analyst = o.analyst_payload || {};
+    ligne('Prochain test le moins coûteux', analyst.prochain_test_moins_couteux);
+    if (Array.isArray(analyst.contradictions) && analyst.contradictions.length){
+      ligne('Contradictions non résolues', analyst.contradictions.join(' ; '));
+    }
+
+    if (Array.isArray(o.flags_json) && o.flags_json.length){
+      ligne('Critères sans preuve suffisante', o.flags_json.join(', '));
+    }
+
+    var preuves = Array.isArray(o.preuves) ? o.preuves : [];
+    if (preuves.length){
+      var tp = document.createElement('div');
+      tp.className = 'radar-detail-titre';
+      tp.textContent = 'Sources et preuves (' + preuves.length + ')';
+      box.appendChild(tp);
+      preuves.forEach(function(pr){
+        var p = document.createElement('div');
+        p.className = 'radar-detail-ligne';
+        var badge = document.createElement('span');
+        badge.className = 'radar-badge';
+        badge.style.marginRight = '6px';
+        badge.textContent = pr.type || '?';
+        p.appendChild(badge);
+        p.appendChild(document.createTextNode((pr.claim || '').slice(0, 200)));
+        if (pr.url){
+          var br = document.createElement('br');
+          p.appendChild(br);
+          var a = document.createElement('a');
+          a.href = pr.url; a.target = '_blank'; a.rel = 'noopener';
+          a.textContent = pr.url;
+          a.style.color = 'var(--blue)'; a.style.fontSize = '11px';
+          p.appendChild(a);
+        }
+        box.appendChild(p);
+      });
+    } else {
+      ligne('Sources et preuves', 'Aucune preuve rattachée.');
+    }
+
+    return box;
   }
 
   function radarRenderOpps(lignes){
@@ -11236,7 +11371,7 @@
     }
     lignes.forEach(function(o){
       var row = document.createElement('div');
-      row.className = 'couts-svc-row';
+      row.className = 'couts-svc-row radar-row';
       var topRow = document.createElement('div');
       topRow.className = 'couts-svc-top';
       var nom = document.createElement('span');
@@ -11249,11 +11384,19 @@
       var sub = document.createElement('span');
       sub.className = 'couts-svc-pct';
       var score = (o.score_prudent != null ? o.score_prudent : '?') + '/100 prudent (brut ' + (o.score_brut != null ? o.score_brut : '?') + ') — couverture ' + Math.round((o.couverture_preuves || 0) * 100) + '%';
-      sub.textContent = (o.acheteur || '') + ' — ' + (o.secteur || '') + ' — ' + score;
+      sub.textContent = (o.acheteur || '') + ' — ' + (o.secteur || '') + ' — ' + score + '  ▸ voir le détail';
       row.appendChild(topRow); row.appendChild(sub);
+      var detail = null;
+      row.addEventListener('click', function(){
+        if (detail){ detail.remove(); detail = null; return; }
+        detail = radarBuildDetail(o);
+        row.insertAdjacentElement('afterend', detail);
+      });
       list.appendChild(row);
     });
   }
+
+  var radarDernieresLignes = [];
 
   function radarLoad(){
     document.getElementById('radar-loading').style.display = '';
@@ -11263,6 +11406,8 @@
       document.getElementById('radar-loading').style.display = 'none';
       document.getElementById('radar-body').style.display = '';
       var lignes = (j && j.lignes) || [];
+      radarDernieresLignes = lignes;
+      radarRenderEtat(lignes);
       radarRenderKpis(lignes);
       radarRenderOpps(lignes);
       document.getElementById('radar-generated').textContent = 'Généré le ' + new Date().toLocaleString('fr-FR');
@@ -11272,12 +11417,53 @@
       document.getElementById('radar-error').textContent = err;
     });
   }
+
+  // Rapport telechargeable (25/09/2026, demande Mathéo) : construit un fichier
+  // texte lisible a partir des donnees deja recues (aucun 2e appel reseau),
+  // declenche via un lien <a download> temporaire -- aucun serveur/stockage
+  // supplementaire necessaire.
+  function radarDownloadReport(){
+    var lignes = radarDernieresLignes;
+    if (!lignes.length){ return; }
+    var premiere = lignes[0];
+    var resume = premiere.resume_json || {};
+    var couts = premiere.couts_json || {};
+    var texte = 'RADAR D\'OPPORTUNITES -- rapport du ' + new Date().toLocaleString('fr-FR') + '\n';
+    texte += 'Run demarre le ' + (premiere.run_debut ? new Date(premiere.run_debut).toLocaleString('fr-FR') : '?') + ' -- statut : ' + (premiere.run_statut || '?') + '\n';
+    texte += 'Signaux lus : ' + (resume.signaux_lus != null ? resume.signaux_lus : '?') + ' -- Cout de la nuit : ' + (couts.total_eur_estime != null ? couts.total_eur_estime.toFixed(2) : '?') + ' EUR (sur 25 EUR max)\n';
+    texte += '\n' + new Array(60).join('=') + '\n\n';
+    lignes.forEach(function(o, i){
+      texte += (i + 1) + '. ' + (o.titre || '(sans titre)') + '\n';
+      texte += '   Statut : ' + (RADAR_STATUT_LABEL[o.statut] || o.statut) + ' -- Score prudent : ' + o.score_prudent + '/100 (brut ' + o.score_brut + ') -- couverture ' + Math.round((o.couverture_preuves || 0) * 100) + '%\n';
+      texte += '   Acheteur : ' + (o.acheteur || '?') + '\n';
+      texte += '   Secteur : ' + (o.secteur || '?') + '\n';
+      texte += '   Probleme : ' + (o.probleme || '?') + '\n';
+      texte += '   Mecanisme IA : ' + (o.mecanisme_ia || '?') + '\n';
+      var critic = o.critic_payload || {};
+      if (critic.motif) texte += '   Motif du Critic : ' + critic.motif + '\n';
+      (critic.objections || []).forEach(function(obj){ texte += '   Objection : ' + obj.texte + '\n'; });
+      var analyst = o.analyst_payload || {};
+      if (analyst.prochain_test_moins_couteux) texte += '   Prochain test : ' + analyst.prochain_test_moins_couteux + '\n';
+      texte += '\n';
+    });
+    var blob = new Blob([texte], { type: 'text/plain;charset=utf-8' });
+    var url = URL.createObjectURL(blob);
+    var a = document.createElement('a');
+    a.href = url;
+    a.download = 'radar-rapport-' + new Date().toISOString().slice(0, 10) + '.txt';
+    document.body.appendChild(a);
+    a.click();
+    a.remove();
+    URL.revokeObjectURL(url);
+  }
   function radarOpen(){
     radarview.classList.add('open');
     radarLoad();
   }
   document.getElementById('sh-radar').addEventListener('click', function(){ sheetOpen(false); radarOpen(); });
   document.getElementById('radar-close').addEventListener('click', radarClose);
+  document.getElementById('radar-refresh').addEventListener('click', radarLoad);
+  document.getElementById('radar-download').addEventListener('click', radarDownloadReport);
 
   // Classement base UNIQUEMENT sur les paiements tiers (payments.tiers.last_7d)
   // — jamais le total (qui inclut le wallet de test + le seed hebdo), pour que
