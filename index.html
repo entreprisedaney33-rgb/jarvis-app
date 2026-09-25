@@ -2610,9 +2610,12 @@
   }
   #cx-npm-note{font-size:11.5px; color:var(--muted); padding:0 4px 10px; line-height:1.4}
   #crypto-npm-list{display:flex; gap:8px; margin-bottom:14px}
-  /* Panneau plein ecran "Radar" (25/09/2026, labo uniquement) -- lecture seule, webhook
-     jarvis-radar-recap (n8n, authentifie contre web_acces comme le reste de l'app), qui
-     interroge le Postgres SEPARE du produit produits/radar-opportunites/ (jamais n8n-db). */
+  /* Panneau plein ecran "Radar" (25/09/2026, labo uniquement -- refonte complete
+     sous-etape 7.2 d'AMELIORATIONS.md) -- lecture seule, webhook jarvis-radar-recap
+     (n8n, authentifie contre web_acces comme le reste de l'app), qui interroge le
+     Postgres SEPARE du produit produits/radar-opportunites/ (jamais n8n-db). Une
+     seule couleur d'accent (--blue), meme grammaire visuelle que .couts-stat/#cx-hero
+     ailleurs dans l'app -- aucune nouvelle variable :root, tout en classes .radar-*. */
   #radarview{
     position:fixed; inset:0; z-index:50; background:var(--bg);
     display:none; flex-direction:column;
@@ -2624,17 +2627,96 @@
     flex:0 0 auto; display:flex; align-items:center; gap:10px;
     padding:calc(10px + env(safe-area-inset-top)) 14px 12px;
   }
-  #radar-list{flex:1 1 auto; overflow-y:auto; padding:10px 14px 24px}
+  #radar-list{flex:1 1 auto; overflow-y:auto; padding:10px 14px 28px}
   #radar-loading, #radar-error{padding:16px 4px; color:var(--muted); font-size:13.5px}
   #radar-error{color:#ff6d5a}
-  #radar-note{font-size:11.5px; color:var(--muted); padding:2px 4px 12px; line-height:1.5}
+  #radar-refresh{background:transparent; border:none; font-size:17px; padding:4px 8px}
+
+  /* -------------------------------------------------- bandeau d'état vivant */
+  #radar-bandeau{
+    background:var(--surface); border-radius:14px; padding:14px 16px; margin-bottom:14px;
+  }
+  .radar-bandeau-top{display:flex; align-items:center; gap:9px}
+  .radar-dot{width:9px; height:9px; border-radius:50%; background:var(--muted); flex:0 0 auto}
+  .radar-dot.radar-dot-travail{background:var(--blue); animation:radarPulse 1.2s ease-in-out infinite}
+  @keyframes radarPulse{0%,100%{opacity:1} 50%{opacity:.3}}
+  #radar-bandeau-texte{font-size:13.5px; font-weight:600; color:var(--ink); line-height:1.35}
+  .radar-jauges{display:grid; grid-template-columns:1fr 1fr 1fr; gap:8px; margin-top:12px}
+  .radar-jauge{min-width:0}
+  .radar-jauge-lab{font-size:10.5px; color:var(--muted); text-transform:uppercase; letter-spacing:.02em; display:flex; align-items:center; gap:3px; white-space:nowrap; overflow:hidden; text-overflow:ellipsis}
+  .radar-jauge-bar{height:5px; border-radius:3px; background:rgba(255,255,255,.08); overflow:hidden; margin-top:5px}
+  .radar-jauge-bar i{display:block; height:100%; background:var(--blue); border-radius:3px}
+  .radar-jauge-bar.radar-jauge-pleine i{background:var(--gold-a)}
+  .radar-jauge-val{font-size:11px; color:var(--muted); margin-top:3px; display:block}
+
+  /* -------------------------------------------------------------- entonnoir */
+  #radar-entonnoir{
+    display:flex; align-items:stretch; gap:6px; margin-bottom:14px; overflow-x:auto;
+    padding-bottom:2px;
+  }
+  .radar-etape{
+    flex:1 1 0; min-width:74px; background:var(--surface); border-radius:12px;
+    padding:10px 8px; text-align:center;
+  }
+  .radar-etape-val{font-size:18px; font-weight:800; color:var(--ink); line-height:1.1}
+  .radar-etape-lab{font-size:9.5px; color:var(--muted); text-transform:uppercase; letter-spacing:.01em; margin-top:3px; line-height:1.25}
+  .radar-etape-fleche{flex:0 0 auto; align-self:center; color:var(--muted); font-size:13px}
+
+  /* --------------------------------------------------------------- filtres */
+  #radar-filtres{display:flex; gap:8px; margin-bottom:12px}
+  .radar-select{
+    flex:1 1 0; min-width:0; background:var(--surface); color:var(--ink);
+    border:0.5px solid var(--hairline); border-radius:10px; padding:8px 10px; font-size:12.5px;
+  }
+
+  /* ------------------------------------------------------------- infobulle */
+  .radar-info-btn{
+    display:inline-flex; align-items:center; justify-content:center; width:14px; height:14px;
+    border-radius:50%; background:rgba(255,255,255,.12); color:var(--muted); font-size:9.5px;
+    font-weight:700; border:none; flex:0 0 auto; line-height:1; padding:0;
+  }
+  .radar-info-note{
+    font-size:11.5px; color:var(--muted); background:rgba(255,255,255,.06); border-radius:8px;
+    padding:7px 9px; margin-top:6px; line-height:1.4;
+  }
+
+  /* ------------------------------------------------------------------ hero */
+  #radar-hero{
+    background:var(--surface); border-radius:14px; padding:14px 16px; margin-bottom:14px;
+    display:flex; flex-direction:column; gap:2px;
+  }
+  #radar-hero-titre{font-size:13px; color:var(--ink); margin-top:2px; line-height:1.3}
+
+  /* ------------------------------------------------------------- badges/cartes */
   .radar-badge{
     display:inline-block; font-size:11px; font-weight:700; padding:2px 8px; border-radius:10px;
-    background:var(--surface); color:var(--muted); text-transform:uppercase; letter-spacing:.02em;
+    background:rgba(255,255,255,.08); color:var(--muted); text-transform:uppercase; letter-spacing:.02em;
+    white-space:nowrap;
   }
   .radar-badge.selectionne{background:var(--blue); color:#fff}
   .radar-badge.rejete{opacity:.55}
-  .radar-row{cursor:pointer}
+  .radar-secteur-badge{
+    display:inline-flex; align-items:center; gap:4px; font-size:11px; font-weight:600;
+    padding:2px 8px; border-radius:10px; background:rgba(10,132,255,.14); color:var(--blue);
+    white-space:nowrap;
+  }
+  .radar-secteur-verifie{color:var(--gold-a)} /* petite marque distincte -- citation vérifiée */
+  .radar-card{
+    background:var(--surface); border-radius:14px; padding:13px 15px; margin-bottom:10px;
+    cursor:pointer;
+  }
+  .radar-card-top{display:flex; justify-content:space-between; align-items:flex-start; gap:10px; flex-wrap:wrap}
+  .radar-card-titre{font-size:14.5px; font-weight:700; line-height:1.35; color:var(--ink)}
+  .radar-card-meta{display:flex; align-items:center; gap:6px; margin-top:7px; flex-wrap:wrap}
+  .radar-card-sub{font-size:12px; color:var(--muted); margin-top:6px; line-height:1.4}
+  .radar-score-row{display:flex; align-items:center; gap:9px; margin-top:11px}
+  .radar-score-bar{flex:1 1 auto; height:6px; border-radius:3px; background:rgba(255,255,255,.08); overflow:hidden}
+  .radar-score-bar i{display:block; height:100%; background:var(--blue); border-radius:3px}
+  .radar-score-txt{font-size:12px; font-weight:700; color:var(--blue); flex:0 0 auto; white-space:nowrap}
+  .radar-card-hint{font-size:11px; color:var(--muted); margin-top:8px; text-align:right}
+  .radar-src-count{font-size:11px; color:var(--muted)}
+
+  /* --------------------------------------------------------------- détail */
   .radar-detail{
     background:var(--surface); border-radius:12px; padding:10px 12px; margin:-4px 0 10px;
     font-size:12.5px; line-height:1.5;
@@ -2644,40 +2726,27 @@
     font-size:11.5px; font-weight:700; color:var(--blue); text-transform:uppercase;
     letter-spacing:.02em; margin:8px 0 4px;
   }
-  #radar-refresh{background:transparent; border:none; font-size:17px; padding:4px 8px}
-  #radar-etat{
-    display:flex; align-items:center; gap:8px; font-size:13px; font-weight:600;
-    padding:8px 10px; border-radius:10px; background:var(--surface); margin-bottom:10px;
+  .radar-preuve-groupe{margin-bottom:10px}
+  .radar-preuve-groupe-titre{font-size:11px; font-weight:700; color:var(--ink); margin-bottom:4px}
+  .radar-preuve-ligne{
+    padding:7px 0; border-top:0.5px solid var(--hairline);
   }
-  #radar-etat .radar-dot{width:8px; height:8px; border-radius:50%; background:var(--blue); flex:0 0 auto}
-  #radar-etat.radar-etat-encours .radar-dot{animation:radarPulse 1.2s ease-in-out infinite}
-  @keyframes radarPulse{0%,100%{opacity:1} 50%{opacity:.25}}
-  #radar-etat.radar-etat-termine .radar-dot{background:var(--ok)}
+  .radar-preuve-ligne:first-child{border-top:none}
+  .radar-preuve-claim{font-size:12px; color:var(--ink); line-height:1.4}
+  .radar-preuve-meta{font-size:10.5px; color:var(--muted); margin-top:3px}
+  .radar-preuve-meta a{color:var(--blue)}
+
+  /* ---------------------------------------------------------- tendance 7j */
+  #radar-tendance{margin-top:16px; padding-top:12px; border-top:0.5px solid var(--hairline)}
+  #radar-tendance-titre{font-size:11.5px; font-weight:700; color:var(--muted); text-transform:uppercase; letter-spacing:.02em; margin-bottom:8px}
+  #radar-tendance-svg{width:100%; height:64px; display:block}
+  #radar-tendance-note{font-size:11px; color:var(--muted); margin-top:6px}
+
   .radar-download-btn{
     display:block; width:100%; margin:2px 0 14px; padding:10px; border-radius:10px;
     background:var(--surface); color:var(--ink); border:0.5px solid var(--hairline);
     font-size:13px; font-weight:600;
   }
-  /* "Rapport" plus lisible (25/09/2026, demande Mathéo : "esthétique, beau,
-     facile à comprendre") -- mini-hero (meme forme que #cx-hero) + cartes au
-     lieu de simples lignes de texte. */
-  #radar-hero{
-    background:var(--surface); border-radius:14px; padding:14px 16px; margin-bottom:12px;
-    display:flex; flex-direction:column; gap:2px;
-  }
-  #radar-hero-titre{font-size:13px; color:var(--ink); margin-top:2px; line-height:1.3}
-  .radar-card{
-    background:var(--surface); border-radius:14px; padding:13px 15px; margin-bottom:10px;
-    cursor:pointer;
-  }
-  .radar-card-top{display:flex; justify-content:space-between; align-items:flex-start; gap:10px}
-  .radar-card-titre{font-size:14.5px; font-weight:700; line-height:1.35; color:var(--ink)}
-  .radar-card-sub{font-size:12px; color:var(--muted); margin-top:5px; line-height:1.4}
-  .radar-score-row{display:flex; align-items:center; gap:9px; margin-top:11px}
-  .radar-score-bar{flex:1 1 auto; height:6px; border-radius:3px; background:rgba(255,255,255,.08); overflow:hidden}
-  .radar-score-bar i{display:block; height:100%; background:var(--blue); border-radius:3px}
-  .radar-score-txt{font-size:12px; font-weight:700; color:var(--blue); flex:0 0 auto; white-space:nowrap}
-  .radar-card-hint{font-size:11px; color:var(--muted); margin-top:8px; text-align:right}
   .cx-npm-card{
     flex:1 1 0; min-width:0; background:rgba(10,132,255,.10);
     border:0.5px solid rgba(10,132,255,.30); border-radius:12px; padding:12px 12px 10px;
@@ -6692,18 +6761,58 @@
     <div id="radar-loading">Chargement…</div>
     <div id="radar-error" style="display:none"></div>
     <div id="radar-body" style="display:none">
-      <div id="radar-note">Dernier passage nocturne — dossiers triés par score prudent (voir SCORING.md). Statut « incertain »/« à revoir » = pas encore tranché par un humain.</div>
-      <div id="radar-etat"></div>
+
+      <!-- Bandeau d'état vivant + 3 jauges (sous-étape 7.2) -->
+      <div id="radar-bandeau">
+        <div class="radar-bandeau-top">
+          <span class="radar-dot" id="radar-dot"></span>
+          <span id="radar-bandeau-texte"></span>
+        </div>
+        <div class="radar-jauges">
+          <div class="radar-jauge">
+            <span class="radar-jauge-lab">Budget</span>
+            <div class="radar-jauge-bar"><i id="radar-jauge-budget"></i></div>
+            <span class="radar-jauge-val" id="radar-jauge-budget-val"></span>
+          </div>
+          <div class="radar-jauge">
+            <span class="radar-jauge-lab">Appels</span>
+            <div class="radar-jauge-bar"><i id="radar-jauge-appels"></i></div>
+            <span class="radar-jauge-val" id="radar-jauge-appels-val"></span>
+          </div>
+          <div class="radar-jauge">
+            <span class="radar-jauge-lab">Enquêteur</span>
+            <div class="radar-jauge-bar"><i id="radar-jauge-enqueteur"></i></div>
+            <span class="radar-jauge-val" id="radar-jauge-enqueteur-val"></span>
+          </div>
+        </div>
+      </div>
+
+      <!-- Entonnoir du jour, compact -->
+      <div id="radar-entonnoir"></div>
+
       <div id="radar-hero" style="display:none">
-        <span class="cx-hero-label" id="radar-hero-label">Meilleur dossier ce soir</span>
+        <span class="cx-hero-label" id="radar-hero-label">Meilleur dossier</span>
         <span class="cx-hero-value"><span id="radar-hero-value">—</span><span class="cx-hero-unit">/100</span></span>
         <div id="radar-hero-titre"></div>
       </div>
-      <div class="couts-stats" id="radar-kpis"></div>
+
+      <!-- Filtres statut / secteur -->
+      <div id="radar-filtres">
+        <select class="radar-select" id="radar-filtre-statut"><option value="">Tous les statuts</option></select>
+        <select class="radar-select" id="radar-filtre-secteur"><option value="">Tous les secteurs</option></select>
+      </div>
+
       <button id="radar-download" type="button" class="radar-download-btn">⬇️ Télécharger le rapport (.txt)</button>
-      <div id="couts-svc-head" style="margin-top:6px"><span>📋 Dossiers de la dernière nuit</span></div>
+
       <div id="radar-opps-list"></div>
-      <div id="radar-generated"></div>
+      <div id="radar-generated" style="font-size:11px;color:var(--muted);margin-top:4px"></div>
+
+      <!-- Tendance 7 jours -->
+      <div id="radar-tendance">
+        <div id="radar-tendance-titre">Tendance sur 7 jours</div>
+        <svg id="radar-tendance-svg" viewBox="0 0 280 64" preserveAspectRatio="none"></svg>
+        <div id="radar-tendance-note"></div>
+      </div>
     </div>
   </div>
 </div>
@@ -8220,7 +8329,7 @@
          comparaison de chaine de version par tenant. */
   var APPV_MCS = '4.59';
   var APPV_LABO = '1.03';
-  var BUILD = 81;
+  var BUILD = 82;
   // displayVersion()/displayVersionShort() lisent isMcsCode() (definie plus bas dans cette
   // meme IIFE -- declaration de fonction, donc disponible ici par hoisting) : le TENANT
   // affiche depend du code de connexion, jamais d'un simple "APPV" global qui ne dirait ni
@@ -11249,180 +11358,243 @@
   function postRadarRecap(payload, onOk, onErr){ postDevisWeb(API_RADAR, payload, onOk, onErr); }
 
   var RADAR_STATUT_LABEL = {
-    nouveau: 'Nouveau', en_analyse: 'En analyse', incertain: 'Incertain',
+    nouveau: 'Nouveau', enquete_terminee: 'Enquêté', en_analyse: 'En analyse', incertain: 'Incertain',
     rejete: 'Rejeté', a_revoir: 'À revoir', selectionne: 'Sélectionné',
   };
+  var RADAR_INFOBULLES = {
+    'score prudent': 'Note sur 100 calculée par du code (jamais par un modèle) à partir des preuves réellement collectées. Reste bas tant que peu de sources existent par dossier.',
+    'a_verifier': 'Le Critic n\'a ni assez d\'éléments pour rejeter, ni assez de preuves pour dire que le dossier est éligible.',
+    'secteur vérifié': 'Ce secteur vient d\'une phrase retrouvée mot pour mot dans le texte collecté, pas d\'une case par défaut.',
+  };
+  var RADAR_GROUPE_LABEL = { signal_origine: 'Signal d\'origine', enquete: 'Enquête', concurrence: 'Concurrence', prix: 'Prix' };
+  var RADAR_GROUPE_ORDRE = ['signal_origine', 'enquete', 'concurrence', 'prix'];
 
-  // Bandeau d'etat (25/09/2026, demande Mathéo) : dit en clair si le radar
-  // travaille encore ou s'il a fini, plutot que d'afficher le mot brut
-  // "en_cours"/"termine".
-  // Un dossier "reel" = deja passe par le Scout (a un titre). Tant qu'il n'a
-  // pas encore de score, l'Analyst/Critic ne l'ont pas encore traite -- ce
-  // n'est PAS une absence de run, juste une etape pas encore atteinte.
-  function radarDossiersReels(lignes){
-    return lignes.filter(function(o){ return o && o.titre; });
+  // Sous-étape 7.2 bis (25/09/2026, demande Mathéo) : 3 appels réseau
+  // SÉPARÉS, cadences différentes, au lieu d'un seul gros appel :
+  // - "etat" (bandeau, jauges, entonnoir, flux -- quelques Ko) toutes les 60 s ;
+  // - "dossiers" (liste résumée, sans preuves -- dossiers du jour + 30
+  //   meilleurs des 7 derniers jours) toutes les 5 min ou au bouton actualiser ;
+  // - "detail" (preuves, affirmations, objection -- UN seul dossier) chargé
+  //   uniquement à l'ouverture de sa carte, jamais avant, jamais pour tous
+  //   les dossiers d'un coup.
+  var radarAutoTimerEtat = null;
+  var radarAutoTimerDossiers = null;
+  var radarEtatCache = null;
+  var radarDossiersCache = null;
+  var radarDetailCache = {};
+  var radarFiltreStatut = '';
+  var radarFiltreSecteur = '';
+
+  function radarInfoBtn(cle){
+    var b = document.createElement('button');
+    b.type = 'button'; b.className = 'radar-info-btn'; b.textContent = 'i';
+    b.setAttribute('aria-label', 'Explication');
+    b.addEventListener('click', function(e){
+      e.stopPropagation();
+      var existant = b.parentElement.nextElementSibling;
+      if (existant && existant.classList && existant.classList.contains('radar-info-note')){ existant.remove(); return; }
+      var note = document.createElement('div');
+      note.className = 'radar-info-note';
+      note.textContent = RADAR_INFOBULLES[cle] || '';
+      b.parentElement.insertAdjacentElement('afterend', note);
+    });
+    return b;
   }
 
-  function radarRenderEtat(lignes){
-    var etat = document.getElementById('radar-etat');
-    var premiere = lignes[0] || {};
-    var statutRun = premiere.run_statut;
-    var dossiers = radarDossiersReels(lignes);
-    var notes = dossiers.filter(function(o){ return o.score_prudent != null; });
-    etat.className = '';
-    var dot = document.createElement('span'); dot.className = 'radar-dot';
-    var texte = document.createElement('span');
-    if (!lignes.length || !statutRun){
-      texte.textContent = 'Aucun run pour l\'instant.';
-    } else if (statutRun === 'en_cours'){
-      etat.className = 'radar-etat-encours';
-      if (!dossiers.length){
-        texte.textContent = 'Je travaille pour vous en ce moment… (encore en train de lire les sources, rien à montrer pour l\'instant)';
-      } else {
-        texte.textContent = 'Je travaille pour vous en ce moment… ' + notes.length + ' dossier(s) déjà noté(s) sur ' + dossiers.length + ' trouvé(s).';
-      }
-    } else if (statutRun === 'termine'){
-      etat.className = 'radar-etat-termine';
-      texte.textContent = 'Terminé pour cette nuit.';
-    } else if (statutRun === 'interrompu'){
-      texte.textContent = 'Interrompu (budget ou temps atteint) — voir le récap ci-dessous.';
-    } else if (statutRun === 'echoue'){
-      texte.textContent = 'Une erreur inattendue a arrêté ce run — dis-le à Mathéo/Dorian.';
-    } else {
-      texte.textContent = 'Statut : ' + (statutRun || '?');
+  function radarPlafondPct(valeur, plafond){
+    if (!plafond) return 0;
+    return Math.max(0, Math.min(100, ((valeur || 0) / plafond) * 100));
+  }
+
+  function radarRenderBandeau(data){
+    var etat = data.etat || {};
+    var quotas = data.quotas || {};
+    document.getElementById('radar-dot').className = 'radar-dot' + (etat.statut === 'en_travail' ? ' radar-dot-travail' : '');
+    document.getElementById('radar-bandeau-texte').textContent = etat.libelle || 'État indisponible pour le moment.';
+
+    function jauge(idBarre, idVal, valeur, plafond, texte){
+      var pct = radarPlafondPct(valeur, plafond);
+      var barre = document.getElementById(idBarre);
+      barre.style.width = pct + '%';
+      barre.parentElement.className = 'radar-jauge-bar' + (pct >= 90 ? ' radar-jauge-pleine' : '');
+      document.getElementById(idVal).textContent = texte;
     }
-    etat.innerHTML = '';
-    etat.appendChild(dot);
-    etat.appendChild(texte);
+
+    var b = quotas.budget_eur || {};
+    jauge('radar-jauge-budget', 'radar-jauge-budget-val', b.valeur, b.plafond,
+      (b.valeur != null ? b.valeur.toFixed(2) : '—') + ' / ' + (b.plafond != null ? b.plafond : '—') + ' €');
+
+    var ap = quotas.appels_approfondis || {};
+    jauge('radar-jauge-appels', 'radar-jauge-appels-val', ap.valeur, ap.plafond,
+      (ap.valeur != null ? ap.valeur : '—') + ' / ' + (ap.plafond != null ? ap.plafond : '—'));
+
+    var enq = quotas.enqueteur || {};
+    var req = enq.requetes_recherche || {}; var fe = enq.fetchs_pages || {};
+    var pctEnq = Math.max(radarPlafondPct(req.valeur, req.plafond), radarPlafondPct(fe.valeur, fe.plafond));
+    var barreEnq = document.getElementById('radar-jauge-enqueteur');
+    barreEnq.style.width = pctEnq + '%';
+    barreEnq.parentElement.className = 'radar-jauge-bar' + (pctEnq >= 90 ? ' radar-jauge-pleine' : '');
+    document.getElementById('radar-jauge-enqueteur-val').textContent =
+      (req.valeur != null ? req.valeur : '—') + ' req · ' + (fe.valeur != null ? fe.valeur : '—') + ' pages';
   }
 
-  function radarRenderKpis(lignes){
-    var kpis = document.getElementById('radar-kpis');
-    kpis.innerHTML = '';
-    var premiere = lignes[0] || {};
-    var resume = premiere.resume_json || {};
-    var couts = premiere.couts_json || {};
-    var items = [
-      ['Signaux lus', String(resume.signaux_lus != null ? resume.signaux_lus : '—'), 'cette nuit'],
-      ['Dossiers', String(radarDossiersReels(lignes).length), 'issus du dernier passage'],
-      ['Coût de la nuit', (couts.total_eur_estime != null ? couts.total_eur_estime.toFixed(2) : '—') + ' €', 'sur 25 € max — estimation, pas une facture exacte'],
-      ['Démarré', premiere.run_debut ? new Date(premiere.run_debut).toLocaleString('fr-FR') : '—', 'heure locale'],
+  function radarRenderEntonnoir(data){
+    var e = data.entonnoir || {};
+    var box = document.getElementById('radar-entonnoir');
+    box.innerHTML = '';
+    var decisions = e.decisions || {};
+    var etapes = [
+      ['Signaux', (e.signaux_douleur_collectes || 0) + (e.signaux_offre_collectes || 0)],
+      ['Hypothèses', e.hypotheses_scout || 0],
+      ['Enquêtés', e.dossiers_enquetes || 0],
+      ['Analysés', e.dossiers_analyses || 0],
+      ['Éligibles', decisions.eligible_revue_humaine || 0],
     ];
-    items.forEach(function(it){
-      var d = document.createElement('div');
-      d.className = 'couts-stat';
-      var l = document.createElement('span'); l.className = 'cs-label'; l.textContent = it[0];
-      var v = document.createElement('span'); v.className = 'cs-value'; v.textContent = it[1];
-      var s = document.createElement('span'); s.className = 'cs-sub'; s.textContent = it[2];
-      d.appendChild(l); d.appendChild(v); d.appendChild(s);
-      kpis.appendChild(d);
+    etapes.forEach(function(et, i){
+      if (i > 0){
+        var fl = document.createElement('span'); fl.className = 'radar-etape-fleche'; fl.textContent = '›';
+        box.appendChild(fl);
+      }
+      var d = document.createElement('div'); d.className = 'radar-etape';
+      var v = document.createElement('div'); v.className = 'radar-etape-val'; v.textContent = et[1];
+      var l = document.createElement('div'); l.className = 'radar-etape-lab'; l.textContent = et[0];
+      d.appendChild(v); d.appendChild(l);
+      box.appendChild(d);
     });
   }
 
-  // Construit le detail complet d'un dossier (25/09/2026) : preuves, objection
-  // du Critic, prochain test -- tout est deja dans la ligne recue (la requete
-  // SQL du webhook les embarque), aucun 2e appel reseau necessaire. Texte
-  // toujours pose via textContent (donnees issues du web/du modele, jamais
-  // injectees comme HTML).
-  function radarBuildDetail(o){
+  function radarSecteurBadge(o){
+    var span = document.createElement('span');
+    var verifie = o.secteur_provenance === 'citation_verifiee';
+    span.className = 'radar-secteur-badge' + (verifie ? ' radar-secteur-verifie' : '');
+    span.textContent = (o.secteur || '?') + (verifie ? ' ✓' : '');
+    return span;
+  }
+
+  function radarPeuplerFiltres(dossiers){
+    var selStatut = document.getElementById('radar-filtre-statut');
+    var selSecteur = document.getElementById('radar-filtre-secteur');
+    var statuts = {}; var secteurs = {};
+    dossiers.forEach(function(o){ if (o.statut) statuts[o.statut] = true; if (o.secteur) secteurs[o.secteur] = true; });
+    var avantStatut = selStatut.value, avantSecteur = selSecteur.value;
+    selStatut.innerHTML = '<option value="">Tous les statuts</option>';
+    Object.keys(statuts).sort().forEach(function(s){
+      var opt = document.createElement('option'); opt.value = s; opt.textContent = RADAR_STATUT_LABEL[s] || s;
+      selStatut.appendChild(opt);
+    });
+    selSecteur.innerHTML = '<option value="">Tous les secteurs</option>';
+    Object.keys(secteurs).sort().forEach(function(s){
+      var opt = document.createElement('option'); opt.value = s; opt.textContent = s;
+      selSecteur.appendChild(opt);
+    });
+    selStatut.value = avantStatut; selSecteur.value = avantSecteur;
+  }
+
+  function radarDossiersFiltres(){
+    var dossiers = (radarDossiersCache && radarDossiersCache.dossiers) || [];
+    return dossiers.filter(function(o){
+      if (radarFiltreStatut && o.statut !== radarFiltreStatut) return false;
+      if (radarFiltreSecteur && o.secteur !== radarFiltreSecteur) return false;
+      return true;
+    });
+  }
+
+  // Construit le detail complet d'un dossier (25/09/2026, sous-étape 7.2 bis) :
+  // `resume` = ce qu'on affiche déjà sur la carte (titre/score/secteur/statut,
+  // reçu avec la liste) ; `det` = la réponse de la vue "detail", chargée à la
+  // demande (hypothèse complète, preuves groupées, objection, prochain test).
+  // Texte toujours posé via textContent (données issues du web/du modèle,
+  // jamais injectées comme HTML).
+  function radarBuildDetail(resume, det){
     var box = document.createElement('div');
     box.className = 'radar-detail';
 
-    function ligne(label, texte){
+    function ligne(label, texte, infoCle){
       if (!texte) return;
-      var p = document.createElement('div');
-      p.className = 'radar-detail-ligne';
+      var p = document.createElement('div'); p.className = 'radar-detail-ligne';
+      var wrap = document.createElement('span');
       var l = document.createElement('b'); l.textContent = label + ' : ';
-      p.appendChild(l);
-      p.appendChild(document.createTextNode(texte));
+      wrap.appendChild(l);
+      if (infoCle) wrap.appendChild(radarInfoBtn(infoCle));
+      p.appendChild(wrap);
+      p.appendChild(document.createTextNode(' ' + texte));
       box.appendChild(p);
     }
 
-    ligne('Problème', o.probleme);
-    ligne('Mécanisme IA', o.mecanisme_ia);
+    var h = det.hypothese || {};
+    ligne('Acheteur', h.acheteur || resume.acheteur);
+    ligne('Problème', h.probleme);
+    ligne('Mécanisme IA', h.mecanisme_ia);
+    if (det.secteur_citation) ligne('Citation secteur', '« ' + det.secteur_citation + ' »', 'secteur vérifié');
 
-    var critic = o.critic_payload || {};
-    if (Array.isArray(critic.objections) && critic.objections.length){
-      var t = document.createElement('div');
-      t.className = 'radar-detail-titre';
-      t.textContent = 'Objections du Critic';
+    if (det.objection_resume){
+      var t = document.createElement('div'); t.className = 'radar-detail-titre'; t.textContent = 'Objection du Critic';
       box.appendChild(t);
-      critic.objections.forEach(function(obj){
-        var p = document.createElement('div');
-        p.className = 'radar-detail-ligne';
-        p.textContent = '• ' + (obj.texte || '');
-        box.appendChild(p);
-      });
+      var p = document.createElement('div'); p.className = 'radar-detail-ligne'; p.textContent = det.objection_resume;
+      box.appendChild(p);
     }
-    ligne('Motif de la décision', critic.motif);
+    ligne('Motif de la décision', det.motif_critic);
+    ligne('Prochain test le moins coûteux', det.prochain_test);
 
-    var analyst = o.analyst_payload || {};
-    ligne('Prochain test le moins coûteux', analyst.prochain_test_moins_couteux);
-    if (Array.isArray(analyst.contradictions) && analyst.contradictions.length){
-      ligne('Contradictions non résolues', analyst.contradictions.join(' ; '));
+    var preuves = det.preuves || {};
+    var total = RADAR_GROUPE_ORDRE.reduce(function(n, g){ return n + ((preuves[g] || []).length); }, 0);
+    var tp = document.createElement('div'); tp.className = 'radar-detail-titre';
+    tp.textContent = 'Preuves (' + total + ')';
+    box.appendChild(tp);
+    if (!total){
+      var vide = document.createElement('div'); vide.className = 'radar-detail-ligne'; vide.textContent = 'Aucune preuve rattachée.';
+      box.appendChild(vide);
     }
-
-    if (Array.isArray(o.flags_json) && o.flags_json.length){
-      ligne('Critères sans preuve suffisante', o.flags_json.join(', '));
-    }
-
-    var preuves = Array.isArray(o.preuves) ? o.preuves : [];
-    if (preuves.length){
-      var tp = document.createElement('div');
-      tp.className = 'radar-detail-titre';
-      tp.textContent = 'Sources et preuves (' + preuves.length + ')';
-      box.appendChild(tp);
-      preuves.forEach(function(pr){
-        var p = document.createElement('div');
-        p.className = 'radar-detail-ligne';
-        var badge = document.createElement('span');
-        badge.className = 'radar-badge';
-        badge.style.marginRight = '6px';
-        badge.textContent = pr.type || '?';
-        p.appendChild(badge);
-        p.appendChild(document.createTextNode((pr.claim || '').slice(0, 200)));
+    RADAR_GROUPE_ORDRE.forEach(function(cle){
+      var liste = preuves[cle] || [];
+      if (!liste.length) return;
+      var groupe = document.createElement('div'); groupe.className = 'radar-preuve-groupe';
+      var gt = document.createElement('div'); gt.className = 'radar-preuve-groupe-titre';
+      gt.textContent = RADAR_GROUPE_LABEL[cle] + ' (' + liste.length + ')';
+      groupe.appendChild(gt);
+      liste.forEach(function(pr){
+        var ligneP = document.createElement('div'); ligneP.className = 'radar-preuve-ligne';
+        var claim = document.createElement('div'); claim.className = 'radar-preuve-claim';
+        claim.textContent = (pr.claim || '').slice(0, 220);
+        ligneP.appendChild(claim);
+        var meta = document.createElement('div'); meta.className = 'radar-preuve-meta';
+        var date = pr.date ? new Date(pr.date).toLocaleString('fr-FR') : '';
         if (pr.url){
-          var br = document.createElement('br');
-          p.appendChild(br);
-          var a = document.createElement('a');
-          a.href = pr.url; a.target = '_blank'; a.rel = 'noopener';
-          a.textContent = pr.url;
-          a.style.color = 'var(--blue)'; a.style.fontSize = '11px';
-          p.appendChild(a);
+          if (date) meta.appendChild(document.createTextNode(date + ' · '));
+          var a = document.createElement('a'); a.href = pr.url; a.target = '_blank'; a.rel = 'noopener'; a.textContent = pr.url;
+          meta.appendChild(a);
+        } else if (date){
+          meta.textContent = date;
         }
-        box.appendChild(p);
+        ligneP.appendChild(meta);
+        groupe.appendChild(ligneP);
       });
-    } else {
-      ligne('Sources et preuves', 'Aucune preuve rattachée.');
-    }
+      box.appendChild(groupe);
+    });
 
     return box;
   }
 
-  // Mini-hero (25/09/2026) : met en avant le meilleur dossier de la nuit,
-  // meme forme que le hero Crypto x402 -- gros chiffre, tout de suite visible
-  // sans avoir a lire la liste.
-  function radarRenderHero(lignes){
+  function radarRenderHero(dossiers){
     var hero = document.getElementById('radar-hero');
-    var notes = radarDossiersReels(lignes).filter(function(o){ return o.score_prudent != null; });
+    var notes = dossiers.filter(function(o){ return o.score_prudent != null; });
     if (!notes.length){ hero.style.display = 'none'; return; }
     var meilleur = notes.reduce(function(a, b){
       return (b.score_prudent || 0) > (a.score_prudent || 0) ? b : a;
     }, notes[0]);
     hero.style.display = 'flex';
-    document.getElementById('radar-hero-label').textContent = 'Meilleur dossier de la nuit';
     document.getElementById('radar-hero-value').textContent = meilleur.score_prudent;
     document.getElementById('radar-hero-titre').textContent = meilleur.titre || '';
   }
 
-  function radarRenderOpps(lignes){
+  function radarRenderCards(){
     var list = document.getElementById('radar-opps-list');
     list.innerHTML = '';
-    var dossiers = radarDossiersReels(lignes);
+    var dossiers = radarDossiersFiltres();
     if (!dossiers.length){
       var empty = document.createElement('div');
       empty.className = 'couts-svc-row';
-      empty.textContent = 'Aucun dossier pour l\'instant.';
+      empty.textContent = 'Aucun dossier pour ces filtres.';
       list.appendChild(empty);
       return;
     }
@@ -11440,12 +11612,19 @@
       badge.className = 'radar-badge ' + (noteDeja ? (o.statut || '') : '');
       badge.textContent = noteDeja ? (RADAR_STATUT_LABEL[o.statut] || o.statut || '?') : 'En cours d\'analyse';
       top.appendChild(titre); top.appendChild(badge);
+      card.appendChild(top);
+
+      var meta = document.createElement('div'); meta.className = 'radar-card-meta';
+      meta.appendChild(radarSecteurBadge(o));
+      var src = document.createElement('span'); src.className = 'radar-src-count';
+      src.textContent = (o.nb_sources || 0) + ' source' + (o.nb_sources === 1 ? '' : 's');
+      meta.appendChild(src);
+      card.appendChild(meta);
 
       var sub = document.createElement('div');
       sub.className = 'radar-card-sub';
-      sub.textContent = (o.acheteur || '?') + ' · ' + (o.secteur || '?');
-
-      card.appendChild(top); card.appendChild(sub);
+      sub.textContent = o.acheteur || '?';
+      card.appendChild(sub);
 
       if (noteDeja){
         var scoreRow = document.createElement('div');
@@ -11464,72 +11643,148 @@
 
       var hint = document.createElement('div');
       hint.className = 'radar-card-hint';
-      hint.textContent = noteDeja ? '▸ voir le détail' : '⏳ Scout a trouvé ce dossier, Analyst/Critic ne l\'ont pas encore examiné';
+      hint.textContent = noteDeja ? '▸ voir le détail' : '⏳ pas encore examiné par l\'Analyst/Critic';
       card.appendChild(hint);
 
+      // Détail chargé à la demande (25/09/2026, sous-étape 7.2 bis) : jamais
+      // avant l'ouverture de CETTE carte précise, mis en cache ensuite pour
+      // qu'un aller-retour ouvrir/fermer ne relance pas d'appel réseau.
       var detail = null;
       card.addEventListener('click', function(){
         if (detail){ detail.remove(); detail = null; return; }
-        detail = radarBuildDetail(o);
+        detail = document.createElement('div');
+        detail.className = 'radar-detail';
+        detail.textContent = 'Chargement…';
         card.insertAdjacentElement('afterend', detail);
+        if (radarDetailCache[o.id]){
+          var construit = radarBuildDetail(o, radarDetailCache[o.id]);
+          detail.replaceWith(construit); detail = construit;
+          return;
+        }
+        postRadarRecap({ vue: 'detail', opportunity_id: o.id }, function(det){
+          radarDetailCache[o.id] = det;
+          var construit = radarBuildDetail(o, det);
+          if (detail) detail.replaceWith(construit);
+          detail = construit;
+        }, function(err){
+          if (detail) detail.textContent = 'Erreur : ' + err;
+        });
       });
       list.appendChild(card);
     });
   }
 
-  var radarDernieresLignes = [];
+  function radarRenderTendance(serie){
+    var svg = document.getElementById('radar-tendance-svg');
+    svg.innerHTML = '';
+    if (!serie || !serie.length){
+      document.getElementById('radar-tendance-note').textContent = 'Pas encore assez de jours pour une tendance.';
+      return;
+    }
+    var W = 280, H = 64, pad = 4;
+    var maxDossiers = Math.max(1, Math.max.apply(null, serie.map(function(j){ return j.dossiers || 0; })));
+    var n = serie.length;
+    var pasX = (W - pad * 2) / n;
+    var largeurBarre = pasX * 0.6;
+    serie.forEach(function(j, i){
+      var h = Math.round(((j.dossiers || 0) / maxDossiers) * (H - 16));
+      var x = pad + i * pasX + (pasX - largeurBarre) / 2;
+      var y = H - h - 12;
+      var rect = document.createElementNS('http://www.w3.org/2000/svg', 'rect');
+      rect.setAttribute('x', x); rect.setAttribute('y', y);
+      rect.setAttribute('width', largeurBarre); rect.setAttribute('height', Math.max(h, 1));
+      rect.setAttribute('rx', 2);
+      rect.setAttribute('fill', i === n - 1 ? '#0A84FF' : 'rgba(255,255,255,.18)');
+      svg.appendChild(rect);
+      var txt = document.createElementNS('http://www.w3.org/2000/svg', 'text');
+      txt.setAttribute('x', x + largeurBarre / 2); txt.setAttribute('y', H - 2);
+      txt.setAttribute('text-anchor', 'middle'); txt.setAttribute('font-size', '7');
+      txt.setAttribute('fill', '#98989E');
+      txt.textContent = (j.jour || '').slice(8, 10);
+      svg.appendChild(txt);
+    });
+    var dernier = serie[serie.length - 1] || {};
+    document.getElementById('radar-tendance-note').textContent =
+      'Aujourd\'hui : ' + (dernier.dossiers || 0) + ' dossier(s), score médian ' +
+      (dernier.score_median != null ? dernier.score_median : '—') + ', coût ' +
+      (dernier.cout_eur != null ? dernier.cout_eur.toFixed(2) : '—') + ' €.';
+  }
 
-  function radarLoad(){
-    document.getElementById('radar-loading').style.display = '';
-    document.getElementById('radar-error').style.display = 'none';
-    document.getElementById('radar-body').style.display = 'none';
-    postRadarRecap({}, function(j){
-      document.getElementById('radar-loading').style.display = 'none';
-      document.getElementById('radar-body').style.display = '';
-      var lignes = (j && j.lignes) || [];
-      radarDernieresLignes = lignes;
-      radarRenderEtat(lignes);
-      radarRenderHero(lignes);
-      radarRenderKpis(lignes);
-      radarRenderOpps(lignes);
-      document.getElementById('radar-generated').textContent = 'Généré le ' + new Date().toLocaleString('fr-FR');
+  // Vue "etat" -- légère (quelques Ko), rafraîchie toutes les 60 s.
+  function radarLoadEtat(silencieux){
+    postRadarRecap({ vue: 'etat' }, function(j){
+      radarEtatCache = j || {};
+      radarRenderBandeau(radarEtatCache);
+      radarRenderEntonnoir(radarEtatCache);
+      if (!silencieux) document.getElementById('radar-error').style.display = 'none';
     }, function(err){
-      document.getElementById('radar-loading').style.display = 'none';
-      document.getElementById('radar-error').style.display = '';
-      document.getElementById('radar-error').textContent = err;
+      if (!radarEtatCache && !radarDossiersCache){
+        document.getElementById('radar-loading').style.display = 'none';
+        document.getElementById('radar-error').style.display = '';
+        document.getElementById('radar-error').textContent = err;
+      }
     });
   }
 
-  // Rapport telechargeable (25/09/2026, demande Mathéo) : construit un fichier
-  // texte lisible a partir des donnees deja recues (aucun 2e appel reseau),
-  // declenche via un lien <a download> temporaire -- aucun serveur/stockage
-  // supplementaire necessaire.
+  // Vue "dossiers" -- liste résumée (dossiers du jour + 30 meilleurs des 7
+  // derniers jours), rafraîchie toutes les 5 min ou au bouton actualiser.
+  function radarLoadDossiers(silencieux){
+    postRadarRecap({ vue: 'dossiers' }, function(j){
+      document.getElementById('radar-loading').style.display = 'none';
+      document.getElementById('radar-error').style.display = 'none';
+      document.getElementById('radar-body').style.display = '';
+      radarDossiersCache = j || {};
+      var dossiers = radarDossiersCache.dossiers || [];
+      radarRenderHero(dossiers);
+      radarPeuplerFiltres(dossiers);
+      radarRenderCards();
+      radarRenderTendance(radarDossiersCache.serie7j);
+      document.getElementById('radar-generated').textContent = 'Actualisé le ' + new Date().toLocaleString('fr-FR');
+    }, function(err){
+      document.getElementById('radar-loading').style.display = 'none';
+      if (!radarDossiersCache){
+        document.getElementById('radar-error').style.display = '';
+        document.getElementById('radar-error').textContent = err;
+      }
+    });
+  }
+
+  function radarStartAuto(){
+    if (radarAutoTimerEtat) clearInterval(radarAutoTimerEtat);
+    if (radarAutoTimerDossiers) clearInterval(radarAutoTimerDossiers);
+    radarAutoTimerEtat = setInterval(function(){ radarLoadEtat(true); }, 60000);
+    radarAutoTimerDossiers = setInterval(function(){ radarLoadDossiers(true); }, 300000);
+  }
+  function radarStopAuto(){
+    if (radarAutoTimerEtat){ clearInterval(radarAutoTimerEtat); radarAutoTimerEtat = null; }
+    if (radarAutoTimerDossiers){ clearInterval(radarAutoTimerDossiers); radarAutoTimerDossiers = null; }
+  }
+
+  // Rapport telechargeable (25/09/2026) : à partir de la liste résumée déjà
+  // reçue (aucun appel réseau supplémentaire) -- ne contient donc plus le
+  // détail (preuves/objection/prochain test) de chaque dossier, uniquement
+  // ce que la carte affiche déjà (aller chercher le détail de CHAQUE dossier
+  // filtré romprait le principe "détail chargé à l'ouverture, pas avant").
   function radarDownloadReport(){
-    var lignes = radarDernieresLignes;
-    if (!lignes.length){ return; }
-    var dossiers = radarDossiersReels(lignes);
-    if (!dossiers.length){ return; }
-    var premiere = lignes[0];
-    var resume = premiere.resume_json || {};
-    var couts = premiere.couts_json || {};
+    if (!radarEtatCache || !radarDossiersCache) return;
+    var dossiers = radarDossiersFiltres();
+    if (!dossiers.length) dossiers = radarDossiersCache.dossiers || [];
+    if (!dossiers.length) return;
+    var e = radarEtatCache.entonnoir || {}; var q = radarEtatCache.quotas || {}; var b = q.budget_eur || {};
     var texte = 'RADAR D\'OPPORTUNITES -- rapport du ' + new Date().toLocaleString('fr-FR') + '\n';
-    texte += 'Run demarre le ' + (premiere.run_debut ? new Date(premiere.run_debut).toLocaleString('fr-FR') : '?') + ' -- statut : ' + (premiere.run_statut || '?') + '\n';
-    texte += 'Signaux lus : ' + (resume.signaux_lus != null ? resume.signaux_lus : '?') + ' -- Cout de la nuit : ' + (couts.total_eur_estime != null ? couts.total_eur_estime.toFixed(2) : '?') + ' EUR (sur 25 EUR max)\n';
+    texte += (radarEtatCache.etat && radarEtatCache.etat.libelle ? radarEtatCache.etat.libelle : '') + '\n';
+    texte += 'Signaux collectes : ' + ((e.signaux_douleur_collectes || 0) + (e.signaux_offre_collectes || 0))
+      + ' -- Dossiers analyses : ' + (e.dossiers_analyses || 0)
+      + ' -- Cout du jour : ' + (b.valeur != null ? b.valeur.toFixed(2) : '?') + ' EUR (sur ' + (b.plafond != null ? b.plafond : 25) + ' EUR max)\n';
+    texte += '(Liste résumée -- preuves/objection/prochain test disponibles dans l\'app, dossier par dossier)\n';
     texte += '\n' + new Array(60).join('=') + '\n\n';
     dossiers.forEach(function(o, i){
-      texte += (i + 1) + '. ' + (o.titre || '(sans titre)') + '\n';
       var noteDeja = o.score_prudent != null;
+      texte += (i + 1) + '. ' + (o.titre || '(sans titre)') + '\n';
       texte += '   Statut : ' + (noteDeja ? (RADAR_STATUT_LABEL[o.statut] || o.statut) : 'en cours d\'analyse')
-        + (noteDeja ? (' -- Score prudent : ' + o.score_prudent + '/100 (brut ' + o.score_brut + ') -- couverture ' + Math.round((o.couverture_preuves || 0) * 100) + '%') : '') + '\n';
+        + (noteDeja ? (' -- Score prudent : ' + o.score_prudent + '/100 -- ' + (o.nb_sources || 0) + ' source(s)') : '') + '\n';
+      texte += '   Secteur : ' + (o.secteur || '?') + (o.secteur_provenance === 'citation_verifiee' ? ' (citation verifiee)' : '') + '\n';
       texte += '   Acheteur : ' + (o.acheteur || '?') + '\n';
-      texte += '   Secteur : ' + (o.secteur || '?') + '\n';
-      texte += '   Probleme : ' + (o.probleme || '?') + '\n';
-      texte += '   Mecanisme IA : ' + (o.mecanisme_ia || '?') + '\n';
-      var critic = o.critic_payload || {};
-      if (critic.motif) texte += '   Motif du Critic : ' + critic.motif + '\n';
-      (critic.objections || []).forEach(function(obj){ texte += '   Objection : ' + obj.texte + '\n'; });
-      var analyst = o.analyst_payload || {};
-      if (analyst.prochain_test_moins_couteux) texte += '   Prochain test : ' + analyst.prochain_test_moins_couteux + '\n';
       texte += '\n';
     });
     var blob = new Blob([texte], { type: 'text/plain;charset=utf-8' });
@@ -11544,12 +11799,23 @@
   }
   function radarOpen(){
     radarview.classList.add('open');
-    radarLoad();
+    document.getElementById('radar-loading').style.display = '';
+    document.getElementById('radar-error').style.display = 'none';
+    document.getElementById('radar-body').style.display = 'none';
+    radarLoadEtat(false);
+    radarLoadDossiers(false);
+    radarStartAuto();
+  }
+  function radarCloseEtStop(){
+    radarClose();
+    radarStopAuto();
   }
   document.getElementById('sh-radar').addEventListener('click', function(){ sheetOpen(false); radarOpen(); });
-  document.getElementById('radar-close').addEventListener('click', radarClose);
-  document.getElementById('radar-refresh').addEventListener('click', radarLoad);
+  document.getElementById('radar-close').addEventListener('click', radarCloseEtStop);
+  document.getElementById('radar-refresh').addEventListener('click', function(){ radarLoadEtat(false); radarLoadDossiers(false); });
   document.getElementById('radar-download').addEventListener('click', radarDownloadReport);
+  document.getElementById('radar-filtre-statut').addEventListener('change', function(){ radarFiltreStatut = this.value; radarRenderCards(); });
+  document.getElementById('radar-filtre-secteur').addEventListener('change', function(){ radarFiltreSecteur = this.value; radarRenderCards(); });
 
   // Classement base UNIQUEMENT sur les paiements tiers (payments.tiers.last_7d)
   // — jamais le total (qui inclut le wallet de test + le seed hebdo), pour que
