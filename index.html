@@ -8220,7 +8220,7 @@
          comparaison de chaine de version par tenant. */
   var APPV_MCS = '4.59';
   var APPV_LABO = '1.03';
-  var BUILD = 80;
+  var BUILD = 81;
   // displayVersion()/displayVersionShort() lisent isMcsCode() (definie plus bas dans cette
   // meme IIFE -- declaration de fonction, donc disponible ici par hoisting) : le TENANT
   // affiche depend du code de connexion, jamais d'un simple "APPV" global qui ne dirait ni
@@ -11256,23 +11256,38 @@
   // Bandeau d'etat (25/09/2026, demande Mathéo) : dit en clair si le radar
   // travaille encore ou s'il a fini, plutot que d'afficher le mot brut
   // "en_cours"/"termine".
+  // Un dossier "reel" = deja passe par le Scout (a un titre). Tant qu'il n'a
+  // pas encore de score, l'Analyst/Critic ne l'ont pas encore traite -- ce
+  // n'est PAS une absence de run, juste une etape pas encore atteinte.
+  function radarDossiersReels(lignes){
+    return lignes.filter(function(o){ return o && o.titre; });
+  }
+
   function radarRenderEtat(lignes){
     var etat = document.getElementById('radar-etat');
     var premiere = lignes[0] || {};
     var statutRun = premiere.run_statut;
+    var dossiers = radarDossiersReels(lignes);
+    var notes = dossiers.filter(function(o){ return o.score_prudent != null; });
     etat.className = '';
     var dot = document.createElement('span'); dot.className = 'radar-dot';
     var texte = document.createElement('span');
-    if (!lignes.length){
+    if (!lignes.length || !statutRun){
       texte.textContent = 'Aucun run pour l\'instant.';
     } else if (statutRun === 'en_cours'){
       etat.className = 'radar-etat-encours';
-      texte.textContent = 'Je travaille pour vous en ce moment… (les dossiers ci-dessous arrivent au fur et à mesure)';
+      if (!dossiers.length){
+        texte.textContent = 'Je travaille pour vous en ce moment… (encore en train de lire les sources, rien à montrer pour l\'instant)';
+      } else {
+        texte.textContent = 'Je travaille pour vous en ce moment… ' + notes.length + ' dossier(s) déjà noté(s) sur ' + dossiers.length + ' trouvé(s).';
+      }
     } else if (statutRun === 'termine'){
       etat.className = 'radar-etat-termine';
       texte.textContent = 'Terminé pour cette nuit.';
     } else if (statutRun === 'interrompu'){
       texte.textContent = 'Interrompu (budget ou temps atteint) — voir le récap ci-dessous.';
+    } else if (statutRun === 'echoue'){
+      texte.textContent = 'Une erreur inattendue a arrêté ce run — dis-le à Mathéo/Dorian.';
     } else {
       texte.textContent = 'Statut : ' + (statutRun || '?');
     }
@@ -11289,7 +11304,7 @@
     var couts = premiere.couts_json || {};
     var items = [
       ['Signaux lus', String(resume.signaux_lus != null ? resume.signaux_lus : '—'), 'cette nuit'],
-      ['Dossiers', String(lignes.length), 'issus du dernier passage'],
+      ['Dossiers', String(radarDossiersReels(lignes).length), 'issus du dernier passage'],
       ['Coût de la nuit', (couts.total_eur_estime != null ? couts.total_eur_estime.toFixed(2) : '—') + ' €', 'sur 25 € max — estimation, pas une facture exacte'],
       ['Démarré', premiere.run_debut ? new Date(premiere.run_debut).toLocaleString('fr-FR') : '—', 'heure locale'],
     ];
@@ -11389,27 +11404,29 @@
   // sans avoir a lire la liste.
   function radarRenderHero(lignes){
     var hero = document.getElementById('radar-hero');
-    if (!lignes.length){ hero.style.display = 'none'; return; }
-    var meilleur = lignes.reduce(function(a, b){
+    var notes = radarDossiersReels(lignes).filter(function(o){ return o.score_prudent != null; });
+    if (!notes.length){ hero.style.display = 'none'; return; }
+    var meilleur = notes.reduce(function(a, b){
       return (b.score_prudent || 0) > (a.score_prudent || 0) ? b : a;
-    }, lignes[0]);
+    }, notes[0]);
     hero.style.display = 'flex';
     document.getElementById('radar-hero-label').textContent = 'Meilleur dossier de la nuit';
-    document.getElementById('radar-hero-value').textContent = (meilleur.score_prudent != null ? meilleur.score_prudent : '?');
+    document.getElementById('radar-hero-value').textContent = meilleur.score_prudent;
     document.getElementById('radar-hero-titre').textContent = meilleur.titre || '';
   }
 
   function radarRenderOpps(lignes){
     var list = document.getElementById('radar-opps-list');
     list.innerHTML = '';
-    if (!lignes.length){
+    var dossiers = radarDossiersReels(lignes);
+    if (!dossiers.length){
       var empty = document.createElement('div');
       empty.className = 'couts-svc-row';
-      empty.textContent = 'Aucun dossier sur le dernier passage.';
+      empty.textContent = 'Aucun dossier pour l\'instant.';
       list.appendChild(empty);
       return;
     }
-    lignes.forEach(function(o){
+    dossiers.forEach(function(o){
       var card = document.createElement('div');
       card.className = 'radar-card';
 
@@ -11419,31 +11436,36 @@
       titre.className = 'radar-card-titre';
       titre.textContent = o.titre || '(sans titre)';
       var badge = document.createElement('span');
-      badge.className = 'radar-badge ' + (o.statut || '');
-      badge.textContent = RADAR_STATUT_LABEL[o.statut] || o.statut || '?';
+      var noteDeja = o.score_prudent != null;
+      badge.className = 'radar-badge ' + (noteDeja ? (o.statut || '') : '');
+      badge.textContent = noteDeja ? (RADAR_STATUT_LABEL[o.statut] || o.statut || '?') : 'En cours d\'analyse';
       top.appendChild(titre); top.appendChild(badge);
 
       var sub = document.createElement('div');
       sub.className = 'radar-card-sub';
       sub.textContent = (o.acheteur || '?') + ' · ' + (o.secteur || '?');
 
-      var scoreRow = document.createElement('div');
-      scoreRow.className = 'radar-score-row';
-      var bar = document.createElement('div');
-      bar.className = 'radar-score-bar';
-      var fill = document.createElement('i');
-      fill.style.width = Math.max(0, Math.min(100, o.score_prudent || 0)) + '%';
-      bar.appendChild(fill);
-      var scoreTxt = document.createElement('span');
-      scoreTxt.className = 'radar-score-txt';
-      scoreTxt.textContent = (o.score_prudent != null ? o.score_prudent : '?') + '/100';
-      scoreRow.appendChild(bar); scoreRow.appendChild(scoreTxt);
+      card.appendChild(top); card.appendChild(sub);
+
+      if (noteDeja){
+        var scoreRow = document.createElement('div');
+        scoreRow.className = 'radar-score-row';
+        var bar = document.createElement('div');
+        bar.className = 'radar-score-bar';
+        var fill = document.createElement('i');
+        fill.style.width = Math.max(0, Math.min(100, o.score_prudent || 0)) + '%';
+        bar.appendChild(fill);
+        var scoreTxt = document.createElement('span');
+        scoreTxt.className = 'radar-score-txt';
+        scoreTxt.textContent = o.score_prudent + '/100';
+        scoreRow.appendChild(bar); scoreRow.appendChild(scoreTxt);
+        card.appendChild(scoreRow);
+      }
 
       var hint = document.createElement('div');
       hint.className = 'radar-card-hint';
-      hint.textContent = '▸ voir le détail';
-
-      card.appendChild(top); card.appendChild(sub); card.appendChild(scoreRow); card.appendChild(hint);
+      hint.textContent = noteDeja ? '▸ voir le détail' : '⏳ Scout a trouvé ce dossier, Analyst/Critic ne l\'ont pas encore examiné';
+      card.appendChild(hint);
 
       var detail = null;
       card.addEventListener('click', function(){
@@ -11485,6 +11507,8 @@
   function radarDownloadReport(){
     var lignes = radarDernieresLignes;
     if (!lignes.length){ return; }
+    var dossiers = radarDossiersReels(lignes);
+    if (!dossiers.length){ return; }
     var premiere = lignes[0];
     var resume = premiere.resume_json || {};
     var couts = premiere.couts_json || {};
@@ -11492,9 +11516,11 @@
     texte += 'Run demarre le ' + (premiere.run_debut ? new Date(premiere.run_debut).toLocaleString('fr-FR') : '?') + ' -- statut : ' + (premiere.run_statut || '?') + '\n';
     texte += 'Signaux lus : ' + (resume.signaux_lus != null ? resume.signaux_lus : '?') + ' -- Cout de la nuit : ' + (couts.total_eur_estime != null ? couts.total_eur_estime.toFixed(2) : '?') + ' EUR (sur 25 EUR max)\n';
     texte += '\n' + new Array(60).join('=') + '\n\n';
-    lignes.forEach(function(o, i){
+    dossiers.forEach(function(o, i){
       texte += (i + 1) + '. ' + (o.titre || '(sans titre)') + '\n';
-      texte += '   Statut : ' + (RADAR_STATUT_LABEL[o.statut] || o.statut) + ' -- Score prudent : ' + o.score_prudent + '/100 (brut ' + o.score_brut + ') -- couverture ' + Math.round((o.couverture_preuves || 0) * 100) + '%\n';
+      var noteDeja = o.score_prudent != null;
+      texte += '   Statut : ' + (noteDeja ? (RADAR_STATUT_LABEL[o.statut] || o.statut) : 'en cours d\'analyse')
+        + (noteDeja ? (' -- Score prudent : ' + o.score_prudent + '/100 (brut ' + o.score_brut + ') -- couverture ' + Math.round((o.couverture_preuves || 0) * 100) + '%') : '') + '\n';
       texte += '   Acheteur : ' + (o.acheteur || '?') + '\n';
       texte += '   Secteur : ' + (o.secteur || '?') + '\n';
       texte += '   Probleme : ' + (o.probleme || '?') + '\n';
