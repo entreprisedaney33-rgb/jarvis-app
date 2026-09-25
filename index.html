@@ -2658,6 +2658,26 @@
     background:var(--surface); color:var(--ink); border:0.5px solid var(--hairline);
     font-size:13px; font-weight:600;
   }
+  /* "Rapport" plus lisible (25/09/2026, demande Mathéo : "esthétique, beau,
+     facile à comprendre") -- mini-hero (meme forme que #cx-hero) + cartes au
+     lieu de simples lignes de texte. */
+  #radar-hero{
+    background:var(--surface); border-radius:14px; padding:14px 16px; margin-bottom:12px;
+    display:flex; flex-direction:column; gap:2px;
+  }
+  #radar-hero-titre{font-size:13px; color:var(--ink); margin-top:2px; line-height:1.3}
+  .radar-card{
+    background:var(--surface); border-radius:14px; padding:13px 15px; margin-bottom:10px;
+    cursor:pointer;
+  }
+  .radar-card-top{display:flex; justify-content:space-between; align-items:flex-start; gap:10px}
+  .radar-card-titre{font-size:14.5px; font-weight:700; line-height:1.35; color:var(--ink)}
+  .radar-card-sub{font-size:12px; color:var(--muted); margin-top:5px; line-height:1.4}
+  .radar-score-row{display:flex; align-items:center; gap:9px; margin-top:11px}
+  .radar-score-bar{flex:1 1 auto; height:6px; border-radius:3px; background:rgba(255,255,255,.08); overflow:hidden}
+  .radar-score-bar i{display:block; height:100%; background:var(--blue); border-radius:3px}
+  .radar-score-txt{font-size:12px; font-weight:700; color:var(--blue); flex:0 0 auto; white-space:nowrap}
+  .radar-card-hint{font-size:11px; color:var(--muted); margin-top:8px; text-align:right}
   .cx-npm-card{
     flex:1 1 0; min-width:0; background:rgba(10,132,255,.10);
     border:0.5px solid rgba(10,132,255,.30); border-radius:12px; padding:12px 12px 10px;
@@ -6674,8 +6694,13 @@
     <div id="radar-body" style="display:none">
       <div id="radar-note">Dernier passage nocturne — dossiers triés par score prudent (voir SCORING.md). Statut « incertain »/« à revoir » = pas encore tranché par un humain.</div>
       <div id="radar-etat"></div>
+      <div id="radar-hero" style="display:none">
+        <span class="cx-hero-label" id="radar-hero-label">Meilleur dossier ce soir</span>
+        <span class="cx-hero-value"><span id="radar-hero-value">—</span><span class="cx-hero-unit">/100</span></span>
+        <div id="radar-hero-titre"></div>
+      </div>
       <div class="couts-stats" id="radar-kpis"></div>
-      <button id="radar-download" type="button" class="radar-download-btn">⬇️ Télécharger le rapport</button>
+      <button id="radar-download" type="button" class="radar-download-btn">⬇️ Télécharger le rapport (.txt)</button>
       <div id="couts-svc-head" style="margin-top:6px"><span>📋 Dossiers de la dernière nuit</span></div>
       <div id="radar-opps-list"></div>
       <div id="radar-generated"></div>
@@ -8195,7 +8220,7 @@
          comparaison de chaine de version par tenant. */
   var APPV_MCS = '4.59';
   var APPV_LABO = '1.03';
-  var BUILD = 79;
+  var BUILD = 80;
   // displayVersion()/displayVersionShort() lisent isMcsCode() (definie plus bas dans cette
   // meme IIFE -- declaration de fonction, donc disponible ici par hoisting) : le TENANT
   // affiche depend du code de connexion, jamais d'un simple "APPV" global qui ne dirait ni
@@ -11359,6 +11384,21 @@
     return box;
   }
 
+  // Mini-hero (25/09/2026) : met en avant le meilleur dossier de la nuit,
+  // meme forme que le hero Crypto x402 -- gros chiffre, tout de suite visible
+  // sans avoir a lire la liste.
+  function radarRenderHero(lignes){
+    var hero = document.getElementById('radar-hero');
+    if (!lignes.length){ hero.style.display = 'none'; return; }
+    var meilleur = lignes.reduce(function(a, b){
+      return (b.score_prudent || 0) > (a.score_prudent || 0) ? b : a;
+    }, lignes[0]);
+    hero.style.display = 'flex';
+    document.getElementById('radar-hero-label').textContent = 'Meilleur dossier de la nuit';
+    document.getElementById('radar-hero-value').textContent = (meilleur.score_prudent != null ? meilleur.score_prudent : '?');
+    document.getElementById('radar-hero-titre').textContent = meilleur.titre || '';
+  }
+
   function radarRenderOpps(lignes){
     var list = document.getElementById('radar-opps-list');
     list.innerHTML = '';
@@ -11370,29 +11410,48 @@
       return;
     }
     lignes.forEach(function(o){
-      var row = document.createElement('div');
-      row.className = 'couts-svc-row radar-row';
-      var topRow = document.createElement('div');
-      topRow.className = 'couts-svc-top';
-      var nom = document.createElement('span');
-      nom.className = 'couts-svc-nom';
-      nom.textContent = o.titre || '(sans titre)';
+      var card = document.createElement('div');
+      card.className = 'radar-card';
+
+      var top = document.createElement('div');
+      top.className = 'radar-card-top';
+      var titre = document.createElement('div');
+      titre.className = 'radar-card-titre';
+      titre.textContent = o.titre || '(sans titre)';
       var badge = document.createElement('span');
       badge.className = 'radar-badge ' + (o.statut || '');
       badge.textContent = RADAR_STATUT_LABEL[o.statut] || o.statut || '?';
-      topRow.appendChild(nom); topRow.appendChild(badge);
-      var sub = document.createElement('span');
-      sub.className = 'couts-svc-pct';
-      var score = (o.score_prudent != null ? o.score_prudent : '?') + '/100 prudent (brut ' + (o.score_brut != null ? o.score_brut : '?') + ') — couverture ' + Math.round((o.couverture_preuves || 0) * 100) + '%';
-      sub.textContent = (o.acheteur || '') + ' — ' + (o.secteur || '') + ' — ' + score + '  ▸ voir le détail';
-      row.appendChild(topRow); row.appendChild(sub);
+      top.appendChild(titre); top.appendChild(badge);
+
+      var sub = document.createElement('div');
+      sub.className = 'radar-card-sub';
+      sub.textContent = (o.acheteur || '?') + ' · ' + (o.secteur || '?');
+
+      var scoreRow = document.createElement('div');
+      scoreRow.className = 'radar-score-row';
+      var bar = document.createElement('div');
+      bar.className = 'radar-score-bar';
+      var fill = document.createElement('i');
+      fill.style.width = Math.max(0, Math.min(100, o.score_prudent || 0)) + '%';
+      bar.appendChild(fill);
+      var scoreTxt = document.createElement('span');
+      scoreTxt.className = 'radar-score-txt';
+      scoreTxt.textContent = (o.score_prudent != null ? o.score_prudent : '?') + '/100';
+      scoreRow.appendChild(bar); scoreRow.appendChild(scoreTxt);
+
+      var hint = document.createElement('div');
+      hint.className = 'radar-card-hint';
+      hint.textContent = '▸ voir le détail';
+
+      card.appendChild(top); card.appendChild(sub); card.appendChild(scoreRow); card.appendChild(hint);
+
       var detail = null;
-      row.addEventListener('click', function(){
+      card.addEventListener('click', function(){
         if (detail){ detail.remove(); detail = null; return; }
         detail = radarBuildDetail(o);
-        row.insertAdjacentElement('afterend', detail);
+        card.insertAdjacentElement('afterend', detail);
       });
-      list.appendChild(row);
+      list.appendChild(card);
     });
   }
 
@@ -11408,6 +11467,7 @@
       var lignes = (j && j.lignes) || [];
       radarDernieresLignes = lignes;
       radarRenderEtat(lignes);
+      radarRenderHero(lignes);
       radarRenderKpis(lignes);
       radarRenderOpps(lignes);
       document.getElementById('radar-generated').textContent = 'Généré le ' + new Date().toLocaleString('fr-FR');
