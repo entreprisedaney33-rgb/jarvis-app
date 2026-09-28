@@ -2639,8 +2639,19 @@
   .radar-bandeau-top{display:flex; align-items:center; gap:9px}
   .radar-dot{width:9px; height:9px; border-radius:50%; background:var(--muted); flex:0 0 auto}
   .radar-dot.radar-dot-travail{background:var(--blue); animation:radarPulse 1.2s ease-in-out infinite}
+  .radar-dot.radar-dot-erreur{background:#ff6d5a}
   @keyframes radarPulse{0%,100%{opacity:1} 50%{opacity:.3}}
   #radar-bandeau-texte{font-size:13.5px; font-weight:600; color:var(--ink); line-height:1.35}
+  /* 3.13 point 5 (28/09/2026) : bandeau rouge quand le disjoncteur API cote
+     radar-opportunites est ouvert (runs.statut="api_en_erreur") -- meme
+     rouge que #radar-error deja utilise plus haut dans cet onglet, jamais
+     une nouvelle teinte. Alerte orange separee (silence usage_events) : cf.
+     .radar-alerte-silence, #FF9F0A deja utilise en dur ailleurs dans ce
+     fichier pour l'avertissement labo (jamais via --warn, reserve a la
+     surcharge html.mcs-theme). */
+  #radar-bandeau.radar-bandeau-erreur{background:rgba(255,109,90,.12)}
+  #radar-bandeau.radar-bandeau-erreur #radar-bandeau-texte{color:#ff6d5a}
+  .radar-alerte-silence{margin-top:10px; padding:8px 10px; border-radius:8px; background:rgba(255,159,10,.14); border:0.5px solid rgba(255,159,10,.4); color:#FF9F0A; font-size:12px; font-weight:600; line-height:1.35}
   .radar-jauges{display:grid; grid-template-columns:1fr 1fr 1fr; gap:8px; margin-top:12px}
   .radar-jauge{min-width:0}
   .radar-jauge-lab{font-size:10.5px; color:var(--muted); text-transform:uppercase; letter-spacing:.02em; display:flex; align-items:center; gap:3px; white-space:nowrap; overflow:hidden; text-overflow:ellipsis}
@@ -6768,6 +6779,7 @@
           <span class="radar-dot" id="radar-dot"></span>
           <span id="radar-bandeau-texte"></span>
         </div>
+        <div id="radar-alerte-silence" class="radar-alerte-silence" style="display:none"></div>
         <div class="radar-jauges">
           <div class="radar-jauge">
             <span class="radar-jauge-lab">Budget</span>
@@ -8328,8 +8340,8 @@
          unique de detection de mise a jour (voir checkUpdate ci-dessous), plus fiable qu'une
          comparaison de chaine de version par tenant. */
   var APPV_MCS = '4.59';
-  var APPV_LABO = '1.03';
-  var BUILD = 82;
+  var APPV_LABO = '1.04';
+  var BUILD = 83;
   // displayVersion()/displayVersionShort() lisent isMcsCode() (definie plus bas dans cette
   // meme IIFE -- declaration de fonction, donc disponible ici par hoisting) : le TENANT
   // affiche depend du code de connexion, jamais d'un simple "APPV" global qui ne dirait ni
@@ -11409,8 +11421,21 @@
   function radarRenderBandeau(data){
     var etat = data.etat || {};
     var quotas = data.quotas || {};
-    document.getElementById('radar-dot').className = 'radar-dot' + (etat.statut === 'en_travail' ? ' radar-dot-travail' : '');
+    var enErreur = etat.statut === 'api_en_erreur';
+    document.getElementById('radar-dot').className = 'radar-dot' + (etat.statut === 'en_travail' ? ' radar-dot-travail' : (enErreur ? ' radar-dot-erreur' : ''));
+    document.getElementById('radar-bandeau').className = enErreur ? 'radar-bandeau-erreur' : '';
     document.getElementById('radar-bandeau-texte').textContent = etat.libelle || 'État indisponible pour le moment.';
+
+    // 3.13 point 5 : alerte orange distincte du bandeau rouge ci-dessus --
+    // "aucun appel au modele depuis plus de 30 min alors que le worker est
+    // actif" (calculee cote n8n a partir de usage_events, jamais ici).
+    var elAlerte = document.getElementById('radar-alerte-silence');
+    if (etat.alerte_silence_modele){
+      elAlerte.style.display = '';
+      elAlerte.textContent = '⚠️ Aucun appel au modèle depuis ' + (etat.silence_modele_minutes != null ? etat.silence_modele_minutes + ' min' : 'plus de 30 min') + ' alors que le radar est actif.';
+    } else {
+      elAlerte.style.display = 'none';
+    }
 
     function jauge(idBarre, idVal, valeur, plafond, texte){
       var pct = radarPlafondPct(valeur, plafond);
