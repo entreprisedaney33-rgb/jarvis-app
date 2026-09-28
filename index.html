@@ -2610,6 +2610,59 @@
   }
   #cx-npm-note{font-size:11.5px; color:var(--muted); padding:0 4px 10px; line-height:1.4}
   #crypto-npm-list{display:flex; gap:8px; margin-bottom:14px}
+  /* Panneau plein ecran "Factures TVA" (28/09/2026, labo uniquement) -- lecture seule,
+     webhook collecteur-api-lister (n8n, authentifie contre web_acces comme le reste de
+     l'app), interroge en LECTURE SEULE les Data Tables collecteur_* deja remplies par le
+     workflow COLLECTEUR-FACTURES -- aucune mutation possible depuis ce panneau. Meme
+     grammaire visuelle que #radarview juste en dessous (panneau plein ecran, slide-up). */
+  #facturesview{
+    position:fixed; inset:0; z-index:50; background:var(--bg);
+    display:none; flex-direction:column;
+    transform:translateY(100%); transition:transform .28s cubic-bezier(.2,.9,.25,1);
+  }
+  #facturesview.open{display:flex; transform:translateY(0)}
+  @media (prefers-reduced-motion: reduce){#facturesview{transition:none}}
+  #factures-head{
+    flex:0 0 auto; display:flex; align-items:center; gap:10px;
+    padding:calc(10px + env(safe-area-inset-top)) 14px 12px;
+  }
+  #factures-list{flex:1 1 auto; overflow-y:auto; padding:10px 14px 28px}
+  #factures-loading, #factures-error{padding:16px 4px; color:var(--muted); font-size:13.5px}
+  #factures-error{color:#ff6d5a}
+  #factures-refresh{background:transparent; border:none; font-size:17px; padding:4px 8px}
+  #factures-periode{background:var(--surface); border-radius:14px; padding:12px 16px; margin-bottom:12px}
+  #factures-periode b{font-size:15px}
+  .factures-periode-sub{font-size:12.5px; color:var(--muted); margin-top:4px}
+  #factures-tabs{display:flex; gap:8px; overflow-x:auto; padding-bottom:4px; margin-bottom:12px}
+  .factures-tab{
+    flex:0 0 auto; display:flex; flex-direction:column; align-items:flex-start; gap:2px;
+    background:var(--surface); border:1px solid transparent; border-radius:12px; padding:8px 12px;
+    color:var(--ink); font:inherit; text-align:left;
+  }
+  .factures-tab.active{border-color:var(--blue)}
+  .factures-tab-lab{font-size:12.5px; font-weight:700}
+  .factures-tab-sub{font-size:11px; color:var(--muted)}
+  .factures-vide{padding:16px 4px; color:var(--muted); font-size:13px}
+  .factures-ligne{background:var(--surface); border-radius:12px; padding:10px 14px; margin-bottom:8px}
+  .factures-ligne-top{display:flex; align-items:baseline; gap:8px; flex-wrap:wrap}
+  .factures-date{font-size:12px; color:var(--muted); flex:0 0 auto}
+  .factures-fourn{font-size:13.5px; font-weight:600; flex:1 1 auto; min-width:0}
+  .factures-montant{font-size:13.5px; font-weight:700; flex:0 0 auto}
+  .factures-ligne-bas{display:flex; align-items:center; gap:10px; margin-top:6px}
+  .factures-badge{font-size:11px; font-weight:700; padding:2px 8px; border-radius:8px}
+  .factures-badge-ok{background:rgba(52,199,89,.18); color:#34c759}
+  .factures-badge-av{background:rgba(255,159,10,.18); color:#ff9f0a}
+  .factures-raison{font-size:11.5px; color:var(--muted); margin-top:4px}
+  .factures-lien{font-size:12px; color:var(--blue); text-decoration:none}
+  .factures-section-titre{font-size:13px; font-weight:700; margin:16px 0 8px}
+  #factures-ecartees{font-size:11.5px; color:var(--muted); padding:10px 2px 4px}
+  #factures-envoyer{margin-top:16px; text-align:center}
+  #factures-envoyer-btn{
+    width:100%; padding:12px; border-radius:12px; border:none; background:var(--surface);
+    color:var(--muted); font:inherit; font-weight:700; font-size:14px;
+  }
+  .factures-envoyer-note{font-size:11.5px; color:var(--muted); margin-top:6px}
+
   /* Panneau plein ecran "Radar" (25/09/2026, labo uniquement -- refonte complete
      sous-etape 7.2 d'AMELIORATIONS.md) -- lecture seule, webhook jarvis-radar-recap
      (n8n, authentifie contre web_acces comme le reste de l'app), qui interroge le
@@ -6602,6 +6655,10 @@
          produits/radar-opportunites/ (base Postgres separee, jamais n8n-db). Masquage
          labo-only via le meme mecanisme que sh-couts/sh-crypto (tableau plus bas). -->
     <button class="sh-tile" id="sh-radar" type="button"><span class="sh-tile-ic">📡</span><span class="sh-tile-label">Radar</span></button>
+    <!-- Onglet "Factures TVA" (28/09/2026, labo uniquement) -- lecture seule des Data Tables
+         collecteur_* remplies par le workflow n8n COLLECTEUR-FACTURES. Masquage labo-only via
+         le meme mecanisme que sh-couts/sh-crypto/sh-radar (tableau plus bas). -->
+    <button class="sh-tile" id="sh-factures" type="button"><span class="sh-tile-ic">🧾</span><span class="sh-tile-label">Factures TVA</span></button>
     <!-- Onglet "Rentabilite (demonstration)" (15/09/2026, retire du menu le 15/09 -- demande de
          Mathéo "ca ne sert a rien" une fois la demo Groupe Demonchy en place). Bouton et panneau
          laisses en place (code mort inoffensif, jamais affiche), display:none inconditionnel --
@@ -6757,6 +6814,29 @@
         <div id="couts-svc-head" style="margin-top:6px"><span>🤖 Actors monétisés</span></div>
         <div id="cxa-actor-list"></div>
         <div id="cxa-generated"></div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<div id="facturesview">
+  <div id="factures-head">
+    <b>🧾 Factures TVA</b>
+    <button id="factures-refresh" type="button" aria-label="Actualiser" style="margin-left:auto">🔄</button>
+    <button id="factures-close" type="button" aria-label="Fermer">✕</button>
+  </div>
+  <div id="factures-list">
+    <div id="factures-loading">Chargement…</div>
+    <div id="factures-error" style="display:none"></div>
+    <div id="factures-body" style="display:none">
+      <div id="factures-periode"></div>
+      <div id="factures-tabs"></div>
+      <div id="factures-contenu"></div>
+      <div id="factures-arecuperer"></div>
+      <div id="factures-ecartees"></div>
+      <div id="factures-envoyer">
+        <button id="factures-envoyer-btn" type="button" disabled>Envoyer à la comptable</button>
+        <div class="factures-envoyer-note">Bientôt disponible : essais d'envoi vers ton adresse d'abord.</div>
       </div>
     </div>
   </div>
@@ -8341,7 +8421,7 @@
          comparaison de chaine de version par tenant. */
   var APPV_MCS = '4.59';
   var APPV_LABO = '1.04';
-  var BUILD = 83;
+  var BUILD = 84;
   // displayVersion()/displayVersionShort() lisent isMcsCode() (definie plus bas dans cette
   // meme IIFE -- declaration de fonction, donc disponible ici par hoisting) : le TENANT
   // affiche depend du code de connexion, jamais d'un simple "APPV" global qui ne dirait ni
@@ -10106,7 +10186,7 @@
     // inconditionnel pose directement dans le HTML), plus besoin de les lister ici.
     // sh-couts (gestion des coûts labo-ia) masqué côté tenant secondaire : données internes
     // à Mathéo/Dorian, sans aucun rapport avec un client.
-    ['sh-meute', 'sh-site', 'sh-vitrine', 'sh-plume', 'hcallbtn', 'sh-couts', 'sh-crypto', 'sh-radar', 'sh-rentabilite-demonchy'].forEach(function(id){
+    ['sh-meute', 'sh-site', 'sh-vitrine', 'sh-plume', 'hcallbtn', 'sh-couts', 'sh-crypto', 'sh-radar', 'sh-rentabilite-demonchy', 'sh-factures'].forEach(function(id){
       var el = document.getElementById(id);
       if (el) el.style.display = mcs ? 'none' : '';
     });
@@ -11841,6 +11921,163 @@
   document.getElementById('radar-download').addEventListener('click', radarDownloadReport);
   document.getElementById('radar-filtre-statut').addEventListener('change', function(){ radarFiltreStatut = this.value; radarRenderCards(); });
   document.getElementById('radar-filtre-secteur').addEventListener('change', function(){ radarFiltreSecteur = this.value; radarRenderCards(); });
+
+  // Panneau "Factures TVA" (28/09/2026, labo uniquement) -- LECTURE SEULE des Data Tables
+  // collecteur_* deja remplies par le workflow n8n COLLECTEUR-FACTURES (webhook dedie
+  // collecteur-api-lister, authentifie comme le reste de l'app via postDevisWeb qui attache
+  // jarvisCode automatiquement). Aucune mutation, aucun envoi de mail depuis ce panneau --
+  // le bouton "Envoyer a la comptable" est volontairement inactif (etape suivante).
+  var facturesview = document.getElementById('facturesview');
+  var API_FACTURES = 'https://n8n-self-hosted-t0pz.onrender.com/webhook/collecteur-api-lister';
+  function facturesClose(){ facturesview.classList.remove('open'); }
+  function postFacturesApi(payload, onOk, onErr){ postDevisWeb(API_FACTURES, payload, onOk, onErr); }
+
+  var facturesCache = null;
+  var facturesTabActif = 'M22VISION';
+  var FACTURES_SOCIETE_LABEL = { M22VISION: 'M22 VISION', DMROOM: 'DMROOM', HOLDINGDB: 'HOLDINGDB', _a_attribuer: 'À attribuer' };
+  var FACTURES_SOCIETE_ORDRE = ['M22VISION', 'DMROOM', 'HOLDINGDB', '_a_attribuer'];
+  var FACTURES_MOIS_NOMS = ['janvier','février','mars','avril','mai','juin','juillet','août','septembre','octobre','novembre','décembre'];
+
+  function facturesMoisCourantAAAAMM(){
+    var d = new Date();
+    var m = d.getMonth() + 1;
+    return d.getFullYear() + '-' + (m < 10 ? '0' + m : String(m));
+  }
+  function facturesMoisLabel(mois){
+    var p = String(mois || '').split('-');
+    if (p.length !== 2) return mois || '';
+    var idx = parseInt(p[1], 10) - 1;
+    return (FACTURES_MOIS_NOMS[idx] || p[1]) + ' ' + p[0];
+  }
+  function facturesFmtDateCourt(d){
+    if (!d) return '?';
+    var p = String(d).split('-');
+    return p.length === 3 ? (p[2] + '/' + p[1]) : d;
+  }
+  function facturesFmtMontant(m, devise){
+    if (m == null || isNaN(Number(m))) return 'Montant inconnu';
+    return Number(m).toLocaleString('fr-FR', { minimumFractionDigits: 2, maximumFractionDigits: 2 }) + ' ' + (devise || '(devise non lue)');
+  }
+  function facturesEsc(s){
+    var d = document.createElement('div');
+    d.textContent = (s == null) ? '' : String(s);
+    return d.innerHTML;
+  }
+
+  function facturesOpen(){
+    facturesview.classList.add('open');
+    document.getElementById('factures-loading').style.display = '';
+    document.getElementById('factures-error').style.display = 'none';
+    document.getElementById('factures-body').style.display = 'none';
+    facturesLoad();
+  }
+  function facturesLoad(){
+    postFacturesApi({ mois: facturesMoisCourantAAAAMM() }, function(j){
+      document.getElementById('factures-loading').style.display = 'none';
+      document.getElementById('factures-error').style.display = 'none';
+      document.getElementById('factures-body').style.display = '';
+      facturesCache = j || {};
+      facturesRender();
+    }, function(err){
+      document.getElementById('factures-loading').style.display = 'none';
+      if (!facturesCache){
+        document.getElementById('factures-error').style.display = '';
+        document.getElementById('factures-error').textContent = err;
+      }
+    });
+  }
+
+  function facturesRenderPeriode(){
+    var j = facturesCache || {};
+    var el = document.getElementById('factures-periode');
+    var moisTxt = facturesMoisLabel(j.mois);
+    if (!j.periode_collectee){
+      el.innerHTML = '<b>' + facturesEsc(moisTxt) + '</b><div class="factures-periode-sub">Aucune donnée collectée pour ce mois pour l\'instant.</div>';
+      return;
+    }
+    var texte = 'Collecté du ' + facturesEsc(facturesFmtDateCourt(j.periode_collectee.debut)) + ' au ' +
+      facturesEsc(facturesFmtDateCourt(j.periode_collectee.fin)) + ' — suite en cours';
+    el.innerHTML = '<b>' + facturesEsc(moisTxt) + '</b><div class="factures-periode-sub">' + texte + '</div>';
+  }
+
+  function facturesRenderTabs(){
+    var wrap = document.getElementById('factures-tabs');
+    wrap.innerHTML = '';
+    var societes = (facturesCache && facturesCache.societes) || {};
+    FACTURES_SOCIETE_ORDRE.forEach(function(code){
+      var g = societes[code] || { nb_factures: 0, total_par_devise: {} };
+      var btn = document.createElement('button');
+      btn.type = 'button';
+      btn.className = 'factures-tab' + (code === facturesTabActif ? ' active' : '');
+      var totauxTxt = Object.keys(g.total_par_devise || {}).map(function(dev){
+        return facturesFmtMontant(g.total_par_devise[dev], dev);
+      }).join(' + ') || '0,00 €';
+      btn.innerHTML = '<span class="factures-tab-lab">' + facturesEsc(FACTURES_SOCIETE_LABEL[code]) + '</span>' +
+        '<span class="factures-tab-sub">' + g.nb_factures + ' · ' + facturesEsc(totauxTxt) + '</span>';
+      btn.addEventListener('click', function(){ facturesTabActif = code; facturesRenderTabs(); facturesRenderListe(); });
+      wrap.appendChild(btn);
+    });
+  }
+
+  function facturesRenderListe(){
+    var wrap = document.getElementById('factures-contenu');
+    var societes = (facturesCache && facturesCache.societes) || {};
+    var g = societes[facturesTabActif] || { factures: [] };
+    if (!g.factures.length){
+      wrap.innerHTML = '<div class="factures-vide">Aucune facture dans ce groupe pour ce mois.</div>';
+      return;
+    }
+    wrap.innerHTML = g.factures.map(function(f){
+      var badge = (f.statut === 'prete')
+        ? '<span class="factures-badge factures-badge-ok">Prête</span>'
+        : '<span class="factures-badge factures-badge-av">À vérifier</span>';
+      var raison = f.raison ? '<div class="factures-raison">' + facturesEsc(f.raison) + '</div>' : '';
+      var lien = f.lien_gmail ? '<a href="' + f.lien_gmail + '" target="_blank" rel="noopener" class="factures-lien">Ouvrir dans Gmail</a>' : '';
+      return '<div class="factures-ligne">' +
+        '<div class="factures-ligne-top">' +
+        '<span class="factures-date">' + facturesEsc(facturesFmtDateCourt(f.date_facture)) + '</span>' +
+        '<span class="factures-fourn">' + facturesEsc(f.fournisseur || 'Fournisseur inconnu') + '</span>' +
+        '<span class="factures-montant">' + facturesEsc(facturesFmtMontant(f.montant_ttc, f.devise)) + '</span>' +
+        '</div><div class="factures-ligne-bas">' + badge + lien + '</div>' + raison +
+        '</div>';
+    }).join('');
+  }
+
+  function facturesRenderARecuperer(){
+    var wrap = document.getElementById('factures-arecuperer');
+    var liste = (facturesCache && facturesCache.a_recuperer) || [];
+    if (!liste.length){ wrap.innerHTML = ''; return; }
+    wrap.innerHTML = '<div class="factures-section-titre">À récupérer (sans pièce jointe) — ' + liste.length + '</div>' +
+      liste.map(function(f){
+        var lien = f.lien_gmail ? '<a href="' + f.lien_gmail + '" target="_blank" rel="noopener" class="factures-lien">Ouvrir dans Gmail</a>' : '';
+        return '<div class="factures-ligne">' +
+          '<div class="factures-ligne-top">' +
+          '<span class="factures-date">' + facturesEsc(facturesFmtDateCourt(f.date_facture)) + '</span>' +
+          '<span class="factures-fourn">' + facturesEsc(f.fournisseur || 'Fournisseur inconnu') + '</span>' +
+          '<span class="factures-montant">' + facturesEsc(facturesFmtMontant(f.montant_ttc, f.devise)) + '</span>' +
+          '</div><div class="factures-ligne-bas">' + lien + '</div>' +
+          '</div>';
+      }).join('');
+  }
+
+  function facturesRenderEcartees(){
+    var e = (facturesCache && facturesCache.ecartees) || {};
+    var total = (e.mcs || 0) + (e.emise || 0) + (e.doublon || 0) + (e.pas_facture || 0) + (e.obsolete || 0) + (e.erreur || 0);
+    document.getElementById('factures-ecartees').textContent =
+      total + ' pièce' + (total > 1 ? 's' : '') + ' écartée' + (total > 1 ? 's' : '') + ' (MCS, doublons, non-factures, erreurs)';
+  }
+
+  function facturesRender(){
+    facturesRenderPeriode();
+    facturesRenderTabs();
+    facturesRenderListe();
+    facturesRenderARecuperer();
+    facturesRenderEcartees();
+  }
+
+  document.getElementById('sh-factures').addEventListener('click', function(){ sheetOpen(false); facturesOpen(); });
+  document.getElementById('factures-close').addEventListener('click', facturesClose);
+  document.getElementById('factures-refresh').addEventListener('click', facturesLoad);
 
   // Classement base UNIQUEMENT sur les paiements tiers (payments.tiers.last_7d)
   // — jamais le total (qui inclut le wallet de test + le seed hebdo), pour que
