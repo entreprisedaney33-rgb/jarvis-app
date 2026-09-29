@@ -2661,6 +2661,20 @@
   .factures-btn-dl{background:var(--surface); color:var(--ink); border:1px solid var(--hairline)}
   .factures-btn-pdf:disabled, .factures-btn-dl:disabled{opacity:.55}
   .factures-sans-pdf{font-size:12px; color:var(--muted); font-style:italic}
+  #factures-select-bar{display:flex; align-items:center; gap:10px; margin:2px 0 10px; flex-wrap:wrap}
+  #factures-filtre-non-envoyees{display:flex; align-items:center; gap:6px; font-size:12.5px; color:var(--muted)}
+  #factures-tout-cocher-btn, #factures-tout-decocher-btn{
+    background:transparent; border:1px solid var(--hairline); border-radius:10px; padding:5px 10px;
+    font-size:12px; color:var(--ink); font:inherit;
+  }
+  .factures-check{margin-right:8px; width:18px; height:18px; flex:0 0 auto}
+  .factures-ligne-top{align-items:center}
+  .factures-deja-essai{font-size:11px; color:var(--muted); font-style:italic; margin-top:2px}
+  #factures-envoyer-selection-btn{
+    width:100%; padding:12px; border-radius:12px; border:none; background:var(--blue);
+    color:#fff; font:inherit; font-weight:700; font-size:14px; margin-bottom:8px;
+  }
+  #factures-envoyer-selection-btn:disabled{opacity:.45}
   .factures-section-titre{font-size:13px; font-weight:700; margin:16px 0 8px}
   #factures-ecartees{font-size:11.5px; color:var(--muted); padding:10px 2px 4px}
   #factures-envoyer{margin-top:16px; text-align:center}
@@ -6876,11 +6890,17 @@
     <div id="factures-body" style="display:none">
       <div id="factures-periode"></div>
       <div id="factures-tabs"></div>
+      <div id="factures-select-bar">
+        <label id="factures-filtre-non-envoyees"><input type="checkbox" id="factures-filtre-non-envoyees-cb">Pas encore envoyées</label>
+        <button id="factures-tout-cocher-btn" type="button">Tout cocher</button>
+        <button id="factures-tout-decocher-btn" type="button">Tout décocher</button>
+      </div>
       <div id="factures-contenu"></div>
       <div id="factures-arecuperer"></div>
       <div id="factures-ecartees"></div>
       <div id="factures-envoyer">
-        <button id="factures-envoyer-btn" type="button">Envoyer à la comptable</button>
+        <button id="factures-envoyer-selection-btn" type="button" disabled>Envoyer la sélection (0)</button>
+        <button id="factures-envoyer-btn" type="button">Envoyer tout le mois</button>
         <div class="factures-envoyer-note">Mode essai : l'aperçu s'ouvre avant tout envoi, rien ne part sans ta confirmation.</div>
       </div>
     </div>
@@ -8484,7 +8504,7 @@
          comparaison de chaine de version par tenant. */
   var APPV_MCS = '4.59';
   var APPV_LABO = '1.04';
-  var BUILD = 87;
+  var BUILD = 88;
   // displayVersion()/displayVersionShort() lisent isMcsCode() (definie plus bas dans cette
   // meme IIFE -- declaration de fonction, donc disponible ici par hoisting) : le TENANT
   // affiche depend du code de connexion, jamais d'un simple "APPV" global qui ne dirait ni
@@ -12047,6 +12067,7 @@
     document.getElementById('factures-loading').style.display = '';
     document.getElementById('factures-error').style.display = 'none';
     document.getElementById('factures-body').style.display = 'none';
+    facturesSelection.clear();
     facturesLoad();
   }
   function facturesLoad(){
@@ -12097,15 +12118,32 @@
     });
   }
 
+  // Selection de factures pour "Envoyer la selection" (29/09/2026, Lot 5) -- un Set
+  // d'empreintes (facture_id), conserve tant que le panneau reste ouvert (perdu a la
+  // fermeture, comme le reste de l'etat local de ce panneau).
+  var facturesSelection = new Set();
+  function facturesFmtDateHeure(iso){
+    if (!iso) return '';
+    var d = new Date(iso);
+    return d.toLocaleDateString('fr-FR') + ' à ' + d.toLocaleTimeString('fr-FR', { hour:'2-digit', minute:'2-digit' });
+  }
+  function facturesUpdateSelectionUI(){
+    var btn = document.getElementById('factures-envoyer-selection-btn');
+    var n = facturesSelection.size;
+    btn.textContent = 'Envoyer la sélection (' + n + ')';
+    btn.disabled = !n;
+  }
   function facturesRenderListe(){
     var wrap = document.getElementById('factures-contenu');
     var societes = (facturesCache && facturesCache.societes) || {};
     var g = societes[facturesTabActif] || { factures: [] };
-    if (!g.factures.length){
+    var filtreNonEnvoyees = document.getElementById('factures-filtre-non-envoyees-cb').checked;
+    var factures = filtreNonEnvoyees ? g.factures.filter(function(f){ return !f.deja_envoyee_reelle_le; }) : g.factures;
+    if (!factures.length){
       wrap.innerHTML = '<div class="factures-vide">Aucune facture dans ce groupe pour ce mois.</div>';
       return;
     }
-    wrap.innerHTML = g.factures.map(function(f){
+    wrap.innerHTML = factures.map(function(f){
       var badge = (f.statut === 'prete')
         ? '<span class="factures-badge factures-badge-ok">Prête</span>'
         : '<span class="factures-badge factures-badge-av">À vérifier</span>';
@@ -12118,15 +12156,44 @@
         ? '<button type="button" class="factures-btn-pdf" data-fid="' + fid + '" data-nom="' + nom + '">Voir le PDF</button>' +
           '<button type="button" class="factures-btn-dl" data-fid="' + fid + '" data-nom="' + nom + '">' + btnDlLabel + '</button>'
         : '';
+      var coche = facturesSelection.has(f.facture_id) ? ' checked' : '';
+      var checkbox = f.facture_id
+        ? '<input type="checkbox" class="factures-check" data-fid="' + fid + '"' + coche + '>'
+        : '<span style="display:inline-block;width:26px"></span>';
+      var dejaEnvoyeeTxt = f.deja_envoyee_reelle_le
+        ? '<div class="factures-deja-essai">Déjà envoyée le ' + facturesEsc(facturesFmtDateHeure(f.deja_envoyee_reelle_le)) + '</div>'
+        : (f.deja_essai_le ? '<div class="factures-deja-essai">Déjà incluse dans un essai le ' + facturesEsc(facturesFmtDateHeure(f.deja_essai_le)) + '</div>' : '');
       return '<div class="factures-ligne">' +
-        '<div class="factures-ligne-top">' +
+        '<div class="factures-ligne-top">' + checkbox +
         '<span class="factures-date">' + facturesEsc(facturesFmtDateCourt(f.date_facture)) + '</span>' +
         '<span class="factures-fourn">' + facturesEsc(f.fournisseur || 'Fournisseur inconnu') + '</span>' +
         '<span class="factures-montant">' + facturesEsc(facturesFmtMontant(f.montant_ttc, f.devise)) + '</span>' +
-        '</div><div class="factures-ligne-bas">' + badge + btnsPdf + lien + '</div>' + raison +
+        '</div><div class="factures-ligne-bas">' + badge + btnsPdf + lien + '</div>' + raison + dejaEnvoyeeTxt +
         '</div>';
     }).join('');
   }
+  document.getElementById('factures-contenu').addEventListener('change', function(e){
+    var cb = e.target.closest('.factures-check');
+    if (!cb) return;
+    var fid = cb.getAttribute('data-fid');
+    if (cb.checked) facturesSelection.add(fid); else facturesSelection.delete(fid);
+    facturesUpdateSelectionUI();
+  });
+  document.getElementById('factures-filtre-non-envoyees-cb').addEventListener('change', facturesRenderListe);
+  document.getElementById('factures-tout-cocher-btn').addEventListener('click', function(){
+    var societes = (facturesCache && facturesCache.societes) || {};
+    var g = societes[facturesTabActif] || { factures: [] };
+    g.factures.forEach(function(f){ if (f.facture_id) facturesSelection.add(f.facture_id); });
+    facturesRenderListe();
+    facturesUpdateSelectionUI();
+  });
+  document.getElementById('factures-tout-decocher-btn').addEventListener('click', function(){
+    var societes = (facturesCache && facturesCache.societes) || {};
+    var g = societes[facturesTabActif] || { factures: [] };
+    g.factures.forEach(function(f){ if (f.facture_id) facturesSelection.delete(f.facture_id); });
+    facturesRenderListe();
+    facturesUpdateSelectionUI();
+  });
 
   function facturesRenderARecuperer(){
     var wrap = document.getElementById('factures-arecuperer');
@@ -12294,15 +12361,25 @@
     if (n >= 1024) return (n / 1024).toFixed(0) + ' Ko';
     return n + ' o';
   }
+  var ENVOI_EXCLU_TITRES = {
+    a_attribuer: 'À attribuer (pas de société)',
+    a_recuperer: 'À récupérer (sans PDF)',
+    doublon_document: 'Doublons (même mail ou même numéro)',
+    pas_facture: 'Pas des factures',
+    anomalie_doublon_ligne: 'Anomalie technique (ligne en double, à investiguer)',
+    autres: 'Autres',
+  };
   function envoiRenderApercu(j){
     envoiJetonCourant = j.jeton;
     var wrapSoc = document.getElementById('envoi-societes');
     var codes = Object.keys(j.societes || {});
+    var dejaEnvoyees = [];
     if (!codes.length){
       wrapSoc.innerHTML = '<div class="envoi-carte">Aucune facture prête à envoyer ce mois-ci.</div>';
     } else {
       wrapSoc.innerHTML = codes.map(function(code){
         var s = j.societes[code];
+        (s.factures || []).forEach(function(f){ if (f.deja_envoyee_reelle_le) dejaEnvoyees.push(f); });
         var totauxTxt = Object.keys(s.totaux_par_devise || {}).map(function(dv){
           return envoiFmtMontant(s.totaux_par_devise[dv], dv);
         }).join(' + ') || '0,00 €';
@@ -12313,30 +12390,39 @@
           '</div>';
       }).join('');
     }
+    var avertHtml = '';
+    if (dejaEnvoyees.length){
+      avertHtml = '<div class="envoi-carte" style="background:#fff3cd;border:1px solid #ffe69c">' +
+        '<b>⚠️ ' + dejaEnvoyees.length + ' facture' + (dejaEnvoyees.length > 1 ? 's' : '') + ' déjà envoyée' + (dejaEnvoyees.length > 1 ? 's' : '') + ' en réel</b>' +
+        dejaEnvoyees.map(function(f){ return '<div class="envoi-carte-ligne">' + facturesEsc(f.fournisseur || f.facture_id) + ' — le ' + facturesEsc(facturesFmtDateHeure(f.deja_envoyee_reelle_le)) + '</div>'; }).join('') +
+        '</div>';
+    }
+    wrapSoc.innerHTML = avertHtml + wrapSoc.innerHTML;
     var e = j.exclus || {};
-    var aAttribuer = (e.a_attribuer && e.a_attribuer.liste) || [];
-    var aRecuperer = (e.a_recuperer && e.a_recuperer.liste) || [];
     var exclusHtml = '';
-    if (aAttribuer.length){
-      exclusHtml += '<div class="envoi-exclu-titre">À attribuer (pas de société) — ' + aAttribuer.length + '</div>' +
-        aAttribuer.map(function(f){ return '<div class="envoi-exclu-ligne">' + facturesEsc(f.fournisseur || 'Fournisseur inconnu') + ' — ' + facturesEsc(envoiFmtMontant(f.montant_ttc, f.devise)) + '</div>'; }).join('');
-    }
-    if (aRecuperer.length){
-      exclusHtml += '<div class="envoi-exclu-titre">À récupérer (sans PDF) — ' + aRecuperer.length + '</div>' +
-        aRecuperer.map(function(f){ return '<div class="envoi-exclu-ligne">' + facturesEsc(f.fournisseur || 'Fournisseur inconnu') + ' — ' + facturesEsc(envoiFmtMontant(f.montant_ttc, f.devise)) + '</div>'; }).join('');
-    }
+    Object.keys(ENVOI_EXCLU_TITRES).forEach(function(cle){
+      var liste = (e[cle] && e[cle].liste) || [];
+      if (!liste.length) return;
+      exclusHtml += '<div class="envoi-exclu-titre">' + ENVOI_EXCLU_TITRES[cle] + ' — ' + liste.length + '</div>' +
+        liste.map(function(f){
+          var raisonTxt = f.raison ? ' (' + facturesEsc(f.raison) + ')' : '';
+          return '<div class="envoi-exclu-ligne">' + facturesEsc(f.fournisseur || 'Fournisseur inconnu') + ' — ' + facturesEsc(envoiFmtMontant(f.montant_ttc, f.devise)) + raisonTxt + '</div>';
+        }).join('');
+    });
     document.getElementById('envoi-exclus').innerHTML = exclusHtml;
     var btn = document.getElementById('envoi-confirmer-btn');
     btn.disabled = !codes.length;
     btn.textContent = 'Envoyer l\'essai';
     document.getElementById('envoi-resultat').style.display = 'none';
   }
-  function envoiApercuCharger(){
+  function envoiApercuCharger(empreintes){
     document.getElementById('envoi-loading').style.display = '';
     document.getElementById('envoi-error').style.display = 'none';
     document.getElementById('envoi-body').style.display = 'none';
     var mois = (facturesCache && facturesCache.mois) || facturesMoisCourantAAAAMM();
-    postFacturesApi({ action: 'apercu_envoi', mois: mois }, function(j){
+    var payload = { action: 'apercu_envoi', mois: mois };
+    if (empreintes && empreintes.length) payload.empreintes = empreintes;
+    postFacturesApi(payload, function(j){
       document.getElementById('envoi-loading').style.display = 'none';
       document.getElementById('envoi-body').style.display = '';
       envoiRenderApercu(j);
@@ -12350,6 +12436,12 @@
     envoiJetonCourant = null;
     envoiApercuOpen(true);
     envoiApercuCharger();
+  });
+  document.getElementById('factures-envoyer-selection-btn').addEventListener('click', function(){
+    if (!facturesSelection.size) return;
+    envoiJetonCourant = null;
+    envoiApercuOpen(true);
+    envoiApercuCharger(Array.from(facturesSelection));
   });
   document.getElementById('envoi-close').addEventListener('click', function(){ envoiApercuOpen(false); });
   document.getElementById('envoi-confirmer-btn').addEventListener('click', function(){
