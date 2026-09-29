@@ -2813,6 +2813,23 @@
     border:0.5px solid var(--hairline); border-radius:10px; padding:8px 10px; font-size:12.5px;
   }
 
+  /* 4.1 (29/09/2026) : bascule « seulement accessibles » / « tout voir », compteur,
+     badge de faisabilité, bouton « voir plus ». Nouvelles classes uniquement. */
+  #radar-faisa-toggle{display:flex; gap:8px; margin-bottom:10px}
+  .radar-faisa-btn{
+    flex:1 1 0; min-width:0; background:var(--surface); color:var(--ink);
+    border:0.5px solid var(--hairline); border-radius:10px; padding:9px 10px; font-size:12.5px; font-weight:600;
+  }
+  .radar-faisa-btn.actif{background:var(--blue); color:#fff; border-color:var(--blue)}
+  #radar-compte{font-size:12px; color:var(--muted); margin:0 2px 10px; line-height:1.4}
+  .radar-badge-solo{background:var(--blue); color:#fff}
+  .radar-badge-exclu{background:rgba(255,255,255,.08); color:var(--muted)}
+  .radar-faisa-motif{font-size:12px; color:var(--muted); margin-top:6px; line-height:1.4}
+  #radar-voir-plus{
+    display:block; width:100%; background:var(--surface); color:var(--ink);
+    border:0.5px solid var(--hairline); border-radius:12px; padding:12px; font-size:13.5px; font-weight:600; margin:2px 0 10px;
+  }
+
   /* ------------------------------------------------------------- infobulle */
   .radar-info-btn{
     display:inline-flex; align-items:center; justify-content:center; width:14px; height:14px;
@@ -7029,6 +7046,13 @@
         <div id="radar-hero-titre"></div>
       </div>
 
+      <!-- 4.1 : par défaut, seulement les dossiers >= 50 ET accessibles en solo -->
+      <div id="radar-faisa-toggle">
+        <button type="button" class="radar-faisa-btn actif" id="radar-faisa-accessibles">Seulement accessibles</button>
+        <button type="button" class="radar-faisa-btn" id="radar-faisa-tout">Tout voir</button>
+      </div>
+      <div id="radar-compte"></div>
+
       <!-- Filtres statut / secteur -->
       <div id="radar-filtres">
         <select class="radar-select" id="radar-filtre-statut"><option value="">Tous les statuts</option></select>
@@ -7038,6 +7062,7 @@
       <button id="radar-download" type="button" class="radar-download-btn">⬇️ Télécharger le rapport (.txt)</button>
 
       <div id="radar-opps-list"></div>
+      <button id="radar-voir-plus" type="button" style="display:none">Voir plus</button>
       <div id="radar-generated" style="font-size:11px;color:var(--muted);margin-top:4px"></div>
 
       <!-- Tendance 7 jours -->
@@ -8561,8 +8586,8 @@
          unique de detection de mise a jour (voir checkUpdate ci-dessous), plus fiable qu'une
          comparaison de chaine de version par tenant. */
   var APPV_MCS = '4.59';
-  var APPV_LABO = '1.04';
-  var BUILD = 90;
+  var APPV_LABO = '1.05';
+  var BUILD = 91;
   // displayVersion()/displayVersionShort() lisent isMcsCode() (definie plus bas dans cette
   // meme IIFE -- declaration de fonction, donc disponible ici par hoisting) : le TENANT
   // affiche depend du code de connexion, jamais d'un simple "APPV" global qui ne dirait ni
@@ -11592,7 +11617,7 @@
 
   var RADAR_STATUT_LABEL = {
     nouveau: 'Nouveau', enquete_terminee: 'Enquêté', en_analyse: 'En analyse', incertain: 'Incertain',
-    rejete: 'Rejeté', a_revoir: 'À revoir', selectionne: 'Sélectionné',
+    rejete: 'Rejeté', a_revoir: 'À revoir', selectionne: 'Sélectionné', archive_faible: 'Archivé (faible)',
   };
   var RADAR_INFOBULLES = {
     'score prudent': 'Note sur 100 calculée par du code (jamais par un modèle) à partir des preuves réellement collectées. Reste bas tant que peu de sources existent par dossier.',
@@ -11617,6 +11642,16 @@
   var radarDetailCache = {};
   var radarFiltreStatut = '';
   var radarFiltreSecteur = '';
+  // 4.1 : « accessibles » (défaut) | « tout ». Liste chargée 30 par 30 ; `radarPages` =
+  // nombre de pages déjà affichées (le rafraîchissement 5 min les recharge toutes).
+  var radarFiltreFaisa = 'accessibles';
+  var radarPages = 1;
+  var RADAR_PAGE = 30;
+  var RADAR_SEUIL_LISTE = 50;
+  var RADAR_FAISA_LABEL = {
+    investissement_initial: 'Investissement initial', delai_premier_revenu: 'Délai avant le premier revenu',
+    marche: 'Marché', competences: 'Compétences requises', taille_du_probleme: 'Taille du problème',
+  };
 
   function radarInfoBtn(cle){
     var b = document.createElement('button');
@@ -11782,6 +11817,22 @@
     ligne('Motif de la décision', det.motif_critic);
     ligne('Prochain test le moins coûteux', det.prochain_test);
 
+    var fa = det.faisabilite;
+    if (fa && fa.payload){
+      var tf = document.createElement('div'); tf.className = 'radar-detail-titre';
+      tf.textContent = 'Faisabilité pour toi (hypothèses, hors score)';
+      box.appendChild(tf);
+      var verdict = document.createElement('div'); verdict.className = 'radar-detail-ligne';
+      verdict.textContent = fa.accessible_solo === true ? 'Accessible en solo.'
+        : (fa.accessible_solo === false ? 'Non accessible : ' + (fa.motif_exclusion || '—') : 'Non évaluée.');
+      box.appendChild(verdict);
+      Object.keys(RADAR_FAISA_LABEL).forEach(function(cle){
+        var champ = fa.payload[cle]; if (!champ) return;
+        var val = champ.valeurs ? champ.valeurs.join(', ') : champ.valeur;
+        ligne(RADAR_FAISA_LABEL[cle], val + (champ.justification ? ' — ' + champ.justification : ''));
+      });
+    }
+
     var preuves = det.preuves || {};
     var total = RADAR_GROUPE_ORDRE.reduce(function(n, g){ return n + ((preuves[g] || []).length); }, 0);
     var tp = document.createElement('div'); tp.className = 'radar-detail-titre';
@@ -11840,7 +11891,10 @@
     if (!dossiers.length){
       var empty = document.createElement('div');
       empty.className = 'couts-svc-row';
-      empty.textContent = 'Aucun dossier pour ces filtres.';
+      var c = radarDossiersCache || {};
+      empty.textContent = radarFiltreFaisa === 'accessibles' && (c.total_non_evalues || 0) > 0
+        ? 'Aucun dossier accessible pour l\'instant — ' + c.total_non_evalues + ' dossier(s) à ' + RADAR_SEUIL_LISTE + ' ou plus attendent encore leur évaluation de faisabilité. « Tout voir » les montre.'
+        : 'Aucun dossier pour ces filtres.';
       list.appendChild(empty);
       return;
     }
@@ -11866,6 +11920,22 @@
       src.textContent = (o.nb_sources || 0) + ' source' + (o.nb_sources === 1 ? '' : 's');
       meta.appendChild(src);
       card.appendChild(meta);
+
+      // 4.1 : faisabilité -- badge « Accessible » ou « Exclu » (+ motif lisible), sinon « non évaluée ».
+      var faisa = document.createElement('span');
+      if (o.accessible_solo === true){
+        faisa.className = 'radar-badge radar-badge-solo'; faisa.textContent = 'Accessible';
+      } else if (o.accessible_solo === false){
+        faisa.className = 'radar-badge radar-badge-exclu'; faisa.textContent = 'Exclu';
+      } else {
+        faisa.className = 'radar-badge radar-badge-exclu'; faisa.textContent = 'Faisabilité non évaluée';
+      }
+      meta.appendChild(faisa);
+      if (o.accessible_solo === false && o.motif_exclusion){
+        var motif = document.createElement('div'); motif.className = 'radar-faisa-motif';
+        motif.textContent = o.motif_exclusion;
+        card.appendChild(motif);
+      }
 
       var sub = document.createElement('div');
       sub.className = 'radar-card-sub';
@@ -11972,27 +12042,72 @@
     });
   }
 
-  // Vue "dossiers" -- liste résumée (dossiers du jour + 30 meilleurs des 7
-  // derniers jours), rafraîchie toutes les 5 min ou au bouton actualiser.
-  function radarLoadDossiers(silencieux){
-    postRadarRecap({ vue: 'dossiers' }, function(j){
-      document.getElementById('radar-loading').style.display = 'none';
-      document.getElementById('radar-error').style.display = 'none';
-      document.getElementById('radar-body').style.display = '';
-      radarDossiersCache = j || {};
-      var dossiers = radarDossiersCache.dossiers || [];
-      radarRenderHero(dossiers);
-      radarPeuplerFiltres(dossiers);
-      radarRenderCards();
-      radarRenderTendance(radarDossiersCache.serie7j);
-      document.getElementById('radar-generated').textContent = 'Actualisé le ' + new Date().toLocaleString('fr-FR');
-    }, function(err){
-      document.getElementById('radar-loading').style.display = 'none';
-      if (!radarDossiersCache){
-        document.getElementById('radar-error').style.display = '';
-        document.getElementById('radar-error').textContent = err;
-      }
-    });
+  // Vue "dossiers" -- légère (4.1) : 30 dossiers par appel, score >= 50, accessibles par défaut
+  // (« tout voir » pour les autres), rafraîchie toutes les 5 min ou au bouton actualiser. Le
+  // rafraîchissement recharge les pages déjà affichées (`radarPages`), pas seulement la première.
+  function radarAppliquerListe(j){
+    document.getElementById('radar-loading').style.display = 'none';
+    document.getElementById('radar-error').style.display = 'none';
+    document.getElementById('radar-body').style.display = '';
+    radarDossiersCache = j;
+    var dossiers = j.dossiers || [];
+    radarRenderHero(dossiers);
+    radarPeuplerFiltres(dossiers);
+    radarRenderCards();
+    if (j.serie7j) radarRenderTendance(j.serie7j);
+    document.getElementById('radar-compte').textContent =
+      (j.total_pool || 0) + ' dossier(s) à ' + RADAR_SEUIL_LISTE + ' ou plus · ' + (j.total_accessibles || 0) +
+      ' accessible(s) en solo · ' + (j.total_non_evalues || 0) + ' à évaluer. Affichés : ' + dossiers.length +
+      ' sur ' + (j.total_filtre || 0) + '.';
+    var plus = document.getElementById('radar-voir-plus');
+    plus.style.display = j.a_suite ? '' : 'none';
+    plus.textContent = 'Voir plus (' + Math.min(RADAR_PAGE, (j.total_filtre || 0) - dossiers.length) + ' de plus)';
+    document.getElementById('radar-generated').textContent = 'Actualisé le ' + new Date().toLocaleString('fr-FR');
+  }
+  function radarErreurListe(err){
+    document.getElementById('radar-loading').style.display = 'none';
+    if (!radarDossiersCache){
+      document.getElementById('radar-error').style.display = '';
+      document.getElementById('radar-error').textContent = err;
+    }
+  }
+  // Charge `nbPages` pages à la suite (offset 0, 30, 60…) puis affiche l'ensemble ; s'arrête
+  // dès que le serveur dit qu'il n'y a plus de suite.
+  function radarChargerPages(nbPages){
+    var cumul = null;
+    function suivante(i){
+      postRadarRecap({ vue: 'dossiers', filtre: radarFiltreFaisa, offset: i * RADAR_PAGE }, function(j){
+        j = j || {};
+        if (!cumul){ cumul = j; } else { cumul.dossiers = (cumul.dossiers || []).concat(j.dossiers || []); cumul.a_suite = j.a_suite; }
+        if (i + 1 < nbPages && j.a_suite){ suivante(i + 1); return; }
+        radarPages = i + 1;
+        radarAppliquerListe(cumul);
+      }, radarErreurListe);
+    }
+    suivante(0);
+  }
+  function radarLoadDossiers(silencieux, repartirDePremierePage){
+    if (repartirDePremierePage) radarPages = 1;
+    radarChargerPages(radarPages);
+  }
+  function radarVoirPlus(){
+    var cache = radarDossiersCache; if (!cache || !cache.a_suite) return;
+    var btn = document.getElementById('radar-voir-plus'); btn.disabled = true;
+    postRadarRecap({ vue: 'dossiers', filtre: radarFiltreFaisa, offset: (cache.dossiers || []).length }, function(j){
+      btn.disabled = false; j = j || {};
+      cache.dossiers = (cache.dossiers || []).concat(j.dossiers || []);
+      cache.a_suite = j.a_suite; cache.total_filtre = j.total_filtre;
+      radarPages += 1;
+      radarAppliquerListe(cache);
+    }, function(err){ btn.disabled = false; radarErreurListe(err); });
+  }
+  function radarChoisirFiltreFaisa(valeur){
+    if (radarFiltreFaisa === valeur) return;
+    radarFiltreFaisa = valeur;
+    document.getElementById('radar-faisa-accessibles').classList.toggle('actif', valeur === 'accessibles');
+    document.getElementById('radar-faisa-tout').classList.toggle('actif', valeur === 'tout');
+    radarDossiersCache = null;
+    radarLoadDossiers(false, true);
   }
 
   function radarStartAuto(){
@@ -12021,7 +12136,7 @@
     texte += (radarEtatCache.etat && radarEtatCache.etat.libelle ? radarEtatCache.etat.libelle : '') + '\n';
     texte += 'Signaux collectes : ' + ((e.signaux_douleur_collectes || 0) + (e.signaux_offre_collectes || 0))
       + ' -- Dossiers analyses : ' + (e.dossiers_analyses || 0)
-      + ' -- Cout du jour : ' + (b.valeur != null ? b.valeur.toFixed(2) : '?') + ' EUR (sur ' + (b.plafond != null ? b.plafond : 25) + ' EUR max)\n';
+      + ' -- Cout du jour : ' + (b.valeur != null ? b.valeur.toFixed(2) : '?') + ' EUR (sur ' + (b.plafond != null ? b.plafond : 5) + ' EUR max)\n';
     texte += '(Liste résumée -- preuves/objection/prochain test disponibles dans l\'app, dossier par dossier)\n';
     texte += '\n' + new Array(60).join('=') + '\n\n';
     dossiers.forEach(function(o, i){
@@ -12031,6 +12146,7 @@
         + (noteDeja ? (' -- Score prudent : ' + o.score_prudent + '/100 -- ' + (o.nb_sources || 0) + ' source(s)') : '') + '\n';
       texte += '   Secteur : ' + (o.secteur || '?') + (o.secteur_provenance === 'citation_verifiee' ? ' (citation verifiee)' : '') + '\n';
       texte += '   Acheteur : ' + (o.acheteur || '?') + '\n';
+      texte += '   Faisabilite : ' + (o.accessible_solo === true ? 'accessible en solo' : (o.accessible_solo === false ? 'exclu -- ' + (o.motif_exclusion || '?') : 'non evaluee')) + '\n';
       texte += '\n';
     });
     var blob = new Blob([texte], { type: 'text/plain;charset=utf-8' });
@@ -12049,7 +12165,7 @@
     document.getElementById('radar-error').style.display = 'none';
     document.getElementById('radar-body').style.display = 'none';
     radarLoadEtat(false);
-    radarLoadDossiers(false);
+    radarLoadDossiers(false, true);
     radarStartAuto();
   }
   function radarCloseEtStop(){
@@ -12059,6 +12175,9 @@
   document.getElementById('sh-radar').addEventListener('click', function(){ sheetOpen(false); radarOpen(); });
   document.getElementById('radar-close').addEventListener('click', radarCloseEtStop);
   document.getElementById('radar-refresh').addEventListener('click', function(){ radarLoadEtat(false); radarLoadDossiers(false); });
+  document.getElementById('radar-voir-plus').addEventListener('click', radarVoirPlus);
+  document.getElementById('radar-faisa-accessibles').addEventListener('click', function(){ radarChoisirFiltreFaisa('accessibles'); });
+  document.getElementById('radar-faisa-tout').addEventListener('click', function(){ radarChoisirFiltreFaisa('tout'); });
   document.getElementById('radar-download').addEventListener('click', radarDownloadReport);
   document.getElementById('radar-filtre-statut').addEventListener('change', function(){ radarFiltreStatut = this.value; radarRenderCards(); });
   document.getElementById('radar-filtre-secteur').addEventListener('change', function(){ radarFiltreSecteur = this.value; radarRenderCards(); });
