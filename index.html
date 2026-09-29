@@ -2668,6 +2668,27 @@
     font-size:12px; color:var(--ink); font:inherit;
   }
   .factures-check{margin-right:8px; width:18px; height:18px; flex:0 0 auto}
+  .factures-nature{font-size:11px; color:var(--blue); border:1px solid var(--blue); border-radius:8px; padding:1px 6px; margin-right:6px}
+  .factures-btn-corriger{
+    font-size:12px; font-weight:600; padding:5px 10px; border-radius:9px;
+    border:1px solid var(--hairline); background:var(--surface); color:var(--ink);
+  }
+  #corrigerBg{position:fixed; inset:0; z-index:70; background:rgba(0,0,0,.5); display:none}
+  #corrigerBg.open{display:block}
+  #corrigerModal{
+    position:fixed; z-index:71; left:50%; top:50%; transform:translate(-50%,-50%) scale(.95);
+    background:var(--bg); border-radius:16px; padding:18px; width:min(92vw,380px); max-height:85vh;
+    overflow-y:auto; display:none;
+  }
+  #corrigerModal.open{display:block}
+  #corrigerModal label{display:block; font-size:12px; color:var(--muted); margin-top:10px}
+  #corrigerModal input, #corrigerModal select{
+    width:100%; padding:8px; border-radius:8px; border:1px solid var(--hairline); background:var(--surface);
+    color:var(--ink); font:inherit; margin-top:4px;
+  }
+  #corrigerModal .upd-row{margin-top:16px; display:flex; gap:10px}
+  #corriger-toujours-row{display:flex; align-items:center; gap:8px; margin-top:12px; font-size:12.5px}
+  #corriger-erreur{color:#ff6d5a; font-size:12.5px; margin-top:8px; display:none}
   .factures-ligne-top{align-items:center}
   .factures-deja-essai{font-size:11px; color:var(--muted); font-style:italic; margin-top:2px}
   #factures-envoyer-selection-btn{
@@ -6925,6 +6946,43 @@
   </div>
 </div>
 
+<div id="corrigerBg"></div>
+<div id="corrigerModal">
+  <b>Corriger la facture</b>
+  <label>Société
+    <select id="corriger-societe">
+      <option value="">(aucune)</option>
+      <option value="M22VISION">M22 VISION</option>
+      <option value="DMROOM">DMROOM</option>
+      <option value="HOLDINGDB">HOLDINGDB</option>
+    </select>
+  </label>
+  <label>Fournisseur<input type="text" id="corriger-fournisseur"></label>
+  <label>Date de facture (AAAA-MM-JJ)<input type="text" id="corriger-date"></label>
+  <label>Nature du document
+    <select id="corriger-nature">
+      <option value="">(non précisée)</option>
+      <option value="Facture">Facture</option>
+      <option value="Appel de charges de copropriété">Appel de charges de copropriété</option>
+      <option value="Reçu">Reçu</option>
+      <option value="Autre">Autre</option>
+    </select>
+  </label>
+  <label>HT<input type="text" id="corriger-ht"></label>
+  <label>TVA<input type="text" id="corriger-tva"></label>
+  <label>TTC<input type="text" id="corriger-ttc"></label>
+  <label>Devise<input type="text" id="corriger-devise"></label>
+  <div id="corriger-toujours-row">
+    <input type="checkbox" id="corriger-toujours-cb"><label for="corriger-toujours-cb" style="margin:0">Toujours pour ce fournisseur</label>
+  </div>
+  <div id="corriger-erreur"></div>
+  <div class="upd-row">
+    <button type="button" id="corriger-annuler-btn" class="vc-no">Annuler</button>
+    <button type="button" id="corriger-pasfacture-btn" class="vc-no">Pas une facture</button>
+    <button type="button" id="corriger-enregistrer-btn" class="vc-ok">Enregistrer</button>
+  </div>
+</div>
+
 <div id="radarview">
   <div id="radar-head">
     <b>📡 Radar d'opportunités</b>
@@ -8504,7 +8562,7 @@
          comparaison de chaine de version par tenant. */
   var APPV_MCS = '4.59';
   var APPV_LABO = '1.04';
-  var BUILD = 89;
+  var BUILD = 90;
   // displayVersion()/displayVersionShort() lisent isMcsCode() (definie plus bas dans cette
   // meme IIFE -- declaration de fonction, donc disponible ici par hoisting) : le TENANT
   // affiche depend du code de connexion, jamais d'un simple "APPV" global qui ne dirait ni
@@ -12170,7 +12228,7 @@
     var wrap = document.getElementById('factures-contenu');
     var societes = (facturesCache && facturesCache.societes) || {};
     var g = societes[facturesTabActif] || { factures: [] };
-    var filtreNonEnvoyees = document.getElementById('factures-filtre-non-envoyees-cb').checked;
+    var filtreNonEnvoyees = document.getElementById('factures-filtre-non-envoyees-cb').checked && facturesCache.historique_disponible !== false;
     var factures = filtreNonEnvoyees ? g.factures.filter(function(f){ return !f.deja_envoyee_reelle_le; }) : g.factures;
     if (!factures.length){
       wrap.innerHTML = '<div class="factures-vide">Aucune facture dans ce groupe pour ce mois.</div>';
@@ -12187,21 +12245,25 @@
       var btnDlLabel = facturesShareCapable ? 'Enregistrer' : 'Télécharger';
       var btnsPdf = f.facture_id
         ? '<button type="button" class="factures-btn-pdf" data-fid="' + fid + '" data-nom="' + nom + '">Voir le PDF</button>' +
-          '<button type="button" class="factures-btn-dl" data-fid="' + fid + '" data-nom="' + nom + '">' + btnDlLabel + '</button>'
+          '<button type="button" class="factures-btn-dl" data-fid="' + fid + '" data-nom="' + nom + '">' + btnDlLabel + '</button>' +
+          '<button type="button" class="factures-btn-corriger" data-fid="' + fid + '">Corriger</button>'
         : '';
       var coche = facturesSelection.has(f.facture_id) ? ' checked' : '';
       var checkbox = f.facture_id
         ? '<input type="checkbox" class="factures-check" data-fid="' + fid + '"' + coche + '>'
         : '<span style="display:inline-block;width:26px"></span>';
-      var dejaEnvoyeeTxt = f.deja_envoyee_reelle_le
-        ? '<div class="factures-deja-essai">Déjà envoyée le ' + facturesEsc(facturesFmtDateHeure(f.deja_envoyee_reelle_le)) + '</div>'
-        : (f.deja_essai_le ? '<div class="factures-deja-essai">Déjà incluse dans un essai le ' + facturesEsc(facturesFmtDateHeure(f.deja_essai_le)) + '</div>' : '');
+      var dejaEnvoyeeTxt = !facturesCache.historique_disponible
+        ? '<div class="factures-deja-essai">Historique d\'envoi indisponible</div>'
+        : (f.deja_envoyee_reelle_le
+          ? '<div class="factures-deja-essai">Déjà envoyée le ' + facturesEsc(facturesFmtDateHeure(f.deja_envoyee_reelle_le)) + '</div>'
+          : (f.deja_essai_le ? '<div class="factures-deja-essai">Déjà incluse dans un essai le ' + facturesEsc(facturesFmtDateHeure(f.deja_essai_le)) + '</div>' : ''));
+      var natureTxt = f.nature_document ? '<span class="factures-nature">' + facturesEsc(f.nature_document) + '</span>' : '';
       return '<div class="factures-ligne">' +
         '<div class="factures-ligne-top">' + checkbox +
         '<span class="factures-date">' + facturesEsc(facturesFmtDateCourt(f.date_facture)) + '</span>' +
         '<span class="factures-fourn">' + facturesEsc(f.fournisseur || 'Fournisseur inconnu') + '</span>' +
         '<span class="factures-montant">' + facturesEsc(facturesFmtMontant(f.montant_ttc, f.devise)) + '</span>' +
-        '</div><div class="factures-ligne-bas">' + badge + btnsPdf + lien + '</div>' + raison + dejaEnvoyeeTxt +
+        '</div><div class="factures-ligne-bas">' + badge + natureTxt + btnsPdf + lien + '</div>' + raison + dejaEnvoyeeTxt +
         '</div>';
     }).join('');
   }
@@ -12261,6 +12323,71 @@
     facturesRenderARecuperer();
     facturesRenderEcartees();
   }
+
+  // Fiche "Corriger" (29/09/2026, Lot 6) : ouvre une fiche pre-remplie depuis la ligne, envoie
+  // l'action "corriger" (societe/fournisseur/date/HT/TVA/TTC/devise/nature, ou "pas une
+  // facture"), recharge la liste apres succes pour voir la correction + le nouveau verrou.
+  var corrigerBg = document.getElementById('corrigerBg');
+  var corrigerModal = document.getElementById('corrigerModal');
+  var corrigerFactureCourante = null;
+  function corrigerOpen(o){ corrigerBg.classList.toggle('open', o); corrigerModal.classList.toggle('open', o); }
+  function corrigerTrouverFacture(fid){
+    var societes = (facturesCache && facturesCache.societes) || {};
+    for (var code in societes){
+      var trouve = (societes[code].factures || []).find(function(f){ return f.facture_id === fid; });
+      if (trouve) return trouve;
+    }
+    return null;
+  }
+  function corrigerOuvrir(fid){
+    var f = corrigerTrouverFacture(fid);
+    if (!f) return;
+    corrigerFactureCourante = f;
+    document.getElementById('corriger-societe').value = facturesTabActif === '_a_attribuer' ? '' : facturesTabActif;
+    document.getElementById('corriger-fournisseur').value = f.fournisseur || '';
+    document.getElementById('corriger-date').value = f.date_facture || '';
+    document.getElementById('corriger-nature').value = f.nature_document || '';
+    document.getElementById('corriger-ht').value = '';
+    document.getElementById('corriger-tva').value = '';
+    document.getElementById('corriger-ttc').value = (f.montant_ttc != null) ? f.montant_ttc : '';
+    document.getElementById('corriger-devise').value = f.devise || '';
+    document.getElementById('corriger-toujours-cb').checked = false;
+    document.getElementById('corriger-erreur').style.display = 'none';
+    corrigerOpen(true);
+  }
+  document.getElementById('factures-contenu').addEventListener('click', function(e){
+    var btn = e.target.closest('.factures-btn-corriger');
+    if (btn) corrigerOuvrir(btn.getAttribute('data-fid'));
+  });
+  document.getElementById('corriger-annuler-btn').addEventListener('click', function(){ corrigerOpen(false); });
+  corrigerBg.addEventListener('click', function(){ corrigerOpen(false); });
+  function corrigerEnvoyer(payloadExtra){
+    if (!corrigerFactureCourante) return;
+    var payload = Object.assign({ action: 'corriger', facture_id: corrigerFactureCourante.facture_id }, payloadExtra);
+    postFacturesApi(payload, function(){
+      corrigerOpen(false);
+      facturesLoad();
+    }, function(err){
+      var elErr = document.getElementById('corriger-erreur');
+      elErr.style.display = ''; elErr.textContent = err;
+    });
+  }
+  document.getElementById('corriger-enregistrer-btn').addEventListener('click', function(){
+    corrigerEnvoyer({
+      societe: document.getElementById('corriger-societe').value,
+      fournisseur: document.getElementById('corriger-fournisseur').value,
+      date_facture: document.getElementById('corriger-date').value,
+      nature_document: document.getElementById('corriger-nature').value,
+      montant_ht: document.getElementById('corriger-ht').value === '' ? null : Number(document.getElementById('corriger-ht').value),
+      montant_tva: document.getElementById('corriger-tva').value === '' ? null : Number(document.getElementById('corriger-tva').value),
+      montant_ttc: document.getElementById('corriger-ttc').value === '' ? null : Number(document.getElementById('corriger-ttc').value),
+      devise: document.getElementById('corriger-devise').value,
+      toujours_pour_fournisseur: document.getElementById('corriger-toujours-cb').checked,
+    });
+  });
+  document.getElementById('corriger-pasfacture-btn').addEventListener('click', function(){
+    corrigerEnvoyer({ pas_une_facture: true });
+  });
 
   document.getElementById('sh-factures').addEventListener('click', function(){ sheetOpen(false); facturesOpen(); });
   document.getElementById('factures-close').addEventListener('click', facturesClose);
