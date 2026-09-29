@@ -8428,7 +8428,7 @@
          comparaison de chaine de version par tenant. */
   var APPV_MCS = '4.59';
   var APPV_LABO = '1.04';
-  var BUILD = 85;
+  var BUILD = 86;
   // displayVersion()/displayVersionShort() lisent isMcsCode() (definie plus bas dans cette
   // meme IIFE -- declaration de fonction, donc disponible ici par hoisting) : le TENANT
   // affiche depend du code de connexion, jamais d'un simple "APPV" global qui ne dirait ni
@@ -11939,6 +11939,21 @@
   function facturesClose(){ facturesview.classList.remove('open'); }
   function postFacturesApi(payload, onOk, onErr){ postDevisWeb(API_FACTURES, payload, onOk, onErr); }
 
+  // Detection "sait partager un fichier" (29/09/2026) -- teste avec un vrai File, comme demande,
+  // une seule fois au chargement (pas apres coup avec le PDF reel, pour decider le LIBELLE du
+  // bouton avant meme le premier toucher). Sur iPhone/Safari, un appel navigator.share() lance
+  // APRES un fetch (donc hors du geste tactile d'origine) est refuse -- d'ou le parcours en 2
+  // temps plus bas (facturesEnregistrer) : 1er toucher = fetch, 2e toucher = share, toujours a
+  // l'interieur d'un vrai geste.
+  var facturesShareCapable = false;
+  try {
+    if (navigator.share && navigator.canShare){
+      var facturesTestFile = new File(['x'], 'test.pdf', { type: 'application/pdf' });
+      facturesShareCapable = navigator.canShare({ files: [facturesTestFile] });
+    }
+  } catch (e) { facturesShareCapable = false; }
+  var facturesPdfBlobCache = {};
+
   var facturesCache = null;
   var facturesTabActif = 'M22VISION';
   var FACTURES_SOCIETE_LABEL = { M22VISION: 'M22 VISION', DMROOM: 'DMROOM', HOLDINGDB: 'HOLDINGDB', _a_attribuer: 'À attribuer' };
@@ -12042,9 +12057,10 @@
       var lien = f.lien_gmail ? '<a href="' + f.lien_gmail + '" target="_blank" rel="noopener" class="factures-lien">Ouvrir dans Gmail</a>' : '';
       var fid = facturesEsc(f.facture_id || '');
       var nom = facturesEsc(f.nom_normalise || '');
+      var btnDlLabel = facturesShareCapable ? 'Enregistrer' : 'Télécharger';
       var btnsPdf = f.facture_id
         ? '<button type="button" class="factures-btn-pdf" data-fid="' + fid + '" data-nom="' + nom + '">Voir le PDF</button>' +
-          '<button type="button" class="factures-btn-dl" data-fid="' + fid + '" data-nom="' + nom + '">Télécharger</button>'
+          '<button type="button" class="factures-btn-dl" data-fid="' + fid + '" data-nom="' + nom + '">' + btnDlLabel + '</button>'
         : '';
       return '<div class="factures-ligne">' +
         '<div class="factures-ligne-top">' +
@@ -12139,25 +12155,68 @@
       }
     });
   }
+  function facturesDownloadBlob(blob, nomFichier){
+    var url = URL.createObjectURL(blob);
+    var a = document.createElement('a');
+    a.href = url; a.download = nomFichier || 'facture.pdf';
+    document.body.appendChild(a); a.click(); document.body.removeChild(a);
+    setTimeout(function(){ URL.revokeObjectURL(url); }, 4000);
+  }
   function facturesTelecharger(factureId, nomFichier, btn){
     if (btn){ btn.disabled = true; btn.textContent = 'Récupération…'; }
     facturesFetchPdf(factureId).then(function(blob){
-      var url = URL.createObjectURL(blob);
-      var a = document.createElement('a');
-      a.href = url; a.download = nomFichier || 'facture.pdf';
-      document.body.appendChild(a); a.click(); document.body.removeChild(a);
-      setTimeout(function(){ URL.revokeObjectURL(url); }, 4000);
+      facturesDownloadBlob(blob, nomFichier);
     }).catch(function(e){
       alert((e && e.message) ? e.message : 'Jarvis rencontre un problème technique — réessaie dans un instant.');
     }).then(function(){
       if (btn){ btn.disabled = false; btn.textContent = 'Télécharger'; }
     });
   }
+  // Enregistrer sur iPhone (29/09/2026) : Safari ouvre le PDF avec "Télécharger" mais ne
+  // l'enregistre jamais (pas de vrai telechargement direct). Sur un appareil qui sait partager
+  // un fichier (facturesShareCapable), on propose "Enregistrer" -> menu de partage natif ->
+  // "Enregistrer dans Fichiers". Parcours en 2 temps (voir facturesShareCapable ci-dessus) :
+  // 1er toucher recupere le PDF (le fetch consomme le geste tactile), 2e toucher ouvre le
+  // partage (a l'interieur d'un nouveau geste, donc jamais bloque par Safari).
+  function facturesEnregistrer(btn){
+    var fid = btn.getAttribute('data-fid');
+    var nom = btn.getAttribute('data-nom') || 'facture.pdf';
+    var cached = facturesPdfBlobCache[fid];
+    if (cached){
+      var file = null;
+      try { file = new File([cached], nom, { type: 'application/pdf' }); } catch (e) { file = null; }
+      if (file && navigator.canShare && navigator.canShare({ files: [file] })){
+        navigator.share({ files: [file] }).catch(function(err){
+          if (!err || err.name !== 'AbortError'){
+            alert('Jarvis rencontre un problème technique — réessaie dans un instant.');
+          }
+        }).then(function(){
+          btn.textContent = 'Enregistrer';
+        });
+      } else {
+        facturesDownloadBlob(cached, nom);
+        btn.textContent = 'Enregistrer';
+      }
+      return;
+    }
+    btn.disabled = true; btn.textContent = 'Préparation…';
+    facturesFetchPdf(fid).then(function(blob){
+      facturesPdfBlobCache[fid] = blob;
+      btn.disabled = false; btn.textContent = 'Enregistrer dans Fichiers';
+    }).catch(function(e){
+      btn.disabled = false; btn.textContent = 'Enregistrer';
+      alert((e && e.message) ? e.message : 'Jarvis rencontre un problème technique — réessaie dans un instant.');
+    });
+  }
   document.getElementById('factures-contenu').addEventListener('click', function(e){
     var btnPdf = e.target.closest('.factures-btn-pdf');
     if (btnPdf){ facturesVoirPdf(btnPdf.getAttribute('data-fid')); return; }
     var btnDl = e.target.closest('.factures-btn-dl');
-    if (btnDl){ facturesTelecharger(btnDl.getAttribute('data-fid'), btnDl.getAttribute('data-nom'), btnDl); return; }
+    if (btnDl){
+      if (facturesShareCapable){ facturesEnregistrer(btnDl); }
+      else { facturesTelecharger(btnDl.getAttribute('data-fid'), btnDl.getAttribute('data-nom'), btnDl); }
+      return;
+    }
   });
 
   // Classement base UNIQUEMENT sur les paiements tiers (payments.tiers.last_7d)
@@ -22507,14 +22566,24 @@
   // "Commencer") atteint 30 jours (puis 60, 90…), propose l'aperçu du compte rendu déjà
   // existant (rapport_apercu/rapport_envoyer) -- jamais d'envoi automatique, juste la
   // proposition ; le clic humain reste obligatoire pour l'envoi réel, comme partout ailleurs
-  // dans l'app. "Plus tard" ne marque rien -- le pop-up réapparaîtra tant que non traité.
+  // dans l'app. "Voir le rapport" marque la période comme traitée (plumeBilan_<domaine>_<periode>).
+  // "Plus tard" (ou un toucher sur le fond) reporte de 24h pour CE site et CETTE période
+  // (plumeBilanReporte_<domaine>_<periode> = horodatage du report) -- fix 29/09/2026 : avant ce
+  // correctif "Plus tard" ne memorisait rien, et plumeSilentCheck (toutes les 180s) faisait
+  // revenir le pop-up sans fin tant que le rapport n'avait pas ete ouvert. Memoire propre a
+  // chaque telephone (store()/read() = localStorage), comme le reste de PLUME.
   var plumeBilanBg = document.getElementById('plumeBilanBg');
   var plumeBilanModal = document.getElementById('plumeBilan');
   var plumeBilanText = document.getElementById('plumeBilan-text');
   var plumeBilanCurrent = null;
   function plumeBilanOpen(o){ plumeBilanBg.classList.toggle('open', o); plumeBilanModal.classList.toggle('open', o); }
-  document.getElementById('plumeBilan-later').addEventListener('click', function(){ plumeBilanOpen(false); });
-  plumeBilanBg.addEventListener('click', function(){ plumeBilanOpen(false); });
+  function plumeBilanReporter(){
+    var cur = plumeBilanCurrent;
+    plumeBilanOpen(false);
+    if (cur) store(cur.keyLater, String(Date.now()));
+  }
+  document.getElementById('plumeBilan-later').addEventListener('click', plumeBilanReporter);
+  plumeBilanBg.addEventListener('click', plumeBilanReporter);
   document.getElementById('plumeBilan-see').addEventListener('click', function(){
     var cur = plumeBilanCurrent;
     plumeBilanOpen(false);
@@ -22529,6 +22598,7 @@
       if (!ref.rToggle.parentElement.classList.contains('open')) ref.rToggle.click();
     }, 250);
   });
+  var PLUME_BILAN_REPORT_MS = 24 * 3600 * 1000;
   function plumeCheckBilan(sites){
     if (plumeBilanModal.classList.contains('open')) return; // un seul pop-up a la fois
     var now = new Date();
@@ -22541,7 +22611,10 @@
       var periode = Math.floor(jours / 30);
       var key = 'plumeBilan_' + s.domaine + '_' + periode;
       if (read(key)) continue;
-      plumeBilanCurrent = { domaine: s.domaine, key: key };
+      var keyLater = 'plumeBilanReporte_' + s.domaine + '_' + periode;
+      var reporte = read(keyLater);
+      if (reporte && (now.getTime() - Number(reporte)) < PLUME_BILAN_REPORT_MS) continue;
+      plumeBilanCurrent = { domaine: s.domaine, key: key, keyLater: keyLater };
       plumeBilanText.textContent = 'Ça fait ' + jours + ' jours qu’on travaille sur ' + (s.nom || s.domaine) + '. Je te prépare le compte rendu à envoyer.';
       plumeBilanOpen(true);
       return;
