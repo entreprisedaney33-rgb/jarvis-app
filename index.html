@@ -8504,7 +8504,7 @@
          comparaison de chaine de version par tenant. */
   var APPV_MCS = '4.59';
   var APPV_LABO = '1.04';
-  var BUILD = 88;
+  var BUILD = 89;
   // displayVersion()/displayVersionShort() lisent isMcsCode() (definie plus bas dans cette
   // meme IIFE -- declaration de fonction, donc disponible ici par hoisting) : le TENANT
   // affiche depend du code de connexion, jamais d'un simple "APPV" global qui ne dirait ni
@@ -12013,7 +12013,32 @@
   var facturesview = document.getElementById('facturesview');
   var API_FACTURES = 'https://n8n-self-hosted-t0pz.onrender.com/webhook/collecteur-api-lister';
   function facturesClose(){ facturesview.classList.remove('open'); }
-  function postFacturesApi(payload, onOk, onErr){ postDevisWeb(API_FACTURES, payload, onOk, onErr); }
+  // Panne du 29/09/2026 : le message generique ("Connexion impossible") ne disait pas si le
+  // serveur ne repondait pas du tout, mettait trop de temps, ou renvoyait une vraie erreur --
+  // dedie a Factures TVA (postDevisWeb reste inchange pour tout le reste de l'app, jamais
+  // touche ici). Delai explicite de 25s (AbortController) : au-dela, le serveur a un probleme
+  // reel (la cause du 29/09 -- 2 lectures Data Table devenues catastrophiquement lentes -- a
+  // ete corrigee cote n8n, ce delai reste comme garde-fou permanent).
+  function postFacturesApi(payload, onOk, onErr){
+    payload.code = String(read('jarvisCode') || '').trim();
+    var ctrl = (typeof AbortController !== 'undefined') ? new AbortController() : null;
+    var timer = ctrl ? setTimeout(function(){ ctrl.abort(); }, 25000) : null;
+    fetch(API_FACTURES, {
+      method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(payload),
+      signal: ctrl ? ctrl.signal : undefined,
+    }).then(function(r){
+      if (timer) clearTimeout(timer);
+      return r.json().catch(function(){ return {}; }).then(function(j){ return { status: r.status, body: j }; });
+    }).then(function(res){
+      if (res.status === 200){ onOk(res.body); return; }
+      if (res.body && res.body.error){ onErr('Erreur ' + res.status + ' : ' + res.body.error); return; }
+      onErr((res.status === 401 || res.status === 403) ? 'Accès refusé.' : ('Le serveur a répondu une erreur (code ' + res.status + ').'));
+    }).catch(function(e){
+      if (timer) clearTimeout(timer);
+      if (e && e.name === 'AbortError'){ onErr('Délai dépassé (25 s) : le serveur ne répond pas à temps. Réessaie dans un instant.'); return; }
+      onErr('Le serveur ne répond pas. Vérifie ta connexion et réessaie.');
+    });
+  }
 
   // Detection "sait partager un fichier" (29/09/2026) -- teste avec un vrai File, comme demande,
   // une seule fois au chargement (pas apres coup avec le PDF reel, pour decider le LIBELLE du
@@ -12080,11 +12105,19 @@
     }, function(err){
       document.getElementById('factures-loading').style.display = 'none';
       if (!facturesCache){
-        document.getElementById('factures-error').style.display = '';
-        document.getElementById('factures-error').textContent = err;
+        var elErr = document.getElementById('factures-error');
+        elErr.style.display = '';
+        elErr.innerHTML = facturesEsc(err) + '<br><button type="button" id="factures-reessayer-btn" style="margin-top:8px">Réessayer</button>';
       }
     });
   }
+  document.getElementById('factures-error').addEventListener('click', function(e){
+    if (e.target.closest('#factures-reessayer-btn')){
+      document.getElementById('factures-error').style.display = 'none';
+      document.getElementById('factures-loading').style.display = '';
+      facturesLoad();
+    }
+  });
 
   function facturesRenderPeriode(){
     var j = facturesCache || {};
@@ -12415,7 +12448,9 @@
     btn.textContent = 'Envoyer l\'essai';
     document.getElementById('envoi-resultat').style.display = 'none';
   }
+  var envoiDernierEmpreintes = null;
   function envoiApercuCharger(empreintes){
+    envoiDernierEmpreintes = empreintes || null;
     document.getElementById('envoi-loading').style.display = '';
     document.getElementById('envoi-error').style.display = 'none';
     document.getElementById('envoi-body').style.display = 'none';
@@ -12428,10 +12463,14 @@
       envoiRenderApercu(j);
     }, function(err){
       document.getElementById('envoi-loading').style.display = 'none';
-      document.getElementById('envoi-error').style.display = '';
-      document.getElementById('envoi-error').textContent = err;
+      var elErr = document.getElementById('envoi-error');
+      elErr.style.display = '';
+      elErr.innerHTML = facturesEsc(err) + '<br><button type="button" id="envoi-reessayer-btn" style="margin-top:8px">Réessayer</button>';
     });
   }
+  document.getElementById('envoi-error').addEventListener('click', function(e){
+    if (e.target.closest('#envoi-reessayer-btn')) envoiApercuCharger(envoiDernierEmpreintes);
+  });
   document.getElementById('factures-envoyer-btn').addEventListener('click', function(){
     envoiJetonCourant = null;
     envoiApercuOpen(true);
