@@ -2654,6 +2654,36 @@
   .factures-badge-av{background:rgba(255,159,10,.18); color:#ff9f0a}
   .factures-raison{font-size:11.5px; color:var(--muted); margin-top:4px}
   .factures-lien{font-size:12px; color:var(--blue); text-decoration:none}
+  .factures-ligne-bas{flex-wrap:wrap; row-gap:6px}
+  .factures-btn-mail{
+    font-size:12px; font-weight:600; padding:5px 10px; border-radius:9px;
+    border:1px solid var(--hairline); background:var(--surface); color:var(--ink);
+  }
+  .factures-motif{font-size:11.5px; color:var(--muted); margin-top:3px}
+  #factures-file-alerte{margin-bottom:12px}
+  .factures-alerte{border-radius:12px; padding:10px 14px; margin-bottom:8px; font-size:12.5px; line-height:1.45; background:rgba(255,69,58,.14); border:1px solid rgba(255,69,58,.45)}
+  .factures-alerte-info{background:rgba(255,159,10,.14); border-color:rgba(255,159,10,.45)}
+  .factures-alerte b{display:block; margin-bottom:2px}
+  #mailBg{position:fixed; inset:0; z-index:72; background:rgba(0,0,0,.5); display:none}
+  #mailBg.open{display:block}
+  #mailModal{
+    position:fixed; z-index:73; left:50%; top:50%; transform:translate(-50%,-50%);
+    background:var(--bg); border-radius:16px; padding:16px; width:min(94vw,440px); max-height:88vh;
+    overflow-y:auto; display:none; -webkit-overflow-scrolling:touch;
+  }
+  #mailModal.open{display:block}
+  #mail-entetes{font-size:12.5px; line-height:1.5; margin-top:8px; overflow-wrap:anywhere}
+  #mail-entetes div{margin-bottom:3px}
+  #mail-entetes .mail-lab{color:var(--muted)}
+  #mail-pieces{font-size:12px; color:var(--muted); margin-top:8px; overflow-wrap:anywhere}
+  #mail-texte{
+    margin-top:10px; padding:10px; background:var(--surface); border-radius:10px; font-size:13px; line-height:1.45;
+    white-space:pre-wrap; overflow-wrap:anywhere; word-break:break-word; max-height:48vh; overflow-y:auto;
+  }
+  #mail-note{font-size:11.5px; color:var(--muted); margin-top:6px}
+  #mail-chargement{margin-top:10px; color:var(--muted); font-size:13px}
+  #mail-erreur{color:#ff6d5a; font-size:13px; margin-top:10px; display:none}
+  #mailModal .upd-row{align-items:center}
   .factures-btn-pdf, .factures-btn-dl{
     font-size:12px; font-weight:600; padding:5px 10px; border-radius:9px; border:none;
     background:var(--blue); color:#fff;
@@ -6926,6 +6956,7 @@
     <div id="factures-loading">Chargement…</div>
     <div id="factures-error" style="display:none"></div>
     <div id="factures-body" style="display:none">
+      <div id="factures-file-alerte" style="display:none"></div>
       <div id="factures-periode"></div>
       <div id="factures-tabs"></div>
       <div id="factures-select-bar">
@@ -6989,6 +7020,14 @@
   <label>TVA<input type="text" id="corriger-tva"></label>
   <label>TTC<input type="text" id="corriger-ttc"></label>
   <label>Devise<input type="text" id="corriger-devise"></label>
+  <label>Autoliquidation
+    <select id="corriger-autoliq">
+      <option value="oui">Oui</option>
+      <option value="non">Non</option>
+      <option value="probable">Probable</option>
+      <option value="inconnue">Inconnue</option>
+    </select>
+  </label>
   <div id="corriger-toujours-row">
     <input type="checkbox" id="corriger-toujours-cb"><label for="corriger-toujours-cb" style="margin:0">Toujours pour ce fournisseur</label>
   </div>
@@ -6997,6 +7036,23 @@
     <button type="button" id="corriger-annuler-btn" class="vc-no">Annuler</button>
     <button type="button" id="corriger-pasfacture-btn" class="vc-no">Pas une facture</button>
     <button type="button" id="corriger-enregistrer-btn" class="vc-ok">Enregistrer</button>
+  </div>
+</div>
+
+<div id="mailBg"></div>
+<div id="mailModal" role="dialog" aria-modal="true" aria-label="Mail d'origine">
+  <b>Mail d'origine</b>
+  <div id="mail-chargement" style="display:none">Lecture du mail dans la boîte…</div>
+  <div id="mail-erreur"></div>
+  <div id="mail-corps" style="display:none">
+    <div id="mail-entetes"></div>
+    <div id="mail-pieces"></div>
+    <div id="mail-texte"></div>
+    <div id="mail-note"></div>
+  </div>
+  <div class="upd-row">
+    <button type="button" id="mail-fermer-btn" class="vc-no">Fermer</button>
+    <a id="mail-ouvrir-lien" class="factures-lien" style="display:none" href="#">Ouvrir dans Mail</a>
   </div>
 </div>
 
@@ -8587,7 +8643,7 @@
          comparaison de chaine de version par tenant. */
   var APPV_MCS = '4.59';
   var APPV_LABO = '1.05';
-  var BUILD = 91;
+  var BUILD = 92;
   // displayVersion()/displayVersionShort() lisent isMcsCode() (definie plus bas dans cette
   // meme IIFE -- declaration de fonction, donc disponible ici par hoisting) : le TENANT
   // affiche depend du code de connexion, jamais d'un simple "APPV" global qui ne dirait ni
@@ -12258,6 +12314,14 @@
     if (m == null || isNaN(Number(m))) return 'Montant inconnu';
     return Number(m).toLocaleString('fr-FR', { minimumFractionDigits: 2, maximumFractionDigits: 2 }) + ' ' + (devise || '(devise non lue)');
   }
+  // Lien vers l'app Mail d'Apple (Lot 6, 30/09/2026) : le lien Gmail web donnait une page 404 sur iPhone.
+  // Format message://%3C<Message-ID>%3E, construit depuis l'en-tete Message-ID lu dans le mail (colonne
+  // message_id_rfc822). EXPERIMENTAL : a confirmer sur iPhone. Sans Message-ID, aucun lien (pas de bouton mort).
+  function facturesLienMail(mid){
+    var inner = String(mid || '').trim().replace(/^</, '').replace(/>$/, '');
+    if (!inner) return '';
+    return 'message://%3C' + encodeURIComponent(inner).replace(/%40/g, '@') + '%3E';
+  }
   function facturesEsc(s){
     var d = document.createElement('div');
     d.textContent = (s == null) ? '' : String(s);
@@ -12358,7 +12422,11 @@
         ? '<span class="factures-badge factures-badge-ok">Prête</span>'
         : '<span class="factures-badge factures-badge-av">À vérifier</span>';
       var raison = f.raison ? '<div class="factures-raison">' + facturesEsc(f.raison) + '</div>' : '';
-      var lien = f.lien_gmail ? '<a href="' + f.lien_gmail + '" target="_blank" rel="noopener" class="factures-lien">Ouvrir dans Gmail</a>' : '';
+      var lienMail = facturesLienMail(f.message_id_rfc822);
+      var lien = lienMail ? '<a href="' + lienMail + '" class="factures-lien">Ouvrir dans Mail</a>' : '';
+      var btnMail = f.facture_id ? '<button type="button" class="factures-btn-mail" data-fid="' + facturesEsc(f.facture_id) + '">Voir le mail</button>' : '';
+      var autoliqLab = { oui: 'Oui', non: 'Non', probable: 'Probable', inconnue: 'Inconnue' }[f.autoliquidation] || 'Inconnue';
+      var motifTxt = '<div class="factures-motif">Autoliquidation : ' + facturesEsc(autoliqLab) + (f.motif_societe ? ' · ' + facturesEsc(f.motif_societe) : '') + '</div>';
       var fid = facturesEsc(f.facture_id || '');
       var nom = facturesEsc(f.nom_normalise || '');
       var btnDlLabel = facturesShareCapable ? 'Enregistrer' : 'Télécharger';
@@ -12382,7 +12450,7 @@
         '<span class="factures-date">' + facturesEsc(facturesFmtDateCourt(f.date_facture)) + '</span>' +
         '<span class="factures-fourn">' + facturesEsc(f.fournisseur || 'Fournisseur inconnu') + '</span>' +
         '<span class="factures-montant">' + facturesEsc(facturesFmtMontant(f.montant_ttc, f.devise)) + '</span>' +
-        '</div><div class="factures-ligne-bas">' + badge + natureTxt + btnsPdf + lien + '</div>' + raison + dejaEnvoyeeTxt +
+        '</div><div class="factures-ligne-bas">' + badge + natureTxt + btnsPdf + btnMail + lien + '</div>' + raison + motifTxt + dejaEnvoyeeTxt +
         '</div>';
     }).join('');
   }
@@ -12415,7 +12483,9 @@
     if (!liste.length){ wrap.innerHTML = ''; return; }
     wrap.innerHTML = '<div class="factures-section-titre">À récupérer (sans pièce jointe) — ' + liste.length + '</div>' +
       liste.map(function(f){
-        var lienGmailHtml = f.lien_gmail ? '<a href="' + f.lien_gmail + '" target="_blank" rel="noopener" class="factures-lien">Ouvrir dans Gmail</a>' : '';
+        var lienMailARec = facturesLienMail(f.message_id_rfc822);
+        var lienGmailHtml = (f.facture_id ? '<button type="button" class="factures-btn-mail" data-fid="' + facturesEsc(f.facture_id) + '">Voir le mail</button>' : '') +
+          (lienMailARec ? '<a href="' + lienMailARec + '" class="factures-lien">Ouvrir dans Mail</a>' : '');
         var lienEspaceHtml = f.lien_espace_client ? '<a href="' + facturesEsc(f.lien_espace_client) + '" target="_blank" rel="noopener" class="factures-lien">Espace client du fournisseur</a>' : '';
         return '<div class="factures-ligne">' +
           '<div class="factures-ligne-top">' +
@@ -12435,7 +12505,25 @@
       total + ' pièce' + (total > 1 ? 's' : '') + ' écartée' + (total > 1 ? 's' : '') + ' (MCS, doublons, non-factures, erreurs)';
   }
 
+  // Jamais d'echec silencieux (Lot 6) : une tranche de collecte en echec (ou seulement partielle) est annoncee
+  // en haut du panneau, avec sa periode et sa raison.
+  function facturesRenderFileAlerte(){
+    var el = document.getElementById('factures-file-alerte');
+    var f = (facturesCache && facturesCache.file_rattrapage) || {};
+    var html = '';
+    (f.echec || []).forEach(function(r){
+      html += '<div class="factures-alerte"><b>⚠️ Collecte en échec : du ' + facturesEsc(facturesFmtDateCourt(r.periode_du)) + ' au ' + facturesEsc(facturesFmtDateCourt(r.periode_au)) + '</b>' +
+        facturesEsc(r.raison || 'Raison non enregistrée.') + '</div>';
+    });
+    (f.partiel || []).forEach(function(r){
+      html += '<div class="factures-alerte factures-alerte-info"><b>Collecte partielle : du ' + facturesEsc(facturesFmtDateCourt(r.periode_du)) + ' au ' + facturesEsc(facturesFmtDateCourt(r.periode_au)) + '</b>' +
+        facturesEsc(r.raison || '') + '</div>';
+    });
+    el.innerHTML = html;
+    el.style.display = html ? '' : 'none';
+  }
   function facturesRender(){
+    facturesRenderFileAlerte();
     facturesRenderPeriode();
     facturesRenderTabs();
     facturesRenderListe();
@@ -12466,8 +12554,9 @@
     document.getElementById('corriger-fournisseur').value = f.fournisseur || '';
     document.getElementById('corriger-date').value = f.date_facture || '';
     document.getElementById('corriger-nature').value = f.nature_document || '';
-    document.getElementById('corriger-ht').value = '';
-    document.getElementById('corriger-tva').value = '';
+    document.getElementById('corriger-ht').value = (f.montant_ht != null) ? f.montant_ht : '';
+    document.getElementById('corriger-tva').value = (f.montant_tva != null) ? f.montant_tva : '';
+    document.getElementById('corriger-autoliq').value = ['oui', 'non', 'probable', 'inconnue'].indexOf(f.autoliquidation) >= 0 ? f.autoliquidation : 'inconnue';
     document.getElementById('corriger-ttc').value = (f.montant_ttc != null) ? f.montant_ttc : '';
     document.getElementById('corriger-devise').value = f.devise || '';
     document.getElementById('corriger-toujours-cb').checked = false;
@@ -12501,12 +12590,62 @@
       montant_tva: document.getElementById('corriger-tva').value === '' ? null : Number(document.getElementById('corriger-tva').value),
       montant_ttc: document.getElementById('corriger-ttc').value === '' ? null : Number(document.getElementById('corriger-ttc').value),
       devise: document.getElementById('corriger-devise').value,
+      autoliquidation: document.getElementById('corriger-autoliq').value,
       toujours_pour_fournisseur: document.getElementById('corriger-toujours-cb').checked,
     });
   });
   document.getElementById('corriger-pasfacture-btn').addEventListener('click', function(){
     corrigerEnvoyer({ pas_une_facture: true });
   });
+
+  // "Voir le mail" (Lot 6) : action voir_mail du meme webhook (protegee par le code LABO). Le texte est pose via
+  // textContent (jamais innerHTML) : un mail ne peut rien executer ici, meme s'il contenait du HTML ou un script.
+  var mailBg = document.getElementById('mailBg');
+  var mailModal = document.getElementById('mailModal');
+  function mailOpen(o){ mailBg.classList.toggle('open', o); mailModal.classList.toggle('open', o); }
+  function mailLigne(parent, label, valeur){
+    if (!valeur) return;
+    var d = document.createElement('div');
+    var l = document.createElement('span'); l.className = 'mail-lab'; l.textContent = label + ' : ';
+    var v = document.createElement('span'); v.textContent = valeur;
+    d.appendChild(l); d.appendChild(v); parent.appendChild(d);
+  }
+  function mailVoir(fid){
+    document.getElementById('mail-chargement').style.display = '';
+    document.getElementById('mail-erreur').style.display = 'none';
+    document.getElementById('mail-corps').style.display = 'none';
+    document.getElementById('mail-ouvrir-lien').style.display = 'none';
+    mailOpen(true);
+    postFacturesApi({ action: 'voir_mail', facture_id: fid }, function(j){
+      document.getElementById('mail-chargement').style.display = 'none';
+      var ent = document.getElementById('mail-entetes');
+      ent.textContent = '';
+      var dateTxt = '';
+      if (j.date){ var dd = new Date(j.date); if (!isNaN(dd.getTime())) dateTxt = dd.toLocaleDateString('fr-FR') + ' à ' + dd.toLocaleTimeString('fr-FR', { hour: '2-digit', minute: '2-digit' }); }
+      mailLigne(ent, 'De', j.expediteur); mailLigne(ent, 'À', j.destinataire); mailLigne(ent, 'Copie', j.copie);
+      mailLigne(ent, 'Date', dateTxt || j.date_entete); mailLigne(ent, 'Objet', j.objet);
+      var pj = (j.pieces_jointes || []).map(function(p){ return p.nom + (p.taille ? ' (' + Math.max(1, Math.round(p.taille / 1024)) + ' Ko)' : ''); });
+      document.getElementById('mail-pieces').textContent = pj.length ? ('Pièces jointes : ' + pj.join(', ')) : 'Aucune pièce jointe.';
+      document.getElementById('mail-texte').textContent = j.texte || '';
+      document.getElementById('mail-note').textContent = j.texte_tronque ? ('Texte coupé : ' + j.taille_texte_totale + ' caractères au total, les premiers sont affichés.') : '';
+      document.getElementById('mail-corps').style.display = '';
+      var lien = facturesLienMail(j.message_id_rfc822);
+      var a = document.getElementById('mail-ouvrir-lien');
+      if (lien){ a.setAttribute('href', lien); a.style.display = ''; }
+    }, function(err){
+      document.getElementById('mail-chargement').style.display = 'none';
+      var e = document.getElementById('mail-erreur');
+      e.textContent = err; e.style.display = '';
+    });
+  }
+  function facturesClicMail(e){
+    var b = e.target.closest('.factures-btn-mail');
+    if (b) mailVoir(b.getAttribute('data-fid'));
+  }
+  document.getElementById('factures-contenu').addEventListener('click', facturesClicMail);
+  document.getElementById('factures-arecuperer').addEventListener('click', facturesClicMail);
+  document.getElementById('mail-fermer-btn').addEventListener('click', function(){ mailOpen(false); });
+  mailBg.addEventListener('click', function(){ mailOpen(false); });
 
   document.getElementById('sh-factures').addEventListener('click', function(){ sheetOpen(false); facturesOpen(); });
   document.getElementById('factures-close').addEventListener('click', facturesClose);
