@@ -2790,6 +2790,27 @@
     color:var(--muted); font:inherit; font-weight:700; font-size:14px;
   }
   .factures-envoyer-note{font-size:11.5px; color:var(--muted); margin-top:6px}
+  #factures-envoyer-mois-btn{
+    width:100%; padding:12px; border-radius:12px; border:none; background:var(--surface);
+    color:var(--muted); font:inherit; font-weight:700; font-size:14px; margin-top:8px;
+  }
+  /* Lot 10 : choix de plusieurs mois + liste des mails de l'apercu (classes propres a l'ecran d'envoi) */
+  .envoi-mois-ligne{display:flex; align-items:flex-start; gap:10px; padding:10px 4px; border-bottom:1px solid var(--hairline); font-size:13.5px}
+  .envoi-mois-ligne input{margin-top:3px; flex:0 0 auto; width:20px; height:20px}
+  .envoi-mois-ligne.inactif{opacity:.6}
+  .envoi-mois-nom{font-weight:700}
+  .envoi-mois-etat{display:block; font-size:12px; color:var(--muted); margin-top:2px; overflow-wrap:anywhere}
+  #envoi-mois-voir-btn{
+    width:100%; padding:13px; border-radius:12px; border:none; background:var(--blue);
+    color:#fff; font:inherit; font-weight:700; font-size:15px; margin-top:14px;
+  }
+  #envoi-mois-voir-btn:disabled{opacity:.55}
+  .envoi-mail-tete{display:flex; flex-wrap:wrap; gap:6px; align-items:baseline}
+  .envoi-pastille{display:inline-block; font-size:11px; font-weight:700; padding:2px 8px; border-radius:999px; background:var(--surface); border:1px solid var(--hairline); color:var(--muted)}
+  .envoi-exclu-bloc summary{font-size:13px; font-weight:700; padding:10px 2px; cursor:pointer}
+  .envoi-deja-ligne{display:flex; align-items:flex-start; gap:10px; font-size:12.5px; color:var(--muted); padding:6px 2px}
+  .envoi-deja-ligne input{margin-top:2px; flex:0 0 auto; width:18px; height:18px}
+  #envoi-body, #envoi-list{overflow-wrap:anywhere}
 
   /* Ecran d'apercu/confirmation "Envoyer a la comptable" (29/09/2026, mode essai --
      lot 4). Panneau plein ecran empile AU-DESSUS de #facturesview (z-index superieur,
@@ -7045,6 +7066,7 @@
       <div id="factures-envoyer">
         <button id="factures-envoyer-selection-btn" type="button" disabled>Envoyer la sélection (0)</button>
         <button id="factures-envoyer-btn" type="button">Envoyer tout le mois</button>
+        <button id="factures-envoyer-mois-btn" type="button">Envoyer plusieurs mois…</button>
         <div class="factures-envoyer-note">Mode essai : l'aperçu s'ouvre avant tout envoi, rien ne part sans ta confirmation.</div>
       </div>
     </div>
@@ -7061,6 +7083,7 @@
     <div id="envoi-error" style="display:none"></div>
     <div id="envoi-body" style="display:none">
       <div id="envoi-bandeau-essai">MODE ESSAI — tout part vers altaestima.contact@gmail.com, rien vers la comptable.</div>
+      <div id="envoi-mois-choix" style="display:none"></div>
       <div id="envoi-societes"></div>
       <div id="envoi-exclus"></div>
       <button id="envoi-confirmer-btn" type="button">Envoyer l'essai</button>
@@ -8718,8 +8741,8 @@
          unique de detection de mise a jour (voir checkUpdate ci-dessous), plus fiable qu'une
          comparaison de chaine de version par tenant. */
   var APPV_MCS = '4.59';
-  var APPV_LABO = '1.05';
-  var BUILD = 94;
+  var APPV_LABO = '1.06';
+  var BUILD = 95;
   // displayVersion()/displayVersionShort() lisent isMcsCode() (definie plus bas dans cette
   // meme IIFE -- declaration de fonction, donc disponible ici par hoisting) : le TENANT
   // affiche depend du code de connexion, jamais d'un simple "APPV" global qui ne dirait ni
@@ -12929,13 +12952,16 @@
     }
   });
 
-  // Envoyer a la comptable (29/09/2026, mode essai, lot 4) -- reutilise API_FACTURES/
-  // postFacturesApi/facturesEsc deja definis plus haut. Aperçu (apercu_envoi) puis
-  // confirmation explicite (envoyer) avec le jeton a usage unique renvoye par l'apercu --
-  // aucun envoi sans ce double geste. Mode "essai" fige cote SERVEUR (destinataire force,
-  // sujet prefixe) : rien ici ne peut choisir une autre adresse, meme en cas de bug.
+  // Envoyer a la comptable (29/09/2026, mode essai, lot 4 ; Lot 10 -- 01/10/2026 : plusieurs mois, zip, parties) -- reutilise API_FACTURES/
+  // postFacturesApi/facturesEsc deja definis plus haut. Apercu (apercu_envoi) puis confirmation explicite (envoyer) avec le jeton a usage
+  // unique renvoye par l'apercu -- aucun envoi sans ce double geste. UN mail par societe ET par mois (jamais de melange), envoyes l'un
+  // apres l'autre par le serveur ; l'ecran suit l'avancement (etat_envoi). Mode "essai" fige cote SERVEUR (destinataire force, sujet
+  // prefixe) : rien ici ne peut choisir une autre adresse, meme en cas de bug.
   var envoiApercuView = document.getElementById('envoiApercuView');
   var envoiJetonCourant = null;
+  var envoiDernierPayload = null;      // dernier payload d'apercu (rejoue quand on coche « renvoyer » une facture deja envoyee)
+  var envoiInclureDeja = {};           // empreintes cochees expres malgre un envoi reel anterieur
+  var envoiPollTimer = null;
   var ENVOI_SOCIETE_LABEL = { M22VISION: 'M22 VISION', DMROOM: 'DMROOM', HOLDINGDB: 'HOLDINGDB' };
   function envoiApercuOpen(o){ envoiApercuView.classList.toggle('open', o); }
   function envoiFmtMontant(m, devise){
@@ -12944,76 +12970,137 @@
   }
   function envoiFmtOctets(o){
     var n = Number(o) || 0;
-    if (n >= 1024 * 1024) return (n / (1024 * 1024)).toFixed(1) + ' Mo';
+    if (n >= 1024 * 1024) return (n / (1024 * 1024)).toFixed(1).replace('.', ',') + ' Mo';
     if (n >= 1024) return (n / 1024).toFixed(0) + ' Ko';
     return n + ' o';
   }
+  function envoiTotauxTxt(t){
+    return Object.keys(t || {}).map(function(dv){ return envoiFmtMontant(t[dv], dv); }).join(' + ') || '0,00 €';
+  }
+  function envoiMoisCap(m){ var t = facturesMoisLabel(m); return t.charAt(0).toUpperCase() + t.slice(1); }
+  function envoiPl(n, un, plu){ return n + ' ' + (n > 1 ? plu : un); }
   var ENVOI_EXCLU_TITRES = {
-    a_attribuer: 'À attribuer (pas de société)',
+    a_verifier: 'À vérifier (listées dans le mail, envoi ultérieur)',
+    a_attribuer: 'À attribuer, pas de société (listées dans le mail, envoi ultérieur)',
+    trop_gros: 'PDF trop lourd pour un mail (non envoyé, à transmettre à la main)',
+    deja_envoyees: 'Déjà envoyées (non renvoyées sauf si tu les coches)',
     a_recuperer: 'À récupérer (sans PDF)',
     doublon_document: 'Doublons (même mail ou même numéro)',
     pas_facture: 'Pas des factures',
     anomalie_doublon_ligne: 'Anomalie technique (ligne en double, à investiguer)',
     autres: 'Autres',
   };
+  function envoiMoisEtatTxt(m){
+    if (m.etat === 'termine') return 'Collecte terminée';
+    if (m.etat === 'echec') return '⚠️ Collecte en échec' + (m.raison ? ' : ' + m.raison : '');
+    if (m.etat === 'partiel') return 'Collecte partielle : mois pas complet, envoi impossible';
+    if (m.etat === 'en_cours') return 'Collecte en cours' + (m.tranches_total ? ' (' + m.tranches_faites + ' tranche' + (m.tranches_faites > 1 ? 's' : '') + ' sur ' + m.tranches_total + ')' : '') + ' : mois pas complet, envoi impossible';
+    return 'Pas encore collecté (dans la file d\'attente) : envoi impossible';
+  }
+  // ----- étape 1 (plusieurs mois) : choisir les mois
+  function envoiRenderMoisChoix(){
+    var liste = (facturesCache && facturesCache.mois_liste) || [];
+    var nbOk = liste.filter(function(m){ return m.etat === 'termine'; }).length;
+    var html = '<div class="envoi-carte"><b>Quels mois envoyer ?</b>' +
+      '<div class="envoi-carte-ligne">Un mail par société et par mois, envoyés l\'un après l\'autre. Seuls les mois dont la collecte est terminée peuvent être cochés.</div></div>' +
+      '<label class="envoi-mois-ligne' + (nbOk ? '' : ' inactif') + '"><input type="checkbox" id="envoi-mois-tous-cb"' + (nbOk ? '' : ' disabled') + '>' +
+      '<span><span class="envoi-mois-nom">Tous les mois collectés</span><span class="envoi-mois-etat">' + (nbOk ? envoiPl(nbOk, 'mois terminé', 'mois terminés') : 'Aucun mois terminé pour le moment') + '</span></span></label>';
+    html += liste.map(function(m){
+      var ok = m.etat === 'termine';
+      return '<label class="envoi-mois-ligne' + (ok ? '' : ' inactif') + '"><input type="checkbox" class="envoi-mois-cb" value="' + facturesEsc(m.mois) + '"' + (ok ? '' : ' disabled') + '>' +
+        '<span><span class="envoi-mois-nom">' + facturesEsc(envoiMoisCap(m.mois)) + '</span><span class="envoi-mois-etat">' + facturesEsc(envoiMoisEtatTxt(m)) + '</span></span></label>';
+    }).join('');
+    html += '<button id="envoi-mois-voir-btn" type="button" disabled>Voir l\'aperçu des mails</button>';
+    document.getElementById('envoi-mois-choix').innerHTML = html;
+  }
+  function envoiMoisCoches(){
+    return Array.prototype.slice.call(document.querySelectorAll('#envoi-mois-choix .envoi-mois-cb:checked')).map(function(c){ return c.value; });
+  }
+  document.getElementById('envoi-mois-choix').addEventListener('change', function(e){
+    var tous = document.getElementById('envoi-mois-tous-cb');
+    var cbs = Array.prototype.slice.call(document.querySelectorAll('#envoi-mois-choix .envoi-mois-cb:not(:disabled)'));
+    if (e.target === tous){ cbs.forEach(function(c){ c.checked = tous.checked; }); }
+    else if (tous){ tous.checked = cbs.length > 0 && cbs.every(function(c){ return c.checked; }); }
+    document.getElementById('envoi-mois-voir-btn').disabled = !envoiMoisCoches().length;
+  });
+  document.getElementById('envoi-mois-choix').addEventListener('click', function(e){
+    if (!e.target.closest('#envoi-mois-voir-btn')) return;
+    var tous = document.getElementById('envoi-mois-tous-cb');
+    var payload = (tous && tous.checked) ? { tous_les_mois: true } : { mois_liste: envoiMoisCoches() };
+    envoiApercuCharger(payload);
+  });
+  // ----- étape 2 : l'apercu = la liste exacte des mails qui vont partir
   function envoiRenderApercu(j){
     envoiJetonCourant = j.jeton;
     var wrapSoc = document.getElementById('envoi-societes');
-    var codes = Object.keys(j.societes || {});
-    var dejaEnvoyees = [];
-    if (!codes.length){
-      wrapSoc.innerHTML = '<div class="envoi-carte">Aucune facture prête à envoyer ce mois-ci.</div>';
+    var mails = j.mails || [];
+    var html = '';
+    if (j.collecte_partielle && j.collecte_partielle.message){
+      html += '<div class="envoi-carte" style="background:#e8f0ff;border:1px solid #b9d3ff"><b>' + facturesEsc(j.collecte_partielle.message) + '</b></div>';
+    }
+    (j.mois_exclus || []).forEach(function(m){
+      html += '<div class="envoi-carte" style="background:#fff3cd;border:1px solid #ffe69c"><b>⚠️ ' + facturesEsc(envoiMoisCap(m.mois)) + ' : pas envoyé</b>' +
+        '<div class="envoi-carte-ligne">' + facturesEsc(m.raison) + '</div></div>';
+    });
+    if (!mails.length){
+      html += '<div class="envoi-carte">Aucune facture prête à envoyer' + ((j.mois_liste || []).length > 1 ? ' pour ces mois' : ' ce mois-ci') + '.</div>';
     } else {
-      wrapSoc.innerHTML = codes.map(function(code){
-        var s = j.societes[code];
-        (s.factures || []).forEach(function(f){ if (f.deja_envoyee_reelle_le) dejaEnvoyees.push(f); });
-        var totauxTxt = Object.keys(s.totaux_par_devise || {}).map(function(dv){
-          return envoiFmtMontant(s.totaux_par_devise[dv], dv);
-        }).join(' + ') || '0,00 €';
-        return '<div class="envoi-carte">' +
-          '<b>' + facturesEsc(ENVOI_SOCIETE_LABEL[code] || code) + '</b>' +
-          '<div class="envoi-carte-ligne">' + s.nb_factures + ' facture' + (s.nb_factures > 1 ? 's' : '') + ' — ' + facturesEsc(totauxTxt) + '</div>' +
-          '<div class="envoi-carte-ligne">' + s.nb_mails_prevus + ' mail' + (s.nb_mails_prevus > 1 ? 's' : '') + ' prévu' + (s.nb_mails_prevus > 1 ? 's' : '') + ' (' + envoiFmtOctets(s.taille_totale_octets) + ')</div>' +
-          '</div>';
+      var nbFact = mails.reduce(function(a, m){ return a + (m.nb_factures || 0); }, 0);
+      html += '<div class="envoi-carte"><b>' + envoiPl(mails.length, 'mail va partir', 'mails vont partir') + '</b>' +
+        '<div class="envoi-carte-ligne">' + envoiPl(nbFact, 'facture', 'factures') + ' — ' + facturesEsc(envoiTotauxTxt(j.totaux_par_devise)) + '</div>' +
+        '<div class="envoi-carte-ligne">Un mail par société et par mois, envoyés l\'un après l\'autre. Plafond de ' + facturesEsc(String(j.max_mo).replace('.', ',')) + ' Mo de pièces jointes par mail ; à partir de ' + j.zip_min_pdf + ' PDF, ils sont regroupés dans un zip avec un récapitulatif.</div></div>';
+      html += mails.map(function(m){
+        var partie = m.nb_parties > 1 ? '<span class="envoi-pastille">partie ' + m.partie + '/' + m.nb_parties + '</span>' : '';
+        var pj = m.zip ? ('1 zip (' + envoiPl(m.nb_pdf, 'PDF', 'PDF') + ' + récapitulatif)') : envoiPl(m.nb_pdf, 'PDF séparé', 'PDF séparés');
+        var attente = m.nb_en_attente ? '<div class="envoi-carte-ligne">' + envoiPl(m.nb_en_attente, 'pièce en cours de vérification listée', 'pièces en cours de vérification listées') + ' dans le mail (sans pièce jointe)</div>' : '';
+        return '<div class="envoi-carte"><div class="envoi-mail-tete"><b>' + facturesEsc(ENVOI_SOCIETE_LABEL[m.societe] || m.societe) + ' — ' + facturesEsc(envoiMoisCap(m.mois)) + '</b>' + partie + '</div>' +
+          '<div class="envoi-carte-ligne">' + envoiPl(m.nb_factures, 'facture', 'factures') + ' — ' + facturesEsc(envoiTotauxTxt(m.totaux_par_devise)) + '</div>' +
+          '<div class="envoi-carte-ligne">' + facturesEsc(pj) + ' — ' + envoiFmtOctets(m.taille_octets) + '</div>' + attente + '</div>';
       }).join('');
     }
-    var avertHtml = '';
-    if (dejaEnvoyees.length){
-      avertHtml = '<div class="envoi-carte" style="background:#fff3cd;border:1px solid #ffe69c">' +
-        '<b>⚠️ ' + dejaEnvoyees.length + ' facture' + (dejaEnvoyees.length > 1 ? 's' : '') + ' déjà envoyée' + (dejaEnvoyees.length > 1 ? 's' : '') + ' en réel</b>' +
-        dejaEnvoyees.map(function(f){ return '<div class="envoi-carte-ligne">' + facturesEsc(f.fournisseur || f.facture_id) + ' — le ' + facturesEsc(facturesFmtDateHeure(f.deja_envoyee_reelle_le)) + '</div>'; }).join('') +
-        '</div>';
-    }
-    wrapSoc.innerHTML = avertHtml + wrapSoc.innerHTML;
-    var e = j.exclus || {};
+    wrapSoc.innerHTML = html;
+    // exclusions, mois par mois (repliees : l'ecran reste court sur telephone)
     var exclusHtml = '';
-    Object.keys(ENVOI_EXCLU_TITRES).forEach(function(cle){
-      var liste = (e[cle] && e[cle].liste) || [];
-      if (!liste.length) return;
-      exclusHtml += '<div class="envoi-exclu-titre">' + ENVOI_EXCLU_TITRES[cle] + ' — ' + liste.length + '</div>' +
-        liste.map(function(f){
-          var raisonTxt = f.raison ? ' (' + facturesEsc(f.raison) + ')' : '';
-          return '<div class="envoi-exclu-ligne">' + facturesEsc(f.fournisseur || 'Fournisseur inconnu') + ' — ' + facturesEsc(envoiFmtMontant(f.montant_ttc, f.devise)) + raisonTxt + '</div>';
-        }).join('');
+    (j.mois_apercus || []).forEach(function(ma){
+      var e = ma.exclus || {}, interne = '';
+      Object.keys(ENVOI_EXCLU_TITRES).forEach(function(cle){
+        var liste = (e[cle] && e[cle].liste) || [];
+        if (!liste.length) return;
+        interne += '<details class="envoi-exclu-bloc"' + (cle === 'deja_envoyees' || cle === 'trop_gros' ? ' open' : '') + '><summary>' + facturesEsc(ENVOI_EXCLU_TITRES[cle]) + ' — ' + liste.length + '</summary>' +
+          liste.map(function(f){
+            if (cle === 'deja_envoyees'){
+              return '<label class="envoi-deja-ligne"><input type="checkbox" class="envoi-deja-cb" value="' + facturesEsc(f.facture_id) + '"' + (envoiInclureDeja[f.facture_id] ? ' checked' : '') + '>' +
+                '<span>' + facturesEsc(f.fournisseur || f.facture_id) + ' — ' + facturesEsc(envoiFmtMontant(f.montant_ttc, f.devise)) + ' — déjà envoyée le ' + facturesEsc(facturesFmtDateHeure(f.deja_envoyee_reelle_le)) + ' (cocher pour la renvoyer)</span></label>';
+            }
+            var raisonTxt = f.raison ? ' (' + facturesEsc(f.raison) + ')' : '';
+            var gros = (cle === 'trop_gros') ? ' — ' + envoiFmtOctets(f.piece_taille) : '';
+            return '<div class="envoi-exclu-ligne">' + facturesEsc(f.fournisseur || 'Fournisseur inconnu') + ' — ' + facturesEsc(envoiFmtMontant(f.montant_ttc, f.devise)) + gros + raisonTxt + '</div>';
+          }).join('') + '</details>';
+      });
+      if (interne) exclusHtml += '<div class="envoi-exclu-titre">' + facturesEsc(envoiMoisCap(ma.mois)) + ' — non envoyées dans ce lot</div>' + interne;
     });
     document.getElementById('envoi-exclus').innerHTML = exclusHtml;
     var btn = document.getElementById('envoi-confirmer-btn');
-    btn.disabled = !codes.length;
-    btn.textContent = 'Envoyer l\'essai';
+    btn.style.display = '';
+    btn.disabled = !mails.length;
+    btn.textContent = mails.length > 1 ? ('Envoyer les ' + mails.length + ' mails d\'essai') : 'Envoyer l\'essai';
     document.getElementById('envoi-resultat').style.display = 'none';
   }
-  var envoiDernierEmpreintes = null;
-  function envoiApercuCharger(empreintes){
-    envoiDernierEmpreintes = empreintes || null;
+  function envoiApercuCharger(payload){
+    envoiDernierPayload = payload;
+    if (envoiPollTimer){ clearTimeout(envoiPollTimer); envoiPollTimer = null; }
     document.getElementById('envoi-loading').style.display = '';
     document.getElementById('envoi-error').style.display = 'none';
     document.getElementById('envoi-body').style.display = 'none';
-    var mois = (facturesCache && facturesCache.mois) || facturesMoisCourantAAAAMM();
-    var payload = { action: 'apercu_envoi', mois: mois };
-    if (empreintes && empreintes.length) payload.empreintes = empreintes;
-    postFacturesApi(payload, function(j){
+    var p = { action: 'apercu_envoi' };
+    Object.keys(payload).forEach(function(k){ p[k] = payload[k]; });
+    var inclure = Object.keys(envoiInclureDeja).filter(function(k){ return envoiInclureDeja[k]; });
+    if (inclure.length) p.inclure_deja = inclure;
+    postFacturesApi(p, function(j){
       document.getElementById('envoi-loading').style.display = 'none';
       document.getElementById('envoi-body').style.display = '';
+      document.getElementById('envoi-mois-choix').style.display = 'none';
+      document.getElementById('envoi-societes').style.display = '';
       envoiRenderApercu(j);
     }, function(err){
       document.getElementById('envoi-loading').style.display = 'none';
@@ -13023,43 +13110,107 @@
     });
   }
   document.getElementById('envoi-error').addEventListener('click', function(e){
-    if (e.target.closest('#envoi-reessayer-btn')) envoiApercuCharger(envoiDernierEmpreintes);
+    if (e.target.closest('#envoi-reessayer-btn')) envoiApercuCharger(envoiDernierPayload || {});
   });
-  document.getElementById('factures-envoyer-btn').addEventListener('click', function(){
-    envoiJetonCourant = null;
+  document.getElementById('envoi-exclus').addEventListener('change', function(e){
+    var cb = e.target.closest('.envoi-deja-cb');
+    if (!cb) return;
+    envoiInclureDeja[cb.value] = cb.checked;
+    envoiApercuCharger(envoiDernierPayload || {});      // l'apercu (et son jeton) sont recalcules avec les factures cochees expres
+  });
+  function envoiOuvrir(payload){
+    envoiJetonCourant = null; envoiInclureDeja = {};
+    document.getElementById('envoi-mois-choix').style.display = 'none';
     envoiApercuOpen(true);
-    envoiApercuCharger();
+    envoiApercuCharger(payload);
+  }
+  document.getElementById('factures-envoyer-btn').addEventListener('click', function(){
+    envoiOuvrir({ mois: (facturesCache && facturesCache.mois) || facturesMoisCourantAAAAMM() });
   });
   document.getElementById('factures-envoyer-selection-btn').addEventListener('click', function(){
     if (!facturesSelection.size) return;
-    envoiJetonCourant = null;
+    envoiOuvrir({ mois: (facturesCache && facturesCache.mois) || facturesMoisCourantAAAAMM(), empreintes: Array.from(facturesSelection) });
+  });
+  document.getElementById('factures-envoyer-mois-btn').addEventListener('click', function(){
+    envoiJetonCourant = null; envoiInclureDeja = {}; envoiDernierPayload = null;
+    if (envoiPollTimer){ clearTimeout(envoiPollTimer); envoiPollTimer = null; }
+    document.getElementById('envoi-loading').style.display = 'none';
+    document.getElementById('envoi-error').style.display = 'none';
+    document.getElementById('envoi-body').style.display = '';
+    document.getElementById('envoi-societes').style.display = 'none';
+    document.getElementById('envoi-societes').innerHTML = '';
+    document.getElementById('envoi-exclus').innerHTML = '';
+    document.getElementById('envoi-confirmer-btn').style.display = 'none';
+    document.getElementById('envoi-resultat').style.display = 'none';
+    envoiRenderMoisChoix();
+    document.getElementById('envoi-mois-choix').style.display = '';
     envoiApercuOpen(true);
-    envoiApercuCharger(Array.from(facturesSelection));
   });
   document.getElementById('envoi-close').addEventListener('click', function(){ envoiApercuOpen(false); });
+  // ----- étape 3 : confirmation unique, puis suivi (le serveur envoie un mail apres l'autre)
+  function envoiAfficherFin(r, btn){
+    var resultat = document.getElementById('envoi-resultat');
+    resultat.style.display = '';
+    r = r || {};
+    var d = new Date(r.date || Date.now());
+    var dateTxt = d.toLocaleDateString('fr-FR') + ' à ' + d.toLocaleTimeString('fr-FR', { hour: '2-digit', minute: '2-digit' });
+    var envoyes = r.mails || [], ko = r.mails_en_echec || [];
+    var lignes = envoyes.map(function(m){
+      return '<div class="envoi-echec-ligne">✅ ' + facturesEsc(ENVOI_SOCIETE_LABEL[m.societe] || m.societe) + ' — ' + facturesEsc(envoiMoisCap(m.mois)) + (m.nb_parties > 1 ? ' (partie ' + m.partie + '/' + m.nb_parties + ')' : '') +
+        ' : ' + envoiPl(m.nb_pdf || 0, 'PDF', 'PDF') + (m.zip ? ' en zip' : '') + ', ' + envoiFmtOctets(m.taille_octets) + '</div>';
+    }).join('');
+    var koHtml = ko.map(function(m){
+      return '<div class="envoi-echec-ligne">❌ ' + facturesEsc(ENVOI_SOCIETE_LABEL[m.societe] || m.societe) + ' — ' + facturesEsc(envoiMoisCap(m.mois)) + (m.partie ? ' (partie ' + m.partie + ')' : '') + ' : non envoyé — ' + facturesEsc(m.erreur || 'échec') + '</div>';
+    }).join('');
+    var echecsHtml = (r.echecs && r.echecs.length)
+      ? '<div class="envoi-echec-ligne"><b>Non jointes :</b></div>' + r.echecs.map(function(e){
+          return '<div class="envoi-echec-ligne">' + facturesEsc(e.fournisseur || '') + ' (' + facturesEsc(ENVOI_SOCIETE_LABEL[e.societe] || e.societe) + ') — ' + facturesEsc(e.motif) + '</div>';
+        }).join('')
+      : '';
+    resultat.classList.toggle('erreur', ko.length > 0);
+    resultat.innerHTML = (envoyes.length ? 'Essai envoyé à <b>' + facturesEsc(r.destinataire || 'altaestima.contact@gmail.com') + '</b> le ' + dateTxt + ' : ' + envoiPl(envoyes.length, 'mail', 'mails') + ' sur ' + (r.nb_mails_prevus || envoyes.length) + '.' : 'Aucun mail n\'est parti.') + lignes + koHtml + echecsHtml;
+    try { resultat.scrollIntoView({ block: 'center' }); } catch (e) {}
+    btn.textContent = ko.length ? 'Envoi terminé avec des échecs' : 'Essai envoyé';
+    btn.disabled = true;
+    envoiJetonCourant = null;
+  }
+  function envoiSuivre(jeton, total, btn){
+    var resultat = document.getElementById('envoi-resultat');
+    var t0 = Date.now();
+    function tick(essais){
+      postFacturesApi({ action: 'etat_envoi', jeton: jeton }, function(e){
+        if (e.etat === 'termine'){ envoiAfficherFin(e.resultat && e.resultat.resume, btn); return; }
+        resultat.classList.remove('erreur');
+        resultat.style.display = '';
+        resultat.textContent = 'Envoi en cours… ' + (e.nb_mails_traites || 0) + ' mail' + ((e.nb_mails_traites || 0) > 1 ? 's' : '') + ' sur ' + (e.nb_mails_total || total) + ' envoyé' + ((e.nb_mails_traites || 0) > 1 ? 's' : '') + '. Les mails partent l\'un après l\'autre, ne ferme pas cet écran.';
+        if (Date.now() - t0 > 25 * 60000){
+          resultat.classList.add('erreur');
+          resultat.textContent = 'L\'envoi dure plus de 25 minutes : je cesse de le suivre. Il continue peut-être ; vérifie les mails reçus avant de relancer.';
+          btn.textContent = 'Envoi non confirmé';
+          return;
+        }
+        envoiPollTimer = setTimeout(function(){ tick(0); }, 3000);
+      }, function(err){
+        if (essais < 6){ envoiPollTimer = setTimeout(function(){ tick(essais + 1); }, 4000); return; }
+        resultat.classList.add('erreur');
+        resultat.textContent = 'Je ne peux plus suivre l\'envoi (' + err + '). Il continue peut-être : vérifie les mails reçus avant de relancer.';
+        btn.textContent = 'Envoi non confirmé';
+      });
+    }
+    tick(0);
+  }
   document.getElementById('envoi-confirmer-btn').addEventListener('click', function(){
     var btn = document.getElementById('envoi-confirmer-btn');
     if (!envoiJetonCourant || btn.disabled) return;
     btn.disabled = true;
     btn.textContent = 'Envoi en cours…';
     var jeton = envoiJetonCourant;
-    postFacturesApi({ action: 'envoyer', jeton: jeton }, function(j){
+    postFacturesApi({ action: 'envoyer', jeton: jeton, asynchrone: true }, function(j){
       var resultat = document.getElementById('envoi-resultat');
       resultat.classList.remove('erreur');
       resultat.style.display = '';
-      var d = new Date(j.date || Date.now());
-      var dateTxt = d.toLocaleDateString('fr-FR') + ' à ' + d.toLocaleTimeString('fr-FR', { hour: '2-digit', minute: '2-digit' });
-      var societesTxt = (j.mails || []).map(function(m){ return ENVOI_SOCIETE_LABEL[m.societe] || m.societe; }).filter(function(v, i, a){ return a.indexOf(v) === i; }).join(', ');
-      var echecsHtml = (j.echecs && j.echecs.length)
-        ? '<div class="envoi-echec-ligne"><b>Non jointes :</b></div>' + j.echecs.map(function(e){
-            return '<div class="envoi-echec-ligne">' + facturesEsc(e.fournisseur || '') + ' (' + facturesEsc(ENVOI_SOCIETE_LABEL[e.societe] || e.societe) + ') — ' + facturesEsc(e.motif) + '</div>';
-          }).join('')
-        : '';
-      resultat.innerHTML = 'Essai envoyé à <b>' + facturesEsc(j.destinataire) + '</b> le ' + dateTxt + ' : ' +
-        (j.mails ? j.mails.length : 0) + ' mail' + (j.mails && j.mails.length > 1 ? 's' : '') +
-        (societesTxt ? ' (' + facturesEsc(societesTxt) + ')' : '') + '.' + echecsHtml;
-      btn.textContent = 'Essai envoyé';
-      envoiJetonCourant = null;
+      if (j && j.lance){ resultat.textContent = 'Envoi lancé : ' + (j.nb_mails || '') + ' mail(s), l\'un après l\'autre…'; try { resultat.scrollIntoView({ block: 'center' }); } catch (e) {} envoiSuivre(jeton, j.nb_mails, btn); return; }
+      envoiAfficherFin(j, btn);      // ancien serveur (reponse synchrone)
     }, function(err){
       var resultat = document.getElementById('envoi-resultat');
       resultat.classList.add('erreur');
