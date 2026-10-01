@@ -153,7 +153,7 @@
      specificite des regles de base (meme etats :active inclus, cf. calcul explicite en
      commentaire de session) -- le labo garde les regles de base au pixel pres, jamais touchees
      ici. */
-  html.mcs-theme #sheet, html.mcs-theme #siteSheet{
+  html.mcs-theme #sheet, html.mcs-theme #siteSheet, html.mcs-theme #appsSheet{
     background:#FFFFFF; border-color:rgba(0,0,0,.08);
   }
   html.mcs-theme .sh-handle{background:rgba(0,0,0,.18)}
@@ -684,13 +684,13 @@
   #sheet.open{transform:translateY(0)}
   @media (prefers-reduced-motion: reduce){#sheet{transition:none}#sheetbg{transition:none}}
   /* Sous-menu "Site" (SEO / Sites Vitrine) -- meme gabarit que #sheetbg/#sheet, ids distincts */
-  #siteSheetbg{
+  #siteSheetbg, #appsSheetbg{
     position:fixed; inset:0; background:rgba(0,0,0,0); display:none; z-index:40;
     transition:background .32s cubic-bezier(.32,.72,0,1);
     -webkit-backdrop-filter:blur(0px); backdrop-filter:blur(0px);
   }
-  #siteSheetbg.open{display:block; background:rgba(0,0,0,.55); -webkit-backdrop-filter:blur(2px); backdrop-filter:blur(2px)}
-  #siteSheet{
+  #siteSheetbg.open, #appsSheetbg.open{display:block; background:rgba(0,0,0,.55); -webkit-backdrop-filter:blur(2px); backdrop-filter:blur(2px)}
+  #siteSheet, #appsSheet{
     position:fixed; left:0; right:0; bottom:0; z-index:41;
     background:linear-gradient(180deg,#232326,#19191C);
     border-radius:24px 24px 0 0;
@@ -699,7 +699,23 @@
     padding:10px 14px calc(14px + env(safe-area-inset-bottom));
     transform:translateY(108%); transition:transform .38s cubic-bezier(.32,.72,0,1);
   }
-  #siteSheet.open{transform:translateY(0)}
+  #siteSheet.open, #appsSheet.open{transform:translateY(0)}
+  #appsSheet{max-height:92vh; overflow-y:auto; -webkit-overflow-scrolling:touch}
+  #appsSheet .sh-title{margin:6px 4px 10px; font-size:13px; font-weight:600; opacity:.6; letter-spacing:.04em; text-transform:uppercase}
+  .apps-badge{margin-left:auto; min-width:19px; height:19px; padding:0 6px; border-radius:10px; background:#E5484D; color:#fff; font-size:11px; font-weight:700; display:flex; align-items:center; justify-content:center}
+  /* Menu labo (2026-10-01, demande Matheo) : seulement 4 tuiles (Radar, Factures TVA, Crypto,
+     Couts) + petit bouton rond en haut a droite qui ouvre "Toutes mes apps" (#appsSheet).
+     Jamais applique au tenant MCS (classe posee uniquement si !mcs, cf. enterApp). Les tuiles
+     rangees portent .sh-in-apps (CSS, pas style.display) pour rester comptees dans le total
+     des badges (updateAppBadgeTotal ne saute que style.display==='none'). */
+  #sheet .sh-tile.sh-in-apps{display:none}
+  #sheet.sheet-labo .sh-grid{grid-template-columns:repeat(2,1fr)}
+  #sheet.sheet-labo #sh-radar{order:1} #sheet.sheet-labo #sh-factures{order:2}
+  #sheet.sheet-labo #sh-crypto{order:3} #sheet.sheet-labo #sh-couts{order:4}
+  #sh-apps-btn{display:none; position:absolute; top:8px; right:12px; width:38px; height:38px; border-radius:50%;
+    border:0.5px solid rgba(255,255,255,.14); background:rgba(255,255,255,.07); color:inherit; font-size:18px; cursor:pointer}
+  #sheet.sheet-labo #sh-apps-btn{display:flex; align-items:center; justify-content:center}
+  #sh-apps-btn .apps-badge{position:absolute; top:-4px; right:-4px; margin:0}
   @media (prefers-reduced-motion: reduce){#siteSheet{transition:none}#siteSheetbg{transition:none}}
   .sh-handle{width:36px; height:5px; border-radius:3px; background:rgba(255,255,255,.18); margin:6px auto 14px}
   .sh-group{background:rgba(255,255,255,.045); border-radius:16px; overflow:hidden; margin-bottom:10px}
@@ -2583,6 +2599,21 @@
     padding:10px 12px; margin-bottom:12px;
   }
   #cx-apify-note b{color:#FF9F0A}
+  /* Donnees DIRECTES d'Apify (utilisateurs, runs externes, usage plateforme) : famille bleue,
+     pastille "Apify", pour ne jamais les confondre avec les estimations orange/or ci-dessus. */
+  .cxa-direct{display:block; font-size:11.5px; line-height:1.45; color:var(--blue); margin-top:3px}
+  .cxa-direct .cxa-tag{display:inline-block; font-size:9.5px; font-weight:800; letter-spacing:.3px;
+    border:0.5px solid var(--blue); border-radius:6px; padding:0 4px; margin-right:5px}
+  .cxa-direct .cxa-unk{color:var(--muted); font-style:italic}
+  #cxa-platform{border-radius:12px; padding:10px 12px; margin-bottom:12px; font-size:12.5px; line-height:1.4;
+    border:0.5px solid var(--blue); background:rgba(10,132,255,.08); color:var(--ink)}
+  #cxa-platform.cxa-pl-warn{border-color:#FF9F0A; background:rgba(255,159,10,.14)}
+  #cxa-platform.cxa-pl-crit{border-color:var(--no); background:rgba(255,69,58,.16)}
+  #cxa-platform.cxa-pl-unk{border-color:var(--muted); background:rgba(152,152,158,.12)}
+  #cxa-platform .cxa-bar{height:6px; border-radius:3px; background:rgba(152,152,158,.25); margin-top:6px; overflow:hidden}
+  #cxa-platform .cxa-bar i{display:block; height:100%; background:var(--blue)}
+  #cxa-platform.cxa-pl-warn .cxa-bar i{background:#FF9F0A}
+  #cxa-platform.cxa-pl-crit .cxa-bar i{background:var(--no)}
   #cxa-freshness{
     display:inline-flex; align-items:center; gap:6px; font-size:11.5px; font-weight:700;
     padding:4px 10px; border-radius:20px; margin-bottom:10px;
@@ -2661,6 +2692,25 @@
   }
   .factures-motif{font-size:11.5px; color:var(--muted); margin-top:3px}
   #factures-file-alerte{margin-bottom:12px}
+  /* Lot 7 : bandeau d'avancement du rattrapage (mois par mois), lisible en largeur de telephone */
+  #factures-bandeau{background:var(--surface); border:1px solid var(--hairline); border-radius:14px; padding:12px 14px; margin-bottom:12px; font-size:12.5px; line-height:1.45}
+  #factures-bandeau .fb-titre{font-size:13.5px; font-weight:700; margin-bottom:6px}
+  #factures-bandeau .fb-pause{background:rgba(255,159,10,.14); border:1px solid rgba(255,159,10,.45); border-radius:10px; padding:8px 10px; margin:6px 0; font-weight:600}
+  #factures-bandeau .fb-barre{height:8px; border-radius:6px; background:var(--hairline); overflow:hidden; margin:6px 0 8px}
+  #factures-bandeau .fb-barre > span{display:block; height:100%; background:var(--blue)}
+  #factures-bandeau .fb-mois{display:grid; grid-template-columns:repeat(3,minmax(0,1fr)); gap:6px; margin:8px 0}
+  #factures-bandeau .fb-m{border:1px solid var(--hairline); border-radius:10px; padding:6px 8px; min-width:0}
+  #factures-bandeau .fb-m b{display:block; font-size:12px}
+  #factures-bandeau .fb-m span{font-size:11.5px; color:var(--muted)}
+  #factures-bandeau .fb-m.fb-echec{border-color:rgba(255,69,58,.6)}
+  #factures-bandeau .fb-m.fb-termine span{color:#34c759}
+  #factures-bandeau .fb-ech{margin-top:4px; font-size:12px}
+  #factures-bandeau .fb-pied{color:var(--muted); font-size:12px}
+  .factures-note-mail{flex:1 1 100%; font-size:11px; color:var(--muted)}
+  #factures-periode .fb-nav{display:flex; align-items:center; gap:10px}
+  #factures-periode .fb-nav button{border:1px solid var(--hairline); background:var(--surface); color:var(--ink); border-radius:9px; font-size:16px; padding:2px 10px; min-width:40px; min-height:32px}
+  #factures-periode .fb-nav button:disabled{opacity:.35}
+  #factures-periode .fb-nav b{flex:1 1 auto; text-align:center; text-transform:capitalize}
   .factures-alerte{border-radius:12px; padding:10px 14px; margin-bottom:8px; font-size:12.5px; line-height:1.45; background:rgba(255,69,58,.14); border:1px solid rgba(255,69,58,.45)}
   .factures-alerte-info{background:rgba(255,159,10,.14); border-color:rgba(255,159,10,.45)}
   .factures-alerte b{display:block; margin-bottom:2px}
@@ -6767,6 +6817,7 @@
 <div id="sheetbg"></div>
 <div id="sheet">
   <div class="sh-handle"></div>
+  <button id="sh-apps-btn" type="button" aria-label="Toutes mes apps" title="Toutes mes apps">⊞<span class="apps-badge" id="apps-btn-badge" style="display:none"></span></button>
   <div class="sh-grid">
     <button class="sh-tile" id="sh-emails" type="button" style="display:none"><span class="sh-tile-ic">✉️</span><span class="sh-tile-label">Emails</span><span class="badge-count" id="menu-email-badge" style="display:none"></span></button>
     <!-- sh-calendar : bouton PARTAGE avec l'accueil MCS -- pour le patron MCS, .sh-grid (ce
@@ -6842,6 +6893,24 @@
   <div class="sh-group">
     <button class="sh-item" id="sh-vitrine" type="button"><span class="sh-ic">🏗️</span><span class="sh-label">Sites Vitrine</span></button>
     <button class="sh-item" id="sh-plume" type="button"><span class="sh-ic">🪶</span><span class="sh-label">SEO</span></button>
+  </div>
+</div>
+
+<!-- "Toutes mes apps" (2026-10-01, labo uniquement) : les entrees pilotent les boutons d'origine
+     (masques par .sh-in-apps) via .click() -- leurs listeners existants restent la seule source. -->
+<div id="appsSheetbg"></div>
+<div id="appsSheet">
+  <div class="sh-handle"></div>
+  <p class="sh-title">Toutes mes apps</p>
+  <div class="sh-group">
+    <button class="sh-item" data-app="sh-docs" type="button"><span class="sh-ic">📄</span><span class="sh-label">Mes documents</span></button>
+    <button class="sh-item" data-app="sh-meute" type="button"><span class="sh-ic">🐺</span><span class="sh-label">Meute</span><span class="apps-badge" id="apps-meute-badge" style="display:none"></span></button>
+    <button class="sh-item" data-app="sh-notes" type="button"><span class="sh-ic">📝</span><span class="sh-label">Notes</span></button>
+    <button class="sh-item" data-app="sh-rentabilite-demonchy" type="button"><span class="sh-ic">📊</span><span class="sh-label">Démo — Demonchy</span></button>
+    <button class="sh-item" data-app="sh-vitrine" type="button"><span class="sh-ic">🏗️</span><span class="sh-label">Sites Vitrine</span></button>
+    <button class="sh-item" data-app="sh-plume" type="button"><span class="sh-ic">🪶</span><span class="sh-label">SEO</span></button>
+    <button class="sh-item" data-url="https://22h22.ad" type="button"><span class="sh-ic">🌙</span><span class="sh-label">22h22.ad</span></button>
+    <button class="sh-item" data-url="https://rouedesrecompenses.fr" type="button"><span class="sh-ic">🎡</span><span class="sh-label">Roue des récompenses</span></button>
   </div>
 </div>
 
@@ -6928,6 +6997,7 @@
       <div id="cxa-error" style="display:none"></div>
       <div id="cxa-body" style="display:none">
         <div id="cxa-freshness"></div>
+        <div id="cxa-platform"></div>
         <div id="cxa-hero">
           <span class="cx-hero-label">Revenu net estimé (mois en cours)</span>
           <span class="cx-hero-value"><span id="cxa-net-mtd">—</span> <span class="cx-hero-unit">$</span></span>
@@ -6957,6 +7027,7 @@
     <div id="factures-error" style="display:none"></div>
     <div id="factures-body" style="display:none">
       <div id="factures-file-alerte" style="display:none"></div>
+      <div id="factures-bandeau" style="display:none"></div>
       <div id="factures-periode"></div>
       <div id="factures-tabs"></div>
       <div id="factures-select-bar">
@@ -7053,6 +7124,7 @@
   <div class="upd-row">
     <button type="button" id="mail-fermer-btn" class="vc-no">Fermer</button>
     <a id="mail-ouvrir-lien" class="factures-lien" style="display:none" href="#">Ouvrir dans Mail</a>
+    <div id="mail-ouvrir-note" class="factures-note-mail" style="display:none">Si Mail ne trouve pas le message, le texte affiché ici en est la copie fidèle.</div>
   </div>
 </div>
 
@@ -8643,7 +8715,7 @@
          comparaison de chaine de version par tenant. */
   var APPV_MCS = '4.59';
   var APPV_LABO = '1.05';
-  var BUILD = 92;
+  var BUILD = 93;
   // displayVersion()/displayVersionShort() lisent isMcsCode() (definie plus bas dans cette
   // meme IIFE -- declaration de fonction, donc disponible ici par hoisting) : le TENANT
   // affiche depend du code de connexion, jamais d'un simple "APPV" global qui ne dirait ni
@@ -10412,6 +10484,12 @@
       var el = document.getElementById(id);
       if (el) el.style.display = mcs ? 'none' : '';
     });
+    // Menu labo allege : 4 tuiles + bouton "Toutes mes apps" (jamais pour un tenant MCS).
+    ['sh-docs', 'sh-meute', 'sh-site', 'sh-notes', 'sh-rentabilite-demonchy'].forEach(function(id){
+      var el = document.getElementById(id);
+      if (el) el.classList.toggle('sh-in-apps', !mcs);
+    });
+    document.getElementById('sheet').classList.toggle('sheet-labo', !mcs);
     if (!mcs) meuteCheckBadge();
     // Rôle salarié (tenant secondaire uniquement) : un compte salarié n'a qu'un usage - dicter/
     // écrire un devis (déclenché par un mot-clé dans le champ de texte, indépendant de ce menu).
@@ -11176,6 +11254,20 @@
   function siteSheetOpen(o){ siteSheet.classList.toggle('open', o); siteSheetbg.classList.toggle('open', o); }
   document.getElementById('sh-site').addEventListener('click', function(){ sheetOpen(false); siteSheetOpen(true); });
   siteSheetbg.addEventListener('click', function(){ siteSheetOpen(false); });
+  // ---- "Toutes mes apps" (labo) ----
+  var appsSheet = document.getElementById('appsSheet');
+  var appsSheetbg = document.getElementById('appsSheetbg');
+  function appsSheetOpen(o){ appsSheet.classList.toggle('open', o); appsSheetbg.classList.toggle('open', o); }
+  document.getElementById('sh-apps-btn').addEventListener('click', function(e){ e.stopPropagation(); sheetOpen(false); appsSheetOpen(true); });
+  appsSheetbg.addEventListener('click', function(){ appsSheetOpen(false); });
+  appsSheet.querySelectorAll('.sh-item').forEach(function(b){
+    b.addEventListener('click', function(){
+      appsSheetOpen(false);
+      var id = b.getAttribute('data-app'), url = b.getAttribute('data-url');
+      if (id) { var t = document.getElementById(id); if (t) t.click(); }
+      else if (url) window.open(url, '_blank', 'noopener');
+    });
+  });
   // ---- "Vérifier la mise à jour" (Session 3 bis, 06/09/2026) -- filet manuel EXPLICITE, pour
   // ne plus dependre d'un evenement (focus/visibilitychange) ou d'un timer potentiellement
   // throttle en arriere-plan par le navigateur. Reutilise checkUpdate() (mode manuel : le
@@ -12289,6 +12381,7 @@
   var facturesPdfBlobCache = {};
 
   var facturesCache = null;
+  var facturesMoisAffiche = null; // AAAA-MM choisi avec les fleches (Lot 7) ; null = mois courant
   var facturesTabActif = 'M22VISION';
   var FACTURES_SOCIETE_LABEL = { M22VISION: 'M22 VISION', DMROOM: 'DMROOM', HOLDINGDB: 'HOLDINGDB', _a_attribuer: 'À attribuer' };
   var FACTURES_SOCIETE_ORDRE = ['M22VISION', 'DMROOM', 'HOLDINGDB', '_a_attribuer'];
@@ -12337,7 +12430,7 @@
     facturesLoad();
   }
   function facturesLoad(){
-    postFacturesApi({ mois: facturesMoisCourantAAAAMM() }, function(j){
+    postFacturesApi({ mois: facturesMoisAffiche || facturesMoisCourantAAAAMM() }, function(j){
       document.getElementById('factures-loading').style.display = 'none';
       document.getElementById('factures-error').style.display = 'none';
       document.getElementById('factures-body').style.display = '';
@@ -12360,18 +12453,50 @@
     }
   });
 
+  // Lot 7 : le mois est annonce complet (ou non) par le serveur (mois_etat) -- jamais de « 0 » presente comme un resultat
+  // quand le mois n'est pas encore collecte.
+  function facturesMoisComplet(){
+    var me = facturesCache && facturesCache.mois_etat;
+    return !!(me && me.etat === 'termine');
+  }
+  function facturesMoisEtatTexte(){
+    var me = facturesCache && facturesCache.mois_etat;
+    if (!me) return 'État de la collecte de ce mois inconnu.';
+    var reste = me.tranches_total ? (' (' + me.tranches_faites + ' tranche' + (me.tranches_faites > 1 ? 's' : '') + ' sur ' + me.tranches_total + ')') : '';
+    if (me.etat === 'termine') return 'Collecte terminée pour ce mois.';
+    if (me.etat === 'echec') return '⚠️ Collecte en échec pour une partie de ce mois. ' + (me.raison || '');
+    if (me.etat === 'partiel') return 'Collecte partielle : ce mois n\'est pas complet, les chiffres sont provisoires.';
+    if (me.etat === 'en_cours') return 'Collecte en cours' + reste + ' : ce mois n\'est pas complet, les chiffres sont provisoires.';
+    return 'Pas encore collecté : ce mois est dans la file d\'attente. Les chiffres éventuels ci-dessous sont provisoires.';
+  }
+  function facturesChangerMois(delta){
+    var cur = facturesMoisAffiche || facturesMoisCourantAAAAMM();
+    var p = cur.split('-'), a = parseInt(p[0], 10), m = parseInt(p[1], 10) + delta;
+    if (m < 1){ m = 12; a--; } else if (m > 12){ m = 1; a++; }
+    var nv = a + '-' + (m < 10 ? '0' + m : String(m));
+    if (nv < '2026-01' || nv > facturesMoisCourantAAAAMM()) return;
+    facturesMoisAffiche = nv;
+    facturesSelection.clear();
+    document.getElementById('factures-loading').style.display = '';
+    facturesLoad();
+  }
   function facturesRenderPeriode(){
     var j = facturesCache || {};
     var el = document.getElementById('factures-periode');
     var moisTxt = facturesMoisLabel(j.mois);
-    if (!j.periode_collectee){
-      el.innerHTML = '<b>' + facturesEsc(moisTxt) + '</b><div class="factures-periode-sub">Aucune donnée collectée pour ce mois pour l\'instant.</div>';
-      return;
-    }
-    var texte = 'Collecté du ' + facturesEsc(facturesFmtDateCourt(j.periode_collectee.debut)) + ' au ' +
-      facturesEsc(facturesFmtDateCourt(j.periode_collectee.fin)) + ' — suite en cours';
-    el.innerHTML = '<b>' + facturesEsc(moisTxt) + '</b><div class="factures-periode-sub">' + texte + '</div>';
+    var cur = j.mois || facturesMoisCourantAAAAMM();
+    var nav = '<div class="fb-nav"><button type="button" id="factures-mois-prec" aria-label="Mois précédent"' + (cur <= '2026-01' ? ' disabled' : '') + '>‹</button>' +
+      '<b>' + facturesEsc(moisTxt) + '</b>' +
+      '<button type="button" id="factures-mois-suiv" aria-label="Mois suivant"' + (cur >= facturesMoisCourantAAAAMM() ? ' disabled' : '') + '>›</button></div>';
+    var detail = '';
+    var me = j.mois_etat;
+    if (me && me.collecte_du) detail = ' Jours collectés : du ' + facturesEsc(facturesFmtDateCourt(me.collecte_du)) + ' au ' + facturesEsc(facturesFmtDateCourt(me.collecte_au)) + '.';
+    el.innerHTML = nav + '<div class="factures-periode-sub">' + facturesEsc(facturesMoisEtatTexte()) + detail + '</div>';
   }
+  document.getElementById('factures-periode').addEventListener('click', function(e){
+    if (e.target.closest('#factures-mois-prec')) facturesChangerMois(-1);
+    else if (e.target.closest('#factures-mois-suiv')) facturesChangerMois(1);
+  });
 
   function facturesRenderTabs(){
     var wrap = document.getElementById('factures-tabs');
@@ -12385,8 +12510,10 @@
       var totauxTxt = Object.keys(g.total_par_devise || {}).map(function(dev){
         return facturesFmtMontant(g.total_par_devise[dev], dev);
       }).join(' + ') || '0,00 €';
+      // Mois pas complet : jamais « 0 facture » (un zero qui ne veut rien dire) -> on annonce la collecte en cours.
+      var sousTitre = (!facturesMoisComplet() && !g.nb_factures) ? 'collecte en cours' : (g.nb_factures + ' · ' + totauxTxt);
       btn.innerHTML = '<span class="factures-tab-lab">' + facturesEsc(FACTURES_SOCIETE_LABEL[code]) + '</span>' +
-        '<span class="factures-tab-sub">' + g.nb_factures + ' · ' + facturesEsc(totauxTxt) + '</span>';
+        '<span class="factures-tab-sub">' + facturesEsc(sousTitre) + '</span>';
       btn.addEventListener('click', function(){ facturesTabActif = code; facturesRenderTabs(); facturesRenderListe(); });
       wrap.appendChild(btn);
     });
@@ -12414,7 +12541,9 @@
     var filtreNonEnvoyees = document.getElementById('factures-filtre-non-envoyees-cb').checked && facturesCache.historique_disponible !== false;
     var factures = filtreNonEnvoyees ? g.factures.filter(function(f){ return !f.deja_envoyee_reelle_le; }) : g.factures;
     if (!factures.length){
-      wrap.innerHTML = '<div class="factures-vide">Aucune facture dans ce groupe pour ce mois.</div>';
+      wrap.innerHTML = '<div class="factures-vide">' + (facturesMoisComplet()
+        ? 'Aucune facture dans ce groupe pour ce mois.'
+        : 'Collecte en cours pour ce mois : rien à afficher pour l\'instant (ce n\'est pas un zéro définitif).') + '</div>';
       return;
     }
     wrap.innerHTML = factures.map(function(f){
@@ -12423,7 +12552,7 @@
         : '<span class="factures-badge factures-badge-av">À vérifier</span>';
       var raison = f.raison ? '<div class="factures-raison">' + facturesEsc(f.raison) + '</div>' : '';
       var lienMail = facturesLienMail(f.message_id_rfc822);
-      var lien = lienMail ? '<a href="' + lienMail + '" class="factures-lien">Ouvrir dans Mail</a>' : '';
+      var lien = lienMail ? '<a href="' + lienMail + '" class="factures-lien">Ouvrir dans Mail</a><span class="factures-note-mail">Si Mail ne trouve pas le message, utilisez « Voir le mail ».</span>' : '';
       var btnMail = f.facture_id ? '<button type="button" class="factures-btn-mail" data-fid="' + facturesEsc(f.facture_id) + '">Voir le mail</button>' : '';
       var autoliqLab = { oui: 'Oui', non: 'Non', probable: 'Probable', inconnue: 'Inconnue' }[f.autoliquidation] || 'Inconnue';
       var motifTxt = '<div class="factures-motif">Autoliquidation : ' + facturesEsc(autoliqLab) + (f.motif_societe ? ' · ' + facturesEsc(f.motif_societe) : '') + '</div>';
@@ -12485,7 +12614,7 @@
       liste.map(function(f){
         var lienMailARec = facturesLienMail(f.message_id_rfc822);
         var lienGmailHtml = (f.facture_id ? '<button type="button" class="factures-btn-mail" data-fid="' + facturesEsc(f.facture_id) + '">Voir le mail</button>' : '') +
-          (lienMailARec ? '<a href="' + lienMailARec + '" class="factures-lien">Ouvrir dans Mail</a>' : '');
+          (lienMailARec ? '<a href="' + lienMailARec + '" class="factures-lien">Ouvrir dans Mail</a><span class="factures-note-mail">Si Mail ne trouve pas le message, utilisez « Voir le mail ».</span>' : '');
         var lienEspaceHtml = f.lien_espace_client ? '<a href="' + facturesEsc(f.lien_espace_client) + '" target="_blank" rel="noopener" class="factures-lien">Espace client du fournisseur</a>' : '';
         return '<div class="factures-ligne">' +
           '<div class="factures-ligne-top">' +
@@ -12522,8 +12651,43 @@
     el.innerHTML = html;
     el.style.display = html ? '' : 'none';
   }
+  // Bandeau d'avancement du rattrapage janvier-aout (Lot 7) : visible tant que la collecte n'est pas terminee SANS echec.
+  var FACTURES_MOIS_COURT = ['janv.','févr.','mars','avr.','mai','juin','juil.','août','sept.','oct.','nov.','déc.'];
+  var FACTURES_ETAT_LIB = { termine: 'terminé', en_cours: 'en cours', a_faire: 'à faire', partiel: 'partiel', echec: 'en échec' };
+  function facturesFmtUsd(x){ return Number(x || 0).toLocaleString('fr-FR', { minimumFractionDigits: 2, maximumFractionDigits: 2 }) + ' $'; }
+  function facturesRenderBandeau(){
+    var el = document.getElementById('factures-bandeau');
+    var r = facturesCache && facturesCache.rattrapage;
+    if (!r || !r.visible){ el.style.display = 'none'; el.innerHTML = ''; return; }
+    var t = r.tranches || {};
+    var pct = t.total ? Math.round(100 * (t.faites || 0) / t.total) : 0;
+    var titre = r.etat === 'pause' ? 'Collecte de janvier à août : EN PAUSE'
+      : r.etat === 'echec' ? 'Collecte de janvier à août : une partie est en échec'
+      : 'Collecte de janvier à août en cours';
+    var h = '<div class="fb-titre">' + facturesEsc(titre) + '</div>';
+    if (r.pause) h += '<div class="fb-pause">' + facturesEsc(r.raison_pause) + '</div>';
+    h += '<div class="fb-barre"><span style="width:' + pct + '%"></span></div>';
+    h += '<div>' + (t.faites || 0) + ' tranche' + ((t.faites || 0) > 1 ? 's' : '') + ' sur ' + (t.total || 0) + ' terminée' + ((t.faites || 0) > 1 ? 's' : '') +
+      ' · <b>' + (t.restantes || 0) + ' restante' + ((t.restantes || 0) > 1 ? 's' : '') + '</b>' + (t.echec ? ' · <b>' + t.echec + ' en échec</b>' : '') + '</div>';
+    h += '<div class="fb-mois">' + (r.mois || []).map(function(m){
+      var idx = parseInt(String(m.mois).slice(5, 7), 10) - 1;
+      var suite = m.tranches_total ? (' · ' + m.tranches_faites + '/' + m.tranches_total) : '';
+      return '<div class="fb-m fb-' + facturesEsc(m.etat) + '"><b>' + facturesEsc(FACTURES_MOIS_COURT[idx] || m.mois) + '</b><span>' + facturesEsc(FACTURES_ETAT_LIB[m.etat] || m.etat) + facturesEsc(suite) + '</span></div>';
+    }).join('') + '</div>';
+    (r.mois || []).filter(function(m){ return m.etat === 'echec'; }).forEach(function(m){
+      h += '<div class="fb-ech">⚠️ <b>' + facturesEsc(facturesMoisLabel(m.mois)) + '</b> : ' + facturesEsc(m.raison || 'raison non enregistrée') + '</div>';
+    });
+    var fin = '';
+    if (r.fin_estimee){
+      var d = new Date(r.fin_estimee);
+      if (!isNaN(d.getTime())) fin = 'Fin estimée : ' + d.toLocaleDateString('fr-FR', { weekday: 'long', day: 'numeric', month: 'long' }) + ' vers ' + d.toLocaleTimeString('fr-FR', { hour: '2-digit', minute: '2-digit' }) + '. ';
+    }
+    h += '<div class="fb-pied">' + facturesEsc(fin) + 'Coût IA : ' + facturesFmtUsd(r.cout_usd) + ' sur ' + facturesFmtUsd(r.plafond_usd) + ' de plafond.</div>';
+    el.innerHTML = h; el.style.display = '';
+  }
   function facturesRender(){
     facturesRenderFileAlerte();
+    facturesRenderBandeau();
     facturesRenderPeriode();
     facturesRenderTabs();
     facturesRenderListe();
@@ -12615,6 +12779,7 @@
     document.getElementById('mail-erreur').style.display = 'none';
     document.getElementById('mail-corps').style.display = 'none';
     document.getElementById('mail-ouvrir-lien').style.display = 'none';
+    document.getElementById('mail-ouvrir-note').style.display = 'none';
     mailOpen(true);
     postFacturesApi({ action: 'voir_mail', facture_id: fid }, function(j){
       document.getElementById('mail-chargement').style.display = 'none';
@@ -12631,7 +12796,7 @@
       document.getElementById('mail-corps').style.display = '';
       var lien = facturesLienMail(j.message_id_rfc822);
       var a = document.getElementById('mail-ouvrir-lien');
-      if (lien){ a.setAttribute('href', lien); a.style.display = ''; }
+      if (lien){ a.setAttribute('href', lien); a.style.display = ''; document.getElementById('mail-ouvrir-note').style.display = ''; }
     }, function(err){
       document.getElementById('mail-chargement').style.display = 'none';
       var e = document.getElementById('mail-erreur');
@@ -13049,6 +13214,32 @@
   // details sensibles (memes noms de champs, voir doc x402-seller) : freshness,
   // revenue_estimated_net_usd/gross_usd {today,last_7d,month_to_date,all_time},
   // succeeded_runs_30d, runs_all_time, monetized_actors_count, by_actor[].
+  // Bandeau d'usage plateforme (donnee directe Apify, pas une estimation) : 3 niveaux +
+  // "inconnu" si l'appel a echoue ou si le serveur est ancien (champ absent).
+  function cryptoRenderPlatform(pu){
+    var el = document.getElementById('cxa-platform');
+    var tag = '<span class="cxa-direct" style="display:inline"><span class="cxa-tag">APIFY</span></span>';
+    if (!pu || !pu.available || typeof pu.usage_usd !== 'number' || typeof pu.limit_usd !== 'number'){
+      el.className = 'cxa-pl-unk';
+      el.innerHTML = tag + '⚠️ Usage plateforme <b>inconnu</b> (donnée indisponible) — impossible de savoir si le seuil gratuit approche.';
+      return;
+    }
+    var pct = (pu.usage_usd / pu.limit_usd) * 100;
+    var reset = pu.cycle_end_at ? ' Remise à zéro le ' + new Date(pu.cycle_end_at).toLocaleDateString('fr-FR') + '.' : '';
+    var msg = '';
+    if (pu.limit_reached || pct >= 100){
+      el.className = 'cxa-pl-crit';
+      msg = '🛑 <b>Limite atteinte : tes Actors sont désactivés</b>, tout run d\'un acheteur échoue.' + reset;
+    } else if (pct >= 80){
+      el.className = 'cxa-pl-warn';
+      msg = '⚠️ <b>Seuil proche (' + pct.toFixed(0) + ' %)</b> : à 100 % Apify désactive tes Actors.' + reset;
+    } else {
+      el.className = '';
+      msg = 'Usage plateforme du mois.' + reset;
+    }
+    el.innerHTML = tag + msg + '<br><b>' + pu.usage_usd.toFixed(2) + ' $</b> / ' + pu.limit_usd.toFixed(2) + ' $ (' + pct.toFixed(0) + ' %)' +
+      '<div class="cxa-bar"><i style="width:' + Math.min(100, pct).toFixed(1) + '%"></i></div>';
+  }
   function cryptoLoadApify(){
     var loading = document.getElementById('cxa-loading');
     var errorEl = document.getElementById('cxa-error');
@@ -13074,6 +13265,7 @@
         fb.className = ({live:'cxa-fresh-live', cached:'cxa-fresh-cached', stale:'cxa-fresh-stale'})[fresh] || 'cxa-fresh-stale';
         var freshLabel = ({live:'En direct', cached:'En cache', stale:'Pas à jour (stale)'})[fresh] || ('État : ' + escHtml(fresh));
         fb.innerHTML = '<span class="cxa-dot"></span>' + freshLabel;
+        cryptoRenderPlatform(data.platform_usage);
         var net = data.revenue_estimated_net_usd || {};
         var gross = data.revenue_estimated_gross_usd || {};
         document.getElementById('cxa-net-mtd').textContent = (net.month_to_date || 0).toFixed(3);
@@ -13109,6 +13301,15 @@
             sub.className = 'couts-svc-pct';
             sub.textContent = (a.runs_all_time || 0) + ' runs au total — ' + (a.succeeded_runs_30d || 0) + ' réussis (30j) — ' + (netAllTime != null ? 'net estimé' : 'brut estimé (marge inconnue)');
             row.appendChild(topRow); row.appendChild(sub);
+            // Chiffres directs Apify (non estimes) : null/absent = inconnu, jamais affiche comme 0.
+            var direct = document.createElement('span');
+            direct.className = 'cxa-direct';
+            function dv(v, suffix){ return (typeof v === 'number') ? (v + suffix) : '<span class="cxa-unk">inconnu</span>'; }
+            direct.innerHTML = '<span class="cxa-tag">APIFY</span>' +
+              dv(a.users_total, ' utilisateurs au total (dont moi)') + ' · ' +
+              dv(a.users_30d, ' actifs (30j)') + ' · ' +
+              dv(a.external_runs_30d, ' runs externes (30j)');
+            row.appendChild(direct);
             list.appendChild(row);
           });
         }
@@ -22190,6 +22391,10 @@
   function meuteUpdateBadge(){
     var n = meuteAll.filter(MEUTE_TABS.nouveaux).length;
     if (n > 0){ meuteBadge.textContent = n; meuteBadge.style.display = ''; } else { meuteBadge.style.display = 'none'; }
+    ['apps-meute-badge', 'apps-btn-badge'].forEach(function(id){
+      var b = document.getElementById(id);
+      if (b){ b.textContent = n; b.style.display = n > 0 ? '' : 'none'; }
+    });
     updateAppBadgeTotal();
   }
 
