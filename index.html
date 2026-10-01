@@ -2900,19 +2900,6 @@
   .radar-jauge-bar.radar-jauge-pleine i{background:var(--gold-a)}
   .radar-jauge-val{font-size:11px; color:var(--muted); margin-top:3px; display:block}
 
-  /* -------------------------------------------------------------- entonnoir */
-  #radar-entonnoir{
-    display:flex; align-items:stretch; gap:6px; margin-bottom:14px; overflow-x:auto;
-    padding-bottom:2px;
-  }
-  .radar-etape{
-    flex:1 1 0; min-width:74px; background:var(--surface); border-radius:12px;
-    padding:10px 8px; text-align:center;
-  }
-  .radar-etape-val{font-size:18px; font-weight:800; color:var(--ink); line-height:1.1}
-  .radar-etape-lab{font-size:9.5px; color:var(--muted); text-transform:uppercase; letter-spacing:.01em; margin-top:3px; line-height:1.25}
-  .radar-etape-fleche{flex:0 0 auto; align-self:center; color:var(--muted); font-size:13px}
-
   /* --------------------------------------------------------------- filtres */
   #radar-filtres{display:flex; gap:8px; margin-bottom:12px}
   .radar-select{
@@ -2922,12 +2909,6 @@
 
   /* 4.1 (29/09/2026) : bascule « seulement accessibles » / « tout voir », compteur,
      badge de faisabilité, bouton « voir plus ». Nouvelles classes uniquement. */
-  #radar-faisa-toggle{display:flex; gap:8px; margin-bottom:10px}
-  .radar-faisa-btn{
-    flex:1 1 0; min-width:0; background:var(--surface); color:var(--ink);
-    border:0.5px solid var(--hairline); border-radius:10px; padding:9px 10px; font-size:12.5px; font-weight:600;
-  }
-  .radar-faisa-btn.actif{background:var(--blue); color:#fff; border-color:var(--blue)}
   #radar-compte{font-size:12px; color:var(--muted); margin:0 2px 10px; line-height:1.4}
   .radar-badge-solo{background:var(--blue); color:#fff}
   .radar-badge-exclu{background:rgba(255,255,255,.08); color:var(--muted)}
@@ -2948,13 +2929,6 @@
     padding:7px 9px; margin-top:6px; line-height:1.4;
   }
 
-  /* ------------------------------------------------------------------ hero */
-  #radar-hero{
-    background:var(--surface); border-radius:14px; padding:14px 16px; margin-bottom:14px;
-    display:flex; flex-direction:column; gap:2px;
-  }
-  #radar-hero-titre{font-size:13px; color:var(--ink); margin-top:2px; line-height:1.3}
-
   /* ------------------------------------------------------------- badges/cartes */
   .radar-badge{
     display:inline-block; font-size:11px; font-weight:700; padding:2px 8px; border-radius:10px;
@@ -2963,12 +2937,6 @@
   }
   .radar-badge.selectionne{background:var(--blue); color:#fff}
   .radar-badge.rejete{opacity:.55}
-  .radar-secteur-badge{
-    display:inline-flex; align-items:center; gap:4px; font-size:11px; font-weight:600;
-    padding:2px 8px; border-radius:10px; background:rgba(10,132,255,.14); color:var(--blue);
-    white-space:nowrap;
-  }
-  .radar-secteur-verifie{color:var(--gold-a)} /* petite marque distincte -- citation vérifiée */
   .radar-card{
     background:var(--surface); border-radius:14px; padding:13px 15px; margin-bottom:10px;
     cursor:pointer;
@@ -2982,7 +2950,6 @@
   .radar-score-bar i{display:block; height:100%; background:var(--blue); border-radius:3px}
   .radar-score-txt{font-size:12px; font-weight:700; color:var(--blue); flex:0 0 auto; white-space:nowrap}
   .radar-card-hint{font-size:11px; color:var(--muted); margin-top:8px; text-align:right}
-  .radar-src-count{font-size:11px; color:var(--muted)}
 
   /* --------------------------------------------------------------- détail */
   .radar-detail{
@@ -3005,16 +2972,29 @@
   .radar-preuve-meta a{color:var(--blue)}
 
   /* ---------------------------------------------------------- tendance 7j */
-  #radar-tendance{margin-top:16px; padding-top:12px; border-top:0.5px solid var(--hairline)}
-  #radar-tendance-titre{font-size:11.5px; font-weight:700; color:var(--muted); text-transform:uppercase; letter-spacing:.02em; margin-bottom:8px}
-  #radar-tendance-svg{width:100%; height:64px; display:block}
-  #radar-tendance-note{font-size:11px; color:var(--muted); margin-top:6px}
-
   .radar-download-btn{
     display:block; width:100%; margin:2px 0 14px; padding:10px; border-radius:10px;
     background:var(--surface); color:var(--ink); border:0.5px solid var(--hairline);
     font-size:13px; font-weight:600;
   }
+
+  /* V2.7 (01/10/2026) : fiches « secteur x tâche » -- nouvelles classes .radar-* uniquement, aucune variable :root touchée.
+     Décisions : bleu plein = éligible, doré léger = à vérifier, estompé = exclue (chaque état porte aussi un MOT : jamais la couleur seule,
+     et aucune paire rouge/vert -- principe 3). */
+  #radar-decisions{display:flex; gap:6px; margin-bottom:10px}
+  .radar-dec-btn{
+    flex:1 1 0; min-width:0; background:var(--surface); color:var(--ink);
+    border:0.5px solid var(--hairline); border-radius:10px; padding:8px 4px; font-size:12px; font-weight:600; line-height:1.25;
+  }
+  .radar-dec-btn.actif{background:var(--blue); color:#fff; border-color:var(--blue)}
+  .radar-dec-n{display:block; font-size:15px; font-weight:800}
+  .radar-dec-eligible_prospection{background:var(--blue); color:#fff}
+  .radar-dec-a_verifier{background:rgba(232,185,106,.18); color:var(--gold-a)}
+  .radar-dec-exclue{opacity:.55}
+  #radar-v2-message{margin-bottom:12px; line-height:1.45}
+  .radar-critere{margin:9px 0}
+  .radar-critere-tete{display:flex; justify-content:space-between; gap:8px; font-size:12px; font-weight:600; color:var(--ink); margin-bottom:4px}
+  .radar-puce{padding-left:2px}
   .cx-npm-card{
     flex:1 1 0; min-width:0; background:rgba(10,132,255,.10);
     border:0.5px solid rgba(10,132,255,.30); border-radius:12px; padding:12px 12px 10px;
@@ -7192,39 +7172,26 @@
         </div>
       </div>
 
-      <!-- Entonnoir du jour, compact -->
-      <div id="radar-entonnoir"></div>
+      <!-- V2.7 (01/10/2026) : fiches « secteur x tâche » de la cartographie v2 -->
+      <div id="radar-v2-message" class="couts-svc-row" style="display:none"></div>
+      <div id="radar-v2">
+        <div id="radar-decisions">
+          <button type="button" class="radar-dec-btn actif" data-decision="eligible_prospection">Éligibles <span class="radar-dec-n"></span></button>
+          <button type="button" class="radar-dec-btn" data-decision="a_verifier">À vérifier <span class="radar-dec-n"></span></button>
+          <button type="button" class="radar-dec-btn" data-decision="exclue">Exclues <span class="radar-dec-n"></span></button>
+          <button type="button" class="radar-dec-btn" data-decision="toutes">Toutes <span class="radar-dec-n"></span></button>
+        </div>
 
-      <div id="radar-hero" style="display:none">
-        <span class="cx-hero-label" id="radar-hero-label">Meilleur dossier</span>
-        <span class="cx-hero-value"><span id="radar-hero-value">—</span><span class="cx-hero-unit">/100</span></span>
-        <div id="radar-hero-titre"></div>
-      </div>
+        <!-- Filtres secteur / tâche -->
+        <div id="radar-filtres">
+          <select class="radar-select" id="radar-filtre-secteur" aria-label="Secteur"><option value="">Tous les secteurs</option></select>
+          <select class="radar-select" id="radar-filtre-tache" aria-label="Tâche"><option value="">Toutes les tâches</option></select>
+        </div>
+        <div id="radar-compte"></div>
 
-      <!-- 4.1 : par défaut, seulement les dossiers >= 50 ET accessibles en solo -->
-      <div id="radar-faisa-toggle">
-        <button type="button" class="radar-faisa-btn actif" id="radar-faisa-accessibles">Seulement accessibles</button>
-        <button type="button" class="radar-faisa-btn" id="radar-faisa-tout">Tout voir</button>
-      </div>
-      <div id="radar-compte"></div>
-
-      <!-- Filtres statut / secteur -->
-      <div id="radar-filtres">
-        <select class="radar-select" id="radar-filtre-statut"><option value="">Tous les statuts</option></select>
-        <select class="radar-select" id="radar-filtre-secteur"><option value="">Tous les secteurs</option></select>
-      </div>
-
-      <button id="radar-download" type="button" class="radar-download-btn">⬇️ Télécharger le rapport (.txt)</button>
-
-      <div id="radar-opps-list"></div>
-      <button id="radar-voir-plus" type="button" style="display:none">Voir plus</button>
-      <div id="radar-generated" style="font-size:11px;color:var(--muted);margin-top:4px"></div>
-
-      <!-- Tendance 7 jours -->
-      <div id="radar-tendance">
-        <div id="radar-tendance-titre">Tendance sur 7 jours</div>
-        <svg id="radar-tendance-svg" viewBox="0 0 280 64" preserveAspectRatio="none"></svg>
-        <div id="radar-tendance-note"></div>
+        <div id="radar-opps-list"></div>
+        <button id="radar-voir-plus" type="button" style="display:none">Voir plus</button>
+        <div id="radar-generated" style="font-size:11px;color:var(--muted);margin-top:4px"></div>
       </div>
     </div>
   </div>
@@ -8741,8 +8708,8 @@
          unique de detection de mise a jour (voir checkUpdate ci-dessous), plus fiable qu'une
          comparaison de chaine de version par tenant. */
   var APPV_MCS = '4.59';
-  var APPV_LABO = '1.06';
-  var BUILD = 95;
+  var APPV_LABO = '1.07';
+  var BUILD = 96;
   // displayVersion()/displayVersionShort() lisent isMcsCode() (definie plus bas dans cette
   // meme IIFE -- declaration de fonction, donc disponible ici par hoisting) : le TENANT
   // affiche depend du code de connexion, jamais d'un simple "APPV" global qui ne dirait ni
@@ -11790,43 +11757,47 @@
   function radarClose(){ radarview.classList.remove('open'); }
   function postRadarRecap(payload, onOk, onErr){ postDevisWeb(API_RADAR, payload, onOk, onErr); }
 
-  var RADAR_STATUT_LABEL = {
-    nouveau: 'Nouveau', enquete_terminee: 'Enquêté', en_analyse: 'En analyse', incertain: 'Incertain',
-    rejete: 'Rejeté', a_revoir: 'À revoir', selectionne: 'Sélectionné', archive_faible: 'Archivé (faible)',
-  };
+  // V2.7 (01/10/2026, RADAR-V2.md) : les FICHES « secteur x tâche » de la cartographie v2 remplacent la liste de dossiers de la v1
+  // (les dossiers v1 restent en base, archivés ; leurs vues restent servies par le workflow mais cet onglet ne les affiche plus).
+  // Trois appels réseau SÉPARÉS, comme en 7.2 bis :
+  //  - « etat » (bandeau, 3 jauges, alertes -- inchangé) toutes les 60 s ;
+  //  - « fiches » (liste légère, 30 par page, « éligible prospection » par défaut) toutes les 5 min ou au bouton actualiser ;
+  //  - « fiche » (détail d'UNE fiche) à l'ouverture de sa carte seulement, mis en cache ; « prospection » (CSV) au toucher du bouton.
+  // Tout texte venu de la base (donc du web ou d'un modèle) est posé avec textContent, jamais comme HTML ; un lien n'est créé que
+  // pour une adresse https.
+  var RADAR_DECISION_LABEL = { eligible_prospection: 'Éligible prospection', a_verifier: 'À vérifier', exclue: 'Exclue' };
   var RADAR_INFOBULLES = {
-    'score prudent': 'Note sur 100 calculée par du code (jamais par un modèle) à partir des preuves réellement collectées. Reste bas tant que peu de sources existent par dossier.',
-    'a_verifier': 'Le Critic n\'a ni assez d\'éléments pour rejeter, ni assez de preuves pour dire que le dossier est éligible.',
-    'secteur vérifié': 'Ce secteur vient d\'une phrase retrouvée mot pour mot dans le texte collecté, pas d\'une case par défaut.',
+    'score prudent': 'Note sur 100 calculée par du code (jamais par un modèle), critère par critère, à partir de chiffres réellement mesurés. « Prudent » = un critère sans preuve chiffrée vaut 0.',
+    'a_verifier': 'La fiche n\'est pas écartée, mais il manque une preuve ou une vérification avant de prospecter : le motif est écrit dans le détail.',
+    'eligible': 'Score prudent suffisant, aucune objection structurelle, une liste de prospection assez longue et un Critic passé : tous ces contrôles sont faits par du code.',
   };
-  var RADAR_GROUPE_LABEL = { signal_origine: 'Signal d\'origine', enquete: 'Enquête', concurrence: 'Concurrence', prix: 'Prix' };
-  var RADAR_GROUPE_ORDRE = ['signal_origine', 'enquete', 'concurrence', 'prix'];
+  var RADAR_PERIODE = { par_mois: '/ mois', par_an: '/ an', unique: 'une fois' };
+  var RADAR_PERSONNES = { une: 'une personne', deux: 'deux personnes', plus_de_deux: 'plus de deux personnes' };
 
-  // Sous-étape 7.2 bis (25/09/2026, demande Mathéo) : 3 appels réseau
-  // SÉPARÉS, cadences différentes, au lieu d'un seul gros appel :
-  // - "etat" (bandeau, jauges, entonnoir, flux -- quelques Ko) toutes les 60 s ;
-  // - "dossiers" (liste résumée, sans preuves -- dossiers du jour + 30
-  //   meilleurs des 7 derniers jours) toutes les 5 min ou au bouton actualiser ;
-  // - "detail" (preuves, affirmations, objection -- UN seul dossier) chargé
-  //   uniquement à l'ouverture de sa carte, jamais avant, jamais pour tous
-  //   les dossiers d'un coup.
   var radarAutoTimerEtat = null;
-  var radarAutoTimerDossiers = null;
+  var radarAutoTimerFiches = null;
   var radarEtatCache = null;
-  var radarDossiersCache = null;
+  var radarFichesCache = null;   // dernière liste reçue (fiches de toutes les pages chargées + compteurs + choix de filtres)
   var radarDetailCache = {};
-  var radarFiltreStatut = '';
-  var radarFiltreSecteur = '';
-  // 4.1 : « accessibles » (défaut) | « tout ». Liste chargée 30 par 30 ; `radarPages` =
-  // nombre de pages déjà affichées (le rafraîchissement 5 min les recharge toutes).
-  var radarFiltreFaisa = 'accessibles';
+  var radarDecision = 'eligible_prospection';
+  var radarSecteur = '';
+  var radarTache = '';
   var radarPages = 1;
   var RADAR_PAGE = 30;
-  var RADAR_SEUIL_LISTE = 50;
-  var RADAR_FAISA_LABEL = {
-    investissement_initial: 'Investissement initial', delai_premier_revenu: 'Délai avant le premier revenu',
-    marche: 'Marché', competences: 'Compétences requises', taille_du_probleme: 'Taille du problème',
-  };
+  var radarJeton = 0;            // numéro de la dernière demande de liste : une réponse périmée (filtre changé entre-temps) est ignorée
+
+  function radarFmtNombre(n){ return n == null ? '?' : Math.round(n).toLocaleString('fr-FR'); }
+  function radarFmtDecimal(n){ return n == null ? '?' : (Math.round(n * 10) / 10).toLocaleString('fr-FR'); }
+  function radarFmtDate(iso){ if (!iso) return ''; var d = new Date(iso); return isNaN(d.getTime()) ? '' : d.toLocaleDateString('fr-FR'); }
+  function radarPrixTexte(p){
+    if (!p || p.min == null) return '';
+    return radarFmtNombre(p.min) + (p.max != null && p.max !== p.min ? ' à ' + radarFmtNombre(p.max) : '') + ' € ' + (RADAR_PERIODE[p.periodicite] || '');
+  }
+  function radarHttps(u){ return (typeof u === 'string' && /^https:\/\/\S+$/i.test(u)) ? u : null; }
+  function radarLien(url, libelle){
+    var a = document.createElement('a'); a.href = url; a.target = '_blank'; a.rel = 'noopener noreferrer'; a.textContent = libelle || url;
+    return a;
+  }
 
   function radarInfoBtn(cle){
     var b = document.createElement('button');
@@ -11894,322 +11865,309 @@
       (req.valeur != null ? req.valeur : '—') + ' req · ' + (fe.valeur != null ? fe.valeur : '—') + ' pages';
   }
 
-  function radarRenderEntonnoir(data){
-    var e = data.entonnoir || {};
-    var box = document.getElementById('radar-entonnoir');
-    box.innerHTML = '';
-    var decisions = e.decisions || {};
-    var etapes = [
-      ['Signaux', (e.signaux_douleur_collectes || 0) + (e.signaux_offre_collectes || 0)],
-      ['Hypothèses', e.hypotheses_scout || 0],
-      ['Enquêtés', e.dossiers_enquetes || 0],
-      ['Analysés', e.dossiers_analyses || 0],
-      ['Éligibles', decisions.eligible_revue_humaine || 0],
-    ];
-    etapes.forEach(function(et, i){
-      if (i > 0){
-        var fl = document.createElement('span'); fl.className = 'radar-etape-fleche'; fl.textContent = '›';
-        box.appendChild(fl);
-      }
-      var d = document.createElement('div'); d.className = 'radar-etape';
-      var v = document.createElement('div'); v.className = 'radar-etape-val'; v.textContent = et[1];
-      var l = document.createElement('div'); l.className = 'radar-etape-lab'; l.textContent = et[0];
-      d.appendChild(v); d.appendChild(l);
-      box.appendChild(d);
+  function radarBadgeDecision(decision){
+    var s = document.createElement('span');
+    s.className = 'radar-badge radar-dec-' + decision;
+    s.textContent = RADAR_DECISION_LABEL[decision] || decision;
+    return s;
+  }
+  // Badge d'accessibilité : déduit par le CODE du radar (porte d'accessibilité), jamais par un modèle.
+  function radarBadgeAccessibilite(acc){
+    var s = document.createElement('span');
+    var etat = acc && acc.etat;
+    s.className = 'radar-badge ' + (etat === 'accessible' ? 'radar-badge-solo' : 'radar-badge-exclu');
+    s.textContent = etat === 'accessible' ? 'Accessible' : (etat === 'ferme' ? 'Porte fermée' : 'Faisabilité non évaluée');
+    return s;
+  }
+
+  // ------------------------------------------------------------------ liste
+  function radarMessage(texte){
+    var m = document.getElementById('radar-v2-message');
+    m.textContent = texte || '';
+    m.style.display = texte ? '' : 'none';
+  }
+
+  function radarRenderDecisions(){
+    var c = (radarFichesCache && radarFichesCache.compteurs) || {};
+    var boutons = document.querySelectorAll('#radar-decisions .radar-dec-btn');
+    Array.prototype.forEach.call(boutons, function(b){
+      var d = b.getAttribute('data-decision');
+      b.classList.toggle('actif', d === radarDecision);
+      var n = d === 'toutes' ? c.total : c[d];
+      b.querySelector('.radar-dec-n').textContent = n != null ? n : '';
     });
   }
 
-  function radarSecteurBadge(o){
-    var span = document.createElement('span');
-    var verifie = o.secteur_provenance === 'citation_verifiee';
-    span.className = 'radar-secteur-badge' + (verifie ? ' radar-secteur-verifie' : '');
-    span.textContent = (o.secteur || '?') + (verifie ? ' ✓' : '');
-    return span;
-  }
-
-  function radarPeuplerFiltres(dossiers){
-    var selStatut = document.getElementById('radar-filtre-statut');
-    var selSecteur = document.getElementById('radar-filtre-secteur');
-    var statuts = {}; var secteurs = {};
-    dossiers.forEach(function(o){ if (o.statut) statuts[o.statut] = true; if (o.secteur) secteurs[o.secteur] = true; });
-    var avantStatut = selStatut.value, avantSecteur = selSecteur.value;
-    selStatut.innerHTML = '<option value="">Tous les statuts</option>';
-    Object.keys(statuts).sort().forEach(function(s){
-      var opt = document.createElement('option'); opt.value = s; opt.textContent = RADAR_STATUT_LABEL[s] || s;
-      selStatut.appendChild(opt);
+  function radarRemplirSelect(select, vide, choix, valeur, cleId){
+    select.innerHTML = '';
+    var o0 = document.createElement('option'); o0.value = ''; o0.textContent = vide; select.appendChild(o0);
+    var present = false;
+    (choix || []).forEach(function(x){
+      var o = document.createElement('option'); o.value = x[cleId]; o.textContent = x.libelle + ' (' + x.n + ')';
+      if (x[cleId] === valeur) present = true;
+      select.appendChild(o);
     });
-    selSecteur.innerHTML = '<option value="">Tous les secteurs</option>';
-    Object.keys(secteurs).sort().forEach(function(s){
-      var opt = document.createElement('option'); opt.value = s; opt.textContent = s;
-      selSecteur.appendChild(opt);
-    });
-    selStatut.value = avantStatut; selSecteur.value = avantSecteur;
+    // Un filtre actif qui ne figure plus dans les choix (autre décision choisie) reste affiché plutôt que de sauter silencieusement.
+    if (valeur && !present){ var o1 = document.createElement('option'); o1.value = valeur; o1.textContent = valeur; select.appendChild(o1); }
+    select.value = valeur || '';
   }
 
-  function radarDossiersFiltres(){
-    var dossiers = (radarDossiersCache && radarDossiersCache.dossiers) || [];
-    return dossiers.filter(function(o){
-      if (radarFiltreStatut && o.statut !== radarFiltreStatut) return false;
-      if (radarFiltreSecteur && o.secteur !== radarFiltreSecteur) return false;
-      return true;
-    });
-  }
-
-  // Construit le detail complet d'un dossier (25/09/2026, sous-étape 7.2 bis) :
-  // `resume` = ce qu'on affiche déjà sur la carte (titre/score/secteur/statut,
-  // reçu avec la liste) ; `det` = la réponse de la vue "detail", chargée à la
-  // demande (hypothèse complète, preuves groupées, objection, prochain test).
-  // Texte toujours posé via textContent (données issues du web/du modèle,
-  // jamais injectées comme HTML).
-  function radarBuildDetail(resume, det){
-    var box = document.createElement('div');
-    box.className = 'radar-detail';
-
-    function ligne(label, texte, infoCle){
-      if (!texte) return;
-      var p = document.createElement('div'); p.className = 'radar-detail-ligne';
-      var wrap = document.createElement('span');
-      var l = document.createElement('b'); l.textContent = label + ' : ';
-      wrap.appendChild(l);
-      if (infoCle) wrap.appendChild(radarInfoBtn(infoCle));
-      p.appendChild(wrap);
-      p.appendChild(document.createTextNode(' ' + texte));
-      box.appendChild(p);
-    }
-
-    var h = det.hypothese || {};
-    ligne('Acheteur', h.acheteur || resume.acheteur);
-    ligne('Problème', h.probleme);
-    ligne('Mécanisme IA', h.mecanisme_ia);
-    if (det.secteur_citation) ligne('Citation secteur', '« ' + det.secteur_citation + ' »', 'secteur vérifié');
-
-    if (det.objection_resume){
-      var t = document.createElement('div'); t.className = 'radar-detail-titre'; t.textContent = 'Objection du Critic';
-      box.appendChild(t);
-      var p = document.createElement('div'); p.className = 'radar-detail-ligne'; p.textContent = det.objection_resume;
-      box.appendChild(p);
-    }
-    ligne('Motif de la décision', det.motif_critic);
-    ligne('Prochain test le moins coûteux', det.prochain_test);
-
-    var fa = det.faisabilite;
-    if (fa && fa.payload){
-      var tf = document.createElement('div'); tf.className = 'radar-detail-titre';
-      tf.textContent = 'Faisabilité pour toi (hypothèses, hors score)';
-      box.appendChild(tf);
-      var verdict = document.createElement('div'); verdict.className = 'radar-detail-ligne';
-      verdict.textContent = fa.accessible_solo === true ? 'Accessible en solo.'
-        : (fa.accessible_solo === false ? 'Non accessible : ' + (fa.motif_exclusion || '—') : 'Non évaluée.');
-      box.appendChild(verdict);
-      Object.keys(RADAR_FAISA_LABEL).forEach(function(cle){
-        var champ = fa.payload[cle]; if (!champ) return;
-        var val = champ.valeurs ? champ.valeurs.join(', ') : champ.valeur;
-        ligne(RADAR_FAISA_LABEL[cle], val + (champ.justification ? ' — ' + champ.justification : ''));
-      });
-    }
-
-    var preuves = det.preuves || {};
-    var total = RADAR_GROUPE_ORDRE.reduce(function(n, g){ return n + ((preuves[g] || []).length); }, 0);
-    var tp = document.createElement('div'); tp.className = 'radar-detail-titre';
-    tp.textContent = 'Preuves (' + total + ')';
-    box.appendChild(tp);
-    if (!total){
-      var vide = document.createElement('div'); vide.className = 'radar-detail-ligne'; vide.textContent = 'Aucune preuve rattachée.';
-      box.appendChild(vide);
-    }
-    RADAR_GROUPE_ORDRE.forEach(function(cle){
-      var liste = preuves[cle] || [];
-      if (!liste.length) return;
-      var groupe = document.createElement('div'); groupe.className = 'radar-preuve-groupe';
-      var gt = document.createElement('div'); gt.className = 'radar-preuve-groupe-titre';
-      gt.textContent = RADAR_GROUPE_LABEL[cle] + ' (' + liste.length + ')';
-      groupe.appendChild(gt);
-      liste.forEach(function(pr){
-        var ligneP = document.createElement('div'); ligneP.className = 'radar-preuve-ligne';
-        var claim = document.createElement('div'); claim.className = 'radar-preuve-claim';
-        claim.textContent = (pr.claim || '').slice(0, 220);
-        ligneP.appendChild(claim);
-        var meta = document.createElement('div'); meta.className = 'radar-preuve-meta';
-        var date = pr.date ? new Date(pr.date).toLocaleString('fr-FR') : '';
-        if (pr.url){
-          if (date) meta.appendChild(document.createTextNode(date + ' · '));
-          var a = document.createElement('a'); a.href = pr.url; a.target = '_blank'; a.rel = 'noopener'; a.textContent = pr.url;
-          meta.appendChild(a);
-        } else if (date){
-          meta.textContent = date;
-        }
-        ligneP.appendChild(meta);
-        groupe.appendChild(ligneP);
-      });
-      box.appendChild(groupe);
-    });
-
-    return box;
-  }
-
-  function radarRenderHero(dossiers){
-    var hero = document.getElementById('radar-hero');
-    var notes = dossiers.filter(function(o){ return o.score_prudent != null; });
-    if (!notes.length){ hero.style.display = 'none'; return; }
-    var meilleur = notes.reduce(function(a, b){
-      return (b.score_prudent || 0) > (a.score_prudent || 0) ? b : a;
-    }, notes[0]);
-    hero.style.display = 'flex';
-    document.getElementById('radar-hero-value').textContent = meilleur.score_prudent;
-    document.getElementById('radar-hero-titre').textContent = meilleur.titre || '';
-  }
-
-  function radarRenderCards(){
+  function radarRenderCartes(){
     var list = document.getElementById('radar-opps-list');
     list.innerHTML = '';
-    var dossiers = radarDossiersFiltres();
-    if (!dossiers.length){
-      var empty = document.createElement('div');
-      empty.className = 'couts-svc-row';
-      var c = radarDossiersCache || {};
-      empty.textContent = radarFiltreFaisa === 'accessibles' && (c.total_non_evalues || 0) > 0
-        ? 'Aucun dossier accessible pour l\'instant — ' + c.total_non_evalues + ' dossier(s) à ' + RADAR_SEUIL_LISTE + ' ou plus attendent encore leur évaluation de faisabilité. « Tout voir » les montre.'
-        : 'Aucun dossier pour ces filtres.';
-      list.appendChild(empty);
+    var cache = radarFichesCache || {};
+    var fiches = cache.fiches || [];
+    if (!fiches.length){
+      var vide = document.createElement('div');
+      vide.className = 'couts-svc-row';
+      var c = cache.compteurs || {};
+      if (radarDecision === 'eligible_prospection' && !radarSecteur && !radarTache && (c.total || 0) > 0){
+        vide.textContent = 'Aucune fiche « éligible prospection » pour l\'instant — ' + (c.a_verifier || 0) + ' à vérifier, ' + (c.exclue || 0) + ' exclue(s). Les onglets ci-dessus les montrent.';
+      } else {
+        vide.textContent = 'Aucune fiche pour ces filtres.';
+      }
+      list.appendChild(vide);
       return;
     }
-    dossiers.forEach(function(o){
+    fiches.forEach(function(f){
       var card = document.createElement('div');
       card.className = 'radar-card';
 
-      var top = document.createElement('div');
-      top.className = 'radar-card-top';
-      var titre = document.createElement('div');
-      titre.className = 'radar-card-titre';
-      titre.textContent = o.titre || '(sans titre)';
-      var badge = document.createElement('span');
-      var noteDeja = o.score_prudent != null;
-      badge.className = 'radar-badge ' + (noteDeja ? (o.statut || '') : '');
-      badge.textContent = noteDeja ? (RADAR_STATUT_LABEL[o.statut] || o.statut || '?') : 'En cours d\'analyse';
-      top.appendChild(titre); top.appendChild(badge);
+      var top = document.createElement('div'); top.className = 'radar-card-top';
+      var titre = document.createElement('div'); titre.className = 'radar-card-titre'; titre.textContent = f.tache;
+      top.appendChild(titre); top.appendChild(radarBadgeDecision(f.decision));
       card.appendChild(top);
 
+      var secteur = document.createElement('div'); secteur.className = 'radar-card-sub'; secteur.textContent = f.secteur + ' · NAF ' + f.code_naf;
+      card.appendChild(secteur);
+
       var meta = document.createElement('div'); meta.className = 'radar-card-meta';
-      meta.appendChild(radarSecteurBadge(o));
-      var src = document.createElement('span'); src.className = 'radar-src-count';
-      src.textContent = (o.nb_sources || 0) + ' source' + (o.nb_sources === 1 ? '' : 's');
-      meta.appendChild(src);
+      meta.appendChild(radarBadgeAccessibilite(f.accessibilite));
+      if (f.deja_equipe){ var de = document.createElement('span'); de.className = 'radar-badge radar-badge-exclu'; de.textContent = 'Déjà équipés ?'; meta.appendChild(de); }
+      if (!f.concurrence_evaluee){ var ce = document.createElement('span'); ce.className = 'radar-badge radar-badge-exclu'; ce.textContent = 'Concurrence non évaluée'; meta.appendChild(ce); }
       card.appendChild(meta);
 
-      // 4.1 : faisabilité -- badge « Accessible » ou « Exclu » (+ motif lisible), sinon « non évaluée ».
-      var faisa = document.createElement('span');
-      if (o.accessible_solo === true){
-        faisa.className = 'radar-badge radar-badge-solo'; faisa.textContent = 'Accessible';
-      } else if (o.accessible_solo === false){
-        faisa.className = 'radar-badge radar-badge-exclu'; faisa.textContent = 'Exclu';
-      } else {
-        faisa.className = 'radar-badge radar-badge-exclu'; faisa.textContent = 'Faisabilité non évaluée';
-      }
-      meta.appendChild(faisa);
-      if (o.accessible_solo === false && o.motif_exclusion){
-        var motif = document.createElement('div'); motif.className = 'radar-faisa-motif';
-        motif.textContent = o.motif_exclusion;
-        card.appendChild(motif);
+      var chiffres = [];
+      if (f.etablissements_rayon != null) chiffres.push(radarFmtNombre(f.etablissements_rayon) + ' établissements à moins de ' + (radarFichesCache.rayon_km || 100) + ' km');
+      if (f.nb_offres_estime != null) chiffres.push('≈ ' + radarFmtNombre(f.nb_offres_estime) + ' offres d\'emploi (90 jours)');
+      var prix = radarPrixTexte(f.prix);
+      if (prix) chiffres.push(prix + ' (hypothèse)');
+      if (chiffres.length){ var ch = document.createElement('div'); ch.className = 'radar-card-sub'; ch.textContent = chiffres.join(' · '); card.appendChild(ch); }
+
+      if (f.service_ia){ var sv = document.createElement('div'); sv.className = 'radar-card-sub'; sv.textContent = f.service_ia; card.appendChild(sv); }
+      if (f.decision !== 'eligible_prospection' && f.premier_motif){
+        var mo = document.createElement('div'); mo.className = 'radar-faisa-motif'; mo.textContent = f.premier_motif + (f.nb_motifs > 1 ? ' (+' + (f.nb_motifs - 1) + ')' : '');
+        card.appendChild(mo);
       }
 
-      var sub = document.createElement('div');
-      sub.className = 'radar-card-sub';
-      sub.textContent = o.acheteur || '?';
-      card.appendChild(sub);
-
-      if (noteDeja){
-        var scoreRow = document.createElement('div');
-        scoreRow.className = 'radar-score-row';
-        var bar = document.createElement('div');
-        bar.className = 'radar-score-bar';
-        var fill = document.createElement('i');
-        fill.style.width = Math.max(0, Math.min(100, o.score_prudent || 0)) + '%';
-        bar.appendChild(fill);
-        var scoreTxt = document.createElement('span');
-        scoreTxt.className = 'radar-score-txt';
-        scoreTxt.textContent = o.score_prudent + '/100';
-        scoreRow.appendChild(bar); scoreRow.appendChild(scoreTxt);
-        card.appendChild(scoreRow);
+      if (f.score_prudent != null){
+        var row = document.createElement('div'); row.className = 'radar-score-row';
+        var bar = document.createElement('div'); bar.className = 'radar-score-bar';
+        var fill = document.createElement('i'); fill.style.width = Math.max(0, Math.min(100, f.score_prudent)) + '%'; bar.appendChild(fill);
+        var txt = document.createElement('span'); txt.className = 'radar-score-txt'; txt.textContent = radarFmtDecimal(f.score_prudent) + '/100';
+        row.appendChild(bar); row.appendChild(txt);
+        card.appendChild(row);
       }
-
-      var hint = document.createElement('div');
-      hint.className = 'radar-card-hint';
-      hint.textContent = noteDeja ? '▸ voir le détail' : '⏳ pas encore examiné par l\'Analyst/Critic';
+      var hint = document.createElement('div'); hint.className = 'radar-card-hint'; hint.textContent = '▸ voir le détail';
       card.appendChild(hint);
 
-      // Détail chargé à la demande (25/09/2026, sous-étape 7.2 bis) : jamais
-      // avant l'ouverture de CETTE carte précise, mis en cache ensuite pour
-      // qu'un aller-retour ouvrir/fermer ne relance pas d'appel réseau.
+      // Détail chargé à l'ouverture de CETTE carte seulement, puis gardé en cache (un aller-retour ouvrir/fermer n'appelle pas le réseau).
       var detail = null;
       card.addEventListener('click', function(){
         if (detail){ detail.remove(); detail = null; return; }
-        detail = document.createElement('div');
-        detail.className = 'radar-detail';
-        detail.textContent = 'Chargement…';
+        detail = document.createElement('div'); detail.className = 'radar-detail'; detail.textContent = 'Chargement…';
         card.insertAdjacentElement('afterend', detail);
-        if (radarDetailCache[o.id]){
-          var construit = radarBuildDetail(o, radarDetailCache[o.id]);
-          detail.replaceWith(construit); detail = construit;
-          return;
-        }
-        postRadarRecap({ vue: 'detail', opportunity_id: o.id }, function(det){
-          radarDetailCache[o.id] = det;
-          var construit = radarBuildDetail(o, det);
-          if (detail) detail.replaceWith(construit);
-          detail = construit;
-        }, function(err){
-          if (detail) detail.textContent = 'Erreur : ' + err;
-        });
+        if (radarDetailCache[f.id]){ var c1 = radarBuildDetail(f, radarDetailCache[f.id]); detail.replaceWith(c1); detail = c1; return; }
+        postRadarRecap({ vue: 'fiche', fiche_id: f.id }, function(det){
+          if (!det || det.ok !== true){ if (detail) detail.textContent = (det && det.erreur) || 'Fiche indisponible.'; return; }
+          radarDetailCache[f.id] = det;
+          var c2 = radarBuildDetail(f, det);
+          if (detail) detail.replaceWith(c2);
+          detail = c2;
+        }, function(err){ if (detail) detail.textContent = 'Erreur : ' + err; });
       });
       list.appendChild(card);
     });
   }
 
-  function radarRenderTendance(serie){
-    var svg = document.getElementById('radar-tendance-svg');
-    svg.innerHTML = '';
-    if (!serie || !serie.length){
-      document.getElementById('radar-tendance-note').textContent = 'Pas encore assez de jours pour une tendance.';
-      return;
+  // ------------------------------------------------------------------ détail d'une fiche
+  function radarBuildDetail(resume, det){
+    var box = document.createElement('div');
+    box.className = 'radar-detail';
+    var f = det.fiche || {};
+    var sv = det.service;
+
+    function titre(t){ var d = document.createElement('div'); d.className = 'radar-detail-titre'; d.textContent = t; box.appendChild(d); return d; }
+    function ligne(label, texte, infoCle){
+      if (!texte) return null;
+      var p = document.createElement('div'); p.className = 'radar-detail-ligne';
+      var wrap = document.createElement('span');
+      if (label){ var l = document.createElement('b'); l.textContent = label + ' : '; wrap.appendChild(l); }
+      if (infoCle) wrap.appendChild(radarInfoBtn(infoCle));
+      p.appendChild(wrap); p.appendChild(document.createTextNode(' ' + texte));
+      box.appendChild(p);
+      return p;
     }
-    var W = 280, H = 64, pad = 4;
-    var maxDossiers = Math.max(1, Math.max.apply(null, serie.map(function(j){ return j.dossiers || 0; })));
-    var n = serie.length;
-    var pasX = (W - pad * 2) / n;
-    var largeurBarre = pasX * 0.6;
-    serie.forEach(function(j, i){
-      var h = Math.round(((j.dossiers || 0) / maxDossiers) * (H - 16));
-      var x = pad + i * pasX + (pasX - largeurBarre) / 2;
-      var y = H - h - 12;
-      var rect = document.createElementNS('http://www.w3.org/2000/svg', 'rect');
-      rect.setAttribute('x', x); rect.setAttribute('y', y);
-      rect.setAttribute('width', largeurBarre); rect.setAttribute('height', Math.max(h, 1));
-      rect.setAttribute('rx', 2);
-      rect.setAttribute('fill', i === n - 1 ? '#0A84FF' : 'rgba(255,255,255,.18)');
-      svg.appendChild(rect);
-      var txt = document.createElementNS('http://www.w3.org/2000/svg', 'text');
-      txt.setAttribute('x', x + largeurBarre / 2); txt.setAttribute('y', H - 2);
-      txt.setAttribute('text-anchor', 'middle'); txt.setAttribute('font-size', '7');
-      txt.setAttribute('fill', '#98989E');
-      txt.textContent = (j.jour || '').slice(8, 10);
-      svg.appendChild(txt);
+    function puce(texte){ var p = document.createElement('div'); p.className = 'radar-detail-ligne radar-puce'; p.textContent = '• ' + texte; box.appendChild(p); }
+
+    if (f.est_la_derniere === false){
+      var vieux = document.createElement('div'); vieux.className = 'radar-info-note';
+      vieux.textContent = 'Ancien calcul : une version plus récente de cette fiche existe.'; box.appendChild(vieux);
+    }
+
+    // 1. Décision et motifs (écrits par le code du radar)
+    titre('Décision : ' + (RADAR_DECISION_LABEL[f.decision] || f.decision));
+    if ((det.motifs || []).length){ det.motifs.forEach(puce); }
+    else if (f.decision === 'eligible_prospection'){ ligne('', 'Aucun motif bloquant : tous les contrôles du code sont passés.', 'eligible'); }
+    (det.avertissements || []).forEach(function(a){ var n = document.createElement('div'); n.className = 'radar-info-note'; n.textContent = '⚠️ ' + a; box.appendChild(n); });
+
+    // 2. Service proposé (hypothèses de l'Analyste)
+    if (sv){
+      titre('Service IA proposé (hypothèse de l\'Analyste)');
+      ligne('Service', sv.service_ia_propose);
+      ligne('Remplace', sv.ce_quil_remplace);
+      var prix = radarPrixTexte(sv.prix);
+      if (prix) ligne('Prix envisagé', prix + (sv.prix.justification ? ' — ' + sv.prix.justification : ''));
+      if (sv.personnes_necessaires) ligne('Pour livrer', RADAR_PERSONNES[sv.personnes_necessaires] || sv.personnes_necessaires);
+    }
+
+    // 3. Chiffres sourcés
+    var ch = det.chiffres || {};
+    titre('Chiffres sourcés');
+    var duree = ch.accumulation_jours != null ? ' (collecte accumulée sur ' + ch.accumulation_jours + ' jours)' : '';
+    if (ch.nb_offres_tache_estime != null) ligne('Demande', '≈ ' + radarFmtNombre(ch.nb_offres_tache_estime) + ' offres d\'emploi actives mentionnent la tâche, dont ' + radarFmtNombre(ch.nb_offres_tache_zone_estime) + ' dans la zone' + duree + '.');
+    if (ch.part_offres_tache != null) ligne('Part des offres du secteur', radarFmtDecimal(ch.part_offres_tache * 100) + ' % (intervalle à 95 % : ' + radarFmtDecimal(ch.part_ic95_bas * 100) + ' à ' + radarFmtDecimal(ch.part_ic95_haut * 100) + ' %)');
+    if (ch.salaire_median_annuel_eur != null) ligne('Salaire médian', radarFmtNombre(ch.salaire_median_annuel_eur) + ' € par an');
+    ligne('Tendance', ch.tendance_statut === 'calculee' && ch.tendance_3_mois_pct != null ? radarFmtDecimal(ch.tendance_3_mois_pct) + ' % sur 3 mois' : 'pas encore calculable (la collecte quotidienne n\'a pas assez de recul)');
+    if (ch.etablissements_rayon != null) ligne('Établissements', radarFmtNombre(ch.etablissements_rayon) + ' à moins de ' + ((det.prospection || {}).rayon_km || 100) + ' km de ' + ((det.prospection || {}).centre || 'Bordeaux'));
+    if (sv && (sv.constats || []).length){
+      sv.constats.forEach(function(c){
+        var p = document.createElement('div'); p.className = 'radar-preuve-ligne';
+        var claim = document.createElement('div'); claim.className = 'radar-preuve-claim'; claim.textContent = c.texte; p.appendChild(claim);
+        var meta = document.createElement('div'); meta.className = 'radar-preuve-meta';
+        meta.appendChild(document.createTextNode('Source : ' + c.source));
+        var u = radarHttps(c.source_url);
+        if (u){ meta.appendChild(document.createTextNode(' · ')); meta.appendChild(radarLien(u, 'source officielle')); }
+        p.appendChild(meta); box.appendChild(p);
+      });
+    }
+
+    // 4. Score critère par critère
+    var t4 = titre('Score ' + radarFmtDecimal(f.score_prudent) + '/100 (prudent) — brut ' + radarFmtDecimal(f.score_brut));
+    t4.appendChild(document.createTextNode(' ')); t4.appendChild(radarInfoBtn('score prudent'));
+    (det.criteres || []).forEach(function(c){
+      var bloc = document.createElement('div'); bloc.className = 'radar-critere';
+      var tete = document.createElement('div'); tete.className = 'radar-critere-tete';
+      var nom = document.createElement('span'); nom.textContent = c.libelle + (c.statut === 'non_evalue' ? ' — non évalué' : '');
+      var pts = document.createElement('span'); pts.textContent = radarFmtDecimal(c.points_prudent) + ' / ' + radarFmtNombre(c.max);
+      tete.appendChild(nom); tete.appendChild(pts); bloc.appendChild(tete);
+      var bar = document.createElement('div'); bar.className = 'radar-score-bar';
+      var fill = document.createElement('i'); fill.style.width = (c.max ? Math.max(0, Math.min(100, (c.points_prudent / c.max) * 100)) : 0) + '%'; bar.appendChild(fill);
+      bloc.appendChild(bar);
+      var pr = document.createElement('div'); pr.className = 'radar-preuve-meta'; pr.textContent = c.preuve; bloc.appendChild(pr);
+      box.appendChild(bloc);
     });
-    var dernier = serie[serie.length - 1] || {};
-    document.getElementById('radar-tendance-note').textContent =
-      'Aujourd\'hui : ' + (dernier.dossiers || 0) + ' dossier(s), score médian ' +
-      (dernier.score_median != null ? dernier.score_median : '—') + ', coût ' +
-      (dernier.cout_eur != null ? dernier.cout_eur.toFixed(2) : '—') + ' €.';
+
+    // 5. Concurrence
+    var cc = det.concurrence || {};
+    titre('Concurrence');
+    if (cc.statut === 'evalue'){
+      ligne('Évaluée', (cc.source === 'session_claude' ? 'en session' : 'par recherche web') + ' le ' + radarFmtDate(cc.evalue_le));
+      (cc.outils || []).forEach(function(o){
+        var p = document.createElement('div'); p.className = 'radar-detail-ligne radar-puce';
+        p.appendChild(document.createTextNode('• ' + (o.nom || 'outil') + ' — ' + (o.prix ? o.prix : 'prix non trouvé')));
+        var u = radarHttps(o.prix_source) || radarHttps(o.url);
+        if (u){ p.appendChild(document.createTextNode(' · ')); p.appendChild(radarLien(u, 'source')); }
+        box.appendChild(p);
+      });
+      if (!(cc.outils || []).length) ligne('', 'Aucun outil dédié identifié.');
+      var sl = cc.service_local;
+      if (sl && sl.present){
+        var psl = ligne('Service local établi', (sl.nom || '?') + (sl.preuve ? ' — ' + sl.preuve : ''));
+        var usl = radarHttps(sl.url);
+        if (psl && usl){ psl.appendChild(document.createTextNode(' ')); psl.appendChild(radarLien(usl, 'source')); }
+      } else if (sl){ ligne('Service local', 'aucun repéré' + (sl.preuve ? ' — ' + sl.preuve : '')); }
+    } else {
+      ligne('Non évaluée', cc.motif || 'aucune recherche encore lancée');
+    }
+
+    // 6. Objections du Critic
+    var cr = det.critique;
+    titre('Objections du Critic');
+    if (!cr){ ligne('', 'Le Critic n\'est pas passé (fiche écartée avant, ou pas encore examinée).'); }
+    else {
+      if (!(cr.objections || []).length) ligne('', 'Aucune objection.');
+      cr.objections.forEach(function(o){
+        var grave = o.gravite_retenue === 'structurelle' ? 'structurelle (retenue)' : 'à vérifier';
+        var p = ligne(o.libelle + ' [' + grave + ']', o.texte);
+        if (p && o.service_local_nomme){
+          p.appendChild(document.createTextNode(' Service local cité : ' + o.service_local_nomme + '.'));
+          var uo = radarHttps(o.service_local_source);
+          if (uo){ p.appendChild(document.createTextNode(' ')); p.appendChild(radarLien(uo, 'source')); }
+        }
+      });
+      ligne('Avis du Critic', ({ poursuivre: 'poursuivre', a_verifier: 'à vérifier', rejeter: 'rejeter' }[cr.decision] || cr.decision) + (cr.motif ? ' — ' + cr.motif : ''));
+    }
+
+    // 7. Prochain test
+    if (sv){
+      titre('Prochain test');
+      ligne('À poser au client', sv.prochain_test_a_poser_au_client);
+      ligne(sv.prochain_test_a_poser_au_client ? 'Autre test' : 'Test', sv.prochain_test);
+      (sv.preuves_manquantes_analyste || []).forEach(function(m){ puce('Preuve manquante : ' + m); });
+    }
+
+    // 8. Faisabilité (hypothèses)
+    if (sv && (sv.faisabilite || []).length){
+      titre('Faisabilité pour deux personnes (hypothèses, hors score)');
+      sv.faisabilite.forEach(function(x){ ligne(x.libelle, x.valeur + (x.justification ? ' — ' + x.justification : '')); });
+    }
+
+    // 9. Liste de prospection
+    var pro = det.prospection || {};
+    titre('Liste de prospection');
+    ligne('', radarFmtNombre(pro.nb_rayon) + ' établissement(s) actif(s) à moins de ' + (pro.rayon_km || 100) + ' km de ' + (pro.centre || 'Bordeaux') + ' (registre SIRENE, échantillon du radar).');
+    (pro.apercu || []).forEach(function(e){ puce(e.raison_sociale + (e.commune ? ' — ' + e.commune : '') + (e.distance_km != null ? ' (' + radarFmtDecimal(e.distance_km) + ' km)' : '')); });
+    var btn = document.createElement('button'); btn.type = 'button'; btn.className = 'radar-download-btn';
+    btn.textContent = '⬇️ Liste de prospection (CSV)';
+    btn.disabled = !(pro.nb_rayon > 0);
+    var retour = document.createElement('div'); retour.className = 'radar-preuve-meta';
+    btn.addEventListener('click', function(e){ e.stopPropagation(); radarTelechargerProspection(resume.id || f.id, btn, retour); });
+    box.appendChild(btn); box.appendChild(retour);
+
+    // 10. Historique des calculs
+    if ((det.historique || []).length > 1){
+      titre('Historique des calculs');
+      det.historique.forEach(function(h){ puce(radarFmtDate(h.calcule_le) + ' — ' + (RADAR_DECISION_LABEL[h.decision] || h.decision) + ' — ' + radarFmtDecimal(h.score_prudent) + '/100'); });
+    }
+    return box;
   }
 
-  // Vue "etat" -- légère (quelques Ko), rafraîchie toutes les 60 s.
+  // Liste de prospection d'UNE fiche : le CSV est construit côté serveur (lecture seule) ; l'octet d'ordre UTF-8 est ajouté ici pour que
+  // le tableur français lise bien les accents.
+  function radarTelechargerProspection(ficheId, btn, retour){
+    var libelle = btn.textContent;
+    btn.disabled = true; btn.textContent = 'Préparation de la liste…'; retour.textContent = '';
+    postRadarRecap({ vue: 'prospection', fiche_id: ficheId }, function(r){
+      btn.disabled = false; btn.textContent = libelle;
+      if (!r || r.ok !== true || !r.csv){ retour.textContent = (r && r.erreur) || 'Liste indisponible.'; return; }
+      var blob = new Blob(['﻿' + r.csv], { type: 'text/csv;charset=utf-8' });
+      var url = URL.createObjectURL(blob);
+      var a = document.createElement('a'); a.href = url; a.download = r.nom_fichier || 'prospection.csv';
+      document.body.appendChild(a); a.click(); a.remove();
+      setTimeout(function(){ URL.revokeObjectURL(url); }, 4000);
+      retour.textContent = r.nb_lignes + ' établissement(s) exportés' + (r.tronque ? ' (liste tronquée à ' + r.nb_lignes + ' sur ' + r.total + ')' : '') + ' — fichier ' + (r.nom_fichier || '') + '.';
+    }, function(err){ btn.disabled = false; btn.textContent = libelle; retour.textContent = 'Erreur : ' + err; });
+  }
+
+  // ------------------------------------------------------------------ chargement
   function radarLoadEtat(silencieux){
     postRadarRecap({ vue: 'etat' }, function(j){
       radarEtatCache = j || {};
       radarRenderBandeau(radarEtatCache);
-      radarRenderEntonnoir(radarEtatCache);
       if (!silencieux) document.getElementById('radar-error').style.display = 'none';
     }, function(err){
-      if (!radarEtatCache && !radarDossiersCache){
+      if (!radarEtatCache && !radarFichesCache){
         document.getElementById('radar-loading').style.display = 'none';
         document.getElementById('radar-error').style.display = '';
         document.getElementById('radar-error').textContent = err;
@@ -12217,130 +12175,104 @@
     });
   }
 
-  // Vue "dossiers" -- légère (4.1) : 30 dossiers par appel, score >= 50, accessibles par défaut
-  // (« tout voir » pour les autres), rafraîchie toutes les 5 min ou au bouton actualiser. Le
-  // rafraîchissement recharge les pages déjà affichées (`radarPages`), pas seulement la première.
-  function radarAppliquerListe(j){
+  function radarAppliquerFiches(j){
     document.getElementById('radar-loading').style.display = 'none';
     document.getElementById('radar-error').style.display = 'none';
     document.getElementById('radar-body').style.display = '';
-    radarDossiersCache = j;
-    var dossiers = j.dossiers || [];
-    radarRenderHero(dossiers);
-    radarPeuplerFiltres(dossiers);
-    radarRenderCards();
-    if (j.serie7j) radarRenderTendance(j.serie7j);
+    var zone = document.getElementById('radar-v2');
+    if (j.base_v2 === false){
+      // Tables de la v2 pas encore créées dans la base du radar (la première cartographie n'a pas été lancée) : message, pas d'erreur.
+      radarFichesCache = null;
+      zone.style.display = 'none';
+      radarMessage(j.message || 'La cartographie v2 n\'a pas encore été lancée : aucune fiche.');
+      return;
+    }
+    radarMessage('');
+    zone.style.display = '';
+    j.rayon_km = j.rayon_km || 100;
+    radarFichesCache = j;
+    radarRenderDecisions();
+    radarRemplirSelect(document.getElementById('radar-filtre-secteur'), 'Tous les secteurs', j.choix_secteurs, radarSecteur, 'code');
+    radarRemplirSelect(document.getElementById('radar-filtre-tache'), 'Toutes les tâches', j.choix_taches, radarTache, 'id');
+    radarRenderCartes();
+    var c = j.compteurs || {};
     document.getElementById('radar-compte').textContent =
-      (j.total_pool || 0) + ' dossier(s) à ' + RADAR_SEUIL_LISTE + ' ou plus · ' + (j.total_accessibles || 0) +
-      ' accessible(s) en solo · ' + (j.total_non_evalues || 0) + ' à évaluer. Affichés : ' + dossiers.length +
-      ' sur ' + (j.total_filtre || 0) + '.';
+      (c.total || 0) + ' fiche(s) au total · affichées : ' + (j.fiches || []).length + ' sur ' + (j.total_filtre || 0) + '.' +
+      (j.dernier_calcul ? ' Dernier calcul le ' + radarFmtDate(j.dernier_calcul) + '.' : '');
     var plus = document.getElementById('radar-voir-plus');
     plus.style.display = j.a_suite ? '' : 'none';
-    plus.textContent = 'Voir plus (' + Math.min(RADAR_PAGE, (j.total_filtre || 0) - dossiers.length) + ' de plus)';
+    plus.textContent = 'Voir plus (' + Math.min(RADAR_PAGE, (j.total_filtre || 0) - (j.fiches || []).length) + ' de plus)';
     document.getElementById('radar-generated').textContent = 'Actualisé le ' + new Date().toLocaleString('fr-FR');
   }
   function radarErreurListe(err){
     document.getElementById('radar-loading').style.display = 'none';
-    if (!radarDossiersCache){
+    if (!radarFichesCache){
       document.getElementById('radar-error').style.display = '';
       document.getElementById('radar-error').textContent = err;
     }
   }
-  // Charge `nbPages` pages à la suite (offset 0, 30, 60…) puis affiche l'ensemble ; s'arrête
-  // dès que le serveur dit qu'il n'y a plus de suite.
+  function radarCorpsListe(offset){
+    return { vue: 'fiches', decision: radarDecision, secteur: radarSecteur, tache: radarTache, offset: offset };
+  }
+  // Charge `nbPages` pages à la suite (offset 0, 30, 60…) puis affiche l'ensemble ; une demande plus récente annule celle-ci.
   function radarChargerPages(nbPages){
+    var jeton = ++radarJeton;
     var cumul = null;
     function suivante(i){
-      postRadarRecap({ vue: 'dossiers', filtre: radarFiltreFaisa, offset: i * RADAR_PAGE }, function(j){
+      postRadarRecap(radarCorpsListe(i * RADAR_PAGE), function(j){
+        if (jeton !== radarJeton) return;
         j = j || {};
-        if (!cumul){ cumul = j; } else { cumul.dossiers = (cumul.dossiers || []).concat(j.dossiers || []); cumul.a_suite = j.a_suite; }
+        if (j.base_v2 === false){ radarAppliquerFiches(j); return; }
+        if (!cumul){ cumul = j; } else { cumul.fiches = (cumul.fiches || []).concat(j.fiches || []); cumul.a_suite = j.a_suite; }
         if (i + 1 < nbPages && j.a_suite){ suivante(i + 1); return; }
         radarPages = i + 1;
-        radarAppliquerListe(cumul);
-      }, radarErreurListe);
+        radarAppliquerFiches(cumul);
+      }, function(err){ if (jeton === radarJeton) radarErreurListe(err); });
     }
     suivante(0);
   }
-  function radarLoadDossiers(silencieux, repartirDePremierePage){
+  function radarLoadFiches(repartirDePremierePage){
     if (repartirDePremierePage) radarPages = 1;
     radarChargerPages(radarPages);
   }
   function radarVoirPlus(){
-    var cache = radarDossiersCache; if (!cache || !cache.a_suite) return;
+    var cache = radarFichesCache; if (!cache || !cache.a_suite) return;
     var btn = document.getElementById('radar-voir-plus'); btn.disabled = true;
-    postRadarRecap({ vue: 'dossiers', filtre: radarFiltreFaisa, offset: (cache.dossiers || []).length }, function(j){
-      btn.disabled = false; j = j || {};
-      cache.dossiers = (cache.dossiers || []).concat(j.dossiers || []);
+    var jeton = ++radarJeton;
+    postRadarRecap(radarCorpsListe((cache.fiches || []).length), function(j){
+      btn.disabled = false;
+      if (jeton !== radarJeton) return;
+      j = j || {};
+      cache.fiches = (cache.fiches || []).concat(j.fiches || []);
       cache.a_suite = j.a_suite; cache.total_filtre = j.total_filtre;
       radarPages += 1;
-      radarAppliquerListe(cache);
+      radarAppliquerFiches(cache);
     }, function(err){ btn.disabled = false; radarErreurListe(err); });
   }
-  function radarChoisirFiltreFaisa(valeur){
-    if (radarFiltreFaisa === valeur) return;
-    radarFiltreFaisa = valeur;
-    document.getElementById('radar-faisa-accessibles').classList.toggle('actif', valeur === 'accessibles');
-    document.getElementById('radar-faisa-tout').classList.toggle('actif', valeur === 'tout');
-    radarDossiersCache = null;
-    radarLoadDossiers(false, true);
+  function radarChangerFiltre(decision, secteur, tache){
+    radarDecision = decision; radarSecteur = secteur; radarTache = tache;
+    radarRenderDecisions();
+    radarLoadFiches(true);
   }
 
   function radarStartAuto(){
     if (radarAutoTimerEtat) clearInterval(radarAutoTimerEtat);
-    if (radarAutoTimerDossiers) clearInterval(radarAutoTimerDossiers);
+    if (radarAutoTimerFiches) clearInterval(radarAutoTimerFiches);
     radarAutoTimerEtat = setInterval(function(){ radarLoadEtat(true); }, 60000);
-    radarAutoTimerDossiers = setInterval(function(){ radarLoadDossiers(true); }, 300000);
+    radarAutoTimerFiches = setInterval(function(){ radarLoadFiches(false); }, 300000);
   }
   function radarStopAuto(){
     if (radarAutoTimerEtat){ clearInterval(radarAutoTimerEtat); radarAutoTimerEtat = null; }
-    if (radarAutoTimerDossiers){ clearInterval(radarAutoTimerDossiers); radarAutoTimerDossiers = null; }
+    if (radarAutoTimerFiches){ clearInterval(radarAutoTimerFiches); radarAutoTimerFiches = null; }
   }
 
-  // Rapport telechargeable (25/09/2026) : à partir de la liste résumée déjà
-  // reçue (aucun appel réseau supplémentaire) -- ne contient donc plus le
-  // détail (preuves/objection/prochain test) de chaque dossier, uniquement
-  // ce que la carte affiche déjà (aller chercher le détail de CHAQUE dossier
-  // filtré romprait le principe "détail chargé à l'ouverture, pas avant").
-  function radarDownloadReport(){
-    if (!radarEtatCache || !radarDossiersCache) return;
-    var dossiers = radarDossiersFiltres();
-    if (!dossiers.length) dossiers = radarDossiersCache.dossiers || [];
-    if (!dossiers.length) return;
-    var e = radarEtatCache.entonnoir || {}; var q = radarEtatCache.quotas || {}; var b = q.budget_eur || {};
-    var texte = 'RADAR D\'OPPORTUNITES -- rapport du ' + new Date().toLocaleString('fr-FR') + '\n';
-    texte += (radarEtatCache.etat && radarEtatCache.etat.libelle ? radarEtatCache.etat.libelle : '') + '\n';
-    texte += 'Signaux collectes : ' + ((e.signaux_douleur_collectes || 0) + (e.signaux_offre_collectes || 0))
-      + ' -- Dossiers analyses : ' + (e.dossiers_analyses || 0)
-      + ' -- Cout du jour : ' + (b.valeur != null ? b.valeur.toFixed(2) : '?') + ' EUR (sur ' + (b.plafond != null ? b.plafond : 5) + ' EUR max)\n';
-    texte += '(Liste résumée -- preuves/objection/prochain test disponibles dans l\'app, dossier par dossier)\n';
-    texte += '\n' + new Array(60).join('=') + '\n\n';
-    dossiers.forEach(function(o, i){
-      var noteDeja = o.score_prudent != null;
-      texte += (i + 1) + '. ' + (o.titre || '(sans titre)') + '\n';
-      texte += '   Statut : ' + (noteDeja ? (RADAR_STATUT_LABEL[o.statut] || o.statut) : 'en cours d\'analyse')
-        + (noteDeja ? (' -- Score prudent : ' + o.score_prudent + '/100 -- ' + (o.nb_sources || 0) + ' source(s)') : '') + '\n';
-      texte += '   Secteur : ' + (o.secteur || '?') + (o.secteur_provenance === 'citation_verifiee' ? ' (citation verifiee)' : '') + '\n';
-      texte += '   Acheteur : ' + (o.acheteur || '?') + '\n';
-      texte += '   Faisabilite : ' + (o.accessible_solo === true ? 'accessible en solo' : (o.accessible_solo === false ? 'exclu -- ' + (o.motif_exclusion || '?') : 'non evaluee')) + '\n';
-      texte += '\n';
-    });
-    var blob = new Blob([texte], { type: 'text/plain;charset=utf-8' });
-    var url = URL.createObjectURL(blob);
-    var a = document.createElement('a');
-    a.href = url;
-    a.download = 'radar-rapport-' + new Date().toISOString().slice(0, 10) + '.txt';
-    document.body.appendChild(a);
-    a.click();
-    a.remove();
-    URL.revokeObjectURL(url);
-  }
   function radarOpen(){
     radarview.classList.add('open');
     document.getElementById('radar-loading').style.display = '';
     document.getElementById('radar-error').style.display = 'none';
     document.getElementById('radar-body').style.display = 'none';
     radarLoadEtat(false);
-    radarLoadDossiers(false, true);
+    radarLoadFiches(true);
     radarStartAuto();
   }
   function radarCloseEtStop(){
@@ -12349,13 +12281,13 @@
   }
   document.getElementById('sh-radar').addEventListener('click', function(){ sheetOpen(false); radarOpen(); });
   document.getElementById('radar-close').addEventListener('click', radarCloseEtStop);
-  document.getElementById('radar-refresh').addEventListener('click', function(){ radarLoadEtat(false); radarLoadDossiers(false); });
+  document.getElementById('radar-refresh').addEventListener('click', function(){ radarLoadEtat(false); radarLoadFiches(false); });
   document.getElementById('radar-voir-plus').addEventListener('click', radarVoirPlus);
-  document.getElementById('radar-faisa-accessibles').addEventListener('click', function(){ radarChoisirFiltreFaisa('accessibles'); });
-  document.getElementById('radar-faisa-tout').addEventListener('click', function(){ radarChoisirFiltreFaisa('tout'); });
-  document.getElementById('radar-download').addEventListener('click', radarDownloadReport);
-  document.getElementById('radar-filtre-statut').addEventListener('change', function(){ radarFiltreStatut = this.value; radarRenderCards(); });
-  document.getElementById('radar-filtre-secteur').addEventListener('change', function(){ radarFiltreSecteur = this.value; radarRenderCards(); });
+  Array.prototype.forEach.call(document.querySelectorAll('#radar-decisions .radar-dec-btn'), function(b){
+    b.addEventListener('click', function(){ radarChangerFiltre(b.getAttribute('data-decision'), radarSecteur, radarTache); });
+  });
+  document.getElementById('radar-filtre-secteur').addEventListener('change', function(){ radarChangerFiltre(radarDecision, this.value, radarTache); });
+  document.getElementById('radar-filtre-tache').addEventListener('change', function(){ radarChangerFiltre(radarDecision, radarSecteur, this.value); });
 
   // Panneau "Factures TVA" (28/09/2026, labo uniquement) -- LECTURE SEULE des Data Tables
   // collecteur_* deja remplies par le workflow n8n COLLECTEUR-FACTURES (webhook dedie
