@@ -2784,6 +2784,28 @@
   #factures-envoyer-selection-btn:disabled{opacity:.45}
   .factures-section-titre{font-size:13px; font-weight:700; margin:16px 0 8px}
   #factures-ecartees{font-size:11.5px; color:var(--muted); padding:10px 2px 4px}
+  /* Lot 12 (01/10/2026) : « Photo d'un ticket » + ventes ecartees -- onglet Factures TVA uniquement */
+  #factures-ticket{background:var(--surface); border-radius:14px; padding:12px 14px; margin-bottom:12px}
+  .ticket-ligne{display:flex; gap:8px; align-items:center; flex-wrap:wrap}
+  #ticket-btn{flex:1 1 150px; min-width:0; font:inherit; font-weight:700; font-size:14px; padding:11px 12px; border-radius:11px; border:none; background:var(--blue); color:#fff}
+  #ticket-societe{flex:0 1 auto; max-width:100%; font:inherit; font-size:13px; padding:10px 8px; border-radius:10px; border:1px solid var(--hairline); background:var(--bg); color:var(--ink)}
+  #ticket-resultats{margin-top:8px}
+  .ticket-carte{background:var(--bg); border-radius:11px; padding:9px 11px; margin-top:8px; overflow-wrap:anywhere}
+  .ticket-nom{font-size:11px; color:var(--muted); margin-bottom:4px}
+  .ticket-msg{font-size:12.5px; line-height:1.35}
+  .ticket-ok .ticket-msg{color:#34c759; font-weight:600}
+  .ticket-attention .ticket-msg{color:#ff9f0a; font-weight:600}
+  .ticket-erreur .ticket-msg{color:#ff6d5a; font-weight:600}
+  .ticket-encours .ticket-msg, .ticket-annule .ticket-msg{color:var(--muted)}
+  .ticket-detail{font-size:11.5px; color:var(--muted); margin-top:4px}
+  .ticket-actions{display:flex; gap:8px; align-items:center; flex-wrap:wrap; margin-top:8px}
+  .ticket-date{font:inherit; font-size:13px; padding:7px 8px; border-radius:9px; border:1px solid var(--hairline); background:var(--surface); color:var(--ink); min-width:0; max-width:100%}
+  .ticket-bouton{font:inherit; font-size:12.5px; font-weight:700; padding:8px 12px; border-radius:9px; border:none; background:var(--blue); color:#fff; margin-top:6px}
+  .ticket-bouton.sec{background:var(--surface); color:var(--ink); border:1px solid var(--hairline)}
+  .ticket-actions .ticket-bouton{margin-top:0}
+  .factures-ventes-bloc{margin-top:8px; font-size:12px}
+  .factures-ventes-bloc summary{color:var(--muted); font-size:11.5px; cursor:pointer}
+  .factures-vente{padding:6px 2px; border-bottom:1px solid var(--hairline); font-size:12px}
   #factures-envoyer{margin-top:16px; text-align:center}
   #factures-envoyer-btn{
     width:100%; padding:12px; border-radius:12px; border:none; background:var(--surface);
@@ -7035,6 +7057,14 @@
       <div id="factures-bandeau" style="display:none"></div>
       <div id="factures-periode"></div>
       <div id="factures-tabs"></div>
+      <div id="factures-ticket">
+        <div class="ticket-ligne">
+          <button id="ticket-btn" type="button">📷 Photo d'un ticket</button>
+          <select id="ticket-societe" aria-label="Société du ticket"></select>
+        </div>
+        <input type="file" id="ticket-input" accept="image/*" multiple style="display:none">
+        <div id="ticket-resultats"></div>
+      </div>
       <div id="factures-select-bar">
         <label id="factures-filtre-non-envoyees"><input type="checkbox" id="factures-filtre-non-envoyees-cb">Pas encore envoyées</label>
         <button id="factures-tout-cocher-btn" type="button">Tout cocher</button>
@@ -7043,6 +7073,7 @@
       <div id="factures-contenu"></div>
       <div id="factures-arecuperer"></div>
       <div id="factures-ecartees"></div>
+      <div id="factures-ventes"></div>
       <div id="factures-envoyer">
         <button id="factures-envoyer-selection-btn" type="button" disabled>Envoyer la sélection (0)</button>
         <button id="factures-envoyer-btn" type="button">Envoyer tout le mois</button>
@@ -8709,7 +8740,7 @@
          comparaison de chaine de version par tenant. */
   var APPV_MCS = '4.59';
   var APPV_LABO = '1.07';
-  var BUILD = 96;
+  var BUILD = 97;
   // displayVersion()/displayVersionShort() lisent isMcsCode() (definie plus bas dans cette
   // meme IIFE -- declaration de fonction, donc disponible ici par hoisting) : le TENANT
   // affiche depend du code de connexion, jamais d'un simple "APPV" global qui ne dirait ni
@@ -12512,7 +12543,9 @@
       var raison = f.raison ? '<div class="factures-raison">' + facturesEsc(f.raison) + '</div>' : '';
       var lienMail = facturesLienMail(f.message_id_rfc822);
       var lien = lienMail ? '<a href="' + lienMail + '" class="factures-lien">Ouvrir dans Mail</a><span class="factures-note-mail">Si Mail ne trouve pas le message, utilisez « Voir le mail ».</span>' : '';
-      var btnMail = f.facture_id ? '<button type="button" class="factures-btn-mail" data-fid="' + facturesEsc(f.facture_id) + '">Voir le mail</button>' : '';
+      var btnMail = (f.boite === 'ticket')
+        ? '<span class="factures-note-mail">📷 Ticket photographié, rangé dans Google Drive</span>'   // Lot 14 : un ticket n'a pas de mail d'origine
+        : (f.facture_id ? '<button type="button" class="factures-btn-mail" data-fid="' + facturesEsc(f.facture_id) + '">Voir le mail</button>' : '');
       var autoliqLab = { oui: 'Oui', non: 'Non', probable: 'Probable', inconnue: 'Inconnue' }[f.autoliquidation] || 'Inconnue';
       var motifTxt = '<div class="factures-motif">Autoliquidation : ' + facturesEsc(autoliqLab) + (f.motif_societe ? ' · ' + facturesEsc(f.motif_societe) : '') + '</div>';
       var fid = facturesEsc(f.facture_id || '');
@@ -12588,9 +12621,9 @@
 
   function facturesRenderEcartees(){
     var e = (facturesCache && facturesCache.ecartees) || {};
-    var total = (e.mcs || 0) + (e.emise || 0) + (e.doublon || 0) + (e.pas_facture || 0) + (e.obsolete || 0) + (e.erreur || 0);
+    var total = (e.mcs || 0) + (e.emise || 0) + (e.doublon || 0) + (e.pas_facture || 0) + (e.vente || 0) + (e.obsolete || 0) + (e.erreur || 0);
     document.getElementById('factures-ecartees').textContent =
-      total + ' pièce' + (total > 1 ? 's' : '') + ' écartée' + (total > 1 ? 's' : '') + ' (MCS, doublons, non-factures, erreurs)';
+      total + ' pièce' + (total > 1 ? 's' : '') + ' écartée' + (total > 1 ? 's' : '') + ' (MCS, doublons, non-factures, ventes, erreurs)';
   }
 
   // Jamais d'echec silencieux (Lot 6) : une tranche de collecte en echec (ou seulement partielle) est annoncee
@@ -12652,6 +12685,196 @@
     facturesRenderListe();
     facturesRenderARecuperer();
     facturesRenderEcartees();
+    facturesRenderVentes();
+  }
+
+  // ===== Lot 12 (01/10/2026) : « 📷 Photo d'un ticket » + ventes ecartees (onglet Factures TVA uniquement) =====
+  // La photo est REDUITE dans le navigateur (JPEG, 1 600 px de cote au plus, moins de 1,5 Mo) AVANT l'envoi : le serveur ne recoit jamais une grosse photo.
+  // Le serveur lit la date du ticket ; si elle est illisible ou incertaine il le dit et on choisit la date (aujourd'hui par defaut) : jamais de date inventee.
+  var TICKET_MAX_COTE = 1600, TICKET_MAX_OCTETS = 1.5 * 1024 * 1024, TICKET_MAX_ORIGINAL = 60 * 1024 * 1024;
+  var TICKET_SOCIETES = [['DMROOM', 'DMROOM'], ['M22VISION', 'M22 VISION'], ['HOLDINGDB', 'HOLDINGDB']];
+  var ticketFile = Promise.resolve();   // les tickets s'enchainent un par un (jamais deux envois en meme temps)
+  function ticketSocieteLire(){
+    var v = '';
+    try { v = localStorage.getItem('ticketSociete') || ''; } catch (e) { v = ''; }
+    return TICKET_SOCIETES.some(function(s){ return s[0] === v; }) ? v : 'DMROOM';
+  }
+  function ticketSocieteMemo(v){ try { localStorage.setItem('ticketSociete', v); } catch (e) {} }
+  function ticketAujourdhui(){
+    var d = new Date(), m = d.getMonth() + 1, j = d.getDate();
+    return d.getFullYear() + '-' + (m < 10 ? '0' + m : m) + '-' + (j < 10 ? '0' + j : j);
+  }
+  function ticketDateFr(iso){
+    var p = String(iso || '').split('-');
+    return p.length === 3 ? (p[2] + '/' + p[1] + '/' + p[0]) : (iso || '');
+  }
+  function ticketMo(o){ return (o < 1048576) ? (Math.max(1, Math.round(o / 1024)) + ' Ko') : ((Math.round(o / 104857.6) / 10).toString().replace('.', ',') + ' Mo'); }
+  function ticketChargerImage(file){
+    return new Promise(function(resolve, reject){
+      var url = URL.createObjectURL(file), im = new Image();
+      im.onload = function(){ resolve({ im: im, url: url }); };
+      im.onerror = function(){ URL.revokeObjectURL(url); reject(new Error('Cette photo ne peut pas être lue (format non reconnu). Reprends-la avec l’appareil photo.')); };
+      im.src = url;
+    });
+  }
+  function ticketJpeg(im, cote, qualite){
+    var w = im.naturalWidth, h = im.naturalHeight, k = Math.min(1, cote / Math.max(w, h));
+    var cw = Math.max(1, Math.round(w * k)), ch = Math.max(1, Math.round(h * k));
+    var cv = document.createElement('canvas'); cv.width = cw; cv.height = ch;
+    var cx = cv.getContext('2d'); cx.fillStyle = '#fff'; cx.fillRect(0, 0, cw, ch); cx.drawImage(im, 0, 0, cw, ch);
+    return new Promise(function(resolve, reject){
+      cv.toBlob(function(b){ b ? resolve({ blob: b, canvas: cv, w: cw, h: ch }) : reject(new Error('La réduction de la photo a échoué sur ce téléphone.')); }, 'image/jpeg', qualite);
+    });
+  }
+  function ticketDhash(cv){
+    try {
+      var p = document.createElement('canvas'); p.width = 9; p.height = 8;
+      var x = p.getContext('2d'); x.drawImage(cv, 0, 0, 9, 8);
+      var d = x.getImageData(0, 0, 9, 8).data, g = [], i, bits = '', hex = '';
+      for (i = 0; i < 72; i++) g.push(0.299 * d[i * 4] + 0.587 * d[i * 4 + 1] + 0.114 * d[i * 4 + 2]);
+      for (var r = 0; r < 8; r++) for (var c = 0; c < 8; c++) bits += g[r * 9 + c] > g[r * 9 + c + 1] ? '1' : '0';
+      for (var k = 0; k < 64; k += 4) hex += parseInt(bits.substr(k, 4), 2).toString(16);
+      return hex;
+    } catch (e) { return ''; }
+  }
+  function ticketBase64(blob){
+    return new Promise(function(resolve, reject){
+      var fr = new FileReader();
+      fr.onload = function(){ resolve(String(fr.result).replace(/^data:[^,]*,/, '')); };
+      fr.onerror = function(){ reject(new Error('Lecture de la photo impossible.')); };
+      fr.readAsDataURL(blob);
+    });
+  }
+  // Reduit la photo : 1 600 px, qualite decroissante jusqu'a passer sous 1,5 Mo ; sinon refus avec un message clair (jamais envoyee).
+  function ticketReduire(file){
+    if (file.size > TICKET_MAX_ORIGINAL) return Promise.reject(new Error('Cette photo est trop lourde (' + ticketMo(file.size) + ') pour être traitée par le téléphone. Reprends-la en plus petit format.'));
+    return ticketChargerImage(file).then(function(o){
+      var essais = [0.82, 0.7, 0.6, 0.5], derniere = null;
+      function suite(i){
+        if (i >= essais.length){
+          URL.revokeObjectURL(o.url);
+          throw new Error('Photo trop lourde même après réduction (' + ticketMo(derniere.blob.size) + ', maximum 1,5 Mo). Reprends-la de plus près, avec un fond uni.');
+        }
+        return ticketJpeg(o.im, TICKET_MAX_COTE, essais[i]).then(function(r){
+          derniere = r;
+          if (r.blob.size <= TICKET_MAX_OCTETS){ URL.revokeObjectURL(o.url); return r; }
+          return suite(i + 1);
+        });
+      }
+      return suite(0);
+    }).then(function(r){
+      return ticketBase64(r.blob).then(function(b64){ return { b64: b64, octets: r.blob.size, w: r.w, h: r.h, dhash: ticketDhash(r.canvas) }; });
+    });
+  }
+  function ticketPost(payload, onOk, onErr){
+    payload.code = String(read('jarvisCode') || '').trim();
+    var ctrl = (typeof AbortController !== 'undefined') ? new AbortController() : null;
+    var timer = ctrl ? setTimeout(function(){ ctrl.abort(); }, 60000) : null;
+    fetch(API_FACTURES, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(payload), signal: ctrl ? ctrl.signal : undefined })
+    .then(function(r){ if (timer) clearTimeout(timer); return r.json().catch(function(){ return {}; }).then(function(j){ return { status: r.status, body: j }; }); })
+    .then(function(res){
+      if (res.status === 200){ onOk(res.body); return; }
+      if (res.body && res.body.error){ onErr(res.body.error); return; }
+      onErr((res.status === 401 || res.status === 403) ? 'Accès refusé.' : ('Le serveur a répondu une erreur (code ' + res.status + ').'));
+    }).catch(function(e){
+      if (timer) clearTimeout(timer);
+      onErr((e && e.name === 'AbortError') ? 'Délai dépassé (60 s) : le serveur ne répond pas à temps.' : 'Le serveur ne répond pas. Vérifie ta connexion.');
+    });
+  }
+  // --- une carte par ticket (texte seulement : textContent, jamais innerHTML)
+  function ticketEl(tag, cls, txt){ var e = document.createElement(tag); if (cls) e.className = cls; if (txt != null) e.textContent = txt; return e; }
+  function ticketCarteNouvelle(nom){
+    var c = ticketEl('div', 'ticket-carte'); c.appendChild(ticketEl('div', 'ticket-nom', nom));
+    var corps = ticketEl('div', 'ticket-corps'); c.appendChild(corps);
+    document.getElementById('ticket-resultats').insertBefore(c, document.getElementById('ticket-resultats').firstChild);
+    return { racine: c, corps: corps };
+  }
+  function ticketMessage(carte, cls, txt){ carte.corps.textContent = ''; carte.corps.className = 'ticket-corps ' + cls; carte.corps.appendChild(ticketEl('div', 'ticket-msg', txt)); }
+  function ticketBouton(txt, fn, secondaire){ var b = ticketEl('button', 'ticket-bouton' + (secondaire ? ' sec' : ''), txt); b.type = 'button'; b.addEventListener('click', fn); return b; }
+  function ticketResumeLigne(j){
+    var parts = [];
+    if (j.date_ticket) parts.push(ticketDateFr(j.date_ticket));
+    parts.push(j.commercant || 'commerçant non lu');
+    if (j.montant_ttc != null) parts.push(facturesFmtMontant(j.montant_ttc, j.devise || ''));
+    return parts.join(' · ');
+  }
+  // Lot 14 : le ticket est range dans Google Drive. En cas d'erreur (Drive ou reseau), la photo reste dans la carte : « Réessayer » la renvoie telle quelle.
+  function ticketEnvoyer(carte, photo, societe, dateChoisie, indices, quandMeme){
+    ticketMessage(carte, 'ticket-encours', dateChoisie ? 'Rangement avec la date choisie…' : 'Lecture et rangement du ticket…');
+    var payload = { action: 'ajouter_ticket', societe: societe, image_base64: photo.b64, dhash: photo.dhash };
+    if (dateChoisie){ payload.date_choisie = dateChoisie; payload.indices = indices || {}; }
+    if (quandMeme) payload.ranger_quand_meme = true;
+    ticketPost(payload, function(j){ ticketReponse(carte, photo, societe, j, dateChoisie, indices); }, function(err){
+      ticketMessage(carte, 'ticket-erreur', '❌ ' + err);
+      carte.corps.appendChild(ticketBouton('Réessayer', function(){ ticketEnvoyer(carte, photo, societe, dateChoisie, indices, quandMeme); }));
+    });
+  }
+  function ticketReponse(carte, photo, societe, j, dateEnvoyee, indicesEnvoyes){
+    if (j.etat === 'date_incertaine' || j.etat === 'erreur_ia'){
+      var indices = { commercant: j.commercant || '', montant_ttc: j.montant_ttc, devise: j.devise || '' };
+      ticketMessage(carte, 'ticket-attention', '⚠️ ' + (j.raison || 'Date non lue.') + ' Choisis la date du ticket : elle sert à le ranger dans le bon mois.');
+      var l = ticketResumeLigne(j); if (j.commercant || j.montant_ttc != null) carte.corps.appendChild(ticketEl('div', 'ticket-detail', 'Lu sur le ticket : ' + l));
+      var champ = document.createElement('input'); champ.type = 'date'; champ.max = ticketAujourdhui(); champ.min = '2020-01-01';
+      champ.value = (j.date_lue && j.date_lue <= ticketAujourdhui()) ? j.date_lue : (j.date_par_defaut || ticketAujourdhui()); champ.className = 'ticket-date';
+      var ligne = ticketEl('div', 'ticket-actions'); ligne.appendChild(champ);
+      ligne.appendChild(ticketBouton('Valider cette date', function(){ if (champ.value) ticketEnvoyer(carte, photo, societe, champ.value, indices); }));
+      ligne.appendChild(ticketBouton('Annuler', function(){ ticketMessage(carte, 'ticket-annule', 'Annulé : ce ticket n’a pas été enregistré.'); }, true));
+      carte.corps.appendChild(ligne); return;
+    }
+    if (j.etat === 'doublon'){
+      ticketMessage(carte, 'ticket-attention', '⚠️ ' + (j.raison || 'Ce ticket semble déjà rangé.') + (j.doublon && j.doublon.range_le ? ' (rangé le ' + ticketDateFr(j.doublon.range_le) + ')' : ''));
+      carte.corps.appendChild(ticketEl('div', 'ticket-detail', ticketResumeLigne(j) + ' · ' + (FACTURES_SOCIETE_LABEL[societe] || societe) + ' · rien n’a été enregistré.'));
+      var lgD = ticketEl('div', 'ticket-actions');
+      lgD.appendChild(ticketBouton('Ranger quand même', function(){ ticketEnvoyer(carte, photo, societe, dateEnvoyee, indicesEnvoyes, true); }));
+      lgD.appendChild(ticketBouton('Ignorer', function(){ ticketMessage(carte, 'ticket-annule', 'Ignoré : ce ticket n’a pas été enregistré une deuxième fois.'); }, true));
+      carte.corps.appendChild(lgD); return;
+    }
+    if ((j.etat === 'pret_a_ranger' || j.etat === 'a_verifier') && j.range){
+      var mois = facturesMoisLabel(j.mois_rattachement);
+      if (j.etat === 'a_verifier') ticketMessage(carte, 'ticket-attention', '⚠️ Rangé dans Google Drive mais à vérifier : ' + (j.raison || ''));
+      else ticketMessage(carte, 'ticket-ok', '✅ Rangé dans Google Drive : ' + ticketResumeLigne(j) + ' · ' + (FACTURES_SOCIETE_LABEL[societe] || societe) + ' · ' + mois);
+      carte.corps.appendChild(ticketEl('div', 'ticket-detail', 'Dossier : ' + (j.drive_dossier || '') + (j.date_source === 'choisie' ? ' · date choisie à la main' : '')));
+      facturesLoad(); return;
+    }
+    if (j.etat === 'range_sans_ligne'){
+      // le fichier est dans Drive mais la liste n'a pas ete mise a jour : pas de « Réessayer » (il creerait un deuxieme fichier)
+      ticketMessage(carte, 'ticket-erreur', '❌ ' + (j.error || 'Rangé dans Google Drive mais pas enregistré dans la liste.')); return;
+    }
+    ticketMessage(carte, 'ticket-erreur', '❌ ' + (j.error || 'Réponse inattendue du serveur : rien n’a été enregistré.'));
+    carte.corps.appendChild(ticketBouton('Réessayer', function(){ ticketEnvoyer(carte, photo, societe, dateEnvoyee, indicesEnvoyes); }));
+  }
+  function ticketTraiter(file){
+    var societe = document.getElementById('ticket-societe').value;
+    var carte = ticketCarteNouvelle(file.name || 'photo');
+    ticketMessage(carte, 'ticket-encours', 'Réduction de la photo…');
+    return ticketReduire(file).then(function(photo){
+      carte.racine.firstChild.textContent = (file.name || 'photo') + ' · ' + ticketMo(photo.octets) + ' envoyés';
+      ticketEnvoyer(carte, photo, societe, '', null);
+    }, function(err){ ticketMessage(carte, 'ticket-erreur', (err && err.message) || 'Photo refusée.'); });
+  }
+  (function ticketInit(){
+    var sel = document.getElementById('ticket-societe'), btn = document.getElementById('ticket-btn'), inp = document.getElementById('ticket-input');
+    if (!sel || !btn || !inp) return;
+    TICKET_SOCIETES.forEach(function(s){ var o = document.createElement('option'); o.value = s[0]; o.textContent = s[1]; sel.appendChild(o); });
+    sel.value = ticketSocieteLire();
+    sel.addEventListener('change', function(){ ticketSocieteMemo(sel.value); });
+    btn.addEventListener('click', function(){ inp.value = ''; inp.click(); });
+    inp.addEventListener('change', function(){
+      var fichiers = Array.prototype.slice.call(inp.files || []);
+      fichiers.forEach(function(f){ ticketFile = ticketFile.then(function(){ return ticketTraiter(f); }); });
+    });
+  })();
+  // Ventes ecartees : notifications de commande / reservation / paiement recu d'un client. Jamais des achats, jamais envoyees. Lecture seule.
+  function facturesRenderVentes(){
+    var el = document.getElementById('factures-ventes'); if (!el) return;
+    var l = (facturesCache && facturesCache.ventes) || [];
+    if (!l.length){ el.innerHTML = ''; return; }
+    el.innerHTML = '<details class="factures-ventes-bloc"><summary>Ventes écartées — ' + l.length + ' (pas des achats, jamais envoyées)</summary>' +
+      l.map(function(v){
+        return '<div class="factures-vente"><span class="factures-date">' + facturesEsc(ticketDateFr(v.date).slice(0, 5)) + '</span> <b>' + facturesEsc(v.fournisseur || 'Vente') + '</b>' +
+          (v.montant_ttc != null ? ' · ' + facturesEsc(facturesFmtMontant(v.montant_ttc, v.devise)) : '') +
+          '<div class="factures-raison">' + facturesEsc(v.raison || 'Vente (pas un achat)') + '</div></div>';
+      }).join('') + '</details>';
   }
 
   // Fiche "Corriger" (29/09/2026, Lot 6) : ouvre une fiche pre-remplie depuis la ligne, envoie
@@ -12802,7 +13025,7 @@
     try { w = window.open('', '_blank'); } catch (e) { w = null; }
     if (w){
       w.document.write('<!doctype html><html><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Facture</title></head>' +
-        '<body style="font-family:-apple-system,BlinkMacSystemFont,sans-serif;padding:24px;color:#666">Récupération du PDF dans Gmail…</body></html>');
+        '<body style="font-family:-apple-system,BlinkMacSystemFont,sans-serif;padding:24px;color:#666">Récupération du PDF…</body></html>');
     }
     facturesFetchPdf(factureId).then(function(blob){
       var url = URL.createObjectURL(blob);
@@ -12919,6 +13142,7 @@
     a_recuperer: 'À récupérer (sans PDF)',
     doublon_document: 'Doublons (même mail ou même numéro)',
     pas_facture: 'Pas des factures',
+    vente: 'Ventes (pas des achats, jamais envoyées)',
     anomalie_doublon_ligne: 'Anomalie technique (ligne en double, à investiguer)',
     autres: 'Autres',
   };
