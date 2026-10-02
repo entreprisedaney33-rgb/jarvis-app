@@ -2701,6 +2701,10 @@
   /* Lot 7 : bandeau d'avancement du rattrapage (mois par mois), lisible en largeur de telephone */
   #factures-bandeau{background:var(--surface); border:1px solid var(--hairline); border-radius:14px; padding:12px 14px; margin-bottom:12px; font-size:12.5px; line-height:1.45}
   #factures-bandeau .fb-titre{font-size:13.5px; font-weight:700; margin-bottom:6px}
+  #factures-bandeau .fb-lot16{border-top:1px solid var(--hairline); margin-top:8px; padding-top:8px; color:var(--muted); overflow-wrap:anywhere}
+  #factures-bandeau .fb-lot16:first-child{border-top:0; margin-top:0; padding-top:0}
+  #factures-bandeau .fb-lot16 > div + div{margin-top:4px}
+  .factures-lien-raison{font-size:11.5px; color:var(--muted); margin:2px 0 4px; overflow-wrap:anywhere}
   #factures-bandeau .fb-pause{background:rgba(255,159,10,.14); border:1px solid rgba(255,159,10,.45); border-radius:10px; padding:8px 10px; margin:6px 0; font-weight:600}
   #factures-bandeau .fb-barre{height:8px; border-radius:6px; background:var(--hairline); overflow:hidden; margin:6px 0 8px}
   #factures-bandeau .fb-barre > span{display:block; height:100%; background:var(--blue)}
@@ -8742,7 +8746,7 @@
          comparaison de chaine de version par tenant. */
   var APPV_MCS = '4.59';
   var APPV_LABO = '1.07';
-  var BUILD = 98;
+  var BUILD = 99;
   // displayVersion()/displayVersionShort() lisent isMcsCode() (definie plus bas dans cette
   // meme IIFE -- declaration de fonction, donc disponible ici par hoisting) : le TENANT
   // affiche depend du code de connexion, jamais d'un simple "APPV" global qui ne dirait ni
@@ -12616,6 +12620,8 @@
           '<span class="factures-fourn">' + facturesEsc(f.fournisseur || 'Fournisseur inconnu') + '</span>' +
           '<span class="factures-montant">' + facturesEsc(facturesFmtMontant(f.montant_ttc, f.devise)) + '</span>' +
           '</div><div class="factures-sans-pdf">Pas de PDF : à récupérer sur l\'espace client du fournisseur.</div>' +
+          (f.lien_raison ? '<div class="factures-lien-raison">🔗 ' + facturesEsc(f.lien_raison) + '</div>' : '') +   // Lot 16 : ce que Jarvis a trouve dans le mail
+
           '<div class="factures-ligne-bas">' + lienEspaceHtml + lienGmailHtml + '</div>' +
           '</div>';
       }).join('');
@@ -12682,10 +12688,28 @@
       facturesEsc(ecartes + ' mail' + (ecartes > 1 ? 's' : '') + ' personnel' + (ecartes > 1 ? 's' : '') + ' écarté' + (ecartes > 1 ? 's' : '') + ' sans être lu' + (ecartes > 1 ? 's' : '') + ' (hors facture, boîte perso).') + '</div></div>';
     return h;
   }
+  // Lot 16 : compteurs TOUJOURS visibles (meme collecte terminee) -- PDF au type inhabituel, factures derriere un lien. Texte echappe.
+  function facturesPluriel(n, mot){ return n + ' ' + mot + (n > 1 ? 's' : ''); }
+  function facturesBandeauLot16(c){
+    if (!c) return '';
+    var p = c.pdf_type_inhabituel || {}, l = c.liens || {};
+    var h = '<div class="fb-lot16"><div>📎 <b>PDF au type inhabituel</b> : ' + facturesEsc(facturesPluriel(p.total || 0, 'pièce') + ' reconnue' + ((p.total || 0) > 1 ? 's' : '')) +
+      (p.factures ? ' (dont ' + facturesEsc(facturesPluriel(p.factures, 'facture')) + ')' : '') +
+      (p.faux_pdf ? ' · ' + facturesEsc(p.faux_pdf + ' nommée' + (p.faux_pdf > 1 ? 's' : '') + ' .pdf mais pas un PDF (format ignoré)') : '') + '.</div>';
+    var morceaux = [facturesPluriel(l.recuperees || 0, 'facture') + ' récupérée' + ((l.recuperees || 0) > 1 ? 's' : '') + ' automatiquement'];
+    if (l.a_telecharger) morceaux.push(l.a_telecharger + ' en cours');
+    if (l.expires) morceaux.push(facturesPluriel(l.expires, 'lien') + ' expiré' + (l.expires > 1 ? 's' : ''));
+    if (l.connexion) morceaux.push(l.connexion + ' à télécharger à la main (espace client avec connexion)');
+    if (l.sans_lien) morceaux.push(l.sans_lien + ' sans lien utilisable');
+    if (l.echec) morceaux.push(l.echec + ' en échec');
+    h += '<div>🔗 <b>Factures derrière un lien</b> (' + facturesEsc((l.domaines || []).join(', ') || 'aucun domaine autorisé') + ') : ' + facturesEsc(morceaux.join(' · ')) +
+      '. Coût IA : ' + facturesEsc(facturesFmtUsd(l.cout_usd)) + '.</div></div>';
+    return h;
+  }
   function facturesRenderBandeau(){
     var el = document.getElementById('factures-bandeau');
     var r = facturesCache && facturesCache.rattrapage;
-    var hb = facturesBandeauBoiteH(facturesCache && facturesCache.rattrapage_h);   // Lot 15
+    var hb = facturesBandeauBoiteH(facturesCache && facturesCache.rattrapage_h) + facturesBandeauLot16(facturesCache && facturesCache.compteurs_lot16);   // Lots 15 et 16
     if (!r || !r.visible){ el.innerHTML = hb; el.style.display = hb ? '' : 'none'; return; }
     var t = r.tranches || {};
     var pct = t.total ? Math.round(100 * (t.faites || 0) / t.total) : 0;
