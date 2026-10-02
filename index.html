@@ -2712,6 +2712,8 @@
   #factures-bandeau .fb-m.fb-termine span{color:#34c759}
   #factures-bandeau .fb-ech{margin-top:4px; font-size:12px}
   #factures-bandeau .fb-pied{color:var(--muted); font-size:12px}
+  #factures-bandeau .fb-boite{min-width:0; overflow-wrap:anywhere}
+  #factures-bandeau .fb-pied + .fb-boite{border-top:1px solid var(--hairline); margin-top:10px; padding-top:10px}
   .factures-note-mail{flex:1 1 100%; font-size:11px; color:var(--muted)}
   #factures-periode .fb-nav{display:flex; align-items:center; gap:10px}
   #factures-periode .fb-nav button{border:1px solid var(--hairline); background:var(--surface); color:var(--ink); border-radius:9px; font-size:16px; padding:2px 10px; min-width:40px; min-height:32px}
@@ -8740,7 +8742,7 @@
          comparaison de chaine de version par tenant. */
   var APPV_MCS = '4.59';
   var APPV_LABO = '1.07';
-  var BUILD = 97;
+  var BUILD = 98;
   // displayVersion()/displayVersionShort() lisent isMcsCode() (definie plus bas dans cette
   // meme IIFE -- declaration de fonction, donc disponible ici par hoisting) : le TENANT
   // affiche depend du code de connexion, jamais d'un simple "APPV" global qui ne dirait ni
@@ -12647,10 +12649,44 @@
   var FACTURES_MOIS_COURT = ['janv.','févr.','mars','avr.','mai','juin','juil.','août','sept.','oct.','nov.','déc.'];
   var FACTURES_ETAT_LIB = { termine: 'terminé', en_cours: 'en cours', a_faire: 'à faire', partiel: 'partiel', echec: 'en échec' };
   function facturesFmtUsd(x){ return Number(x || 0).toLocaleString('fr-FR', { minimumFractionDigits: 2, maximumFractionDigits: 2 }) + ' $'; }
+  // Lot 15 : avancement du rattrapage de la 4e boite (holdingdbpro@gmail.com, tranches de 7 jours enchainees), sous le bandeau principal. Texte echappe.
+  function facturesBandeauBoiteH(r){
+    if (!r || !r.visible) return '';
+    var t = r.tranches || {};
+    var adr = r.adresse || 'boîte h';
+    var pct = t.total ? Math.round(100 * (t.faites || 0) / t.total) : 0;
+    var titre = r.etat === 'pause' ? 'Boîte ' + adr + ' : EN PAUSE'
+      : r.etat === 'echec' ? 'Boîte ' + adr + ' : une partie est en échec'
+      : r.etat === 'partiel' ? 'Boîte ' + adr + ' : collecte partielle'
+      : 'Collecte de la boîte ' + adr + ' (janvier à aujourd’hui) en cours';
+    var h = '<div class="fb-boite"><div class="fb-titre">' + facturesEsc(titre) + '</div>';
+    if (r.pause) h += '<div class="fb-pause">' + facturesEsc(r.raison_pause) + '</div>';
+    h += '<div class="fb-barre"><span style="width:' + pct + '%"></span></div>';
+    h += '<div>' + (t.faites || 0) + ' semaine' + ((t.faites || 0) > 1 ? 's' : '') + ' sur ' + (t.total || 0) + ' terminée' + ((t.faites || 0) > 1 ? 's' : '') +
+      ' · <b>' + (t.restantes || 0) + ' restante' + ((t.restantes || 0) > 1 ? 's' : '') + '</b>' + (t.echec ? ' · <b>' + t.echec + ' en échec</b>' : '') + '</div>';
+    h += '<div class="fb-mois">' + (r.mois || []).map(function(m){
+      var idx = parseInt(String(m.mois).slice(5, 7), 10) - 1;
+      var suite = m.tranches_total ? (' · ' + m.tranches_faites + '/' + m.tranches_total) : '';
+      return '<div class="fb-m fb-' + facturesEsc(m.etat) + '"><b>' + facturesEsc(FACTURES_MOIS_COURT[idx] || m.mois) + '</b><span>' + facturesEsc(FACTURES_ETAT_LIB[m.etat] || m.etat) + facturesEsc(suite) + '</span></div>';
+    }).join('') + '</div>';
+    (r.mois || []).filter(function(m){ return m.etat === 'echec'; }).forEach(function(m){
+      h += '<div class="fb-ech">⚠️ <b>' + facturesEsc(facturesMoisLabel(m.mois)) + '</b> : ' + facturesEsc(m.raison || 'raison non enregistrée') + '</div>';
+    });
+    var fin = '';
+    if (r.fin_estimee){
+      var d = new Date(r.fin_estimee);
+      if (!isNaN(d.getTime())) fin = 'Fin estimée : ' + d.toLocaleDateString('fr-FR', { weekday: 'long', day: 'numeric', month: 'long' }) + ' vers ' + d.toLocaleTimeString('fr-FR', { hour: '2-digit', minute: '2-digit' }) + '. ';
+    }
+    var ecartes = Number(r.mails_ecartes_vie_privee || 0);
+    h += '<div class="fb-pied">' + facturesEsc(fin) + 'Coût IA de cette boîte : ' + facturesFmtUsd(r.cout_usd) + ' (file : ' + facturesFmtUsd(r.cout_file_usd) + ' sur ' + facturesFmtUsd(r.plafond_usd) + ' de plafond). ' +
+      facturesEsc(ecartes + ' mail' + (ecartes > 1 ? 's' : '') + ' personnel' + (ecartes > 1 ? 's' : '') + ' écarté' + (ecartes > 1 ? 's' : '') + ' sans être lu' + (ecartes > 1 ? 's' : '') + ' (hors facture, boîte perso).') + '</div></div>';
+    return h;
+  }
   function facturesRenderBandeau(){
     var el = document.getElementById('factures-bandeau');
     var r = facturesCache && facturesCache.rattrapage;
-    if (!r || !r.visible){ el.style.display = 'none'; el.innerHTML = ''; return; }
+    var hb = facturesBandeauBoiteH(facturesCache && facturesCache.rattrapage_h);   // Lot 15
+    if (!r || !r.visible){ el.innerHTML = hb; el.style.display = hb ? '' : 'none'; return; }
     var t = r.tranches || {};
     var pct = t.total ? Math.round(100 * (t.faites || 0) / t.total) : 0;
     var titre = r.etat === 'pause' ? 'Collecte de janvier à août : EN PAUSE'
@@ -12675,7 +12711,7 @@
       if (!isNaN(d.getTime())) fin = 'Fin estimée : ' + d.toLocaleDateString('fr-FR', { weekday: 'long', day: 'numeric', month: 'long' }) + ' vers ' + d.toLocaleTimeString('fr-FR', { hour: '2-digit', minute: '2-digit' }) + '. ';
     }
     h += '<div class="fb-pied">' + facturesEsc(fin) + 'Coût IA : ' + facturesFmtUsd(r.cout_usd) + ' sur ' + facturesFmtUsd(r.plafond_usd) + ' de plafond.</div>';
-    el.innerHTML = h; el.style.display = '';
+    el.innerHTML = h + hb; el.style.display = '';
   }
   function facturesRender(){
     facturesRenderFileAlerte();
