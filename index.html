@@ -2858,10 +2858,23 @@
   #envoi-list{flex:1 1 auto; overflow-y:auto; padding:10px 14px 28px}
   #envoi-loading, #envoi-error{padding:16px 4px; color:var(--muted); font-size:13.5px}
   #envoi-error{color:#ff6d5a}
-  #envoi-bandeau-essai{
-    background:#fff3cd; color:#7a5b00; border:1px solid #ffe69c; border-radius:12px;
-    padding:10px 14px; font-size:13px; font-weight:700; margin-bottom:14px;
-  }
+  /* Lot 17 : envoi reel -- le destinataire est affiche en clair (plus de bandeau « MODE ESSAI ») */
+  #envoi-destinataire{background:var(--surface); border:1px solid var(--hairline); border-radius:12px; padding:10px 14px; font-size:14px; font-weight:700; margin-bottom:12px; overflow-wrap:anywhere}
+  .envoi-soc-ligne{display:flex; align-items:center; gap:10px; padding:8px 4px; font-size:13.5px; border-top:1px solid var(--hairline)}
+  .envoi-soc-ligne:first-of-type{border-top:0}
+  .envoi-soc-ligne input{width:22px; height:22px; flex:0 0 auto}
+  .envoi-soc-ligne span{flex:1 1 auto; min-width:0}
+  #envoi-restants{font-size:12.5px; color:var(--muted); background:var(--surface); border-radius:12px; padding:10px 14px; margin:6px 0 10px}
+  #envoi-cci{background:var(--surface); border-radius:14px; padding:12px 16px; margin-top:14px; font-size:13.5px}
+  #envoi-cci .envoi-cci-btns{display:flex; gap:10px; margin-top:8px}
+  #envoi-cci .envoi-cci-btns button{flex:1 1 0; padding:10px; border-radius:10px; border:1px solid var(--hairline); background:transparent; color:var(--ink); font:inherit; font-weight:700}
+  #envoi-cci .envoi-cci-btns button.choisi{background:var(--blue); border-color:var(--blue); color:#fff}
+  #envoi-confirmation{background:var(--surface); border:1px solid var(--blue); border-radius:14px; padding:12px 16px; margin-top:14px; font-size:13.5px}
+  #envoi-confirmation .envoi-conf-btns{display:flex; gap:10px; margin-top:12px}
+  #envoi-confirmation .envoi-conf-btns button{flex:1 1 0; padding:12px; border-radius:12px; font:inherit; font-weight:700}
+  #envoi-conf-oui{background:var(--blue); border:none; color:#fff}
+  #envoi-conf-non{background:transparent; border:1px solid var(--hairline); color:var(--ink)}
+  .factures-btn-hp{font-size:12px}
   .envoi-carte{background:var(--surface); border-radius:14px; padding:12px 16px; margin-bottom:10px}
   .envoi-carte b{font-size:14.5px}
   .envoi-carte-ligne{font-size:12.5px; color:var(--muted); margin-top:4px}
@@ -7080,11 +7093,12 @@
       <div id="factures-arecuperer"></div>
       <div id="factures-ecartees"></div>
       <div id="factures-ventes"></div>
+      <div id="factures-hors-perimetre"></div>
       <div id="factures-envoyer">
         <button id="factures-envoyer-selection-btn" type="button" disabled>Envoyer la sélection (0)</button>
         <button id="factures-envoyer-btn" type="button">Envoyer tout le mois</button>
         <button id="factures-envoyer-mois-btn" type="button">Envoyer plusieurs mois…</button>
-        <div class="factures-envoyer-note">Mode essai : l'aperçu s'ouvre avant tout envoi, rien ne part sans ta confirmation.</div>
+        <div class="factures-envoyer-note">Envoi réel à la comptable : l'aperçu s'ouvre avant tout envoi, rien ne part sans ta confirmation finale.</div>
       </div>
     </div>
   </div>
@@ -7099,11 +7113,15 @@
     <div id="envoi-loading">Préparation de l'aperçu…</div>
     <div id="envoi-error" style="display:none"></div>
     <div id="envoi-body" style="display:none">
-      <div id="envoi-bandeau-essai">MODE ESSAI — tout part vers altaestima.contact@gmail.com, rien vers la comptable.</div>
+      <div id="envoi-destinataire">Destinataire : zenburo@outlook.fr</div>
       <div id="envoi-mois-choix" style="display:none"></div>
+      <div id="envoi-choix-societes"></div>
       <div id="envoi-societes"></div>
+      <div id="envoi-restants" style="display:none"></div>
       <div id="envoi-exclus"></div>
-      <button id="envoi-confirmer-btn" type="button">Envoyer l'essai</button>
+      <div id="envoi-cci" style="display:none"><b>Recevoir une copie (Cci) sur altaestima.contact@gmail.com ?</b><div class="envoi-cci-btns"><button type="button" data-cci="oui">Oui</button><button type="button" data-cci="non">Non</button></div></div>
+      <button id="envoi-confirmer-btn" type="button">Envoyer à la comptable</button>
+      <div id="envoi-confirmation" style="display:none"></div>
       <div id="envoi-resultat" style="display:none"></div>
     </div>
   </div>
@@ -8746,7 +8764,7 @@
          comparaison de chaine de version par tenant. */
   var APPV_MCS = '4.59';
   var APPV_LABO = '1.07';
-  var BUILD = 99;
+  var BUILD = 100;
   // displayVersion()/displayVersionShort() lisent isMcsCode() (definie plus bas dans cette
   // meme IIFE -- declaration de fonction, donc disponible ici par hoisting) : le TENANT
   // affiche depend du code de connexion, jamais d'un simple "APPV" global qui ne dirait ni
@@ -12417,27 +12435,74 @@
     return d.innerHTML;
   }
 
+  // Lot 17 : les mois deja charges restent en memoire (affichage instantane au changement de mois), toujours rafraichis en arriere-plan ;
+  // les mois voisins sont precharges un par un. Toute modification (correction, ticket, envoi, perimetre, bouton ↻) vide la memoire.
+  var facturesMoisMem = {};
+  var facturesCompteurs = null;
+  var facturesPrechargeEnCours = false;
+  function facturesMoisCible(){ return facturesMoisAffiche || facturesMoisCourantAAAAMM(); }
+  function facturesInvalider(){ facturesMoisMem = {}; }
+  function facturesChargerCompteurs(){
+    postFacturesApi({ action: 'compteurs' }, function(j){ facturesCompteurs = (j && j.compteurs_lot16) || null; if (facturesCache) facturesRenderBandeau(); }, function(){ /* compteurs facultatifs : la liste reste utilisable */ });
+  }
+  function facturesMoisVoisin(mois, delta){
+    var p = mois.split('-'), a = parseInt(p[0], 10), m = parseInt(p[1], 10) + delta;
+    if (m < 1){ m = 12; a--; } else if (m > 12){ m = 1; a++; }
+    var nv = a + '-' + (m < 10 ? '0' + m : String(m));
+    return (nv < '2026-01' || nv > facturesMoisCourantAAAAMM()) ? null : nv;
+  }
+  function facturesPrecharger(mois){
+    if (facturesPrechargeEnCours) return;
+    var a_faire = [facturesMoisVoisin(mois, -1), facturesMoisVoisin(mois, 1)].filter(function(x){ return x && !facturesMoisMem[x]; });
+    if (!a_faire.length) return;
+    facturesPrechargeEnCours = true;
+    postFacturesApi({ mois: a_faire[0] }, function(j){
+        facturesMoisMem[a_faire[0]] = j || {}; facturesPrechargeEnCours = false;
+        if (facturesMoisCible() === a_faire[0] && (!facturesCache || facturesCache.mois !== a_faire[0])) facturesAppliquer(facturesMoisMem[a_faire[0]]);   // c'est le mois qu'on attendait
+        facturesPrecharger(facturesMoisCible()); },
+      function(){ facturesPrechargeEnCours = false; });
+  }
+  function facturesAppliquer(j){
+    document.getElementById('factures-loading').style.display = 'none';
+    document.getElementById('factures-error').style.display = 'none';
+    document.getElementById('factures-body').style.display = '';
+    facturesCache = j || {};
+    facturesRender();
+  }
   function facturesOpen(){
     facturesview.classList.add('open');
-    document.getElementById('factures-loading').style.display = '';
     document.getElementById('factures-error').style.display = 'none';
-    document.getElementById('factures-body').style.display = 'none';
     facturesSelection.clear();
+    var c = facturesMoisMem[facturesMoisCible()];
+    document.getElementById('factures-loading').style.display = c ? 'none' : '';
+    document.getElementById('factures-body').style.display = c ? '' : 'none';
+    facturesCompteursAFaire = true;      // les compteurs partent APRES la liste (en parallele, ils la ralentissaient)
     facturesLoad();
   }
-  function facturesLoad(){
-    postFacturesApi({ mois: facturesMoisAffiche || facturesMoisCourantAAAAMM() }, function(j){
-      document.getElementById('factures-loading').style.display = 'none';
-      document.getElementById('factures-error').style.display = 'none';
-      document.getElementById('factures-body').style.display = '';
-      facturesCache = j || {};
-      facturesRender();
+  var facturesCompteursAFaire = false;
+  function facturesLoad(opts){
+    if (opts && opts.frais) { facturesInvalider(); facturesCompteursAFaire = true; }
+    var mois = facturesMoisCible();
+    var enMem = facturesMoisMem[mois];
+    if (enMem && enMem !== facturesCache) facturesAppliquer(enMem);
+    postFacturesApi({ mois: mois }, function(j){
+      j = j || {};
+      var avant = facturesMoisMem[mois];
+      facturesMoisMem[mois] = j;
+      if (facturesCompteursAFaire){ facturesCompteursAFaire = false; facturesChargerCompteurs(); }
+      if (facturesMoisCible() !== mois) return;            // on a deja change de mois : la reponse reste en memoire, rien a redessiner
+      var affiche = facturesCache && facturesCache.mois;
+      if (affiche !== mois || !avant || JSON.stringify(avant) !== JSON.stringify(j)) facturesAppliquer(j);   // le mois affiche n'est pas celui demande, ou il a change
+      facturesPrecharger(mois);
     }, function(err){
       document.getElementById('factures-loading').style.display = 'none';
       if (!facturesCache){
         var elErr = document.getElementById('factures-error');
         elErr.style.display = '';
         elErr.innerHTML = facturesEsc(err) + '<br><button type="button" id="factures-reessayer-btn" style="margin-top:8px">Réessayer</button>';
+      } else if (facturesMoisCible() === mois && !facturesMoisMem[mois]){
+        // Lot 17 : jamais d'echec silencieux -- le mois demande n'a pas pu etre charge, on le dit (l'ecran garde le mois precedent)
+        toast('⚠️ ' + facturesMoisLabel(mois) + ' n’a pas pu être chargé : ' + err + ' Appuie sur ↻ pour réessayer.', 6000);
       }
     });
   }
@@ -12473,7 +12538,7 @@
     if (nv < '2026-01' || nv > facturesMoisCourantAAAAMM()) return;
     facturesMoisAffiche = nv;
     facturesSelection.clear();
-    document.getElementById('factures-loading').style.display = '';
+    if (!facturesMoisMem[nv]) document.getElementById('factures-loading').style.display = '';   // Lot 17 : mois en memoire -> affichage immediat
     facturesLoad();
   }
   function facturesRenderPeriode(){
@@ -12560,7 +12625,8 @@
       var btnsPdf = f.facture_id
         ? '<button type="button" class="factures-btn-pdf" data-fid="' + fid + '" data-nom="' + nom + '">Voir le PDF</button>' +
           '<button type="button" class="factures-btn-dl" data-fid="' + fid + '" data-nom="' + nom + '">' + btnDlLabel + '</button>' +
-          '<button type="button" class="factures-btn-corriger" data-fid="' + fid + '">Corriger</button>'
+          '<button type="button" class="factures-btn-corriger" data-fid="' + fid + '">Corriger</button>' +
+          '<button type="button" class="factures-btn-hp" data-hp="perso" data-fid="' + fid + '" data-nom="' + facturesEsc(f.fournisseur || '') + '">Dépense perso</button>'   // Lot 17
         : '';
       var coche = facturesSelection.has(f.facture_id) ? ' checked' : '';
       var checkbox = f.facture_id
@@ -12622,7 +12688,7 @@
           '</div><div class="factures-sans-pdf">Pas de PDF : à récupérer sur l\'espace client du fournisseur.</div>' +
           (f.lien_raison ? '<div class="factures-lien-raison">🔗 ' + facturesEsc(f.lien_raison) + '</div>' : '') +   // Lot 16 : ce que Jarvis a trouve dans le mail
 
-          '<div class="factures-ligne-bas">' + lienEspaceHtml + lienGmailHtml + '</div>' +
+          '<div class="factures-ligne-bas">' + lienEspaceHtml + lienGmailHtml + (f.facture_id ? '<button type="button" class="factures-btn-hp" data-hp="perso" data-fid="' + facturesEsc(f.facture_id) + '" data-nom="' + facturesEsc(f.fournisseur || '') + '">Dépense perso</button>' : '') + '</div>' +
           '</div>';
       }).join('');
   }
@@ -12703,13 +12769,15 @@
     if (l.sans_lien) morceaux.push(l.sans_lien + ' sans lien utilisable');
     if (l.echec) morceaux.push(l.echec + ' en échec');
     h += '<div>🔗 <b>Factures derrière un lien</b> (' + facturesEsc((l.domaines || []).join(', ') || 'aucun domaine autorisé') + ') : ' + facturesEsc(morceaux.join(' · ')) +
-      '. Coût IA : ' + facturesEsc(facturesFmtUsd(l.cout_usd)) + '.</div></div>';
+      '. Coût IA : ' + facturesEsc(facturesFmtUsd(l.cout_usd)) + '.</div>' +
+      ((c.hors_perimetre && c.hors_perimetre.total) ? '<div>🚫 <b>Hors périmètre</b> : ' + facturesEsc(Object.keys(c.hors_perimetre.par_categorie || {}).map(function(k){ return k + ' ' + c.hors_perimetre.par_categorie[k]; }).join(' · ')) +
+        ' (jamais envoyées, consultables mois par mois en bas de la liste).</div>' : '') + '</div>';
     return h;
   }
   function facturesRenderBandeau(){
     var el = document.getElementById('factures-bandeau');
     var r = facturesCache && facturesCache.rattrapage;
-    var hb = facturesBandeauBoiteH(facturesCache && facturesCache.rattrapage_h) + facturesBandeauLot16(facturesCache && facturesCache.compteurs_lot16);   // Lots 15 et 16
+    var hb = facturesBandeauBoiteH(facturesCache && facturesCache.rattrapage_h) + facturesBandeauLot16(facturesCompteurs || (facturesCache && facturesCache.compteurs_lot16));   // Lots 15, 16 et 17 (compteurs charges une fois)
     if (!r || !r.visible){ el.innerHTML = hb; el.style.display = hb ? '' : 'none'; return; }
     var t = r.tranches || {};
     var pct = t.total ? Math.round(100 * (t.faites || 0) / t.total) : 0;
@@ -12746,6 +12814,7 @@
     facturesRenderARecuperer();
     facturesRenderEcartees();
     facturesRenderVentes();
+    facturesRenderHorsPerimetre();
   }
 
   // ===== Lot 12 (01/10/2026) : « 📷 Photo d'un ticket » + ventes ecartees (onglet Factures TVA uniquement) =====
@@ -12894,7 +12963,7 @@
       if (j.etat === 'a_verifier') ticketMessage(carte, 'ticket-attention', '⚠️ Rangé dans Google Drive mais à vérifier : ' + (j.raison || ''));
       else ticketMessage(carte, 'ticket-ok', '✅ Rangé dans Google Drive : ' + ticketResumeLigne(j) + ' · ' + (FACTURES_SOCIETE_LABEL[societe] || societe) + ' · ' + mois);
       carte.corps.appendChild(ticketEl('div', 'ticket-detail', 'Dossier : ' + (j.drive_dossier || '') + (j.date_source === 'choisie' ? ' · date choisie à la main' : '')));
-      facturesLoad(); return;
+      facturesLoad({ frais: true }); return;
     }
     if (j.etat === 'range_sans_ligne'){
       // le fichier est dans Drive mais la liste n'a pas ete mise a jour : pas de « Réessayer » (il creerait un deuxieme fichier)
@@ -12936,6 +13005,31 @@
           '<div class="factures-raison">' + facturesEsc(v.raison || 'Vente (pas un achat)') + '</div></div>';
       }).join('') + '</details>';
   }
+
+  // Lot 17 : hors perimetre (SCI Mado, DAMATP, avant 2026, MCS, Coinbase, depenses perso) -- consultable ici, jamais envoye, reversible.
+  function facturesRenderHorsPerimetre(){
+    var el = document.getElementById('factures-hors-perimetre'); if (!el) return;
+    var l = (facturesCache && facturesCache.hors_perimetre) || [];
+    if (!l.length){ el.innerHTML = ''; return; }
+    el.innerHTML = '<details class="factures-ventes-bloc"><summary>Hors périmètre — ' + l.length + ' (jamais envoyées, réversible)</summary>' +
+      l.map(function(v){
+        return '<div class="factures-vente"><span class="factures-date">' + facturesEsc(ticketDateFr(v.date).slice(0, 5)) + '</span> <b>' + facturesEsc(v.fournisseur || 'Fournisseur inconnu') + '</b>' +
+          (v.montant_ttc != null ? ' · ' + facturesEsc(facturesFmtMontant(v.montant_ttc, v.devise)) : '') + ' · ' + facturesEsc(v.categorie || 'hors périmètre') +
+          '<div class="factures-ligne-bas"><button type="button" class="factures-btn-mail" data-fid="' + facturesEsc(v.facture_id) + '">Voir le mail</button>' +
+          '<button type="button" class="factures-btn-hp" data-hp="retour" data-fid="' + facturesEsc(v.facture_id) + '" data-nom="' + facturesEsc(v.fournisseur || '') + '">Remettre dans le périmètre</button></div></div>';
+      }).join('') + '</details>';
+  }
+  function facturesPerimetre(fid, hors, nom){
+    var q = hors ? ('Classer « ' + (nom || 'cette facture') + ' » hors périmètre (dépense perso) ? Elle ne partira jamais chez la comptable. Réversible.')
+                 : ('Remettre « ' + (nom || 'cette facture') + ' » dans le périmètre ? Elle reprend son ancien statut.');
+    if (!window.confirm(q)) return;
+    postFacturesApi({ action: 'perimetre', facture_id: fid, hors: hors, categorie: 'Dépense perso' }, function(){ toast(hors ? '🚫 Classée hors périmètre' : '↩️ Remise dans le périmètre'); facturesLoad({ frais: true }); },
+      function(err){ toast('❌ ' + err); });
+  }
+  document.getElementById('facturesview').addEventListener('click', function(e){
+    var b = e.target.closest('.factures-btn-hp'); if (!b) return;
+    facturesPerimetre(b.getAttribute('data-fid'), b.getAttribute('data-hp') !== 'retour', b.getAttribute('data-nom'));
+  });
 
   // Fiche "Corriger" (29/09/2026, Lot 6) : ouvre une fiche pre-remplie depuis la ligne, envoie
   // l'action "corriger" (societe/fournisseur/date/HT/TVA/TTC/devise/nature, ou "pas une
@@ -12980,7 +13074,7 @@
     var payload = Object.assign({ action: 'corriger', facture_id: corrigerFactureCourante.facture_id }, payloadExtra);
     postFacturesApi(payload, function(){
       corrigerOpen(false);
-      facturesLoad();
+      facturesLoad({ frais: true });
     }, function(err){
       var elErr = document.getElementById('corriger-erreur');
       elErr.style.display = ''; elErr.textContent = err;
@@ -13051,12 +13145,13 @@
   }
   document.getElementById('factures-contenu').addEventListener('click', facturesClicMail);
   document.getElementById('factures-arecuperer').addEventListener('click', facturesClicMail);
+  document.getElementById('factures-hors-perimetre').addEventListener('click', facturesClicMail);   // Lot 17
   document.getElementById('mail-fermer-btn').addEventListener('click', function(){ mailOpen(false); });
   mailBg.addEventListener('click', function(){ mailOpen(false); });
 
   document.getElementById('sh-factures').addEventListener('click', function(){ sheetOpen(false); facturesOpen(); });
   document.getElementById('factures-close').addEventListener('click', facturesClose);
-  document.getElementById('factures-refresh').addEventListener('click', facturesLoad);
+  document.getElementById('factures-refresh').addEventListener('click', function(){ facturesLoad({ frais: true }); });
 
   // Recuperation du PDF (28/09/2026) : reutilise EXACTEMENT l'action "pdf" du meme webhook
   // collecteur-api-lister (verification SHA-256 cote serveur, jamais de mauvais PDF affiche).
@@ -13195,8 +13290,9 @@
   function envoiMoisCap(m){ var t = facturesMoisLabel(m); return t.charAt(0).toUpperCase() + t.slice(1); }
   function envoiPl(n, un, plu){ return n + ' ' + (n > 1 ? plu : un); }
   var ENVOI_EXCLU_TITRES = {
-    a_verifier: 'À vérifier (listées dans le mail, envoi ultérieur)',
-    a_attribuer: 'À attribuer, pas de société (listées dans le mail, envoi ultérieur)',
+    a_verifier: 'À vérifier (restent dans l\'application, jamais dans le mail)',
+    a_attribuer: 'À attribuer, pas de société (restent dans l\'application, jamais dans le mail)',
+    hors_perimetre: 'Hors périmètre (jamais envoyées)',
     trop_gros: 'PDF trop lourd pour un mail (non envoyé, à transmettre à la main)',
     deja_envoyees: 'Déjà envoyées (non renvoyées sauf si tu les coches)',
     a_recuperer: 'À récupérer (sans PDF)',
@@ -13243,11 +13339,63 @@
     if (!e.target.closest('#envoi-mois-voir-btn')) return;
     var tous = document.getElementById('envoi-mois-tous-cb');
     var payload = (tous && tous.checked) ? { tous_les_mois: true } : { mois_liste: envoiMoisCoches() };
+    var soc = envoiSocietesParDefaut(); if (soc) payload.societes = soc;   // Lot 17 : meme logique que « Envoyer tout le mois »
+    envoiReinitCci();
     envoiApercuCharger(payload);
   });
   // ----- étape 2 : l'apercu = la liste exacte des mails qui vont partir
+  // Lot 17 : choix des societes (« Envoyer tout le mois » / plusieurs mois), question Cci obligatoire, confirmation finale recapitulative.
+  var envoiCci = null;              // null = pas encore repondu (aucun choix par defaut cache)
+  var envoiApercuCourant = null;
+  function envoiSocietesParDefaut(){ return (facturesTabActif && facturesTabActif !== '_a_attribuer') ? [facturesTabActif] : null; }
+  function envoiMajBoutonEnvoi(){
+    var btn = document.getElementById('envoi-confirmer-btn');
+    var j = envoiApercuCourant || {};
+    var ok = !!envoiJetonCourant && (j.mails || []).length > 0 && envoiCci !== null;
+    btn.disabled = !ok;
+    btn.textContent = (envoiCci === null && (j.mails || []).length) ? 'Envoyer à la comptable (réponds d’abord à la question Cci)' : 'Envoyer à la comptable';
+  }
+  function envoiRenderChoixSocietes(j){
+    var el = document.getElementById('envoi-choix-societes');
+    var dispo = j.choix_societes || {};
+    var codes = ['DMROOM', 'M22VISION', 'HOLDINGDB'].filter(function(c){ return dispo[c] && dispo[c].nb_factures; });
+    if (!envoiDernierPayload || envoiDernierPayload.empreintes || !codes.length){ el.innerHTML = ''; return; }
+    var filtre = j.societes_filtre;
+    el.innerHTML = '<div class="envoi-carte"><b>Quelles sociétés envoyer ?</b>' + codes.map(function(c){
+      var d = dispo[c], coche = !filtre || filtre.indexOf(c) >= 0;
+      return '<label class="envoi-soc-ligne"><input type="checkbox" class="envoi-soc-cb" value="' + c + '"' + (coche ? ' checked' : '') + '><span><b>' + facturesEsc(ENVOI_SOCIETE_LABEL[c] || c) + '</b> — ' +
+        envoiPl(d.nb_factures, 'facture prête', 'factures prêtes') + ' — ' + facturesEsc(envoiTotauxTxt(d.totaux_par_devise)) + '</span></label>';
+    }).join('') + '</div>';
+  }
+  document.getElementById('envoi-choix-societes').addEventListener('change', function(e){
+    if (!e.target.closest('.envoi-soc-cb')) return;
+    var coches = Array.prototype.slice.call(document.querySelectorAll('#envoi-choix-societes .envoi-soc-cb:checked')).map(function(c){ return c.value; });
+    var p = Object.assign({}, envoiDernierPayload || {});
+    if (!coches.length){
+      envoiJetonCourant = null; document.getElementById('envoi-societes').innerHTML = '<div class="envoi-carte">Coche au moins une société.</div>';
+      document.getElementById('envoi-confirmation').style.display = 'none'; envoiMajBoutonEnvoi(); return;
+    }
+    p.societes = coches;
+    envoiApercuCharger(p);
+  });
+  function envoiRenderRestants(j){
+    var r = j.restants || {}, el = document.getElementById('envoi-restants');
+    var parts = [];
+    if (r.a_verifier) parts.push(envoiPl(r.a_verifier, 'à vérifier', 'à vérifier'));
+    if (r.a_attribuer) parts.push(envoiPl(r.a_attribuer, 'à attribuer', 'à attribuer'));
+    if (r.a_recuperer) parts.push(envoiPl(r.a_recuperer, 'à récupérer', 'à récupérer'));
+    if (r.hors_perimetre) parts.push(envoiPl(r.hors_perimetre, 'hors périmètre', 'hors périmètre'));
+    el.style.display = '';
+    el.innerHTML = '<b>Pour toi seul</b> (rien de tout ça n’est envoyé, ni listé, ni compté dans le mail) : ' + (parts.length ? facturesEsc(parts.join(' · ')) + ' restent dans l’application pour ces mois et sociétés.' : 'aucune pièce en attente pour ces mois et sociétés.');
+  }
   function envoiRenderApercu(j){
     envoiJetonCourant = j.jeton;
+    envoiApercuCourant = j;
+    document.getElementById('envoi-destinataire').textContent = 'Destinataire : ' + (j.destinataire || 'zenburo@outlook.fr');
+    envoiRenderChoixSocietes(j);
+    envoiRenderRestants(j);
+    document.getElementById('envoi-cci').style.display = (j.mails || []).length ? '' : 'none';
+    document.getElementById('envoi-confirmation').style.display = 'none';
     var wrapSoc = document.getElementById('envoi-societes');
     var mails = j.mails || [];
     var html = '';
@@ -13268,7 +13416,7 @@
       html += mails.map(function(m){
         var partie = m.nb_parties > 1 ? '<span class="envoi-pastille">partie ' + m.partie + '/' + m.nb_parties + '</span>' : '';
         var pj = m.zip ? ('1 zip (' + envoiPl(m.nb_pdf, 'PDF', 'PDF') + ' + récapitulatif)') : envoiPl(m.nb_pdf, 'PDF séparé', 'PDF séparés');
-        var attente = m.nb_en_attente ? '<div class="envoi-carte-ligne">' + envoiPl(m.nb_en_attente, 'pièce en cours de vérification listée', 'pièces en cours de vérification listées') + ' dans le mail (sans pièce jointe)</div>' : '';
+        var attente = '';   // Lot 17 : plus aucune piece non prete dans le mail
         return '<div class="envoi-carte"><div class="envoi-mail-tete"><b>' + facturesEsc(ENVOI_SOCIETE_LABEL[m.societe] || m.societe) + ' — ' + facturesEsc(envoiMoisCap(m.mois)) + '</b>' + partie + '</div>' +
           '<div class="envoi-carte-ligne">' + envoiPl(m.nb_factures, 'facture', 'factures') + ' — ' + facturesEsc(envoiTotauxTxt(m.totaux_par_devise)) + '</div>' +
           '<div class="envoi-carte-ligne">' + facturesEsc(pj) + ' — ' + envoiFmtOctets(m.taille_octets) + '</div>' + attente + '</div>';
@@ -13298,8 +13446,7 @@
     document.getElementById('envoi-exclus').innerHTML = exclusHtml;
     var btn = document.getElementById('envoi-confirmer-btn');
     btn.style.display = '';
-    btn.disabled = !mails.length;
-    btn.textContent = mails.length > 1 ? ('Envoyer les ' + mails.length + ' mails d\'essai') : 'Envoyer l\'essai';
+    envoiMajBoutonEnvoi();
     document.getElementById('envoi-resultat').style.display = 'none';
   }
   function envoiApercuCharger(payload){
@@ -13334,14 +13481,27 @@
     envoiInclureDeja[cb.value] = cb.checked;
     envoiApercuCharger(envoiDernierPayload || {});      // l'apercu (et son jeton) sont recalcules avec les factures cochees expres
   });
+  document.getElementById('envoi-cci').addEventListener('click', function(e){
+    var b = e.target.closest('button[data-cci]'); if (!b) return;
+    envoiCci = b.getAttribute('data-cci') === 'oui';
+    Array.prototype.forEach.call(document.querySelectorAll('#envoi-cci button[data-cci]'), function(x){ x.classList.toggle('choisi', x === b); });
+    document.getElementById('envoi-confirmation').style.display = 'none';
+    envoiMajBoutonEnvoi();
+  });
+  function envoiReinitCci(){
+    envoiCci = null;
+    Array.prototype.forEach.call(document.querySelectorAll('#envoi-cci button[data-cci]'), function(x){ x.classList.remove('choisi'); });
+  }
   function envoiOuvrir(payload){
-    envoiJetonCourant = null; envoiInclureDeja = {};
+    envoiJetonCourant = null; envoiInclureDeja = {}; envoiReinitCci();
     document.getElementById('envoi-mois-choix').style.display = 'none';
     envoiApercuOpen(true);
     envoiApercuCharger(payload);
   }
   document.getElementById('factures-envoyer-btn').addEventListener('click', function(){
-    envoiOuvrir({ mois: (facturesCache && facturesCache.mois) || facturesMoisCourantAAAAMM() });
+    var p = { mois: (facturesCache && facturesCache.mois) || facturesMoisCourantAAAAMM() };
+    var soc = envoiSocietesParDefaut(); if (soc) p.societes = soc;      // Lot 17 : seule la societe regardee est cochee (toutes si aucun filtre)
+    envoiOuvrir(p);
   });
   document.getElementById('factures-envoyer-selection-btn').addEventListener('click', function(){
     if (!facturesSelection.size) return;
@@ -13358,6 +13518,10 @@
     document.getElementById('envoi-exclus').innerHTML = '';
     document.getElementById('envoi-confirmer-btn').style.display = 'none';
     document.getElementById('envoi-resultat').style.display = 'none';
+    document.getElementById('envoi-choix-societes').innerHTML = '';
+    document.getElementById('envoi-restants').style.display = 'none';
+    document.getElementById('envoi-cci').style.display = 'none';
+    document.getElementById('envoi-confirmation').style.display = 'none';
     envoiRenderMoisChoix();
     document.getElementById('envoi-mois-choix').style.display = '';
     envoiApercuOpen(true);
@@ -13384,11 +13548,12 @@
         }).join('')
       : '';
     resultat.classList.toggle('erreur', ko.length > 0);
-    resultat.innerHTML = (envoyes.length ? 'Essai envoyé à <b>' + facturesEsc(r.destinataire || 'altaestima.contact@gmail.com') + '</b> le ' + dateTxt + ' : ' + envoiPl(envoyes.length, 'mail', 'mails') + ' sur ' + (r.nb_mails_prevus || envoyes.length) + '.' : 'Aucun mail n\'est parti.') + lignes + koHtml + echecsHtml;
+    resultat.innerHTML = (envoyes.length ? (r.mode === 'essai' ? 'Essai envoyé à <b>' : 'Envoyé à <b>') + facturesEsc(r.destinataire || '') + '</b>' + (r.cci ? ' (copie cachée sur altaestima.contact@gmail.com)' : '') + ' le ' + dateTxt + ' : ' + envoiPl(envoyes.length, 'mail', 'mails') + ' sur ' + (r.nb_mails_prevus || envoyes.length) + '.' : 'Aucun mail n\'est parti.') + lignes + koHtml + echecsHtml;
     try { resultat.scrollIntoView({ block: 'center' }); } catch (e) {}
-    btn.textContent = ko.length ? 'Envoi terminé avec des échecs' : 'Essai envoyé';
+    btn.textContent = ko.length ? 'Envoi terminé avec des échecs' : (r.mode === 'essai' ? 'Essai envoyé' : 'Envoyé à la comptable');
     btn.disabled = true;
     envoiJetonCourant = null;
+    facturesInvalider(); facturesChargerCompteurs();   // Lot 17 : les factures envoyees portent « Déjà envoyée le … »
   }
   function envoiSuivre(jeton, total, btn){
     var resultat = document.getElementById('envoi-resultat');
@@ -13415,13 +13580,35 @@
     }
     tick(0);
   }
+  // Lot 17 : « Envoyer à la comptable » ouvre d'abord une confirmation finale qui recapitule tout ; seul « Oui, envoyer » envoie.
   document.getElementById('envoi-confirmer-btn').addEventListener('click', function(){
     var btn = document.getElementById('envoi-confirmer-btn');
-    if (!envoiJetonCourant || btn.disabled) return;
+    if (!envoiJetonCourant || btn.disabled || envoiCci === null) return;
+    var j = envoiApercuCourant || {}, mails = j.mails || [];
+    var socs = [], mois = [];
+    mails.forEach(function(m){ var l = ENVOI_SOCIETE_LABEL[m.societe] || m.societe; if (socs.indexOf(l) < 0) socs.push(l); var mm = envoiMoisCap(m.mois); if (mois.indexOf(mm) < 0) mois.push(mm); });
+    var nbFact = mails.reduce(function(a, m){ return a + (m.nb_factures || 0); }, 0);
+    var el = document.getElementById('envoi-confirmation');
+    el.innerHTML = '<b>Confirmer l’envoi à la comptable ?</b>' +
+      '<div class="envoi-carte-ligne">Destinataire : <b>' + facturesEsc(j.destinataire || 'zenburo@outlook.fr') + '</b></div>' +
+      '<div class="envoi-carte-ligne">Sociétés : ' + facturesEsc(socs.join(', ')) + '</div>' +
+      '<div class="envoi-carte-ligne">Mois : ' + facturesEsc(mois.join(', ')) + '</div>' +
+      '<div class="envoi-carte-ligne">' + envoiPl(nbFact, 'facture', 'factures') + ' — ' + facturesEsc(envoiTotauxTxt(j.totaux_par_devise)) + ' — ' + envoiPl(mails.length, 'mail', 'mails') + '</div>' +
+      '<div class="envoi-carte-ligne">Copie cachée sur altaestima.contact@gmail.com : <b>' + (envoiCci ? 'oui' : 'non') + '</b></div>' +
+      '<div class="envoi-conf-btns"><button type="button" id="envoi-conf-non">Annuler</button><button type="button" id="envoi-conf-oui">Oui, envoyer</button></div>';
+    el.style.display = '';
+    try { el.scrollIntoView({ block: 'center' }); } catch (e) {}
+  });
+  document.getElementById('envoi-confirmation').addEventListener('click', function(e){
+    if (e.target.closest('#envoi-conf-non')){ document.getElementById('envoi-confirmation').style.display = 'none'; return; }
+    if (!e.target.closest('#envoi-conf-oui')) return;
+    document.getElementById('envoi-confirmation').style.display = 'none';
+    var btn = document.getElementById('envoi-confirmer-btn');
+    if (!envoiJetonCourant || envoiCci === null) return;
     btn.disabled = true;
     btn.textContent = 'Envoi en cours…';
     var jeton = envoiJetonCourant;
-    postFacturesApi({ action: 'envoyer', jeton: jeton, asynchrone: true }, function(j){
+    postFacturesApi({ action: 'envoyer', jeton: jeton, asynchrone: true, cci: envoiCci === true }, function(j){
       var resultat = document.getElementById('envoi-resultat');
       resultat.classList.remove('erreur');
       resultat.style.display = '';
@@ -13433,7 +13620,7 @@
       resultat.style.display = '';
       resultat.textContent = err;
       btn.disabled = false;
-      btn.textContent = 'Envoyer l\'essai';
+      btn.textContent = 'Envoyer à la comptable';
     });
   });
 
