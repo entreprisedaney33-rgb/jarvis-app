@@ -8764,7 +8764,7 @@
          comparaison de chaine de version par tenant. */
   var APPV_MCS = '4.59';
   var APPV_LABO = '1.07';
-  var BUILD = 100;
+  var BUILD = 101;
   // displayVersion()/displayVersionShort() lisent isMcsCode() (definie plus bas dans cette
   // meme IIFE -- declaration de fonction, donc disponible ici par hoisting) : le TENANT
   // affiche depend du code de connexion, jamais d'un simple "APPV" global qui ne dirait ni
@@ -13528,7 +13528,7 @@
   });
   document.getElementById('envoi-close').addEventListener('click', function(){ envoiApercuOpen(false); });
   // ----- étape 3 : confirmation unique, puis suivi (le serveur envoie un mail apres l'autre)
-  function envoiAfficherFin(r, btn){
+  function envoiAfficherFin(r, btn, deja){
     var resultat = document.getElementById('envoi-resultat');
     resultat.style.display = '';
     r = r || {};
@@ -13548,7 +13548,9 @@
         }).join('')
       : '';
     resultat.classList.toggle('erreur', ko.length > 0);
-    resultat.innerHTML = (envoyes.length ? (r.mode === 'essai' ? 'Essai envoyé à <b>' : 'Envoyé à <b>') + facturesEsc(r.destinataire || '') + '</b>' + (r.cci ? ' (copie cachée sur altaestima.contact@gmail.com)' : '') + ' le ' + dateTxt + ' : ' + envoiPl(envoyes.length, 'mail', 'mails') + ' sur ' + (r.nb_mails_prevus || envoyes.length) + '.' : 'Aucun mail n\'est parti.') + lignes + koHtml + echecsHtml;
+    // Lot 17 bis : jeton deja utilise par un envoi REUSSI -> on le dit simplement, jamais une erreur
+    var dejaTxt = (deja && envoyes.length) ? '<b>✅ Déjà envoyé le ' + facturesEsc(d.toLocaleDateString('fr-FR')) + ' à ' + facturesEsc(d.toLocaleTimeString('fr-FR', { hour: '2-digit', minute: '2-digit' })) + '.</b> ' : '';
+    resultat.innerHTML = dejaTxt + (envoyes.length ? (r.mode === 'essai' ? 'Essai envoyé à <b>' : 'Envoyé à <b>') + facturesEsc(r.destinataire || '') + '</b>' + (r.cci ? ' (copie cachée sur altaestima.contact@gmail.com)' : '') + ' le ' + dateTxt + ' : ' + envoiPl(envoyes.length, 'mail', 'mails') + ' sur ' + (r.nb_mails_prevus || envoyes.length) + '.' : 'Aucun mail n\'est parti.') + lignes + koHtml + echecsHtml;
     try { resultat.scrollIntoView({ block: 'center' }); } catch (e) {}
     btn.textContent = ko.length ? 'Envoi terminé avec des échecs' : (r.mode === 'essai' ? 'Essai envoyé' : 'Envoyé à la comptable');
     btn.disabled = true;
@@ -13608,6 +13610,8 @@
     btn.disabled = true;
     btn.textContent = 'Envoi en cours…';
     var jeton = envoiJetonCourant;
+    if (envoiJetonsSoumis[jeton]){ envoiApresErreur(jeton, '', btn); return; }   // Lot 17 bis : un jeton deja soumis n'est jamais renvoye, on demande son etat
+    envoiJetonsSoumis[jeton] = true;
     postFacturesApi({ action: 'envoyer', jeton: jeton, asynchrone: true, cci: envoiCci === true }, function(j){
       var resultat = document.getElementById('envoi-resultat');
       resultat.classList.remove('erreur');
@@ -13615,14 +13619,44 @@
       if (j && j.lance){ resultat.textContent = 'Envoi lancé : ' + (j.nb_mails || '') + ' mail(s), l\'un après l\'autre…'; try { resultat.scrollIntoView({ block: 'center' }); } catch (e) {} envoiSuivre(jeton, j.nb_mails, btn); return; }
       envoiAfficherFin(j, btn);      // ancien serveur (reponse synchrone)
     }, function(err){
-      var resultat = document.getElementById('envoi-resultat');
-      resultat.classList.add('erreur');
-      resultat.style.display = '';
-      resultat.textContent = err;
-      btn.disabled = false;
-      btn.textContent = 'Envoyer à la comptable';
+      // Lot 17 bis (incident du 03/10, 13 h 57) : la reponse peut se perdre ou arriver trop tard alors que le serveur a BIEN lance l'envoi.
+      // On ne reactive jamais le bouton a l'aveugle : on demande d'abord au serveur ou en est ce jeton.
+      envoiApresErreur(jeton, err, btn);
     });
   });
+  var envoiJetonsSoumis = {};
+  function envoiApresErreur(jeton, err, btn){
+    var resultat = document.getElementById('envoi-resultat');
+    resultat.classList.remove('erreur'); resultat.style.display = '';
+    resultat.textContent = 'Je vérifie où en est l’envoi…';
+    btn.disabled = true; btn.textContent = 'Vérification…';
+    postFacturesApi({ action: 'etat_envoi', jeton: jeton }, function(e){
+      e = e || {};
+      if (e.etat === 'termine'){
+        var r = (e.resultat && e.resultat.resume) || {};
+        if ((r.nb_mails_envoyes || 0) > 0){ envoiAfficherFin(r, btn, true); return; }
+        envoiRedemander('La préparation précédente n’a envoyé aucun mail.', btn); return;      // jeton consomme sans envoi
+      }
+      if (e.etat === 'en_cours'){ resultat.textContent = 'L’envoi est bien parti côté serveur, je le suis…'; envoiSuivre(jeton, e.nb_mails_total, btn); return; }
+      if (e.etat === 'non_demarre'){        // le serveur n'a jamais recu l'envoi : le meme jeton reste valable, rien n'est parti
+        delete envoiJetonsSoumis[jeton];
+        resultat.classList.add('erreur'); resultat.textContent = (err ? err + ' ' : '') + 'Rien n’est parti : tu peux réessayer.';
+        btn.disabled = false; btn.textContent = 'Envoyer à la comptable'; return;
+      }
+      envoiRedemander('Cette préparation n’est plus valable.', btn);      // jeton inconnu ou expire
+    }, function(err2){
+      resultat.classList.add('erreur');
+      resultat.innerHTML = facturesEsc('Je ne sais pas si le mail est parti (' + err2 + '). Ne renvoie pas : ') + '<button type="button" id="envoi-reverifier-btn">Vérifier à nouveau</button>';
+      btn.disabled = true; btn.textContent = 'Envoi non confirmé';
+      var rb = document.getElementById('envoi-reverifier-btn'); if (rb) rb.addEventListener('click', function(){ envoiApresErreur(jeton, '', btn); });
+    });
+  }
+  // Jeton consomme sans envoi (ou expire) : un nouvel apercu est prepare tout seul, la reponse a la question Cci est gardee.
+  function envoiRedemander(pourquoi, btn){
+    toast('🔄 ' + pourquoi + ' Nouvel aperçu préparé : vérifie et confirme à nouveau.', 6000);
+    envoiJetonCourant = null;
+    envoiApercuCharger(envoiDernierPayload || {});
+  }
 
   // Classement base UNIQUEMENT sur les paiements tiers (payments.tiers.last_7d)
   // — jamais le total (qui inclut le wallet de test + le seed hebdo), pour que
