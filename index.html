@@ -8156,7 +8156,8 @@
     <p id="iklv-note" class="ikl-aide"></p>
     <label for="iklv-genre">Type de véhicule</label>
     <select id="iklv-genre"><option value="voiture">Voiture</option><option value="moto">Moto (&gt; 50 cm³)</option><option value="cyclo">Cyclomoteur (≤ 50 cm³)</option></select>
-    <div id="iklv-cv-wrap"><label for="iklv-cv">Puissance fiscale (case P.6 de la carte grise)</label><select id="iklv-cv"></select></div>
+    <div id="iklv-cv-wrap"><label for="iklv-cv">Puissance fiscale (case P.6 de la carte grise)</label><select id="iklv-cv"></select>
+      <p class="ikl-aide" style="margin:6px 2px 0">Le barème s’arrête à 7 CV : au-delà (8, 10, 15 CV…), choisir « 7 CV et plus ».</p></div>
     <label class="ikl-check" id="iklv-elec-wrap"><input id="iklv-elec" type="checkbox"><span>100 % électrique (barème majoré de 20 %)</span></label>
     <label for="iklv-libelle">Description (facultatif)</label>
     <input id="iklv-libelle" type="text" maxlength="80" placeholder="Ex. : Peugeot 208, AB-123-CD">
@@ -8900,8 +8901,8 @@
          unique de detection de mise a jour (voir checkUpdate ci-dessous), plus fiable qu'une
          comparaison de chaine de version par tenant. */
   var APPV_MCS = '4.59';
-  var APPV_LABO = '1.08';
-  var BUILD = 102;
+  var APPV_LABO = '1.09';
+  var BUILD = 103;
   // displayVersion()/displayVersionShort() lisent isMcsCode() (definie plus bas dans cette
   // meme IIFE -- declaration de fonction, donc disponible ici par hoisting) : le TENANT
   // affiche depend du code de connexion, jamais d'un simple "APPV" global qui ne dirait ni
@@ -19617,8 +19618,17 @@
     '2026': { grille: 'arrete_2023_03_27', provisoire: true, source: 'PROVISOIRE : aucun barème officiel publié à ce jour pour les revenus 2026 (attendu au printemps 2027) ; barème en vigueur (' + IKL_SOURCE_2023 + ') repris en attendant' }
   };
   var IKL_CONDUCTEURS = [{ id: 'dorian', nom: 'Dorian' }, { id: 'matheo', nom: 'Mathéo' }];
+  // Conducteurs d'essai (07/10/2026) : visibles et acceptés par le serveur UNIQUEMENT pour un compte
+  // de test labo-audit-* -- les vérifications à l'écran ne se mélangent jamais aux vrais trajets.
+  function iklListeConducteurs(){
+    var l = IKL_CONDUCTEURS.slice();
+    try { if (String(read('jarvisCode') || '').trim().toLowerCase().indexOf('labo-audit-') === 0) l.push({ id: 'essai1', nom: 'Essai 1' }, { id: 'essai2', nom: 'Essai 2' }); } catch (e) {}
+    return l;
+  }
   var IKL_GENRES = { voiture: 'Voiture', moto: 'Moto (> 50 cm³)', cyclo: 'Cyclomoteur (≤ 50 cm³)' };
-  var IKL_CV = { voiture: [['3', '3 CV et moins'], ['4', '4 CV'], ['5', '5 CV'], ['6', '6 CV'], ['7+', '7 CV et plus']],
+  // Le barème est PLAFONNÉ : une voiture de 8, 10 ou 15 CV se calcule comme une « 7 CV et plus »,
+  // une moto de 6 CV ou plus comme « plus de 5 CV ». Aucune autre valeur n'est acceptée (écran ET serveur).
+  var IKL_CV = { voiture: [['3', '3 CV et moins'], ['4', '4 CV'], ['5', '5 CV'], ['6', '6 CV'], ['7+', '7 CV et plus (8, 10, 15 CV… compris)']],
                  moto: [['1-2', '1 ou 2 CV'], ['3-5', '3, 4 ou 5 CV'], ['5+', 'plus de 5 CV']], cyclo: [['-', '—']] };
   var IKL_JOURS = ['dimanche', 'lundi', 'mardi', 'mercredi', 'jeudi', 'vendredi', 'samedi'];
   var IKL_MOIS = ['janvier', 'février', 'mars', 'avril', 'mai', 'juin', 'juillet', 'août', 'septembre', 'octobre', 'novembre', 'décembre'];
@@ -19641,7 +19651,7 @@
     var n = new Date(), mo = n.getMonth() + 1, j = n.getDate();
     return n.getFullYear() + '-' + (mo < 10 ? '0' : '') + mo + '-' + (j < 10 ? '0' : '') + j;
   }
-  function iklNomConducteur(id){ for (var i = 0; i < IKL_CONDUCTEURS.length; i++) if (IKL_CONDUCTEURS[i].id === id) return IKL_CONDUCTEURS[i].nom; return id; }
+  function iklNomConducteur(id){ var l = iklListeConducteurs(); for (var i = 0; i < l.length; i++) if (l[i].id === id) return l[i].nom; return id; }
   function iklNum(n, dec){ return Number(n || 0).toLocaleString('fr-FR', { minimumFractionDigits: dec, maximumFractionDigits: dec }); }
   function iklEur(n){ return iklNum(n, 2) + ' €'; }
   function iklKm(n){ return iklNum(n, Number(n) % 1 ? 1 : 0) + ' km'; }
@@ -19653,23 +19663,31 @@
     var g = IKL_GRILLES[b.grille][vehicule.genre];
     var coefs = g && g.cv[vehicule.cv];
     if (!coefs) return null;
-    var i = d <= g.bornes[0] ? 0 : (d <= g.bornes[1] ? 1 : 2);
+    // CALCUL EXACT EN NOMBRES ENTIERS (07/10/2026) : en virgule flottante, un montant tombant pile
+    // sur un demi-centime (ex. 20 025 km × 0,407 = 8 150,175 €) s'arrondissait parfois au centime
+    // INFÉRIEUR (8 150,17 au lieu de 8 150,18) -- 8 291 cas sur 2025 trouvés par le banc
+    // produits/jarvis/ik-labo/verifier-bareme-ik.js. Ici : km en dixièmes, coefficient en millièmes
+    // -> montant en 1/10 000 € ; majoration électrique ×1,2 = ×12/10 -> 1/100 000 € ; puis centime
+    // le plus proche, demi-centime vers le haut. Aucune approximation possible.
+    var d10 = Math.round(d * 10);
+    var i = d10 <= g.bornes[0] * 10 ? 0 : (d10 <= g.bornes[1] * 10 ? 1 : 2);
     var c = coefs[i];
-    var montant = d * c[0] + c[1];
     var majo = vehicule.electrique === 'oui';
-    if (majo) montant = montant * 1.2;
+    var u = d10 * Math.round(c[0] * 1000) + c[1] * 10000;
+    u = majo ? u * 12 : u * 10;
+    var centimes = Math.floor((u + 500) / 1000);
     var bornesTxt = [
       'jusqu’à ' + iklNum(g.bornes[0], 0) + ' km',
       'de ' + iklNum(g.bornes[0] + 1, 0) + ' à ' + iklNum(g.bornes[1], 0) + ' km',
       'au-delà de ' + iklNum(g.bornes[1], 0) + ' km'][i];
-    var formule = 'd × ' + String(c[0]).replace('.', ',') + (c[1] ? ' + ' + iklNum(c[1], 0) : '');
+    var formule = 'd × ' + c[0].toFixed(3).replace('.', ',') + (c[1] ? ' + ' + iklNum(c[1], 0) : '');   // 3 décimales, comme l'arrêté (0,470 et non 0,47)
     if (majo) formule = '(' + formule + ') × 1,2 (électrique)';
-    return { montant: Math.round(montant * 100) / 100, tranche: bornesTxt, formule: formule, provisoire: b.provisoire, source: b.source };
+    return { montant: centimes / 100, centimes: centimes, tranche: bornesTxt, formule: formule, provisoire: b.provisoire, source: b.source };
   }
   function iklVehiculeLibelle(v){
     if (!v) return '';
     var cv = '';
-    (IKL_CV[v.genre] || []).forEach(function(x){ if (x[0] === v.cv) cv = x[1]; });
+    (IKL_CV[v.genre] || []).forEach(function(x){ if (x[0] === v.cv) cv = x[1].replace(/ \(.*\)$/, ''); });
     return (IKL_GENRES[v.genre] || v.genre) + (v.genre !== 'cyclo' ? ' ' + cv : '') + (v.electrique === 'oui' ? ' électrique' : '') + (v.libelle ? ' — ' + v.libelle : '');
   }
 
@@ -19680,7 +19698,7 @@
   function iklLire(k, def){ try { var v = localStorage.getItem(k); return v == null ? def : v; } catch (e) { return def; } }
   function iklEcrire(k, v){ try { localStorage.setItem(k, v); } catch (e) {} }
   var iklConducteur = iklLire('iklConducteur', 'dorian');
-  if (iklConducteur !== 'dorian' && iklConducteur !== 'matheo') iklConducteur = 'dorian';
+  if (!iklListeConducteurs().some(function(c){ return c.id === iklConducteur; })) iklConducteur = 'dorian';
   var iklAnnee = parseInt(iklLire('iklAnnee', String(new Date().getFullYear())), 10) || new Date().getFullYear();
   var iklOnglet = 'tout'; // 'tout' | '0'..'11' | 'recap'
 
@@ -19712,31 +19730,36 @@
   function iklCalculAnnee(conducteur, annee){
     var trajets = iklTrajets(conducteur, annee);
     var veh = iklVehicule(conducteur, annee);
-    var kmTotal = 0;
-    trajets.forEach(function(t){ kmTotal += Number(t.km_total) || 0; });
-    kmTotal = Math.round(kmTotal * 10) / 10;
+    // Tout en entiers (km en dixièmes, montants en centimes) : la somme des trajets retombe
+    // EXACTEMENT sur le montant annuel, sans aucune erreur d'arrondi machine.
+    var km10 = function(t){ return Math.round((Number(t.km_total) || 0) * 10); };
+    var total10 = 0;
+    trajets.forEach(function(t){ total10 += km10(t); });
+    var kmTotal = total10 / 10;
     var bar = iklBaremeCalc(annee, veh, kmTotal);
-    var taux = bar && kmTotal > 0 ? bar.montant / kmTotal : null;
-    var cum = 0, cumPrec = 0, montants = {};
+    var taux = bar && total10 > 0 ? bar.montant / kmTotal : null;   // affichage seulement
+    var cum10 = 0, cumPrec = 0, montants = {}, centimes = {};
     trajets.forEach(function(t){
-      cum += Number(t.km_total) || 0;
-      if (taux != null){
-        var a = Math.round(Math.round(cum * 10) / 10 * taux * 100) / 100;
-        montants[t.id] = Math.round((a - cumPrec) * 100) / 100;
+      cum10 += km10(t);
+      if (bar && total10 > 0){
+        // part cumulée = montant annuel × km cumulés / km de l'année, au centime le plus proche
+        var a = Math.floor((2 * cum10 * bar.centimes + total10) / (2 * total10));
+        centimes[t.id] = a - cumPrec;
+        montants[t.id] = centimes[t.id] / 100;
         cumPrec = a;
       }
     });
     var parMois = [];
-    for (var i = 0; i < 12; i++) parMois.push({ km: 0, montant: 0, nb: 0 });
+    for (var i = 0; i < 12; i++) parMois.push({ km10: 0, cts: 0, nb: 0 });
     trajets.forEach(function(t){
       var p = iklPartiesDate(t.date); if (!p) return;
       var m = parMois[p.m - 1];
-      m.km += Number(t.km_total) || 0; m.nb++;
-      if (montants[t.id] != null) m.montant += montants[t.id];
+      m.km10 += km10(t); m.nb++;
+      if (centimes[t.id] != null) m.cts += centimes[t.id];
     });
-    parMois.forEach(function(m){ m.km = Math.round(m.km * 10) / 10; m.montant = Math.round(m.montant * 100) / 100; });
+    parMois.forEach(function(m){ m.km = m.km10 / 10; m.montant = m.cts / 100; });
     return { conducteur: conducteur, annee: annee, trajets: trajets, vehicule: veh, kmTotal: kmTotal,
-             bareme: bar, taux: taux, montants: montants, parMois: parMois,
+             bareme: bar, taux: taux, montants: montants, centimes: centimes, parMois: parMois,
              baremeAnnee: IKL_BAREMES[String(annee)] || null };
   }
 
@@ -19749,7 +19772,7 @@
   }
   function iklRenderFiltres(){
     var c = document.getElementById('ikl-conducteurs'); c.innerHTML = '';
-    IKL_CONDUCTEURS.forEach(function(x){
+    iklListeConducteurs().forEach(function(x){
       c.appendChild(iklChip('🚗 ' + x.nom, iklConducteur === x.id, function(){
         iklConducteur = x.id; iklEcrire('iklConducteur', x.id); iklRender();
       }));
@@ -20082,7 +20105,6 @@
     (IKL_CV[genre] || []).forEach(function(x){ var o = document.createElement('option'); o.value = x[0]; o.textContent = x[1]; s.appendChild(o); });
     if (cv) s.value = cv;
     document.getElementById('iklv-cv-wrap').style.display = genre === 'cyclo' ? 'none' : '';
-    document.getElementById('iklv-elec-wrap').style.display = genre === 'cyclo' ? 'none' : '';
   }
   function iklVehFormOpen(conducteur, annee){
     iklVehCible = { conducteur: conducteur, annee: annee };
@@ -20105,7 +20127,9 @@
     var genre = document.getElementById('iklv-genre').value;
     var v = { conducteur: iklVehCible.conducteur, annee: iklVehCible.annee, genre: genre,
               cv: genre === 'cyclo' ? '-' : document.getElementById('iklv-cv').value,
-              electrique: genre !== 'cyclo' && document.getElementById('iklv-elec').checked ? 'oui' : 'non',
+              // majoration électrique valable pour TOUS les barèmes, cyclomoteurs compris
+              // (art. 6 B, II, annexe IV CGI : « le montant ... calculé en application du I est majoré de 20 % »)
+              electrique: document.getElementById('iklv-elec').checked ? 'oui' : 'non',
               libelle: document.getElementById('iklv-libelle').value.trim() };
     postIkLabo({ type: 'vehicule', vehicule: v }, function(){
       toast('✅ Véhicule ' + v.annee + ' enregistré'); iklVehClose(); iklCharger(false);
@@ -20175,8 +20199,8 @@
              calc.montants[t.id] != null ? { v: calc.montants[t.id], s: 3 } : { v: '—' }]);
     });
     var derniere = r;
-    var totMont = 0; calc.trajets.forEach(function(t){ if (calc.montants[t.id] != null) totMont += calc.montants[t.id]; });
-    totMont = Math.round(totMont * 100) / 100;
+    var totCts = 0; calc.trajets.forEach(function(t){ if (calc.centimes[t.id] != null) totCts += calc.centimes[t.id]; });
+    var totMont = totCts / 100;
     ligne([{ v: 'TOTAL ' + calc.annee, s: 1 }, { v: calc.trajets.length + (calc.trajets.length > 1 ? ' trajets' : ' trajet') }, null, null, null, null, null,
            { f: 'SUM(H' + premiere + ':H' + derniere + ')', v: calc.kmTotal, s: 4 }, null,
            bar ? { f: 'SUM(J' + premiere + ':J' + derniere + ')', v: totMont, s: 5 } : { v: '—', s: 1 }]);
@@ -20209,7 +20233,7 @@
       { nom: 'xl/worksheets/sheet1.xml', contenu: feuille },
       { nom: 'xl/styles.xml', contenu: styles }
     ]);
-    var fichier = 'Frais-kilometriques-' + (iklConducteur === 'matheo' ? 'Matheo' : 'Dorian') + '-' + calc.annee + '.xlsx';
+    var fichier = 'Frais-kilometriques-' + nom.normalize('NFD').replace(/[\u0300-\u036f]/g, '').replace(/\s+/g, '-') + '-' + calc.annee + '.xlsx';
     var url = URL.createObjectURL(blob);
     var a = document.createElement('a'); a.href = url; a.download = fichier;
     document.body.appendChild(a); a.click(); a.remove();
