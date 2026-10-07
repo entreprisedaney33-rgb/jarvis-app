@@ -3914,6 +3914,15 @@
   html.mcs-theme .rt-badge-comptable{background:rgba(var(--blue-rgb,10,132,255),.14); color:var(--blue)}
   html.mcs-theme .rt-badge-meg{background:rgba(160,160,160,.18); color:var(--muted)}
   html.mcs-theme .rt-badge-jarvis{background:rgba(var(--gold-rgb),.20); color:var(--gold-a)}
+  /* 07/10/2026 soir : mois issu des FACTURES ÉMISES, pas encore confirmé par le relevé de la comptable. */
+  html.mcs-theme .rt-badge-factures_emises{background:rgba(var(--gold-rgb),.20); color:var(--gold-a)}
+  html.mcs-theme .mh2-maj.mh2-suite{border-top:0; margin-top:2px; padding-top:0}
+  html.mcs-theme #renta-repartitions-arretees{font-size:14px; color:var(--muted); line-height:1.45; margin:12px 2px 4px}
+  /* Ligne Total collée en bas de l'écran (ordinateur) : fond OPAQUE (même teinte), sinon ses chiffres se
+     superposent à ceux des lignes qui défilent dessous et deviennent illisibles. Téléphone : carte, inchangé. */
+  @media (min-width: 600px){
+    html.mcs-theme .rt-total .rt-cell{background-color:var(--surface); background-image:linear-gradient(rgba(var(--gold-rgb),.18), rgba(var(--gold-rgb),.18))}
+  }
   /* La ligne du mois en cours se distingue sur toute sa largeur, pas seulement par une pastille --
      bordure en pointilles + fond legerement plus marque que le simple survol .rt-courant deja
      existant (regle de base, inchangee, toujours valable pour le labo). */
@@ -9080,9 +9089,9 @@
          c'est ce qui supprime le conflit humain sur cette ligne precise. Sert aussi de cle
          unique de detection de mise a jour (voir checkUpdate ci-dessous), plus fiable qu'une
          comparaison de chaine de version par tenant. */
-  var APPV_MCS = '4.64';
+  var APPV_MCS = '4.65';
   var APPV_LABO = '1.09';
-  var BUILD = 108;
+  var BUILD = 109;
 
   // ==============================================================================================
   // ONGLETS ACTIFS PAR LOCATAIRE (07/10/2026) -- LA liste qui décide ce qu'un client voit.
@@ -9748,7 +9757,7 @@
   var TUTO_ACCUEIL_V2_CONFIG = {
     steps: [
       { selector: '#mcsHome2 .mh2-stats', title: 'Vos chiffres',
-        text: 'Le chiffre d’affaires vient du dernier relevé comptable importé : sa date est écrite juste dessous, ce n’est pas du temps réel. Les frais kilométriques portent sur l’année civile en cours.' },
+        text: 'Le chiffre d’affaires vient du relevé de la comptable et, pour les mois qu’elle n’a pas encore transmis, des factures émises : l’origine de chaque partie et sa date sont écrites juste dessous, ce n’est pas du temps réel. Les frais kilométriques portent sur l’année civile en cours.' },
       { selector: '#mcsHome2 .mh2-tuiles', title: 'Vos écrans',
         text: 'Appuyez sur une carte pour ouvrir l’écran correspondant. Vous pouvez à tout moment appuyer sur « Aide » pour revoir ce tutoriel.' }
     ]
@@ -11497,7 +11506,18 @@
     var peCourt = 'Exercice ' + String(ex.debut || '').slice(0, 4) + '-' + String(ex.fin || '').slice(0, 4) + (typeof nbM === 'number' ? ' · ' + nbM + '/' + totM + ' mois' : '');
     var maj = 'Dernier relevé comptable : ' + (mh2MoisAn(cp.periodeDebut) === mh2MoisAn(cp.periodeFin) ? mh2MoisAn(cp.periodeFin) : mh2MoisAn(cp.periodeDebut) + ' à ' + mh2MoisAn(cp.periodeFin)) +
       (rc.misAJourLe ? ', importé le ' + mh2Date(rc.misAJourLe) : '');
+    // 07/10/2026 soir : des mois de l'exercice viennent des FACTURES ÉMISES (relevé de la comptable pas
+    // encore reçu) -> on sépare ce qui est comptable (période et date d'import réelles, servies par le
+    // serveur : exerciceCA.parOrigine) de ce qui est facturé. Ancien serveur (sans parOrigine) : inchangé.
+    var po = d.exerciceCA.parOrigine, maj2 = null;
+    if (po && po.facture){
+      var pc = po.comptable;
+      maj = pc ? 'Relevé de la comptable : ' + (mh2MoisAn(pc.periodeDebut) === mh2MoisAn(pc.periodeFin) ? mh2MoisAn(pc.periodeFin) : mh2MoisAn(pc.periodeDebut) + ' à ' + mh2MoisAn(pc.periodeFin)) +
+        (pc.importeLe ? ', importé le ' + mh2Date(pc.importeLe) : '') : 'Aucun relevé de la comptable reçu pour cet exercice';
+      maj2 = 'Factures émises : ' + po.facture.mois.map(function(k){ return mh2MoisAn(k); }).join(', ') + ', en attente du relevé de la comptable';
+    }
     var c = mh2Stat('Chiffre d’affaires', null, fmtEuros(cp.ht), ' HT', null, maj);
+    if (maj2) c.appendChild(mh2El('div', 'mh2-maj mh2-suite', maj2));
     var p = mh2El('div', 'mh2-pe');
     p.appendChild(mh2El('span', 'mh2-long', pe)); p.appendChild(mh2El('span', 'mh2-court', peCourt));
     c.insertBefore(p, c.querySelector('.mh2-maj'));
@@ -11534,6 +11554,13 @@
     if (nom === 'rentabilite'){
       var cache = panelCacheLoad('rentabilite');
       var cp = cache && cache.data && cache.data.donnees && cache.data.donnees.exerciceCA && cache.data.donnees.exerciceCA.comptable;
+      // 07/10/2026 soir : si des mois viennent des factures émises, le relevé de la comptable s'arrête
+      // plus tôt -- on écrit les deux (serveur : exerciceCA.parOrigine), jamais « relevé » pour un mois facturé.
+      var poP = cache.data.donnees.exerciceCA.parOrigine;
+      if (cp && poP && poP.facture){
+        var fF = poP.facture.mois[poP.facture.mois.length - 1];
+        return poP.comptable ? 'Relevé jusqu’à ' + mh2MoisAn(poP.comptable.periodeFin) + ' · facturé jusqu’à ' + mh2MoisAn(fF) : 'Facturé jusqu’à ' + mh2MoisAn(fF) + ', relevé en attente';
+      }
       if (cp && cp.periodeFin) return 'Relevé jusqu’à ' + mh2MoisAn(cp.periodeFin);
     }
     return '';
@@ -21735,6 +21762,15 @@ function ikxRepartir(centimes, poids) {
       var capS = exS.moisCouverts + ' mois sur ' + (exS.moisTotal || 12) + ' couverts par le relevé comptable (' +
         moisLabel(String(cpS.periodeDebut).slice(0, 7)) + ' → ' + moisLabel(String(cpS.periodeFin).slice(0, 7)) + ')' +
         (exS.moisCouverts < (exS.moisTotal || 12) ? ' — montant partiel, pas un montant annuel.' : '.');
+      // 07/10/2026 soir : mois facturés (factures émises, relevé de la comptable pas encore reçu) -> la
+      // légende dit d'où vient chaque partie, jamais « couverts par le relevé comptable » pour tout.
+      var poS = isMcsCode() ? exS.parOrigine : null;
+      if (poS && poS.facture){
+        capS = exS.moisCouverts + ' mois sur ' + (exS.moisTotal || 12) + ' : ' +
+          (poS.comptable ? rentaPeriodeMoisTexte(poS.comptable.periodeDebut, poS.comptable.periodeFin) + ' d\'après le relevé de la comptable, ' : '') +
+          rentaMoisTexte(poS.facture.mois) + ' d\'après les factures émises (en attente du relevé de la comptable)' +
+          (exS.moisCouverts < (exS.moisTotal || 12) ? ' — montant partiel, pas un montant annuel.' : '.');
+      }
       if (exS.precedent) capS += ' Exercice précédent clos : ' + fmtEuros(exS.precedent.ht) + ' HT sur 12 mois.';
       grid.appendChild(tile('CA de l\'exercice (' + dS(exS.exercice.debut) + ' → ' + dS(exS.exercice.fin) + ')', fmtEuros(exS.total.ht) + ' HT', capS));
     } else {
@@ -21765,24 +21801,50 @@ function ikxRepartir(centimes, poids) {
     wrap.appendChild(grid);
 
     var note = document.createElement('p'); note.id = 'ro-note';
-    if (exS && exS.exercice && exS.total) note.textContent = 'Le CA de l\'exercice est celui du relevé comptable, sur les mois qu\'il couvre ; le mois en cours ne s\'y ajoute (contrats Jarvis + ventes MEG du mois) que s\'il appartient à cet exercice et n\'est pas encore dans le relevé.';
+    if (exS && exS.exercice && exS.total && isMcsCode() && exS.parOrigine && exS.parOrigine.facture) note.textContent = 'Le CA de l\'exercice additionne le relevé de la comptable et, pour les mois qu\'elle n\'a pas encore transmis, les factures émises ; le mois en cours ne s\'y ajoute (contrats Jarvis + ventes MEG du mois) que s\'il appartient à cet exercice et n\'est pas encore compté.';
+    else if (exS && exS.exercice && exS.total) note.textContent = 'Le CA de l\'exercice est celui du relevé comptable, sur les mois qu\'il couvre ; le mois en cours ne s\'y ajoute (contrats Jarvis + ventes MEG du mois) que s\'il appartient à cet exercice et n\'est pas encore dans le relevé.';
     else note.textContent = 'Le CA de l\'exercice combine le relevé comptable réel (mois déjà couverts par un relevé) et le mois en cours en provisoire (contrats Jarvis facturés + ventes MEG directes), avec les mêmes composantes que la ligne du mois en cours du tableau ci-dessus.';
     wrap.appendChild(note);
     return wrap;
   }
 
+  // 07/10/2026 soir (MCS) : pourcentages au dixième par la méthode des plus forts restes -- la somme
+  // affichée fait EXACTEMENT 100,0 % (un arrondi ligne par ligne peut donner 99,9 ou 100,1).
+  // Même méthode que le banc serveur (clients/mcs/scripts/rentabilite/banc-comptable-facture.js).
+  function rentaPourcentagesDixiemes(valeurs){
+    var total = valeurs.reduce(function(s, v){ return s + v; }, 0);
+    if (!(total > 0)) return valeurs.map(function(){ return null; });
+    var bruts = valeurs.map(function(v){ return (v / total) * 1000; });
+    var bas = bruts.map(Math.floor);
+    var reste = 1000 - bas.reduce(function(s, v){ return s + v; }, 0);
+    bruts.map(function(b, i){ return [b - bas[i], i]; }).sort(function(a, b){ return b[0] - a[0] || a[1] - b[1]; })
+      .forEach(function(x){ if (reste > 0){ bas[x[1]]++; reste--; } });
+    return bas.map(function(v){ return v / 10; });
+  }
+  // Libellés de mois servis par le serveur ('AAAA-MM'), jamais une période écrite en dur.
+  function rentaMoisTexte(liste){
+    var l = (liste || []).map(function(k){ return moisLabel(k); });
+    return l.length <= 1 ? l.join('') : l.slice(0, -1).join(', ') + ' et ' + l[l.length - 1];
+  }
+  function rentaPeriodeMoisTexte(debutIso, finIso){
+    var a = moisLabel(String(debutIso).slice(0, 7)), b = moisLabel(String(finIso).slice(0, 7));
+    return a === b ? a : a + ' → ' + b;
+  }
   function rentaBuildRepartitionList(titre, dict, totalRef){
     var box = document.createElement('div'); box.className = 'rc-list-box';
     var t = document.createElement('div'); t.className = 'rc-list-title'; t.textContent = titre;
     box.appendChild(t);
     var entries = Object.keys(dict).map(function(k){ return [k, dict[k]]; }).sort(function(a,b){ return b[1] - a[1]; });
-    var total = totalRef || entries.reduce(function(s,e){ return s + e[1]; }, 0);
-    entries.forEach(function(e){
+    var total = (isMcsCode() ? null : totalRef) || entries.reduce(function(s,e){ return s + e[1]; }, 0);
+    // MCS : pourcentages sur le PROPRE total de la répartition, somme exacte 100,0 %, virgule française.
+    var pctMcs = isMcsCode() ? rentaPourcentagesDixiemes(entries.map(function(e){ return e[1]; })) : null;
+    entries.forEach(function(e, i){
       var row = document.createElement('div'); row.className = 'rc-list-row';
       var lbl = document.createElement('span'); lbl.className = 'rc-list-label'; lbl.textContent = e[0];
       var val = document.createElement('span'); val.className = 'rc-list-val'; val.textContent = fmtEuros(e[1]);
       var pct = document.createElement('span'); pct.className = 'rc-list-pct';
-      pct.textContent = total > 0 ? (Math.round((e[1] / total) * 1000) / 10) + '%' : '';
+      if (pctMcs) pct.textContent = pctMcs[i] === null ? '' : pctMcs[i].toFixed(1).replace('.', ',') + ' %';
+      else pct.textContent = total > 0 ? (Math.round((e[1] / total) * 1000) / 10) + '%' : '';
       row.appendChild(lbl); row.appendChild(val); row.appendChild(pct);
       box.appendChild(row);
       var bar = document.createElement('div'); bar.className = 'rc-list-bar';
@@ -21823,10 +21885,28 @@ function ikxRepartir(centimes, poids) {
 
     var note = document.createElement('p'); note.id = 'ro-note';
     note.textContent = 'Ce bloc et le tableau mensuel ci-dessus viennent tous les deux du relevé de la comptable' + (rc.misAJourLe ? (', reçu le ' + fmtDevisDateSimple(rc.misAJourLe)) : '') + ' : le tableau le détaille mois par mois, ce bloc le consolide sur toute la période (toutes les charges, pas seulement les achats de matières).';
+    // 07/10/2026 soir (MCS) : des mois de l'exercice viennent des FACTURES ÉMISES (serveur :
+    // exerciceCA.parOrigine) -> la note dit ce qui vient du relevé (période + date d'import réelles) et
+    // ce qui n'y est pas encore. Ancien serveur ou aucun mois facturé : note inchangée.
+    var poR = (isMcsCode() && d.exerciceCA) ? d.exerciceCA.parOrigine : null;
+    if (poR && poR.facture){
+      var nbF = poR.facture.mois.length, moisF = rentaMoisTexte(poR.facture.mois);
+      note.textContent = (poR.comptable ? 'Ce bloc vient du relevé de la comptable (' + rentaPeriodeMoisTexte(poR.comptable.periodeDebut, poR.comptable.periodeFin) + ')' +
+        (poR.comptable.importeLe ? ', importé le ' + fmtDevisDateSimple(poR.comptable.importeLe) : '') + '. ' : '') +
+        moisF.charAt(0).toUpperCase() + moisF.slice(1) + (nbF > 1 ? ' n’y figurent' : ' n’y figure') + ' pas encore : chiffre d’affaires d’après les factures émises, charges attendues avec le prochain relevé de la comptable.';
+    }
     wrap.appendChild(note);
 
     // Période réellement couverte par les répartitions (serveur : repartitionsPeriode), écrite dans le titre.
     var rpTxt = rc.repartitionsPeriode && rc.repartitionsPeriode.debut ? ' (' + fmtDevisDateSimple(rc.repartitionsPeriode.debut) + ' → ' + fmtDevisDateSimple(rc.repartitionsPeriode.fin) + ')' : '';
+    // 07/10/2026 soir : répartitions servies avec la période du relevé, arrêtée AVANT la fin de l'exercice
+    // (serveur : releveArreteAvant) -> une phrase le dit, sans jargon.
+    var raR = rc.releveArreteAvant;
+    if (isMcsCode() && raR && raR.blocs && raR.blocs.indexOf('repartitions') >= 0 && (rc.chargesParPoste || rc.caParPrestation)){
+      var pAv = document.createElement('p'); pAv.id = 'renta-repartitions-arretees';
+      pAv.textContent = 'Ces répartitions s’arrêtent au ' + fmtDevisDateSimple(raR.fin) + ', avant la fin de l’exercice : elles seront complétées à réception du prochain relevé de la comptable.';
+      wrap.appendChild(pAv);
+    }
     if (rc.chargesParPoste) wrap.appendChild(rentaBuildRepartitionList('Répartition des charges par poste' + rpTxt, rc.chargesParPoste, rc.chargesNet));
     if (rc.caParPrestation) wrap.appendChild(rentaBuildRepartitionList('CA par type de prestation' + rpTxt, rc.caParPrestation, rc.caNet));
     // Blocs que le serveur n'a PAS servis parce qu'ils ne couvrent pas la période affichée : on le dit,
@@ -21872,9 +21952,11 @@ function ikxRepartir(centimes, poids) {
       }
     }
 
-    if (rc.moisManquants && rc.moisManquants.length){
+    // 07/10/2026 soir (MCS) : un mois déjà annoncé comme « facturé » par la note ci-dessus n'est pas répété ici.
+    var mmListe = (rc.moisManquants || []).filter(function(m){ return !(poR && poR.facture && poR.facture.mois.indexOf(m.mois) >= 0); });
+    if (mmListe.length){
       var mmDiv = document.createElement('p'); mmDiv.id = 'renta-mois-manquants';
-      mmDiv.textContent = rc.moisManquants.map(function(m){ return m.label; }).join(', ') + ' : en attente du comptable (pas encore reçus — jamais compté à zéro).';
+      mmDiv.textContent = mmListe.map(function(m){ return m.label; }).join(', ') + ' : en attente du comptable (pas encore reçus — jamais compté à zéro).';
       wrap.appendChild(mmDiv);
     }
 
@@ -21953,7 +22035,20 @@ function ikxRepartir(centimes, poids) {
     }
 
     var sources = document.createElement('div'); sources.id = 'rex-sources';
-    if (ex.comptable){
+    // 07/10/2026 soir (MCS) : des mois de l'exercice viennent des FACTURES ÉMISES, pas du relevé de la
+    // comptable (serveur : exerciceCA.parOrigine) -> deux lignes, chacune avec sa période et sa date :
+    // « Comptable » ne couvre plus que ce que la comptable a réellement validé.
+    var poX = isMcsCode() ? ex.parOrigine : null;
+    if (poX && poX.facture){
+      if (poX.comptable){
+        sources.appendChild(rentaExSourceLigne(
+          'Relevé de la comptable (' + fmtDevisDateSimple(poX.comptable.periodeDebut) + ' → ' + fmtDevisDateSimple(poX.comptable.periodeFin) + ')',
+          'comptable', poX.comptable.ht, poX.comptable.ttc, poX.comptable.importeLe ? 'importé le ' + fmtDevisDateSimple(poX.comptable.importeLe) : null));
+      }
+      sources.appendChild(rentaExSourceLigne(
+        'Factures émises (' + rentaMoisTexte(poX.facture.mois) + ')', 'factures_emises', poX.facture.ht, poX.facture.ttc,
+        (poX.facture.ajouteLe ? 'ajoutées le ' + fmtDevisDateSimple(poX.facture.ajouteLe) + ' — ' : '') + 'à confirmer par le prochain relevé de la comptable'));
+    } else if (ex.comptable){
       sources.appendChild(rentaExSourceLigne(
         'Comptable (' + fmtDevisDateSimple(ex.comptable.periodeDebut) + ' → ' + fmtDevisDateSimple(ex.comptable.periodeFin) + ')',
         'comptable', ex.comptable.ht, ex.comptable.ttc, null));
@@ -22047,6 +22142,8 @@ function ikxRepartir(centimes, poids) {
   // pipeline mcs_rentabilite_exports_bruts (export MEG) ; "jarvis" est ajoute explicitement
   // sur la ligne du mois en cours quand une composante de facturation Jarvis existe.
   function rentaBadgeLabel(prov){
+    // 07/10/2026 soir : 'factures_emises' = mois issu des factures émises, pas encore du relevé de la comptable (MCS).
+    if (prov === 'factures_emises' && isMcsCode()) return 'Facturé';
     return prov === 'comptable' ? 'Comptable' : prov === 'meg' ? 'MEG' : prov === 'jarvis' ? 'Jarvis (provisoire)' : null;
   }
   function rentaBadge(prov){
@@ -22234,12 +22331,24 @@ function ikxRepartir(centimes, poids) {
       // Sujet 3.2/3.5 : ligne de TOTAL toujours visible (sticky en bas du tableau) -- sur les mois
       // AFFICHES avec une vraie charge connue (jamais un total qui inclurait silencieusement des
       // "en attente" comme 0).
-      var totalCa = mois.reduce(function(s, m){ return s + m.ca; }, 0);
+      // 07/10/2026 soir (MCS) : une ligne Total n'aligne JAMAIS deux périodes. Quand des mois n'ont pas
+      // encore leurs sorties (factures émises, relevé de la comptable pas reçu), le total ne porte QUE les
+      // mois dont rentrées ET sorties sont connues -- même période dans les trois colonnes, son libellé
+      // le dit -- et les mois laissés de côté sont nommés sous le tableau. Avant : rentrées sur 12 mois à
+      // côté de sorties sur 11, d'où un « bénéfice » faux d'un mois de charges si on soustrayait.
+      var totalSurConnus = isMcsCode() && !!d.exerciceCA && moisAvecDepense.length > 0 && moisAvecDepense.length < mois.length;
+      var moisDuTotal = totalSurConnus ? moisAvecDepense : mois;
+      var totalCa = moisDuTotal.reduce(function(s, m){ return s + m.ca; }, 0);
       var totalDep = moisAvecDepense.reduce(function(s, m){ return s + m.depenses; }, 0);
-      var totalBenef = moisAvecDepense.length === mois.length ? (totalCa - totalDep) : null;
+      var totalBenef = moisAvecDepense.length === moisDuTotal.length ? (totalCa - totalDep) : null;
       // 07/10/2026 (MCS) : le total porte la période qu'il additionne -- après une bascule d'exercice,
       // le tableau couvre des mois de deux exercices et « Total » seul se lirait comme celui de l'exercice.
-      var libTotal = (isMcsCode() && d.exerciceCA && mois.length) ? 'Total ' + moisLabelCourt(mois[mois.length - 1].mois) + ' → ' + moisLabelCourt(mois[0].mois) : 'Total';
+      var libTotal = (isMcsCode() && d.exerciceCA && moisDuTotal.length) ? 'Total ' + moisLabelCourt(moisDuTotal[moisDuTotal.length - 1].mois) + ' → ' + moisLabelCourt(moisDuTotal[0].mois) : 'Total';
+      // Un mois laissé hors du total mais situé ENTRE ses bornes est nommé dans le libellé (« sauf … »).
+      if (totalSurConnus){
+        var dansBornes = mois.filter(function(m){ return m.depenses == null && m.mois > moisDuTotal[moisDuTotal.length - 1].mois && m.mois < moisDuTotal[0].mois; });
+        if (dansBornes.length) libTotal += ' sauf ' + dansBornes.map(function(m){ return moisLabelCourt(m.mois); }).reverse().join(', ');
+      }
       table.appendChild(rentaTableRow('rt-total', libTotal, { ca: totalCa, depenses: moisAvecDepense.length ? totalDep : null, benefice: totalBenef }));
     }
     if (isMcsCode()) wrap.appendChild(rentaRegleAvoirs());
@@ -22247,6 +22356,12 @@ function ikxRepartir(centimes, poids) {
     if (mois.length && moisAvecDepense.length < mois.length){
       var noteTot = document.createElement('p'); noteTot.id = 'renta-maj';
       noteTot.textContent = 'Total : dépenses connues sur ' + moisAvecDepense.length + ' mois sur ' + mois.length + '.';
+      if (totalSurConnus){
+        var moisHors = mois.filter(function(m){ return m.depenses == null; }).map(function(m){ return m.mois; }).sort();
+        var horsTotal = rentaMoisTexte(moisHors);
+        noteTot.className = 'renta-hors-total';
+        noteTot.textContent = horsTotal.charAt(0).toUpperCase() + horsTotal.slice(1) + ' : hors total, ' + (moisHors.length > 1 ? 'leurs sorties ne sont' : 'ses sorties ne sont') + ' pas encore connues (en attente du relevé de la comptable).';
+      }
       wrap.appendChild(noteTot);
     }
     if (mois.some(function(m){ return m.estime; }) || (courant && courant.estime)){
