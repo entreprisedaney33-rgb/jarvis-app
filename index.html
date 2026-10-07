@@ -9080,9 +9080,9 @@
          c'est ce qui supprime le conflit humain sur cette ligne precise. Sert aussi de cle
          unique de detection de mise a jour (voir checkUpdate ci-dessous), plus fiable qu'une
          comparaison de chaine de version par tenant. */
-  var APPV_MCS = '4.63';
+  var APPV_MCS = '4.64';
   var APPV_LABO = '1.09';
-  var BUILD = 107;
+  var BUILD = 108;
 
   // ==============================================================================================
   // ONGLETS ACTIFS PAR LOCATAIRE (07/10/2026) -- LA liste qui décide ce qu'un client voit.
@@ -19901,6 +19901,7 @@
   }
 
   function ikApplyData(j){
+    ikcVerifierVersion(postIk, j.referentiel);   // 07/10/2026 soir : copie navigateur des communes à jour ?
     ikData = j.trajets || [];
     ikVehicules = j.vehicules || [];
     ikResume = j.resume || null;
@@ -19924,6 +19925,7 @@
   }
 
   function ikOpen(){
+    ikcPreparer(postIk);   // copie navigateur des communes (cache, sinon téléchargement en arrière-plan)
     ikview.classList.add('open');
     ikMajLienExport();
     ikLoad(true);
@@ -19987,28 +19989,314 @@
   ikSearchInput.addEventListener('input', ikApplyFilter);
 
   // ---- Communes : RÉFÉRENTIEL LOCAL, commun à MCS et au LABO (07/10/2026) ----------------------
-  // Suggestions et coordonnées viennent de NOTRE webhook (mcs-ik ou labo-ik, type 'communes'), qui
-  // interroge le sous-workflow n8n « 🗺️ Référentiel communes (commun) » (IGN, téléchargé une fois,
-  // produits/jarvis/ik-commun/referentiel-communes/) -- le MÊME référentiel que celui qui valide le
-  // trajet à l'enregistrement : une ville proposée ici est forcément acceptée là-bas. Plus aucun
-  // appel à api-adresse.data.gouv.fr depuis l'app. Fluidité : temporisation à la frappe + cache ;
-  // quand le serveur a renvoyé TOUTES les communes d'un début de mot (complet:true), les lettres
-  // suivantes sont filtrées ici, sans nouvel appel (même pertinence que ikcSuggerer, ik-communes.js).
-  function ikcNormClient(s){   // = ikcNorm (ik-communes.js)
-    return String(s == null ? '' : s).normalize('NFD').replace(/[̀-ͯ]/g, '').toLowerCase()
-      .replace(/[’'`\-]/g, ' ').replace(/\bst\b/g, 'saint').replace(/\bste\b/g, 'sainte')
-      .replace(/[^a-z0-9 ]/g, ' ').replace(/\s+/g, ' ').trim();
+  // Un seul référentiel (IGN, produits/jarvis/ik-commun/referentiel-communes/), DEUX copies :
+  //  - le SERVEUR (sous-workflow n8n « 🗺️ Référentiel communes (commun) ») reste seul JUGE à
+  //    l'enregistrement (validation, contrôle à vol d'oiseau) -- rien ne change de ce côté ;
+  //  - le NAVIGATEUR (07/10/2026 soir) en garde une copie, téléchargée UNE FOIS par version depuis
+  //    NOTRE webhook (type 'communes', action 'referentiel'), conservée dans IndexedDB : suggestions
+  //    (dès la 1re lettre) et coordonnées pour la distance routière se calculent ICI, sans réseau.
+  // Le code de reconnaissance ci-dessous est une COPIE À L'IDENTIQUE de ik-communes.js (bloc entre
+  // marqueurs, contrôlé au déploiement par lib_verif_deploiement.verifier_copie_communes) : une ville
+  // proposée ici est celle que le serveur reconnaîtra. Version : chaque liste de trajets renvoie celle
+  // du serveur (champ referentiel.version) ; si elle diffère de la copie, la copie est retéléchargée
+  // (le serveur l'emporte). Tant que la copie manque (1re ouverture, téléchargement en cours ou
+  // impossible), suggestions et coordonnées viennent du serveur comme avant.
+// >>> ik-communes.js (SOURCE UNIQUE -- ne pas recopier ailleurs a la main)
+// Referentiel des communes de Jarvis, COMMUN a MCS et au LABO (07/10/2026). Aucune dependance a un
+// service en ligne : les donnees (referentiel-communes/communes-fr.json, IGN ADMIN EXPRESS COG,
+// telechargees une fois) sont inlinees avec ce module dans le sous-workflow n8n
+// « 🗺️ Référentiel communes (commun) » par referentiel-communes/construire-workflow-communes.js.
+// Ce sous-workflow est le seul JUGE d'une commune : validation des trajets (MCS et LABO), controle
+// a vol d'oiseau. Depuis le 07/10/2026 (soir), le navigateur garde une COPIE des memes donnees
+// (ikcVersNavigateur, telechargee une fois par version, servie par ce meme sous-workflow) et ce
+// MEME bloc de code, copie a l'identique dans index.html (controle au deploiement) : suggestions et
+// coordonnees pour la distance routiere s'y calculent sans reseau. La copie propose, le serveur juge.
+//
+// Reconnaissance d'un texte (ikcResoudre) :
+//  1. nom EXACT d'une commune, a la casse, aux accents, aux tirets/apostrophes et « St »/« Ste » pres
+//     (cle = ikNormVille) -- plusieurs communes = homonymes, toutes renvoyees ;
+//  2. sinon une VARIANTE COURANTE, seulement si elle designe UNE SEULE commune de France et n'est le
+//     nom exact d'aucune autre :
+//       - le nom sans son article : « Bouscat » -> Le Bouscat, « Teich » -> Le Teich ;
+//       - le debut d'un nom compose, coupe a un tiret, d'au moins 4 lettres et ne finissant pas par un
+//         mot de liaison : « Gujan » -> Gujan-Mestras, « Andernos » -> Andernos-les-Bains,
+//         « La Teste » -> La Teste-de-Buch. Jamais « Saint » seul, jamais « Villeneuve sur ».
+//     Une variante ambigue (« Villenave » : Villenave-d'Ornon, Villenave-de-Rions...) n'est PAS une
+//     variante ; « Villenave » reste la commune exacte des Landes (et le controle a vol d'oiseau la
+//     refuse pour un trajet girondin).
+//  Rien d'autre : ni abreviation (« bdx »), ni faute de frappe (« Biscarosse »), ni zone (« cub »,
+//  « bassin ») -- ces textes restent non reconnus, a corriger a la main ou a saisir en tournee.
+//
+// data = { departements: { '33': ['Gironde', 'Nouvelle-Aquitaine'], ... },
+//          communes: [[insee, nom, cle, lat, lon, population, codePostal], ...] }
+
+function ikcNorm(s) {
+  return String(s == null ? '' : s).normalize('NFD').replace(/[̀-ͯ]/g, '').toLowerCase()
+    .replace(/[’'`\-]/g, ' ').replace(/\bst\b/g, 'saint').replace(/\bste\b/g, 'sainte')
+    .replace(/[^a-z0-9 ]/g, ' ').replace(/\s+/g, ' ').trim();
+}
+var IKC_ARTICLES = /^(le|la|les|l) /;
+var IKC_LIAISON = { de: 1, du: 1, des: 1, d: 1, l: 1, la: 1, le: 1, les: 1, en: 1, sur: 1, sous: 1, et: 1, aux: 1, au: 1, a: 1, pres: 1, saint: 1, sainte: 1 };
+
+function ikcDep(insee) { var s = String(insee || ''); return /^9[78]/.test(s) ? s.slice(0, 3) : s.slice(0, 2); }
+
+// Variantes courantes SANS AMBIGUITE (voir l'en-tete) : { variante: commune }.
+function ikcVariantes(communes, parCle) {
+  var cand = {};
+  function ajouter(v, c) {
+    if (!v || v.length < 4 || parCle[v]) return;
+    var s = (cand[v] = cand[v] || {}); s[c.insee] = c;
   }
+  communes.forEach(function (c) {
+    var sansArticle = c.cle.replace(IKC_ARTICLES, '');
+    if (sansArticle !== c.cle) ajouter(sansArticle, c);
+    // debuts du nom compose, coupes aux tirets du nom officiel
+    var segs = String(c.nom).split('-');
+    for (var i = 1; i < segs.length; i++) {
+      var tete = ikcNorm(segs.slice(0, i).join('-'));
+      if (IKC_LIAISON[tete.split(' ').pop()]) continue;
+      ajouter(tete, c);
+      var t2 = tete.replace(IKC_ARTICLES, '');
+      if (t2 !== tete) ajouter(t2, c);
+    }
+  });
+  var out = {};
+  Object.keys(cand).forEach(function (v) {
+    var ids = Object.keys(cand[v]);
+    if (ids.length === 1) out[v] = cand[v][ids[0]];
+  });
+  return out;
+}
+
+// Construit l'index (une fois par execution). Renvoie { communes, parCle, parVariante, departements }.
+function ikcIndex(data) {
+  var communes = (data.communes || []).map(function (l) {
+    return { insee: l[0], nom: l[1], cle: l[2], lat: l[3], lon: l[4], population: l[5] || 0, codePostal: l[6] || '', dep: ikcDep(l[0]) };
+  });
+  var parCle = {};
+  communes.forEach(function (c) { (parCle[c.cle] = parCle[c.cle] || []).push(c); });
+  var parVariante = {};
+  if (data.variantes) {
+    // variantes precalculees par construire-workflow-communes.js (= ikcVariantes, verifie a la construction)
+    var parInsee = {};
+    communes.forEach(function (c) { parInsee[c.insee] = c; });
+    Object.keys(data.variantes).forEach(function (v) { parVariante[v] = parInsee[data.variantes[v]]; });
+  } else {
+    var v = ikcVariantes(communes, parCle);
+    Object.keys(v).forEach(function (k) { parVariante[k] = v[k]; });
+  }
+  return { communes: communes, parCle: parCle, parVariante: parVariante, departements: data.departements || {} };
+}
+
+// Communes designees par un texte : [] si non reconnu. Chaque commune : { nom, codeInsee, codePostal, lat, lon, dep }.
+function ikcResoudre(idx, texte) {
+  var n = ikcNorm(texte);
+  if (!n) return [];
+  var l = idx.parCle[n] || (idx.parVariante[n] ? [idx.parVariante[n]] : []);
+  return l.map(ikcPublique);
+}
+function ikcPublique(c) {
+  return { nom: c.nom, codeInsee: c.insee, codePostal: c.codePostal, lat: c.lat, lon: c.lon, dep: c.dep };
+}
+function ikcVolOiseauKm(a, b) {
+  if (![a.lat, a.lon, b.lat, b.lon].every(function (x) { return typeof x === 'number'; })) return null;
+  var r = Math.PI / 180, dLat = (b.lat - a.lat) * r, dLon = (b.lon - a.lon) * r;
+  var h = Math.sin(dLat / 2) * Math.sin(dLat / 2) + Math.cos(a.lat * r) * Math.cos(b.lat * r) * Math.sin(dLon / 2) * Math.sin(dLon / 2);
+  return 6371 * 2 * Math.asin(Math.sqrt(h));
+}
+function ikcContexte(idx, c) {
+  var d = idx.departements[c.dep] || [];
+  return [c.dep, d[0], d[1]].filter(Boolean).join(', ');
+}
+
+// Suggestions pendant la frappe, des la PREMIERE lettre (07/10/2026 : calculees dans le navigateur,
+// sans reseau -- avant, 2 lettres minimum pour economiser les appels au serveur). pres = { lat, lon }
+// (facultatif) : a pertinence egale, la commune la plus proche d'abord (MCS : Bordeaux) ; sinon la
+// plus peuplee d'abord. Pertinence : nom qui commence par le texte > nom sans article qui commence
+// par le texte > un mot du nom qui commence par le texte.
+// depPrioritaire (facultatif, 07/10/2026 soir, demande de Dorian : « on travaille en Gironde ») : code
+// departement ('33') dont les communes passent EN TETE. Rangs : 1) communes du departement dont le nom
+// (ou le nom sans article) commence par le texte -- « mer » -> Mérignac avant Mer (41) ; 2) le nom
+// EXACT tape, hors departement -- « Pau » reste avant Saint-Paul (33), qui ne fait que contenir le mot ;
+// 3) autres communes du departement ; 4) le reste. Puis les regles ci-dessus a l'interieur d'un rang.
+// Sans depPrioritaire (appel des anciennes apps au serveur), l'ordre est exactement celui d'avant.
+function ikcSuggerer(idx, q, pres, limite, depPrioritaire) {
+  var n = ikcNorm(q);
+  limite = Math.max(1, Math.min(50, Number(limite) || 8));
+  if (n.length < 1) return [];
+  var out = [];
+  idx.communes.forEach(function (c) {
+    var score = 0;
+    if (c.cle.indexOf(n) === 0) score = 3;
+    else if (c.cle.replace(IKC_ARTICLES, '').indexOf(n) === 0) score = 2;
+    else if ((' ' + c.cle).indexOf(' ' + n) !== -1) score = 1;
+    if (!score) return;
+    var rang = 0;
+    if (depPrioritaire) {
+      var dedans = c.dep === String(depPrioritaire);
+      rang = dedans && score >= 2 ? 0 : (c.cle === n ? 1 : (dedans ? 2 : 3));
+    }
+    out.push({ c: c, score: score, rang: rang, dist: pres ? ikcVolOiseauKm(pres, c) : null });
+  });
+  out.sort(function (a, b) {
+    if (a.rang !== b.rang) return a.rang - b.rang;
+    if (a.score !== b.score) return b.score - a.score;
+    if (a.c.cle === n || b.c.cle === n) return a.c.cle === n ? -1 : 1;
+    if (pres && a.dist !== b.dist) return a.dist - b.dist;
+    return b.c.population - a.c.population;
+  });
+  return out.slice(0, limite).map(function (x) {
+    var p = ikcPublique(x.c);
+    p.cle = x.c.cle;                 // le navigateur affine localement les lettres suivantes (voir ikcSuggestionsLocales)
+    p.population = x.c.population;
+    p.contexte = ikcContexte(idx, x.c);
+    if (x.dist != null) p.distanceKm = Math.round(x.dist);
+    return p;
+  });
+}
+
+// Paire depart/arrivee la plus vraisemblable (homonymes : la plus proche) -- pour la distance routiere.
+function ikcPaire(idx, depart, arrivee) {
+  var rd = ikcResoudre(idx, depart), ra = ikcResoudre(idx, arrivee);
+  if (!rd.length) return { ok: false, erreur: 'Ville de départ « ' + String(depart || '').trim() + ' » introuvable dans la liste des communes.' };
+  if (!ra.length) return { ok: false, erreur: 'Ville d’arrivée « ' + String(arrivee || '').trim() + ' » introuvable dans la liste des communes.' };
+  var best = null;
+  rd.forEach(function (d) { ra.forEach(function (a) {
+    var v = ikcVolOiseauKm(d, a);
+    if (!best || v < best.vol) best = { depart: d, arrivee: a, vol: v };
+  }); });
+  return { ok: true, depart: best.depart, arrivee: best.arrivee, volOiseauKm: Math.round(best.vol * 10) / 10 };
+}
+
+// COPIE NAVIGATEUR du referentiel (07/10/2026). Le navigateur telecharge UNE FOIS, depuis notre
+// webhook (operation « referentiel » du sous-workflow), cette forme compacte des MEMES donnees, la
+// garde en cache (IndexedDB) et calcule lui-meme suggestions et coordonnees, sans reseau. Le
+// serveur garde sa copie et reste seul juge a l'enregistrement. Contenu : code INSEE, nom officiel,
+// coordonnees (entiers en 1/100 000 de degre, ecrits en differences successives : le fichier est
+// trie par code INSEE, deux communes voisines ont des coordonnees proches), population (ordre des
+// suggestions), variantes de recherche ; la cle de recherche est recalculee (= ikcNorm(nom), verifie
+// a la construction pour les 34 877 communes) et le code postal n'est pas transmis (jamais affiche).
+// Champs en TEXTE (et non en tableaux) : le serveur ne manipule que quelques chaines, peu de memoire.
+var IKC_FORMAT_NAVIGATEUR = 1;
+function ikcVersNavigateur(data) {
+  var cs = data.communes || [], pl = 0, po = 0, lat = [], lon = [];
+  cs.forEach(function (c) {
+    var a = Math.round(c[3] * 1e5), o = Math.round(c[4] * 1e5);
+    lat.push(a - pl); lon.push(o - po); pl = a; po = o;
+  });
+  var v = data.variantes || {};
+  return {
+    format: IKC_FORMAT_NAVIGATEUR, nb: cs.length, departements: data.departements || {},
+    insee: cs.map(function (c) { return c[0]; }).join(','),
+    nom: cs.map(function (c) { return c[1]; }).join('|'),
+    lat: lat.join(','), lon: lon.join(','),
+    pop: cs.map(function (c) { return c[5] || 0; }).join(','),
+    variantes: Object.keys(v).sort().map(function (k) { return k + ':' + v[k]; }).join('|')
+  };
+}
+// Inverse de ikcVersNavigateur -> donnees pour ikcIndex. Leve une erreur si la copie est
+// incomplete ou d'un format inconnu (le navigateur retombe alors sur le serveur, jamais sur du faux).
+function ikcDepuisNavigateur(p) {
+  if (!p || p.format !== IKC_FORMAT_NAVIGATEUR) throw new Error('référentiel des communes : format inconnu');
+  var n = Number(p.nb), insee = String(p.insee || '').split(','), nom = String(p.nom || '').split('|');
+  var lat = String(p.lat || '').split(','), lon = String(p.lon || '').split(','), pop = String(p.pop || '').split(',');
+  if (!(n > 0) || [insee, nom, lat, lon, pop].some(function (a) { return a.length !== n; })) throw new Error('référentiel des communes incomplet');
+  var communes = [], al = 0, ao = 0;
+  for (var i = 0; i < n; i++) {
+    al += Number(lat[i]); ao += Number(lon[i]);
+    if (!isFinite(al) || !isFinite(ao) || !insee[i] || !nom[i]) throw new Error('référentiel des communes illisible');
+    communes.push([insee[i], nom[i], ikcNorm(nom[i]), al / 1e5, ao / 1e5, Number(pop[i]) || 0, '']);
+  }
+  var variantes = {};
+  String(p.variantes || '').split('|').forEach(function (x) {
+    var k = x.lastIndexOf(':');
+    if (k > 0) variantes[x.slice(0, k)] = x.slice(k + 1);
+  });
+  return { departements: p.departements || {}, communes: communes, variantes: variantes };
+}
+// <<< ik-communes.js
+
+  var IKC_NAV = { idx: null, version: '', lu: false, enLecture: false, enTelechargement: false, versionServeur: '', mesures: {} };
+  var IKC_IDB = 'jarvis-referentiel-communes', IKC_IDB_STORE = 'copie', IKC_IDB_CLE = 'communes-fr';
+  function ikcIdb(cb){
+    try {
+      var r = indexedDB.open(IKC_IDB, 1);
+      r.onupgradeneeded = function(){ r.result.createObjectStore(IKC_IDB_STORE); };
+      r.onsuccess = function(){ cb(r.result); };
+      r.onerror = function(){ cb(null); };
+    } catch (e) { cb(null); }
+  }
+  function ikcInstaller(p, origine){
+    var t0 = Date.now();
+    var idx = ikcIndex(ikcDepuisNavigateur(p));   // lève une erreur si la copie est incomplète
+    IKC_NAV.idx = idx; IKC_NAV.version = String(p.version || '');
+    IKC_NAV.mesures.installationMs = Date.now() - t0; IKC_NAV.mesures.origine = origine;
+  }
+  // Téléchargement (une fois par version). post = postIk (MCS) ou postIkLabo (LABO) : même copie.
+  function ikcTelecharger(post){
+    if (IKC_NAV.enTelechargement) return;
+    IKC_NAV.enTelechargement = true;
+    var t0 = Date.now();
+    post({ type: 'communes', action: 'referentiel' }, function(p){
+      IKC_NAV.enTelechargement = false;
+      try { ikcInstaller(p, 'reseau'); } catch (e) { return; }   // réponse invalide (serveur pas encore à jour) : on reste sur le serveur
+      IKC_NAV.mesures.telechargementMs = Date.now() - t0;
+      ikcIdb(function(db){ if (!db) return; try { db.transaction(IKC_IDB_STORE, 'readwrite').objectStore(IKC_IDB_STORE).put(p, IKC_IDB_CLE); } catch (e) {} });
+    }, function(){ IKC_NAV.enTelechargement = false; });
+  }
+  function ikcAssurer(post){
+    if (!IKC_NAV.lu) return;   // lecture du cache en cours : ikcPreparer rappellera
+    var attendue = IKC_NAV.versionServeur;
+    if (IKC_NAV.idx && (!attendue || attendue === IKC_NAV.version)) return;
+    // Une seule tentative par version annoncée et par session : si le serveur servait durablement une
+    // copie d'une autre version que celle qu'il annonce, on ne retélécharge pas 1,3 Mo à chaque liste.
+    var cle = attendue || '(aucune)';
+    if (IKC_NAV.tentee === cle && IKC_NAV.idx) return;
+    IKC_NAV.tentee = cle;
+    ikcTelecharger(post);
+  }
+  // À l'ouverture d'un onglet frais km : copie en mémoire, sinon lue dans IndexedDB, sinon téléchargée.
+  function ikcPreparer(post){
+    if (IKC_NAV.lu || IKC_NAV.enLecture) return ikcAssurer(post);
+    IKC_NAV.enLecture = true;
+    var t0 = Date.now();
+    function fin(){ IKC_NAV.enLecture = false; IKC_NAV.lu = true; ikcAssurer(post); }
+    ikcIdb(function(db){
+      if (!db) return fin();
+      try {
+        var g = db.transaction(IKC_IDB_STORE, 'readonly').objectStore(IKC_IDB_STORE).get(IKC_IDB_CLE);
+        g.onsuccess = function(){
+          if (g.result && !IKC_NAV.idx){ try { ikcInstaller(g.result, 'cache'); IKC_NAV.mesures.lectureCacheMs = Date.now() - t0; } catch (e) {} }
+          fin();
+        };
+        g.onerror = fin;
+      } catch (e) { fin(); }
+    });
+  }
+  // Version annoncée par le serveur avec chaque liste de trajets : aucun appel supplémentaire.
+  function ikcVerifierVersion(post, ref){
+    if (ref && ref.version){ IKC_NAV.versionServeur = String(ref.version); ikcAssurer(post); }
+  }
+  // Diagnostic en lecture seule (support, banc d'essai) : état de la copie navigateur.
+  window.jarvisReferentielCommunes = function(){
+    return { pret: !!IKC_NAV.idx, version: IKC_NAV.version, versionServeur: IKC_NAV.versionServeur,
+             nbCommunes: IKC_NAV.idx ? IKC_NAV.idx.communes.length : 0, mesures: IKC_NAV.mesures };
+  };
+  // 07/10/2026 soir (demande de Dorian : « on travaille en Gironde ») : les communes de Gironde sont
+  // proposées EN TÊTE, MCS comme LABO -- mêmes rangs que ikcSuggerer (ik-communes.js, depPrioritaire).
+  var IK_DEP_PRIORITAIRE = '33';
   function ikcFiltrerLocal(liste, n){
     var out = [];
     (liste || []).forEach(function(c){
-      var cle = c.cle || ikcNormClient(c.nom), score = 0;
+      var cle = c.cle || ikcNorm(c.nom), score = 0;
       if (cle.indexOf(n) === 0) score = 3;
       else if (cle.replace(/^(le|la|les|l) /, '').indexOf(n) === 0) score = 2;
       else if ((' ' + cle).indexOf(' ' + n) !== -1) score = 1;
-      if (score) out.push({ c: c, s: score, exact: cle === n });
+      var dedans = c.dep === IK_DEP_PRIORITAIRE;
+      if (score) out.push({ c: c, s: score, exact: cle === n, rang: dedans && score >= 2 ? 0 : (cle === n ? 1 : (dedans ? 2 : 3)) });
     });
     out.sort(function(a, b){
+      if (a.rang !== b.rang) return a.rang - b.rang;
       if (a.s !== b.s) return b.s - a.s;
       if (a.exact !== b.exact) return a.exact ? -1 : 1;
       if (a.c.distanceKm != null && b.c.distanceKm != null && a.c.distanceKm !== b.c.distanceKm) return a.c.distanceKm - b.c.distanceKm;
@@ -20017,11 +20305,14 @@
     return out.map(function(x){ return x.c; });
   }
   // post(payload, onOk, onErr) : postIk (MCS) ou postIkLabo (LABO). Renvoie chercher(q, cb) :
-  // cb(liste) -- liste vide si rien, null si le serveur n'a pas répondu.
-  function ikcSuggesteur(post, limite){
+  // cb(liste) -- liste vide si rien, null si le serveur n'a pas répondu. pres : même biais
+  // géographique que le serveur (MCS : Bordeaux). Copie navigateur prête : réponse IMMÉDIATE, sans
+  // réseau, par la même fonction que le serveur (ikcSuggerer) ; sinon, le serveur comme avant.
+  function ikcSuggesteur(post, limite, pres){
     var cache = {};
-    return function(q, cb){
-      var n = ikcNormClient(q);
+    var chercher = function(q, cb){
+      if (IKC_NAV.idx) return cb(ikcSuggerer(IKC_NAV.idx, q, pres, limite, IK_DEP_PRIORITAIRE));
+      var n = ikcNorm(q);
       if (n.length < 2) return cb([]);
       if (cache[n]) return cb(ikcFiltrerLocal(cache[n].communes, n).slice(0, limite));
       for (var k = n.length - 1; k >= 2; k--){
@@ -20033,6 +20324,8 @@
         cb(ikcFiltrerLocal(cache[n].communes, n).slice(0, limite));
       }, function(){ cb(null); });
     };
+    chercher.local = function(){ return !!IKC_NAV.idx; };
+    return chercher;
   }
   // Branche les suggestions sur un champ. opts : { chercher, rendu(c) -> html, onChoix(c),
   // onQuitter(), tournee: { actif(), choisir(texte) } (arrivée seulement) }. Le choix « Journée de
@@ -20062,7 +20355,10 @@
       clearTimeout(timer);
       var q = input.value.trim(), s = ++seq;
       if (opts.tournee && opts.tournee.actif()){ fermer(); return; }   // libellé libre : aucune suggestion
-      if (q.length < 2){ fermer(); return; }
+      var local = opts.chercher.local && opts.chercher.local();
+      if (q.length < (local ? 1 : 2)){ fermer(); return; }
+      // Copie locale : calcul immédiat (quelques ms), aucune temporisation ; serveur : 250 ms comme avant.
+      if (local) return opts.chercher(q, function(liste){ if (s === seq) afficher(liste || [], q); });
       timer = setTimeout(function(){
         opts.chercher(q, function(liste){ if (s === seq) afficher(liste || [], q); });
       }, 250);
@@ -20071,27 +20367,44 @@
     input.addEventListener('focus', function(){ if (sug.innerHTML) sug.classList.add('open'); });
   }
   // Distance ROUTIÈRE : le SEUL appel extérieur restant (OSRM). Il ne bloque JAMAIS l'enregistrement :
-  // délai maximal, message clair, km saisissables à la main. Les coordonnées viennent du référentiel
-  // local (type 'communes', action 'paire') ; la cohérence avec le vol d'oiseau est contrôlée par le
-  // serveur à l'enregistrement, même si la route n'a pas pu être calculée.
+  // délai maximal, message clair, km saisissables à la main ; la cohérence avec le vol d'oiseau est
+  // contrôlée par le serveur à l'enregistrement, même si la route n'a pas pu être calculée.
+  // 07/10/2026 soir : les coordonnées viennent de la COPIE NAVIGATEUR du référentiel (ikcPaire, même
+  // fonction que le serveur) -> la route part IMMÉDIATEMENT, plus d'aller-retour préalable vers notre
+  // webhook (avant : ~1,5-2 s de webhook PUIS la route). Copie absente : coordonnées demandées au
+  // serveur comme avant. Délai GLOBAL de 3,5 s (avant : 8 s après le webhook, ~9,7 s au total).
+  // Une route déjà calculée pendant la session est reprise sans réseau (saisie en rafale).
   var IK_ROUTE_URL = 'https://router.project-osrm.org/route/v1/driving/';
-  var IK_ROUTE_DELAI_MS = 8000;
+  var IK_ROUTE_DELAI_MS = 3500;
+  var ikRoutesConnues = {};
   function ikDistanceRoutiere(post, depart, arrivee){
     return new Promise(function(ok, ko){
-      post({ type: 'communes', action: 'paire', depart: depart, arrivee: arrivee }, function(j){
-        if (!j || !j.ok) return ko({ commune: true, message: (j && j.erreur) || 'commune introuvable' });
-        var ctrl = typeof AbortController !== 'undefined' ? new AbortController() : null, fini = false;
-        var minuteur = setTimeout(function(){ if (fini) return; fini = true; if (ctrl) ctrl.abort(); ko({ message: 'pas de réponse du service de calcul d’itinéraire au bout de ' + (IK_ROUTE_DELAI_MS / 1000) + ' s' }); }, IK_ROUTE_DELAI_MS);
-        fetch(IK_ROUTE_URL + j.depart.lon + ',' + j.depart.lat + ';' + j.arrivee.lon + ',' + j.arrivee.lat + '?overview=false', ctrl ? { signal: ctrl.signal } : {})
+      var ctrl = typeof AbortController !== 'undefined' ? new AbortController() : null, fini = false;
+      var minuteur = setTimeout(function(){
+        if (fini) return; fini = true; if (ctrl) ctrl.abort();
+        ko({ message: 'pas de réponse du service de calcul d’itinéraire au bout de ' + String(IK_ROUTE_DELAI_MS / 1000).replace('.', ',') + ' s' });
+      }, IK_ROUTE_DELAI_MS);
+      function finir(f, v){ if (fini) return; fini = true; clearTimeout(minuteur); f(v); }
+      function route(j){
+        var cle = j.depart.lon + ',' + j.depart.lat + ';' + j.arrivee.lon + ',' + j.arrivee.lat;
+        if (ikRoutesConnues[cle] != null) return finir(ok, { km: ikRoutesConnues[cle], depart: j.depart.nom, arrivee: j.arrivee.nom });
+        fetch(IK_ROUTE_URL + cle + '?overview=false', ctrl ? { signal: ctrl.signal } : {})
           .then(function(r){ return r.json(); }).then(function(r){
-            if (fini) return; fini = true; clearTimeout(minuteur);
-            if (!r || r.code !== 'Ok' || !r.routes || !r.routes[0]) return ko({ message: 'itinéraire introuvable' });
-            ok({ km: Math.round(r.routes[0].distance / 100) / 10, depart: j.depart.nom, arrivee: j.arrivee.nom });
-          }).catch(function(){
-            if (fini) return; fini = true; clearTimeout(minuteur);
-            ko({ message: 'service de calcul d’itinéraire injoignable' });
-          });
-      }, function(err){ ko({ message: err }); });
+            if (!r || r.code !== 'Ok' || !r.routes || !r.routes[0]) return finir(ko, { message: 'itinéraire introuvable' });
+            var km = Math.round(r.routes[0].distance / 100) / 10;
+            ikRoutesConnues[cle] = km;
+            finir(ok, { km: km, depart: j.depart.nom, arrivee: j.arrivee.nom });
+          }).catch(function(){ finir(ko, { message: 'service de calcul d’itinéraire injoignable' }); });
+      }
+      if (IKC_NAV.idx){
+        var p = ikcPaire(IKC_NAV.idx, depart, arrivee);
+        if (!p.ok) return finir(ko, { commune: true, message: p.erreur });
+        return route(p);
+      }
+      post({ type: 'communes', action: 'paire', depart: depart, arrivee: arrivee }, function(j){
+        if (!j || !j.ok) return finir(ko, { commune: true, message: (j && j.erreur) || 'commune introuvable' });
+        route(j);
+      }, function(err){ finir(ko, { message: err }); });
     });
   }
   function ikMessageRouteKo(e){
@@ -20110,7 +20423,7 @@
   function ikTexteArrivee(t){ return (t.mode === 'tournee' ? 'Tournée : ' : '') + (t.ville_arrivee || '?'); }
 
   // ---- Suggestions MCS : même rendu qu'avant (contexte · distance de Bordeaux). ----
-  var ikChercherCommunes = ikcSuggesteur(postIk, 8);
+  var ikChercherCommunes = ikcSuggesteur(postIk, 8, { lat: 44.8378, lon: -0.5792 });   // = biais du serveur (Preparer communes (ik))
   function ikRenduCommune(c){
     return escHtml(c.nom) + '<small>' + escHtml(c.contexte || '') + (c.distanceKm != null ? ' · ' + c.distanceKm + ' km de Bordeaux' : '') + '</small>';
   }
@@ -20203,7 +20516,7 @@
   // 07/10/2026 : coordonnées du référentiel local (notre webhook) puis distance routière demandée
   // par le navigateur (ikDistanceRoutiere) -- en cas d'échec ou de délai dépassé, message clair et
   // saisie manuelle : l'enregistrement n'en dépend jamais.
-  var ikCalcInFlight = false, ikCalcCle = '', ikKmManuel = false;
+  var ikCalcSeq = 0, ikCalcCle = '', ikKmManuel = false;
   document.getElementById('ikf-km').addEventListener('input', function(){ ikKmManuel = true; });
   function ikCalcDistance(manuel){
     var depart = document.getElementById('ikf-depart').value.trim();
@@ -20214,16 +20527,18 @@
       if (manuel) toast('Indique une ville de départ et d’arrivée.');
       return;
     }
-    if (ikCalcInFlight) return;
-    if (!manuel && ikCalcCle === depart + '|' + arrivee) return;   // déjà calculé pour ces deux villes
+    if (!manuel && ikCalcCle === depart + '|' + arrivee) return;   // déjà calculé (ou en cours) pour ces deux villes
     ikCalcCle = depart + '|' + arrivee;
-    ikCalcInFlight = true;
+    // 07/10/2026 soir : une nouvelle paire REMPLACE le calcul en cours (avant, elle était ignorée tant
+    // que le précédent n'était pas revenu, et le résultat affiché pouvait être celui des anciennes villes).
+    var seq = ++ikCalcSeq;
     var btn = document.getElementById('ikf-calc');
     btn.disabled = true;
     resEl.className = 'ikf-calc-loading'; resEl.style.display = '';
     resEl.textContent = '⏳ Calcul de la distance ' + depart + ' → ' + arrivee + '…';
     ikDistanceRoutiere(postIk, depart, arrivee).then(function(r){
-      ikCalcInFlight = false; btn.disabled = false;
+      if (seq !== ikCalcSeq) return;
+      btn.disabled = false;
       resEl.className = ''; resEl.style.display = '';
       var kmEl = document.getElementById('ikf-km');
       var txt = String(r.km).replace('.', ',') + ' km par la route (' + r.depart + ' → ' + r.arrivee + ')';
@@ -20237,7 +20552,8 @@
       u.addEventListener('click', function(){ kmEl.value = r.km; ikKmManuel = false; resEl.textContent = '✅ ' + txt; });
       resEl.appendChild(u);
     }, function(e){
-      ikCalcInFlight = false; btn.disabled = false;
+      if (seq !== ikCalcSeq) return;
+      btn.disabled = false;
       resEl.className = ''; resEl.style.display = '';
       resEl.textContent = ikMessageRouteKo(e);
     });
@@ -20674,6 +20990,7 @@
       iklList.innerHTML = '<p class="ikl-vide">Chargement…</p>';
     }
     postIkLabo({ type: 'liste' }, function(j){
+      ikcVerifierVersion(postIkLabo, j.referentiel);   // 07/10/2026 soir : copie navigateur des communes à jour ?
       panelCacheSave('ikl', j);
       iklLignes = j.lignes || []; iklCharge = true; iklRender();
     }, function(err){
@@ -20681,7 +20998,7 @@
       else toast(err);
     });
   }
-  function iklOpen(){ iklview.classList.add('open'); iklCharger(true); }
+  function iklOpen(){ ikcPreparer(postIkLabo); iklview.classList.add('open'); iklCharger(true); }
   function iklClose(){ iklview.classList.remove('open'); }
   document.getElementById('ikl-close').addEventListener('click', iklClose);
   document.getElementById('sh-ikl').addEventListener('click', function(){ sheetOpen(false); iklOpen(); });
@@ -20690,7 +21007,7 @@
   // type 'communes' -- plus d'appel à api-adresse.data.gouv.fr), puis itinéraire routier OSRM demandé
   // par le navigateur (seul appel extérieur, avec délai maximal) : voir ikDistanceRoutiere. En cas
   // d'échec, km saisis à la main -- l'enregistrement n'en dépend jamais.
-  var iklCalcSeq = 0;
+  var iklCalcSeq = 0, iklCalcCle = '';
   var iklTournee = false;
   function iklCalcDistance(manuel){
     var dep = document.getElementById('iklf-depart').value.trim();
@@ -20698,6 +21015,10 @@
     var res = document.getElementById('iklf-calc-result');
     if (iklTournee) return;
     if (dep.length < 2 || arr.length < 2){ if (manuel) toast('Indique une ville de départ et d’arrivée.'); return; }
+    // 07/10/2026 soir : le choix d'une ville dans la liste PUIS l'événement « change » du champ
+    // lançaient deux fois le même calcul -- une paire déjà calculée n'est relancée que par le bouton.
+    if (!manuel && iklCalcCle === dep + '|' + arr) return;
+    iklCalcCle = dep + '|' + arr;
     var seq = ++iklCalcSeq;
     res.style.display = ''; res.className = 'ikl-calc-encours';
     res.textContent = '⏳ Calcul de la distance ' + dep + ' → ' + arr + '…';
@@ -20777,6 +21098,7 @@
     document.getElementById('iklf-km').value = t && t.km_aller != null ? t.km_aller : '';
     document.getElementById('iklf-ar').checked = t ? Number(t.nb_trajet) !== 1 : true;
     document.getElementById('iklf-calc-result').style.display = 'none';
+    iklCalcCle = '';
     iklMajTournee(!!(t && t.mode === 'tournee'));
     // 07/10/2026 : motif donné à l'instant par la règle commune (masqué si le trajet est correct).
     var ano = document.getElementById('iklf-anomalie');
@@ -20788,7 +21110,14 @@
     iklMajApercu();
     iklFormBg.classList.add('open');
   }
-  function iklFormClose(){ iklFormBg.classList.remove('open'); }
+  // 07/10/2026 soir : en saisie en rafale (« Enregistrer et suivant »), la liste n'est plus relue après
+  // CHAQUE trajet (un passage complet par le serveur, invisible derrière le formulaire) : elle l'est
+  // une fois, à la fermeture du formulaire. Chaque trajet reste enregistré et jugé par le serveur.
+  var iklListePerimee = false;
+  function iklFormClose(){
+    iklFormBg.classList.remove('open');
+    if (iklListePerimee){ iklListePerimee = false; iklCharger(false); }
+  }
   document.getElementById('iklf-cancel').addEventListener('click', iklFormClose);
   iklFormBg.addEventListener('click', function(e){ if (e.target === this) iklFormClose(); });
   ['iklf-date', 'iklf-km'].forEach(function(id){ document.getElementById(id).addEventListener('input', iklMajApercu); });
@@ -20836,11 +21165,12 @@
         document.getElementById('iklf-km').value = '';
         document.getElementById('iklf-motif').value = '';
         document.getElementById('iklf-calc-result').style.display = 'none';
+        iklCalcCle = '';
         iklMajTournee(false);
         iklMajApercu();
         document.getElementById('iklf-arrivee').focus();
-      } else iklFormClose();
-      iklCharger(false);
+        iklListePerimee = true;
+      } else { iklListePerimee = true; iklFormClose(); }
     }, function(err){ iklEnvoi = false; toast(err, 8000); });
   }
   document.getElementById('iklf-save').addEventListener('click', function(){ iklEnregistrer(false); });
