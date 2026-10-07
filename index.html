@@ -6841,7 +6841,9 @@
   html.mcs-theme.mcs-accueil-v2 #accueil-tuto-btn{height:auto; min-height:0}
   html.mcs-theme.mcs-accueil-v2 #accueil-tuto-btn svg{display:none}
   /* Sans barre de discussion, l'ombre du menu du bas (fermé, sous l'écran) devenait visible. */
-  html.mcs-theme.mcs-accueil-v2 #sheet:not(.open){box-shadow:none}
+  html.mcs-theme.mcs-accueil-v2 #sheet:not(.open),
+  html.mcs-theme.mcs-accueil-v2 #siteSheet:not(.open),
+  html.mcs-theme.mcs-accueil-v2 #appsSheet:not(.open){box-shadow:none}
   html.mcs-theme.mcs-accueil-v2 #hquit-mcs2{display:inline-block !important}
   /* Téléphone : tout en colonne, textes courts, en-tête allégé (comme la maquette). */
   @media (max-width: 640px){
@@ -9020,9 +9022,9 @@
          c'est ce qui supprime le conflit humain sur cette ligne precise. Sert aussi de cle
          unique de detection de mise a jour (voir checkUpdate ci-dessous), plus fiable qu'une
          comparaison de chaine de version par tenant. */
-  var APPV_MCS = '4.60';
+  var APPV_MCS = '4.61';
   var APPV_LABO = '1.09';
-  var BUILD = 104;
+  var BUILD = 105;
 
   // ==============================================================================================
   // ONGLETS ACTIFS PAR LOCATAIRE (07/10/2026) -- LA liste qui décide ce qu'un client voit.
@@ -21024,7 +21026,11 @@
         'Comptable (' + fmtDevisDateSimple(ex.comptable.periodeDebut) + ' → ' + fmtDevisDateSimple(ex.comptable.periodeFin) + ')',
         'comptable', ex.comptable.ht, ex.comptable.ttc, null));
     }
-    if (ex.contrats){
+    // 07/10/2026 : Contrats éteint (ONGLETS_ACTIFS_PAR_LOCATAIRE) = Mickael refacture ses contrats
+    // dans MEG -- les brouillons Jarvis ne partiront jamais : ni ligne « Contrats envoyés », ni liste
+    // « en attente d'envoi » (trompeuses). Affichage seulement, aucune donnée touchée.
+    var contratsJarvis = ongletActif('contrats');
+    if (ex.contrats && contratsJarvis){
       var noteContrats = null;
       if (ex.contrats.nbAvoirs > 0){
         noteContrats = 'facturé ' + fmtEuros(ex.contrats.brutHT) + ' − ' + ex.contrats.nbAvoirs +
@@ -21042,7 +21048,7 @@
 
     // Reste a facturer -- etats honnetes, jamais un zero trompeur (regle du panneau Rentabilite).
     var reste = document.createElement('div'); reste.id = 'rex-reste';
-    var aT = ex.contrats && ex.contrats.aTraiter;
+    var aT = contratsJarvis && ex.contrats && ex.contrats.aTraiter;
     if (aT && aT.nb > 0){
       var l1 = document.createElement('div'); l1.className = 'rex-reste-ligne';
       l1.textContent = aT.nb + (aT.nb > 1 ? ' contrats en attente d\'envoi — ' : ' contrat en attente d\'envoi — ') + fmtEuros(aT.ht) + ' HT';
@@ -21053,7 +21059,7 @@
         reste.appendChild(dd);
       });
     }
-    var skipListe = (ex.contrats && ex.contrats.skip && ex.contrats.skip.liste) || [];
+    var skipListe = (contratsJarvis && ex.contrats && ex.contrats.skip && ex.contrats.skip.liste) || [];
     if (skipListe.length){
       var l2 = document.createElement('div'); l2.className = 'rex-reste-ligne';
       l2.textContent = skipListe.length + (skipListe.length > 1 ? ' contrats volontairement non facturés ce mois-ci :' : ' contrat volontairement non facturé ce mois-ci :');
@@ -21274,7 +21280,7 @@
 
     if (courant){
       table.appendChild(rentaBuildLigneCourante(courant, d.megExtraction, d.contratsMoisEnCours));
-      table.appendChild(rentaResteAFacturer(cleCourante, d.contratsMoisEnCours));
+      if (ongletActif('contrats')) table.appendChild(rentaResteAFacturer(cleCourante, d.contratsMoisEnCours));   // 07/10/2026 : rien a facturer dans Jarvis si Contrats est eteint
     } else {
       var rowVide = document.createElement('div'); rowVide.className = 'rt-row rt-courant';
       var cMois = document.createElement('div'); cMois.className = 'rt-cell rt-mois'; cMois.style.color = 'var(--gold-a)'; cMois.textContent = moisLabelCourt(cleCourante) + ' ·';
@@ -21284,7 +21290,7 @@
       cVide.appendChild(vide);
       rowVide.appendChild(cMois); rowVide.appendChild(cVide);
       table.appendChild(rowVide);
-      table.appendChild(rentaResteAFacturer(cleCourante, d.contratsMoisEnCours));
+      if (ongletActif('contrats')) table.appendChild(rentaResteAFacturer(cleCourante, d.contratsMoisEnCours));   // 07/10/2026 : rien a facturer dans Jarvis si Contrats est eteint
     }
 
     var moisAvecDepense = mois.filter(function(m){ return m.depenses != null; });
