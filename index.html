@@ -2343,6 +2343,28 @@
   html.mcs-theme #fd-totaux-panel input{
     border:2px solid var(--blue); background:#fff;
   }
+  /* 07/10/2026 (étape 4, RAPPORT-FERMETURE-CONTRATS-EXERCICE-IK) : formulaire de trajet MCS --
+     Date, villes et Km n'avaient AUCUNE bordure visible (bordure de base blanche translucide sur le
+     fond gris clair du thème MCS). Même encadrement bleu que les autres formulaires MCS, sur tous
+     les champs, + contour bleu au focus. MCS seulement : le formulaire LABO (#ikl-form) est intact. */
+  html.mcs-theme #ik-form input:not([type=checkbox]),
+  html.mcs-theme #ik-form select{
+    border:2px solid var(--blue); background:#fff;
+  }
+  html.mcs-theme #ik-form input:not([type=checkbox]):focus,
+  html.mcs-theme #ik-form select:focus{
+    outline:3px solid rgba(0,80,160,.35); outline-offset:1px; border-color:var(--blue);
+  }
+  /* Trajets à corriger (ville non reconnue / distance incohérente), signalés par la règle commune
+     du 07/10/2026 -- visibles et corrigibles, jamais corrigés d'office. */
+  /* Lignes à corriger : l'or pâle de base (#e0a64f) n'a que 2,2:1 de contraste sur fond blanc --
+     ambre foncé (6,3:1) côté MCS seulement. */
+  html.mcs-theme table.ik-table tr.ik-row-anomalie td{color:#8A5300}
+  html.mcs-theme #ik-a-corriger,
+  html.mcs-theme #ikf-anomalie{
+    background:#FFF4E0; border-left:4px solid #B26B00; color:#4A3000; border-radius:8px;
+    padding:10px 12px; margin:10px 0; font-size:14px; line-height:1.4;
+  }
   html.mcs-theme #facture-contrat-form input:disabled,
   html.mcs-theme #facture-contrat-form textarea:disabled,
   html.mcs-theme #contrat-catalogue-form input:disabled,
@@ -8167,6 +8189,7 @@
 <div id="ik-form-bg">
   <div class="contrat-form" id="ik-form">
     <h3 id="ikf-titre">Nouveau trajet</h3>
+    <p id="ikf-anomalie" style="display:none"></p>
     <label>Date</label><input id="ikf-date" type="date">
     <label>Motif</label>
     <!-- Point 5.2 (Fenetre 1, 08/09/2026 soir) : 6 entrees -> 3, decision explicite de Mickael
@@ -8187,8 +8210,8 @@
       <input id="ikf-allerretour" type="checkbox" checked style="width:auto; margin:0">
       <span>Aller-retour (trajet compté ×2)</span>
     </label>
-    <label>Km aller <span id="ikf-km-auto" style="color:var(--gold-a); font-weight:400">— calculé automatiquement dès que les 2 villes sont saisies</span></label>
-    <input id="ikf-km" type="number" step="1" min="0">
+    <label>Km aller <span id="ikf-km-auto" style="color:var(--gold-a); font-weight:400">— calculés automatiquement par la route, modifiables</span></label>
+    <input id="ikf-km" type="number" inputmode="decimal" step="0.1" min="0">
     <p id="ikf-calc-result" style="display:none"></p>
     <button class="vc-no" id="ikf-calc" type="button"><svg class="hicon-sm" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M20 11a8 8 0 0 0-14.6-4.6M4 13a8 8 0 0 0 14.6 4.6"/><polyline points="4.5,4.5 5,8.5 9,8"/><polyline points="19.5,19.5 19,15.5 15,16"/></svg>Recalculer la distance</button>
     <div class="cf-actions">
@@ -9022,9 +9045,9 @@
          c'est ce qui supprime le conflit humain sur cette ligne precise. Sert aussi de cle
          unique de detection de mise a jour (voir checkUpdate ci-dessous), plus fiable qu'une
          comparaison de chaine de version par tenant. */
-  var APPV_MCS = '4.61';
+  var APPV_MCS = '4.62';
   var APPV_LABO = '1.09';
-  var BUILD = 105;
+  var BUILD = 106;
 
   // ==============================================================================================
   // ONGLETS ACTIFS PAR LOCATAIRE (07/10/2026) -- LA liste qui décide ce qu'un client voit.
@@ -11431,14 +11454,24 @@
     }
     var ex = d.exerciceCA.exercice || {};
     var rc = d.resultatComptable || {};
-    var pe = 'Exercice du ' + mh2Date(ex.debut) + ' au ' + mh2Date(ex.fin);
-    var peCourt = 'Exercice ' + String(ex.debut || '').slice(0, 4) + '-' + String(ex.fin || '').slice(0, 4);
-    var maj = 'Dernier relevé comptable : ' + mh2MoisAn(cp.periodeDebut) + ' à ' + mh2MoisAn(cp.periodeFin) +
+    // 07/10/2026 : exercice = celui du dernier mois importé (calculé par le serveur, règle unique
+    // exercice-mcs.js) ; on écrit combien de mois il couvre, pour qu'un montant partiel ne soit
+    // jamais lu comme un montant annuel.
+    var nbM = d.exerciceCA.moisCouverts, totM = d.exerciceCA.moisTotal || 12;
+    var pe = 'Exercice du ' + mh2Date(ex.debut) + ' au ' + mh2Date(ex.fin) + (typeof nbM === 'number' ? ' · ' + nbM + ' mois sur ' + totM : '');
+    var peCourt = 'Exercice ' + String(ex.debut || '').slice(0, 4) + '-' + String(ex.fin || '').slice(0, 4) + (typeof nbM === 'number' ? ' · ' + nbM + '/' + totM + ' mois' : '');
+    var maj = 'Dernier relevé comptable : ' + (mh2MoisAn(cp.periodeDebut) === mh2MoisAn(cp.periodeFin) ? mh2MoisAn(cp.periodeFin) : mh2MoisAn(cp.periodeDebut) + ' à ' + mh2MoisAn(cp.periodeFin)) +
       (rc.misAJourLe ? ', importé le ' + mh2Date(rc.misAJourLe) : '');
     var c = mh2Stat('Chiffre d’affaires', null, fmtEuros(cp.ht), ' HT', null, maj);
     var p = mh2El('div', 'mh2-pe');
     p.appendChild(mh2El('span', 'mh2-long', pe)); p.appendChild(mh2El('span', 'mh2-court', peCourt));
     c.insertBefore(p, c.querySelector('.mh2-maj'));
+    // Ligne de référence : SEULEMENT si l'exercice précédent est complet (12 mois) -- le jour de la
+    // bascule, le chiffre repart d'un seul mois, cette ligne garde l'année entière sous les yeux.
+    var prec = d.exerciceCA.precedent;
+    if (prec && typeof prec.ht === 'number'){
+      c.appendChild(mh2El('div', 'mh2-maj mh2-ref', 'Exercice précédent clos : ' + fmtEuros(prec.ht) + ' HT sur 12 mois'));
+    }
     return c;
   }
   function mh2CalcIk(){
@@ -16403,6 +16436,13 @@
       motifP.textContent = f.motif_blocage || 'Aucune désignation MEG vérifiée pour cette prestation.';
       main.appendChild(motifP);
     }
+    // 07/10/2026 : statut terminal 'facturee_meg' (contrat facturé dans MEG, hors Jarvis -- décision
+    // client). Onglet Contrats éteint pour MCS ; s'il est rallumé, la ligne le dit en clair, sans bouton.
+    if (f.statut === 'facturee_meg'){
+      var metaMeg = document.createElement('span'); metaMeg.className = 'dv-meta';
+      metaMeg.textContent = 'Facturé dans MEG, hors Jarvis — clos le 07/10/2026';
+      main.appendChild(metaMeg);
+    }
     if (f.statut === 'skip'){
       var metaSkip = document.createElement('span'); metaSkip.className = 'dv-meta';
       metaSkip.innerHTML = ICON_SKIP_CT + 'Motif : ' + escHtml(f.motif_skip || '(non précisé)');
@@ -19668,7 +19708,7 @@
     var tbody = document.createElement('tbody');
     items.forEach(function(t){
       var tr = document.createElement('tr');
-      if (t.anomalie) tr.className = 'ik-row-anomalie';
+      if (t.anomalie){ tr.className = 'ik-row-anomalie'; tr.title = t.anomalie + ' — touchez la ligne pour la corriger.'; }
       IK_COLONNES.forEach(function(col){
         var td = document.createElement('td');
         if (col.cls) td.className = col.cls;
@@ -19724,6 +19764,17 @@
     });
     var monthly = ikComputeMonthly().parMois[moisIdx];
     ikList.appendChild(ikBuildMonthDash(moisIdx, monthly));
+    // 07/10/2026 : trajets que la règle commune refuserait aujourd'hui (ville non reconnue, distance
+    // incohérente ou nulle) -- signalés, jamais corrigés d'office (les vraies distances ne sont pas connues).
+    var aCorriger = (ikData || []).filter(function(t){ return t.anomalie && String(t.date || '').indexOf(String(annee)) === 0; });
+    if (aCorriger.length){
+      var dansMois = itemsMois.filter(function(t){ return t.anomalie; }).length;
+      var pAc = document.createElement('p'); pAc.id = 'ik-a-corriger';
+      pAc.textContent = '⚠️ ' + aCorriger.length + (aCorriger.length > 1 ? ' trajets' : ' trajet') + ' de ' + annee +
+        ' à corriger (ville non reconnue ou distance incohérente)' + (dansMois ? ', dont ' + dansMois + ' ce mois-ci' : '') +
+        ' : ils sont marqués ⚠️ — touchez une ligne pour choisir la bonne commune dans la liste et vérifier les km.';
+      ikList.appendChild(pAc);
+    }
     var items = itemsMois.filter(function(t){
       return !q || normDoc(t.motif + ' ' + t.ville_depart + ' ' + t.ville_arrivee).indexOf(q) !== -1;
     });
@@ -19925,6 +19976,9 @@
     document.getElementById('ikf-km').value = t && t.km_aller != null ? t.km_aller : '';
     document.getElementById('ikf-allerretour').checked = t ? (Number(t.nb_trajet) !== 1) : true;
     document.getElementById('ikf-delete').style.display = t ? '' : 'none';
+    var ikfAno = document.getElementById('ikf-anomalie');
+    ikfAno.textContent = t && t.anomalie ? '⚠️ ' + t.anomalie : '';
+    ikfAno.style.display = t && t.anomalie ? '' : 'none';
     document.getElementById('ikf-calc-result').style.display = 'none';
     document.getElementById('ikf-calc-result').className = '';
     document.getElementById('ikf-depart-sug').innerHTML = ''; document.getElementById('ikf-depart-sug').classList.remove('open');
@@ -19987,6 +20041,11 @@
       km_aller: document.getElementById('ikf-km').value !== '' ? parseFloat(document.getElementById('ikf-km').value) : null,
     };
     if (!trajet.date || !trajet.ville_arrivee){ toast('Indique au moins la date et la ville d’arrivée.'); return; }
+    // 07/10/2026 : mêmes refus que le serveur (règle commune produits/jarvis/ik-commun/ik-validation-
+    // trajet.js, qui reste seule juge : villes reconnues, distance cohérente) -- ici seulement les cas
+    // évidents, pour répondre tout de suite. Message long : toast affiché 8 s.
+    if (!trajet.ville_depart){ toast('Ville de départ manquante : choisissez-la dans la liste des communes.', 8000); return; }
+    if (!(trajet.km_aller > 0)){ toast('Distance à 0 km : un trajet doit avoir une distance. Choisissez les deux villes dans la liste des communes pour la calculer automatiquement, ou saisissez les km aller à la main.', 8000); return; }
     var payload = ikFormEditingId
       ? { type: 'modifier', id: ikFormEditingId, trajet: trajet }
       : { type: 'ajouter', trajet: trajet };
@@ -19994,7 +20053,7 @@
       toast('✅ Trajet enregistré');
       ikFormClose();
       ikLoad();
-    }, function(err){ toast(err); });
+    }, function(err){ toast(err, 8000); });
   });
   document.getElementById('ikf-delete').addEventListener('click', function(){
     if (!ikFormEditingId) return;
@@ -20507,7 +20566,10 @@
     if (!iklPartiesDate(trajet.date)){ toast('Date invalide.'); return; }
     if (trajet.date > iklAujourdhui()){ toast('Cette date est dans le futur.'); return; }
     if (!trajet.ville_arrivee){ toast('Indique la ville d’arrivée.'); return; }
-    if (!(trajet.km_aller > 0)){ toast('Indique les km (aller).'); return; }
+    // 07/10/2026 : mêmes refus que le serveur (règle commune ik-validation-trajet.js, seule juge des
+    // villes) -- messages d'erreur seulement, aucun écran normal ne change.
+    if (!trajet.ville_depart){ toast('Ville de départ manquante : choisissez-la dans la liste des communes.', 8000); return; }
+    if (!(trajet.km_aller > 0)){ toast('Distance à 0 km : un trajet doit avoir une distance. Choisissez les deux villes dans la liste des communes pour la calculer automatiquement, ou saisissez les km aller à la main.', 8000); return; }
     iklEnvoi = true;
     var payload = iklEditId ? { type: 'modifier', id: iklEditId, trajet: trajet } : { type: 'ajouter', trajet: trajet };
     postIkLabo(payload, function(){
@@ -20526,7 +20588,7 @@
         document.getElementById('iklf-arrivee').focus();
       } else iklFormClose();
       iklCharger(false);
-    }, function(err){ iklEnvoi = false; toast(err); });
+    }, function(err){ iklEnvoi = false; toast(err, 8000); });
   }
   document.getElementById('iklf-save').addEventListener('click', function(){ iklEnregistrer(false); });
   document.getElementById('iklf-suivant').addEventListener('click', function(){ iklEnregistrer(true); });
@@ -20580,102 +20642,339 @@
   });
 
   // ---- Export Excel (.xlsx) construit dans le navigateur : un conducteur, une année. ----
-  // Fichier OOXML minimal écrit à la main (zip non compressé + CRC32), zéro dépendance, zéro
-  // serveur. Dates écrites en TEXTE jj/mm/aaaa (jamais un numéro de série Excel qui pourrait
-  // être réinterprété selon la langue du tableur). Totaux = formules SUM avec leur valeur déjà
-  // calculée (lisibles sans recalcul, vérifiables par le tiers).
-  var IKL_CRC = (function(){ var t = [], c, n, k; for (n = 0; n < 256; n++){ c = n; for (k = 0; k < 8; k++) c = c & 1 ? 0xEDB88320 ^ (c >>> 1) : c >>> 1; t[n] = c >>> 0; } return t; })();
-  function iklCrc32(u8){ var c = 0xFFFFFFFF; for (var i = 0; i < u8.length; i++) c = IKL_CRC[(c ^ u8[i]) & 0xFF] ^ (c >>> 8); return (c ^ 0xFFFFFFFF) >>> 0; }
-  function iklZip(fichiers){
-    var enc = new TextEncoder(), parts = [], central = [], offset = 0;
-    var n = new Date(), dt = ((n.getFullYear() - 1980) << 9) | ((n.getMonth() + 1) << 5) | n.getDate(), tm = (n.getHours() << 11) | (n.getMinutes() << 5);
-    function u16(v){ return [v & 255, (v >>> 8) & 255]; }
-    function u32(v){ return [v & 255, (v >>> 8) & 255, (v >>> 16) & 255, (v >>> 24) & 255]; }
-    fichiers.forEach(function(f){
-      var nom = enc.encode(f.nom), data = enc.encode(f.contenu), crc = iklCrc32(data);
-      var tete = [].concat(u32(0x04034b50), u16(20), u16(0x0800), u16(0), u16(tm), u16(dt), u32(crc), u32(data.length), u32(data.length), u16(nom.length), u16(0));
-      parts.push(new Uint8Array(tete), nom, data);
-      central.push(new Uint8Array([].concat(u32(0x02014b50), u16(20), u16(20), u16(0x0800), u16(0), u16(tm), u16(dt), u32(crc), u32(data.length), u32(data.length), u16(nom.length), u16(0), u16(0), u16(0), u16(0), u32(0), u32(offset))), nom);
-      offset += tete.length + nom.length + data.length;
-    });
-    var taille = 0; central.forEach(function(p){ taille += p.length; });
-    var fin = new Uint8Array([].concat(u32(0x06054b50), u16(0), u16(0), u16(fichiers.length), u16(fichiers.length), u32(taille), u32(offset), u16(0)));
-    return new Blob(parts.concat(central, [fin]), { type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' });
+  // 07/10/2026 (étape 5, RAPPORT-FERMETURE-CONTRATS-EXERCICE-IK) : mise en forme = module COMMUN
+  // produits/jarvis/ik-commun/ik-export-xlsx.js (le même que l'export MCS côté serveur), copié
+  // ci-dessous à l'identique entre ses marqueurs -- le déploiement refuse une copie qui diverge.
+  // Montants : inchangés (iklCalculAnnee, prorata des km, en centimes). Retirés à la demande du
+  // client : la ligne « Édité le » et la colonne « Barème appliqué » (le barème est dans l'en-tête).
+// >>> ik-export-xlsx.js (SOURCE UNIQUE -- ne pas recopier ailleurs a la main)
+// Export Excel des frais kilometriques, COMMUN a MCS et au LABO (07/10/2026, etape 5 du
+// RAPPORT-FERMETURE-CONTRATS-EXERCICE-IK-2026-10-07.md). Copie inlinee telle quelle par :
+//  - produits/jarvis/telecommande-pages/index.html (export LABO, dans le navigateur) ;
+//  - clients/mcs/scripts/ik/build-ik-workflow.js (noeud « Construire IK export (web) », MCS).
+// interne/outils/lib_verif_deploiement.py refuse un deploiement si la copie d'index.html differe.
+//
+// Ce module ne CALCULE aucun montant : chaque cote lui passe ses trajets avec leur montant en
+// centimes, calcule par son propre moteur (bareme commun). Il met en forme, c'est tout.
+// Un fichier = un conducteur, une annee. Deux feuilles :
+//  1. « Récapitulatif » : en-tete (titre, conducteur, annee, vehicule, bareme UNE fois, formule,
+//     regle de repartition, mentions) puis le recapitulatif mensuel (mois / trajets / km / montant)
+//     et le total annuel -- ce qu'un lecteur regarde en premier.
+//  2. « Détail des trajets » : en-tetes de colonnes figes, un bandeau par mois, les trajets du mois,
+//     un sous-total du mois en gras ; total annuel en bas.
+// Pas de date d'edition (exigence du client) : ni ligne « Édité le », ni date dans les proprietes
+// du fichier, ni dans l'archive.
+//
+// doc = { titre, conducteur, annee, entete: [[libelle, valeur], ...], mentions: [texte, ...],
+//         trajets: [{ date:'AAAA-MM-JJ', depart, arrivee, allerRetour:bool, motif, kmAller, kmComptes,
+//                     centimes: entier | null }] }
+// Renvoie un Uint8Array (contenu du .xlsx).
+var IKX_MOIS = ['Janvier', 'Février', 'Mars', 'Avril', 'Mai', 'Juin', 'Juillet', 'Août', 'Septembre', 'Octobre', 'Novembre', 'Décembre'];
+var IKX_JOURS = ['dimanche', 'lundi', 'mardi', 'mercredi', 'jeudi', 'vendredi', 'samedi'];
+
+function ikxOctets(s) {
+  if (typeof TextEncoder !== 'undefined') return new TextEncoder().encode(s);
+  return new Uint8Array(Buffer.from(s, 'utf8'));
+}
+function ikxCrc32(u8) {
+  var t = ikxCrc32.t;
+  if (!t) {
+    t = ikxCrc32.t = new Uint32Array(256);
+    for (var n = 0; n < 256; n++) { var c = n; for (var k = 0; k < 8; k++) c = c & 1 ? 0xedb88320 ^ (c >>> 1) : c >>> 1; t[n] = c >>> 0; }
   }
-  function iklXml(s){ return String(s == null ? '' : s).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;').replace(/[\u0000-\u0008\u000b\u000c\u000e-\u001f]/g, ''); }
-  function iklCol(i){ return String.fromCharCode(65 + i); }
+  var crc = 0xffffffff;
+  for (var i = 0; i < u8.length; i++) crc = t[(crc ^ u8[i]) & 0xff] ^ (crc >>> 8);
+  return (crc ^ 0xffffffff) >>> 0;
+}
+// Archive zip non compressee (STORED). Date des entrees figee au 01/01/1980 : aucune date d'edition.
+function ikxZip(fichiers) {
+  var locaux = [], centraux = [], offset = 0;
+  function u16(v) { return [v & 0xff, (v >>> 8) & 0xff]; }
+  function u32(v) { return [v & 0xff, (v >>> 8) & 0xff, (v >>> 16) & 0xff, (v >>> 24) & 0xff]; }
+  fichiers.forEach(function (f) {
+    var nom = ikxOctets(f.nom), data = ikxOctets(f.contenu), crc = ikxCrc32(data);
+    var tete = [].concat(u32(0x04034b50), u16(20), u16(0x0800), u16(0), u16(0), u16(0x21), u32(crc), u32(data.length), u32(data.length), u16(nom.length), u16(0));
+    locaux.push(new Uint8Array(tete), nom, data);
+    var cent = [].concat(u32(0x02014b50), u16(20), u16(20), u16(0x0800), u16(0), u16(0), u16(0x21), u32(crc), u32(data.length), u32(data.length),
+      u16(nom.length), u16(0), u16(0), u16(0), u16(0), u32(0), u32(offset));
+    centraux.push(new Uint8Array(cent), nom);
+    offset += tete.length + nom.length + data.length;
+  });
+  var tailleCentral = centraux.reduce(function (s, x) { return s + x.length; }, 0);
+  var fin = new Uint8Array([].concat(u32(0x06054b50), u16(0), u16(0), u16(fichiers.length), u16(fichiers.length), u32(tailleCentral), u32(offset), u16(0)));
+  var morceaux = locaux.concat(centraux, [fin]);
+  var total = morceaux.reduce(function (s, x) { return s + x.length; }, 0), out = new Uint8Array(total), p = 0;
+  morceaux.forEach(function (x) { out.set(x, p); p += x.length; });
+  return out;
+}
+function ikxXml(s) {
+  return String(s == null ? '' : s).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;')
+    .replace(/[\u0000-\u0008\u000b\u000c\u000e-\u001f]/g, ' ');
+}
+function ikxCol(i) { var s = ''; i++; while (i > 0) { var m = (i - 1) % 26; s = String.fromCharCode(65 + m) + s; i = Math.floor((i - 1) / 26); } return s; }
+function ikxSerieDate(iso) {
+  var p = String(iso).split('-').map(Number);
+  return Math.round((Date.UTC(p[0], p[1] - 1, p[2]) - Date.UTC(1899, 11, 30)) / 86400000);
+}
+function ikxJour(iso) { var p = String(iso).split('-').map(Number); return IKX_JOURS[new Date(Date.UTC(p[0], p[1] - 1, p[2])).getUTCDay()]; }
+function ikxNum1(x) { return (Math.round(x * 10) / 10).toLocaleString('fr-FR', { minimumFractionDigits: 1, maximumFractionDigits: 1 }); }
+function ikxEur(cts) { return (cts / 100).toLocaleString('fr-FR', { minimumFractionDigits: 2, maximumFractionDigits: 2 }) + ' €'; }
+
+// Styles (index = position dans cellXfs, voir ikxStyles).
+var IKX_S = { TITRE: 1, LIB: 2, VAL: 3, SECTION: 4, ENTETE: 5, TXT: 6, CENTRE: 7, DATE: 8, KM: 9, EUR: 10, BANDEAU: 11,
+  ST_LIB: 12, ST_KM: 13, ST_EUR: 14, TOT_LIB: 15, TOT_KM: 16, TOT_EUR: 17, NB: 18, TOT_NB: 19, TIRET: 20, NOTE: 21, TXT_RETOUR: 22, ST_NB: 23 };
+function ikxStyles() {
+  var b = '<border><left style="thin"><color rgb="FF9AA8BC"/></left><right style="thin"><color rgb="FF9AA8BC"/></right><top style="thin"><color rgb="FF9AA8BC"/></top><bottom style="thin"><color rgb="FF9AA8BC"/></bottom><diagonal/></border>';
+  var bTot = '<border><left style="thin"><color rgb="FF9AA8BC"/></left><right style="thin"><color rgb="FF9AA8BC"/></right><top style="double"><color rgb="FF1F3864"/></top><bottom style="medium"><color rgb="FF1F3864"/></bottom><diagonal/></border>';
+  function xf(num, font, fill, border, h, wrap) {
+    return '<xf numFmtId="' + num + '" fontId="' + font + '" fillId="' + fill + '" borderId="' + border + '" xfId="0" applyNumberFormat="1" applyFont="1" applyFill="1" applyBorder="1" applyAlignment="1">' +
+      '<alignment horizontal="' + h + '" vertical="center"' + (wrap ? ' wrapText="1"' : '') + '/></xf>';
+  }
+  var xfs = [
+    '<xf numFmtId="0" fontId="0" fillId="0" borderId="0" xfId="0"/>',
+    xf(0, 2, 2, 0, 'left'),        // 1 titre
+    xf(0, 1, 3, 1, 'left', true),  // 2 libelle d'en-tete
+    xf(0, 0, 0, 1, 'left', true),  // 3 valeur d'en-tete
+    xf(0, 3, 0, 0, 'left'),        // 4 titre de section
+    xf(0, 4, 4, 1, 'center', true),// 5 en-tete de colonne
+    xf(0, 0, 0, 1, 'left'),        // 6 texte
+    xf(0, 0, 0, 1, 'center'),      // 7 texte centre
+    xf(165, 0, 0, 1, 'center'),    // 8 date
+    xf(164, 0, 0, 1, 'right'),     // 9 km
+    xf(166, 0, 0, 1, 'right'),     // 10 euros
+    xf(0, 5, 5, 1, 'left'),        // 11 bandeau de mois
+    xf(0, 1, 3, 1, 'right'),       // 12 sous-total : libelle
+    xf(164, 1, 3, 1, 'right'),     // 13 sous-total : km
+    xf(166, 1, 3, 1, 'right'),     // 14 sous-total : euros
+    xf(0, 1, 6, 2, 'right'),       // 15 total : libelle
+    xf(164, 1, 6, 2, 'right'),     // 16 total : km
+    xf(166, 1, 6, 2, 'right'),     // 17 total : euros
+    xf(3, 0, 0, 1, 'center'),      // 18 nombre
+    xf(3, 1, 6, 2, 'center'),      // 19 total : nombre
+    xf(0, 0, 0, 1, 'right'),       // 20 tiret (montant non calculable)
+    xf(0, 6, 0, 0, 'left', true),  // 21 mention
+    xf(0, 0, 0, 1, 'left', true),  // 22 texte a la ligne (motif)
+    xf(3, 1, 3, 1, 'center'),      // 23 sous-total : nombre
+  ];
+  return '<?xml version="1.0" encoding="UTF-8" standalone="yes"?><styleSheet xmlns="http://schemas.openxmlformats.org/spreadsheetml/2006/main">' +
+    '<numFmts count="3"><numFmt numFmtId="164" formatCode="#,##0.0"/><numFmt numFmtId="165" formatCode="dd/mm/yyyy"/><numFmt numFmtId="166" formatCode="#,##0.00\\ &quot;€&quot;"/></numFmts>' +
+    '<fonts count="7"><font><sz val="11"/><color rgb="FF1A1A1A"/><name val="Calibri"/></font>' +
+    '<font><b/><sz val="11"/><color rgb="FF1A1A1A"/><name val="Calibri"/></font>' +
+    '<font><b/><sz val="16"/><color rgb="FFFFFFFF"/><name val="Calibri"/></font>' +
+    '<font><b/><sz val="13"/><color rgb="FF1F3864"/><name val="Calibri"/></font>' +
+    '<font><b/><sz val="11"/><color rgb="FFFFFFFF"/><name val="Calibri"/></font>' +
+    '<font><b/><sz val="12"/><color rgb="FF1F3864"/><name val="Calibri"/></font>' +
+    '<font><i/><sz val="10"/><color rgb="FF505A69"/><name val="Calibri"/></font></fonts>' +
+    '<fills count="7"><fill><patternFill patternType="none"/></fill><fill><patternFill patternType="gray125"/></fill>' +
+    '<fill><patternFill patternType="solid"><fgColor rgb="FF1F3864"/><bgColor indexed="64"/></patternFill></fill>' +
+    '<fill><patternFill patternType="solid"><fgColor rgb="FFF2F4F7"/><bgColor indexed="64"/></patternFill></fill>' +
+    '<fill><patternFill patternType="solid"><fgColor rgb="FF2F5496"/><bgColor indexed="64"/></patternFill></fill>' +
+    '<fill><patternFill patternType="solid"><fgColor rgb="FFDCE6F2"/><bgColor indexed="64"/></patternFill></fill>' +
+    '<fill><patternFill patternType="solid"><fgColor rgb="FFC9D8EE"/><bgColor indexed="64"/></patternFill></fill></fills>' +
+    '<borders count="3"><border><left/><right/><top/><bottom/><diagonal/></border>' + b + bTot + '</borders>' +
+    '<cellStyleXfs count="1"><xf numFmtId="0" fontId="0" fillId="0" borderId="0"/></cellStyleXfs>' +
+    '<cellXfs count="' + xfs.length + '">' + xfs.join('') + '</cellXfs>' +
+    '<cellStyles count="1"><cellStyle name="Normal" xfId="0" builtinId="0"/></cellStyles></styleSheet>';
+}
+
+// Feuille : lignes = [{ cellules: [{v, f, s, t:'n'|'s'}|null...], ht }], fusions = ['A1:D1'], largeurs = [..]
+function ikxFeuille(f) {
+  var maxCol = 0, rows = [];
+  f.lignes.forEach(function (l, r) {
+    if (!l) return;
+    var cs = [];
+    l.cellules.forEach(function (c, i) {
+      if (c == null) return;
+      maxCol = Math.max(maxCol, i + 1);
+      var ref = ikxCol(i) + (r + 1), s = c.s ? ' s="' + c.s + '"' : '';
+      if (c.f) cs.push('<c r="' + ref + '"' + s + '><f>' + ikxXml(c.f) + '</f><v>' + c.v + '</v></c>');
+      else if (typeof c.v === 'number') cs.push('<c r="' + ref + '"' + s + '><v>' + c.v + '</v></c>');
+      else if (c.v === '' || c.v == null) cs.push('<c r="' + ref + '"' + s + '/>');
+      else cs.push('<c r="' + ref + '"' + s + ' t="inlineStr"><is><t xml:space="preserve">' + ikxXml(c.v) + '</t></is></c>');
+    });
+    rows.push('<row r="' + (r + 1) + '"' + (l.ht ? ' ht="' + l.ht + '" customHeight="1"' : '') + '>' + cs.join('') + '</row>');
+  });
+  var vue = f.figer ? '<sheetView workbookViewId="0"' + (f.active ? ' tabSelected="1"' : '') + '><pane ySplit="' + f.figer + '" topLeftCell="A' + (f.figer + 1) +
+    '" activePane="bottomLeft" state="frozen"/><selection pane="bottomLeft" activeCell="A' + (f.figer + 1) + '" sqref="A' + (f.figer + 1) + '"/></sheetView>'
+    : '<sheetView workbookViewId="0"' + (f.active ? ' tabSelected="1"' : '') + ' showGridLines="0"/>';
+  return '<?xml version="1.0" encoding="UTF-8" standalone="yes"?><worksheet xmlns="http://schemas.openxmlformats.org/spreadsheetml/2006/main" xmlns:r="http://schemas.openxmlformats.org/officeDocument/2006/relationships">' +
+    '<sheetPr><pageSetUpPr fitToPage="1"/></sheetPr>' +
+    '<dimension ref="A1:' + ikxCol(Math.max(maxCol, 1) - 1) + Math.max(f.lignes.length, 1) + '"/>' +
+    '<sheetViews>' + vue + '</sheetViews><sheetFormatPr defaultRowHeight="16"/>' +
+    '<cols>' + f.largeurs.map(function (w, i) { return '<col min="' + (i + 1) + '" max="' + (i + 1) + '" width="' + w + '" customWidth="1"/>'; }).join('') + '</cols>' +
+    '<sheetData>' + rows.join('') + '</sheetData>' +
+    (f.fusions.length ? '<mergeCells count="' + f.fusions.length + '">' + f.fusions.map(function (m) { return '<mergeCell ref="' + m + '"/>'; }).join('') + '</mergeCells>' : '') +
+    '<pageMargins left="0.5" right="0.5" top="0.6" bottom="0.6" header="0.3" footer="0.3"/>' +
+    '<pageSetup paperSize="9" orientation="' + (f.paysage ? 'landscape' : 'portrait') + '" fitToWidth="1" fitToHeight="0"/>' +
+    '</worksheet>';
+}
+
+// Largeur de colonne ajustee au contenu le plus long (jamais de nom de commune tronque).
+function ikxLargeur(textes, min, max) {
+  var l = textes.reduce(function (m, t) { return Math.max(m, String(t == null ? '' : t).length); }, 0);
+  return Math.min(Math.max(min, Math.ceil(l * 1.1) + 3), max || 200);
+}
+function ikxHauteur(texte, largeurCar) { return 15 * Math.max(1, Math.ceil(String(texte).length / Math.max(10, largeurCar * 1.15))) + 5; }
+
+function ikClasseurXlsx(doc) {
+  var annee = doc.annee;
+  var trajets = (doc.trajets || []).slice().sort(function (a, b) { return String(a.date).localeCompare(String(b.date)); });
+  var parMois = [];
+  for (var m = 0; m < 12; m++) parMois.push({ trajets: [], km10: 0, cts: 0, ctsConnus: true });
+  trajets.forEach(function (t) {
+    var pm = parMois[Number(String(t.date).slice(5, 7)) - 1];
+    pm.trajets.push(t); pm.km10 += Math.round((Number(t.kmComptes) || 0) * 10);
+    if (t.centimes == null) pm.ctsConnus = false; else pm.cts += t.centimes;
+  });
+  var montantsConnus = parMois.every(function (p) { return p.ctsConnus; });
+
+  // ---------- Feuille 2 : détail ----------
+  var NOM_DETAIL = 'Détail des trajets';
+  var ent = ['Date', 'Jour', 'Départ', 'Arrivée', 'Aller-retour', 'Motif', 'Km aller', 'Km comptés', 'Montant'];
+  var L = [], fusions = [], refSousTotaux = [];
+  L.push({ cellules: [{ v: 'Détail des trajets — ' + doc.conducteur + ' — ' + annee, s: IKX_S.TITRE }], ht: 28 });
+  fusions.push('A1:I1');
+  L.push({ cellules: ent.map(function (h) { return { v: h, s: IKX_S.ENTETE }; }), ht: 22 });
+  parMois.forEach(function (pm, i) {
+    if (!pm.trajets.length) return;
+    L.push({ cellules: [{ v: IKX_MOIS[i] + ' ' + annee, s: IKX_S.BANDEAU }, { v: '', s: IKX_S.BANDEAU }, { v: '', s: IKX_S.BANDEAU }, { v: '', s: IKX_S.BANDEAU },
+      { v: '', s: IKX_S.BANDEAU }, { v: '', s: IKX_S.BANDEAU }, { v: '', s: IKX_S.BANDEAU }, { v: '', s: IKX_S.BANDEAU }, { v: '', s: IKX_S.BANDEAU }], ht: 21 });
+    fusions.push('A' + L.length + ':I' + L.length);
+    var premiere = L.length + 1;
+    pm.trajets.forEach(function (t) {
+      L.push({ cellules: [{ v: ikxSerieDate(t.date), s: IKX_S.DATE }, { v: ikxJour(t.date), s: IKX_S.CENTRE }, { v: t.depart || '', s: IKX_S.TXT },
+        { v: t.arrivee || '', s: IKX_S.TXT }, { v: t.allerRetour ? 'oui' : 'non', s: IKX_S.CENTRE }, { v: t.motif || '', s: IKX_S.TXT_RETOUR },
+        { v: Math.round((Number(t.kmAller) || 0) * 10) / 10, s: IKX_S.KM }, { v: Math.round((Number(t.kmComptes) || 0) * 10) / 10, s: IKX_S.KM },
+        t.centimes == null ? { v: '—', s: IKX_S.TIRET } : { v: t.centimes / 100, s: IKX_S.EUR }] });
+    });
+    var derniere = L.length, n = pm.trajets.length;
+    L.push({ cellules: [{ v: 'Sous-total ' + IKX_MOIS[i].toLowerCase() + ' ' + annee + ' — ' + n + (n > 1 ? ' trajets' : ' trajet'), s: IKX_S.ST_LIB },
+      { v: '', s: IKX_S.ST_LIB }, { v: '', s: IKX_S.ST_LIB }, { v: '', s: IKX_S.ST_LIB }, { v: '', s: IKX_S.ST_LIB }, { v: '', s: IKX_S.ST_LIB }, { v: '', s: IKX_S.ST_LIB },
+      { f: 'SUM(H' + premiere + ':H' + derniere + ')', v: pm.km10 / 10, s: IKX_S.ST_KM },
+      pm.ctsConnus ? { f: 'SUM(I' + premiere + ':I' + derniere + ')', v: pm.cts / 100, s: IKX_S.ST_EUR } : { v: '—', s: IKX_S.ST_LIB }], ht: 20 });
+    fusions.push('A' + L.length + ':G' + L.length);
+    refSousTotaux[i] = L.length;
+  });
+  var km10Total = parMois.reduce(function (s, p) { return s + p.km10; }, 0), ctsTotal = parMois.reduce(function (s, p) { return s + p.cts; }, 0);
+  var refs = refSousTotaux.filter(Boolean);
+  L.push({ cellules: [{ v: 'Total ' + annee + ' — ' + trajets.length + (trajets.length > 1 ? ' trajets' : ' trajet'), s: IKX_S.TOT_LIB },
+    { v: '', s: IKX_S.TOT_LIB }, { v: '', s: IKX_S.TOT_LIB }, { v: '', s: IKX_S.TOT_LIB }, { v: '', s: IKX_S.TOT_LIB }, { v: '', s: IKX_S.TOT_LIB }, { v: '', s: IKX_S.TOT_LIB },
+    refs.length ? { f: refs.map(function (r) { return 'H' + r; }).join('+'), v: km10Total / 10, s: IKX_S.TOT_KM } : { v: 0, s: IKX_S.TOT_KM },
+    montantsConnus ? (refs.length ? { f: refs.map(function (r) { return 'I' + r; }).join('+'), v: ctsTotal / 100, s: IKX_S.TOT_EUR } : { v: 0, s: IKX_S.TOT_EUR }) : { v: '—', s: IKX_S.TOT_LIB }], ht: 22 });
+  fusions.push('A' + L.length + ':G' + L.length);
+  var col = function (k) { return trajets.map(k); };
+  var largeursDetail = [
+    12, ikxLargeur(col(function (t) { return ikxJour(t.date); }).concat(['Jour']), 9),
+    ikxLargeur(col(function (t) { return t.depart; }).concat(['Départ']), 12), ikxLargeur(col(function (t) { return t.arrivee; }).concat(['Arrivée']), 12),
+    13, ikxLargeur(col(function (t) { return t.motif; }).concat(['Motif']), 14, 48),
+    ikxLargeur(col(function (t) { return ikxNum1(Number(t.kmAller) || 0); }).concat(['Km aller']), 10),
+    ikxLargeur(col(function (t) { return ikxNum1(Number(t.kmComptes) || 0); }).concat([ikxNum1(km10Total / 10), 'Km comptés']), 11),
+    ikxLargeur(col(function (t) { return t.centimes == null ? '—' : ikxEur(t.centimes); }).concat([ikxEur(ctsTotal)]), 12)];
+  // Les libelles de sous-total sont fusionnes sur A:G : la fusion doit pouvoir les contenir.
+  var largeurFusion = largeursDetail.slice(0, 7).reduce(function (s, w) { return s + w; }, 0);
+  var plusLongLibelle = 'Sous-total septembre ' + annee + ' — 999 trajets';
+  if (largeurFusion < plusLongLibelle.length + 2) largeursDetail[5] += plusLongLibelle.length + 2 - largeurFusion;
+
+  // ---------- Feuille 1 : récapitulatif ----------
+  var R = [], fusR = [];
+  R.push({ cellules: [{ v: doc.titre, s: IKX_S.TITRE }, { v: '', s: IKX_S.TITRE }, { v: '', s: IKX_S.TITRE }, { v: '', s: IKX_S.TITRE }], ht: 30 });
+  fusR.push('A1:D1');
+  R.push(null);
+  var largeursRecap = [22, 14, 18, 20];
+  var largeurValeur = largeursRecap[1] + largeursRecap[2] + largeursRecap[3];
+  (doc.entete || []).forEach(function (kv) {
+    R.push({ cellules: [{ v: kv[0], s: IKX_S.LIB }, { v: kv[1], s: IKX_S.VAL }, { v: '', s: IKX_S.VAL }, { v: '', s: IKX_S.VAL }], ht: ikxHauteur(kv[1], largeurValeur) });
+    fusR.push('B' + R.length + ':D' + R.length);
+  });
+  (doc.mentions || []).forEach(function (txt) {
+    R.push({ cellules: [{ v: txt, s: IKX_S.NOTE }], ht: ikxHauteur(txt, largeurValeur + largeursRecap[0]) });
+    fusR.push('A' + R.length + ':D' + R.length);
+  });
+  R.push(null);
+  R.push({ cellules: [{ v: 'Récapitulatif mensuel', s: IKX_S.SECTION }], ht: 22 });
+  R.push({ cellules: ['Mois', 'Trajets', 'Kilomètres', 'Montant'].map(function (h) { return { v: h, s: IKX_S.ENTETE }; }), ht: 22 });
+  var premiereR = R.length + 1;
+  parMois.forEach(function (pm, i) {
+    var st = refSousTotaux[i], feuille = "'" + NOM_DETAIL + "'!";
+    R.push({ cellules: [{ v: IKX_MOIS[i] + ' ' + annee, s: IKX_S.TXT }, { v: pm.trajets.length, s: IKX_S.NB },
+      st ? { f: feuille + 'H' + st, v: pm.km10 / 10, s: IKX_S.KM } : { v: 0, s: IKX_S.KM },
+      !pm.ctsConnus ? { v: '—', s: IKX_S.TIRET } : (st ? { f: feuille + 'I' + st, v: pm.cts / 100, s: IKX_S.EUR } : { v: 0, s: IKX_S.EUR })] });
+  });
+  var derniereR = R.length;
+  R.push({ cellules: [{ v: 'Total ' + annee, s: IKX_S.TOT_LIB }, { f: 'SUM(B' + premiereR + ':B' + derniereR + ')', v: trajets.length, s: IKX_S.TOT_NB },
+    { f: 'SUM(C' + premiereR + ':C' + derniereR + ')', v: km10Total / 10, s: IKX_S.TOT_KM },
+    montantsConnus ? { f: 'SUM(D' + premiereR + ':D' + derniereR + ')', v: ctsTotal / 100, s: IKX_S.TOT_EUR } : { v: '—', s: IKX_S.TOT_LIB }], ht: 22 });
+
+  var feuilles = [
+    { nom: 'Récapitulatif', xml: ikxFeuille({ lignes: R, fusions: fusR, largeurs: largeursRecap, active: true }) },
+    { nom: NOM_DETAIL, xml: ikxFeuille({ lignes: L, fusions: fusions, largeurs: largeursDetail, figer: 2, paysage: true }) },
+  ];
+  var ct = '<?xml version="1.0" encoding="UTF-8" standalone="yes"?><Types xmlns="http://schemas.openxmlformats.org/package/2006/content-types">' +
+    '<Default Extension="rels" ContentType="application/vnd.openxmlformats-package.relationships+xml"/><Default Extension="xml" ContentType="application/xml"/>' +
+    '<Override PartName="/xl/workbook.xml" ContentType="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet.main+xml"/>' +
+    feuilles.map(function (f, i) { return '<Override PartName="/xl/worksheets/sheet' + (i + 1) + '.xml" ContentType="application/vnd.openxmlformats-officedocument.spreadsheetml.worksheet+xml"/>'; }).join('') +
+    '<Override PartName="/xl/styles.xml" ContentType="application/vnd.openxmlformats-officedocument.spreadsheetml.styles+xml"/>' +
+    '<Override PartName="/docProps/core.xml" ContentType="application/vnd.openxmlformats-package.core-properties+xml"/></Types>';
+  var wb = '<?xml version="1.0" encoding="UTF-8" standalone="yes"?><workbook xmlns="http://schemas.openxmlformats.org/spreadsheetml/2006/main" xmlns:r="http://schemas.openxmlformats.org/officeDocument/2006/relationships">' +
+    '<bookViews><workbookView activeTab="0"/></bookViews><sheets>' +
+    feuilles.map(function (f, i) { return '<sheet name="' + ikxXml(f.nom) + '" sheetId="' + (i + 1) + '" r:id="rId' + (i + 1) + '"/>'; }).join('') + '</sheets>' +
+    '<definedNames><definedName name="_xlnm.Print_Titles" localSheetId="1">\'' + ikxXml(NOM_DETAIL) + '\'!$1:$2</definedName></definedNames>' +
+    '<calcPr calcId="191029" fullCalcOnLoad="1"/></workbook>';
+  var rels = '<?xml version="1.0" encoding="UTF-8" standalone="yes"?><Relationships xmlns="http://schemas.openxmlformats.org/package/2006/relationships">' +
+    feuilles.map(function (f, i) { return '<Relationship Id="rId' + (i + 1) + '" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/worksheet" Target="worksheets/sheet' + (i + 1) + '.xml"/>'; }).join('') +
+    '<Relationship Id="rId' + (feuilles.length + 1) + '" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/styles" Target="styles.xml"/></Relationships>';
+  var core = '<?xml version="1.0" encoding="UTF-8" standalone="yes"?><cp:coreProperties xmlns:cp="http://schemas.openxmlformats.org/package/2006/metadata/core-properties" xmlns:dc="http://purl.org/dc/elements/1.1/">' +
+    '<dc:title>' + ikxXml(doc.titre) + '</dc:title><dc:creator>Jarvis</dc:creator></cp:coreProperties>';
+  return ikxZip([
+    { nom: '[Content_Types].xml', contenu: ct },
+    { nom: '_rels/.rels', contenu: '<?xml version="1.0" encoding="UTF-8" standalone="yes"?><Relationships xmlns="http://schemas.openxmlformats.org/package/2006/relationships"><Relationship Id="rId1" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/officeDocument" Target="xl/workbook.xml"/><Relationship Id="rId2" Type="http://schemas.openxmlformats.org/package/2006/relationships/metadata/core-properties" Target="docProps/core.xml"/></Relationships>' },
+    { nom: 'docProps/core.xml', contenu: core },
+    { nom: 'xl/workbook.xml', contenu: wb },
+    { nom: 'xl/_rels/workbook.xml.rels', contenu: rels },
+    { nom: 'xl/styles.xml', contenu: ikxStyles() },
+    { nom: 'xl/worksheets/sheet1.xml', contenu: feuilles[0].xml },
+    { nom: 'xl/worksheets/sheet2.xml', contenu: feuilles[1].xml },
+  ]);
+}
+
+// Repartit un montant (centimes entiers) sur des poids (km) au prorata, au centime pres : la somme
+// des parts est EXACTEMENT le montant (plus forts restes). Utilise par MCS pour repartir le montant
+// de chaque mois sur ses trajets.
+function ikxRepartir(centimes, poids) {
+  var tot = poids.reduce(function (s, p) { return s + p; }, 0);
+  if (!tot) return poids.map(function (_, i) { return i === 0 ? centimes : 0; });
+  var parts = poids.map(function (p) { return Math.floor(centimes * p / tot); });
+  var reste = centimes - parts.reduce(function (s, x) { return s + x; }, 0);
+  poids.map(function (p, i) { return { i: i, r: centimes * p / tot - parts[i] }; })
+    .sort(function (a, b) { return b.r - a.r || a.i - b.i; }).slice(0, reste).forEach(function (x) { parts[x.i]++; });
+  return parts;
+}
+// <<< ik-export-xlsx.js
   function iklExporter(){
     if (!iklCharge){ toast('Chargement en cours, réessaie dans un instant.'); return; }
     var calc = iklCalculAnnee(iklConducteur, iklAnnee);
     if (!calc.trajets.length){ toast('Aucun trajet à exporter pour ' + iklNomConducteur(iklConducteur) + ' en ' + iklAnnee + '.'); return; }
     var nom = iklNomConducteur(iklConducteur);
-    var lignesXml = [], r = 0;
-    // styles : 0 normal, 1 gras, 2 km (0,0), 3 euros, 4 total km gras, 5 total euros gras, 6 titre, 7 en-tête tableau
-    function ligne(cells){
-      r++;
-      var x = '<row r="' + r + '">';
-      cells.forEach(function(c, i){
-        if (c == null) return;
-        var ref = iklCol(i) + r, s = c.s ? ' s="' + c.s + '"' : '';
-        if (c.f) x += '<c r="' + ref + '"' + s + '><f>' + iklXml(c.f) + '</f><v>' + c.v + '</v></c>';
-        else if (typeof c.v === 'number') x += '<c r="' + ref + '"' + s + '><v>' + c.v + '</v></c>';
-        else x += '<c r="' + ref + '"' + s + ' t="inlineStr"><is><t xml:space="preserve">' + iklXml(c.v) + '</t></is></c>';
-      });
-      lignesXml.push(x + '</row>');
-    }
     var bar = calc.bareme, bA = calc.baremeAnnee;
-    ligne([{ v: 'Frais kilométriques ' + calc.annee + ' — ' + nom, s: 6 }]);
-    ligne([{ v: 'Véhicule', s: 1 }, { v: calc.vehicule ? iklVehiculeLibelle(calc.vehicule) : 'NON RENSEIGNÉ — montants non calculés' }]);
-    ligne([{ v: 'Barème appliqué', s: 1 }, { v: bA ? ('Barème fiscal kilométrique des trajets ' + calc.annee + ' — ' + bA.source) : 'Aucun barème officiel enregistré pour ' + calc.annee }]);
-    ligne([{ v: 'Formule', s: 1 }, { v: bar ? (bar.formule + ' avec d = ' + iklNum(calc.kmTotal, 1) + ' km (' + bar.tranche + ') = ' + iklEur(bar.montant)) : '—' }]);
-    ligne([{ v: 'Répartition', s: 1 }, { v: bar ? ('Montant annuel réparti sur chaque trajet au prorata des km : taux effectif ' + iklNum(calc.taux || 0, 4) + ' €/km') : '—' }]);
-    ligne([{ v: 'Édité le', s: 1 }, { v: iklDateFr(iklAujourdhui()) + ' depuis Jarvis (M22Vision)' }]);
-    ligne([]);
-    var entetes = ['Date', 'Jour', 'Départ', 'Arrivée', 'Aller-retour', 'Motif', 'Km aller', 'Km comptés', 'Barème appliqué', 'Montant (€)'];
-    ligne(entetes.map(function(h){ return { v: h, s: 7 }; }));
-    var premiere = r + 1;
-    var libBareme = bar ? (calc.vehicule.genre === 'cyclo' ? 'Cyclo' : (IKL_GENRES[calc.vehicule.genre] || '').split(' ')[0] + ' ' + calc.vehicule.cv + ' CV') + (calc.vehicule.electrique === 'oui' ? ' élec.' : '') + ' · ' + calc.annee + (bar.provisoire ? ' (provisoire)' : '') + ' · ' + iklNum(calc.taux || 0, 4) + ' €/km' : '—';
-    calc.trajets.forEach(function(t){
-      ligne([{ v: iklDateFr(t.date) }, { v: iklJourSemaine(t.date) }, { v: t.ville_depart || '' }, { v: t.ville_arrivee || '' },
-             { v: Number(t.nb_trajet) === 2 ? 'oui' : 'non' }, { v: t.motif || '' },
-             { v: Number(t.km_aller) || 0, s: 2 }, { v: Number(t.km_total) || 0, s: 2 }, { v: libBareme },
-             calc.montants[t.id] != null ? { v: calc.montants[t.id], s: 3 } : { v: '—' }]);
+    var u8 = ikClasseurXlsx({
+      titre: 'Frais kilométriques ' + calc.annee + ' — ' + nom,
+      conducteur: nom, annee: calc.annee,
+      entete: [
+        ['Conducteur', nom],
+        ['Année', String(calc.annee)],
+        ['Véhicule', calc.vehicule ? iklVehiculeLibelle(calc.vehicule) : 'NON RENSEIGNÉ — montants non calculés'],
+        ['Barème appliqué', bA ? ('Barème fiscal kilométrique des trajets ' + calc.annee + ' — ' + bA.source) : 'Aucun barème officiel enregistré pour ' + calc.annee],
+        ['Formule', bar ? (bar.formule + ' avec d = ' + iklNum(calc.kmTotal, 1) + ' km (' + bar.tranche + ') = ' + iklEur(bar.montant)) : '—'],
+        ['Répartition', bar ? ('Montant annuel réparti sur chaque trajet au prorata des km : taux effectif ' + iklNum(calc.taux || 0, 4) + ' €/km') : '—']
+      ],
+      mentions: bar && bar.provisoire ? ['Barème ' + calc.annee + ' provisoire : montants à confirmer à la publication du barème officiel.'] : [],
+      trajets: calc.trajets.map(function(t){
+        return { date: t.date, depart: t.ville_depart || '', arrivee: t.ville_arrivee || '', allerRetour: Number(t.nb_trajet) === 2,
+                 motif: t.motif || '', kmAller: Number(t.km_aller) || 0, kmComptes: Number(t.km_total) || 0,
+                 centimes: calc.centimes[t.id] != null ? calc.centimes[t.id] : null };
+      })
     });
-    var derniere = r;
-    var totCts = 0; calc.trajets.forEach(function(t){ if (calc.centimes[t.id] != null) totCts += calc.centimes[t.id]; });
-    var totMont = totCts / 100;
-    ligne([{ v: 'TOTAL ' + calc.annee, s: 1 }, { v: calc.trajets.length + (calc.trajets.length > 1 ? ' trajets' : ' trajet') }, null, null, null, null, null,
-           { f: 'SUM(H' + premiere + ':H' + derniere + ')', v: calc.kmTotal, s: 4 }, null,
-           bar ? { f: 'SUM(J' + premiere + ':J' + derniere + ')', v: totMont, s: 5 } : { v: '—', s: 1 }]);
-    var feuille = '<?xml version="1.0" encoding="UTF-8" standalone="yes"?>' +
-      '<worksheet xmlns="http://schemas.openxmlformats.org/spreadsheetml/2006/main">' +
-      '<cols><col min="1" max="1" width="14" customWidth="1"/><col min="2" max="2" width="11" customWidth="1"/><col min="3" max="4" width="20" customWidth="1"/><col min="5" max="5" width="12" customWidth="1"/><col min="6" max="6" width="28" customWidth="1"/><col min="7" max="8" width="11" customWidth="1"/><col min="9" max="9" width="30" customWidth="1"/><col min="10" max="10" width="13" customWidth="1"/></cols>' +
-      '<sheetData>' + lignesXml.join('') + '</sheetData></worksheet>';
-    var styles = '<?xml version="1.0" encoding="UTF-8" standalone="yes"?>' +
-      '<styleSheet xmlns="http://schemas.openxmlformats.org/spreadsheetml/2006/main">' +
-      '<numFmts count="2"><numFmt numFmtId="164" formatCode="#,##0.0"/><numFmt numFmtId="165" formatCode="#,##0.00&quot; €&quot;"/></numFmts>' +
-      '<fonts count="3"><font><sz val="11"/><name val="Calibri"/></font><font><b/><sz val="11"/><name val="Calibri"/></font><font><b/><sz val="14"/><name val="Calibri"/></font></fonts>' +
-      '<fills count="3"><fill><patternFill patternType="none"/></fill><fill><patternFill patternType="gray125"/></fill><fill><patternFill patternType="solid"><fgColor rgb="FFDDE5F0"/><bgColor indexed="64"/></patternFill></fill></fills>' +
-      '<borders count="1"><border><left/><right/><top/><bottom/><diagonal/></border></borders>' +
-      '<cellStyleXfs count="1"><xf numFmtId="0" fontId="0" fillId="0" borderId="0"/></cellStyleXfs>' +
-      '<cellXfs count="8"><xf numFmtId="0" fontId="0" fillId="0" borderId="0" xfId="0"/>' +
-      '<xf numFmtId="0" fontId="1" fillId="0" borderId="0" xfId="0" applyFont="1"/>' +
-      '<xf numFmtId="164" fontId="0" fillId="0" borderId="0" xfId="0" applyNumberFormat="1"/>' +
-      '<xf numFmtId="165" fontId="0" fillId="0" borderId="0" xfId="0" applyNumberFormat="1"/>' +
-      '<xf numFmtId="164" fontId="1" fillId="0" borderId="0" xfId="0" applyNumberFormat="1" applyFont="1"/>' +
-      '<xf numFmtId="165" fontId="1" fillId="0" borderId="0" xfId="0" applyNumberFormat="1" applyFont="1"/>' +
-      '<xf numFmtId="0" fontId="2" fillId="0" borderId="0" xfId="0" applyFont="1"/>' +
-      '<xf numFmtId="0" fontId="1" fillId="2" borderId="0" xfId="0" applyFont="1" applyFill="1"/></cellXfs>' +
-      '<cellStyles count="1"><cellStyle name="Normal" xfId="0" builtinId="0"/></cellStyles></styleSheet>';
-    var nomFeuille = (nom + ' ' + calc.annee).replace(/[\\\/\?\*\[\]:]/g, '').slice(0, 31);
-    var blob = iklZip([
-      { nom: '[Content_Types].xml', contenu: '<?xml version="1.0" encoding="UTF-8" standalone="yes"?><Types xmlns="http://schemas.openxmlformats.org/package/2006/content-types"><Default Extension="rels" ContentType="application/vnd.openxmlformats-package.relationships+xml"/><Default Extension="xml" ContentType="application/xml"/><Override PartName="/xl/workbook.xml" ContentType="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet.main+xml"/><Override PartName="/xl/worksheets/sheet1.xml" ContentType="application/vnd.openxmlformats-officedocument.spreadsheetml.worksheet+xml"/><Override PartName="/xl/styles.xml" ContentType="application/vnd.openxmlformats-officedocument.spreadsheetml.styles+xml"/></Types>' },
-      { nom: '_rels/.rels', contenu: '<?xml version="1.0" encoding="UTF-8" standalone="yes"?><Relationships xmlns="http://schemas.openxmlformats.org/package/2006/relationships"><Relationship Id="rId1" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/officeDocument" Target="xl/workbook.xml"/></Relationships>' },
-      { nom: 'xl/workbook.xml', contenu: '<?xml version="1.0" encoding="UTF-8" standalone="yes"?><workbook xmlns="http://schemas.openxmlformats.org/spreadsheetml/2006/main" xmlns:r="http://schemas.openxmlformats.org/officeDocument/2006/relationships"><sheets><sheet name="' + iklXml(nomFeuille) + '" sheetId="1" r:id="rId1"/></sheets></workbook>' },
-      { nom: 'xl/_rels/workbook.xml.rels', contenu: '<?xml version="1.0" encoding="UTF-8" standalone="yes"?><Relationships xmlns="http://schemas.openxmlformats.org/package/2006/relationships"><Relationship Id="rId1" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/worksheet" Target="worksheets/sheet1.xml"/><Relationship Id="rId2" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/styles" Target="styles.xml"/></Relationships>' },
-      { nom: 'xl/worksheets/sheet1.xml', contenu: feuille },
-      { nom: 'xl/styles.xml', contenu: styles }
-    ]);
+    var blob = new Blob([u8], { type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' });
     var fichier = 'Frais-kilometriques-' + nom.normalize('NFD').replace(/[\u0300-\u036f]/g, '').replace(/\s+/g, '-') + '-' + calc.annee + '.xlsx';
     var url = URL.createObjectURL(blob);
     var a = document.createElement('a'); a.href = url; a.download = fichier;
@@ -20838,6 +21137,20 @@
       nbJarvisCourant = cm.nbFacture;
     }
 
+    // 07/10/2026 : quand le serveur fournit l'exercice (MCS), c'est LUI qui fait foi -- exercice
+    // contenant le dernier mois du relevé comptable (règle unique clients/mcs/scripts/rentabilite/
+    // exercice-mcs.js), jamais la date du jour. Le calcul ci-dessous (date du jour) ne sert plus
+    // qu'aux jeux de données sans exerciceCA (démo Demonchy du labo, inchangée).
+    var exS = d.exerciceCA;
+    if (exS && exS.exercice && exS.total && typeof exS.total.ht === 'number'){
+      var dS = function(iso){ var p = String(iso).split('-'); return p[2] + '/' + p[1] + '/' + p[0]; };
+      var cpS = exS.comptable || {};
+      var capS = exS.moisCouverts + ' mois sur ' + (exS.moisTotal || 12) + ' couverts par le relevé comptable (' +
+        moisLabel(String(cpS.periodeDebut).slice(0, 7)) + ' → ' + moisLabel(String(cpS.periodeFin).slice(0, 7)) + ')' +
+        (exS.moisCouverts < (exS.moisTotal || 12) ? ' — montant partiel, pas un montant annuel.' : '.');
+      if (exS.precedent) capS += ' Exercice précédent clos : ' + fmtEuros(exS.precedent.ht) + ' HT sur 12 mois.';
+      grid.appendChild(tile('CA de l\'exercice (' + dS(exS.exercice.debut) + ' → ' + dS(exS.exercice.fin) + ')', fmtEuros(exS.total.ht) + ' HT', capS));
+    } else {
     var totalExercice = (rc ? (rc.caNet || 0) : 0) + (courant ? ((courant.ca || 0) + (caJarvisCourant || 0)) : 0);
     var labelCa = 'CA de l\'exercice (' + rentaDateCourteFr(exDebut) + ' → ' + rentaDateCourteFr(exFin) + ')';
     var captionParts = [];
@@ -20853,6 +21166,7 @@
       captionParts.push(moisLabel(cleCourante) + ' : pas encore de chiffre exporté.');
     }
     grid.appendChild(tile(labelCa, fmtEuros(Math.round(totalExercice * 100) / 100), captionParts.join(' ')));
+    }
 
     // "Total actuellement impayé" est un instantané (vrai au moment ou l'export MEG a ete pris),
     // jamais un cumul de periode -- ne doit plus jamais heriter silencieusement de la periode de
@@ -20864,7 +21178,8 @@
     wrap.appendChild(grid);
 
     var note = document.createElement('p'); note.id = 'ro-note';
-    note.textContent = 'Le CA de l\'exercice combine le relevé comptable réel (mois déjà couverts par un relevé) et le mois en cours en provisoire (contrats Jarvis facturés + ventes MEG directes), avec les mêmes composantes que la ligne du mois en cours du tableau ci-dessus.';
+    if (exS && exS.exercice && exS.total) note.textContent = 'Le CA de l\'exercice est celui du relevé comptable, sur les mois qu\'il couvre ; le mois en cours ne s\'y ajoute (contrats Jarvis + ventes MEG du mois) que s\'il appartient à cet exercice et n\'est pas encore dans le relevé.';
+    else note.textContent = 'Le CA de l\'exercice combine le relevé comptable réel (mois déjà couverts par un relevé) et le mois en cours en provisoire (contrats Jarvis facturés + ventes MEG directes), avec les mêmes composantes que la ligne du mois en cours du tableau ci-dessus.';
     wrap.appendChild(note);
     return wrap;
   }
@@ -20950,7 +21265,7 @@
       if (rc.exercicePrecedent.cloture){
         var clo = rc.exercicePrecedent.cloture;
         var closDiv = document.createElement('div'); closDiv.id = 'renta-exercice-clos';
-        closDiv.innerHTML = 'Cet exercice (01/10/2024 → 30/09/2025) s’est clôturé avec un CA de <b>' + fmtEuros(clo.ca) + '</b> et un résultat de <b>' + fmtEuros(clo.resultat) + '</b> (contre ' + fmtEuros(clo.resultatExerciceAvant) + ' l’exercice d’avant) — attestation signée de l’expert-comptable, donnée ici comme référence de comparaison.';
+        closDiv.innerHTML = 'Cet exercice' + (rc.exercicePrecedent.periode ? ' (' + escHtml(rc.exercicePrecedent.periode) + ')' : '') + ' s’est clôturé avec un CA de <b>' + fmtEuros(clo.ca) + '</b> et un résultat de <b>' + fmtEuros(clo.resultat) + '</b> (contre ' + fmtEuros(clo.resultatExerciceAvant) + ' l’exercice d’avant) — attestation signée de l’expert-comptable, donnée ici comme référence de comparaison.';
         wrap.appendChild(closDiv);
       }
     }
@@ -20987,7 +21302,9 @@
     var badge = rentaBadge(prov); if (badge) lbl.appendChild(badge);
     l.appendChild(lbl);
     var val = document.createElement('div'); val.className = 'rex-source-val';
-    val.textContent = fmtEuros(ht) + ' HT · ' + fmtEuros(ttc) + ' TTC';
+    // 07/10/2026 : TTC inconnu (relevé d'une nouvelle période, journal des ventes pas encore reçu)
+    // -> on l'écrit, jamais un faux « 0,00 € TTC ».
+    val.textContent = fmtEuros(ht) + ' HT · ' + (typeof ttc === 'number' ? fmtEuros(ttc) + ' TTC' : 'TTC pas encore connu');
     l.appendChild(val);
     if (note){
       var n = document.createElement('div'); n.className = 'rex-source-note'; n.textContent = note;
@@ -21003,7 +21320,11 @@
     wrap.appendChild(title);
 
     var periode = document.createElement('div'); periode.id = 'rex-periode';
-    periode.textContent = 'Du ' + fmtDevisDateSimple(ex.exercice.debut) + ' au ' + fmtDevisDateSimple(ex.exercice.fin) +
+    // 07/10/2026 : exercice fourni par le serveur (règle unique exercice-mcs.js : exercice du dernier
+    // mois importé, jamais la date du jour) + nombre de mois réellement couverts, pour qu'un montant
+    // partiel ne soit jamais lu comme un montant annuel.
+    periode.textContent = 'Exercice du ' + fmtDevisDateSimple(ex.exercice.debut) + ' au ' + fmtDevisDateSimple(ex.exercice.fin) +
+      (typeof ex.moisCouverts === 'number' ? ' — ' + ex.moisCouverts + ' mois sur ' + (ex.moisTotal || 12) : '') +
       ' — arrêté au ' + fmtDevisDateSimple(ex.arreteAu);
     wrap.appendChild(periode);
 
@@ -21012,8 +21333,17 @@
       var totalHT = document.createElement('span'); totalHT.className = 'rex-total-ht'; totalHT.textContent = fmtEuros(ex.total.ht) + ' HT';
       var sep = document.createElement('span'); sep.className = 'rex-total-sep'; sep.textContent = ' / ';
       var totalTTC = document.createElement('span'); totalTTC.className = 'rex-total-ttc'; totalTTC.textContent = fmtEuros(ex.total.ttc) + ' TTC';
-      totalWrap.appendChild(totalHT); totalWrap.appendChild(sep); totalWrap.appendChild(totalTTC);
+      totalWrap.appendChild(totalHT);
+      if (typeof ex.total.ttc === 'number'){ totalWrap.appendChild(sep); totalWrap.appendChild(totalTTC); }
       wrap.appendChild(totalWrap);
+      // 07/10/2026 : ligne de référence, SEULEMENT si l'exercice précédent est complet (12 mois) --
+      // absorbe le choc du jour de bascule (le CA repart d'un seul mois).
+      if (ex.precedent && typeof ex.precedent.ht === 'number'){
+        var ref = document.createElement('div'); ref.id = 'rex-precedent'; ref.className = 'rex-reste-ligne';
+        ref.textContent = 'Exercice précédent clos : ' + fmtEuros(ex.precedent.ht) + ' HT sur 12 mois (' +
+          fmtDevisDateSimple(ex.precedent.debut) + ' → ' + fmtDevisDateSimple(ex.precedent.fin) + ').';
+        wrap.appendChild(ref);
+      }
     } else {
       var indispo = document.createElement('div'); indispo.id = 'rex-total'; indispo.className = 'rex-indisponible';
       indispo.textContent = 'Total de l\'exercice indisponible pour le moment.';
@@ -21026,18 +21356,18 @@
         'Comptable (' + fmtDevisDateSimple(ex.comptable.periodeDebut) + ' → ' + fmtDevisDateSimple(ex.comptable.periodeFin) + ')',
         'comptable', ex.comptable.ht, ex.comptable.ttc, null));
     }
-    // 07/10/2026 : Contrats éteint (ONGLETS_ACTIFS_PAR_LOCATAIRE) = Mickael refacture ses contrats
-    // dans MEG -- les brouillons Jarvis ne partiront jamais : ni ligne « Contrats envoyés », ni liste
-    // « en attente d'envoi » (trompeuses). Affichage seulement, aucune donnée touchée.
-    var contratsJarvis = ongletActif('contrats');
-    if (ex.contrats && contratsJarvis){
+    // 07/10/2026 (lot suivant) : le masquage d'affichage posé au build 105 est RETIRÉ -- la fermeture
+    // est désormais réelle côté données : les contrats Jarvis non envoyés portent le statut terminal
+    // 'facturee_meg' (mcs_factures_contrats, colonne cloture_hors_jarvis) et le serveur les exclut de
+    // tout calcul ; plus rien « en attente d'envoi » ne peut remonter ici.
+    if (ex.contrats){
       var noteContrats = null;
       if (ex.contrats.nbAvoirs > 0){
         noteContrats = 'facturé ' + fmtEuros(ex.contrats.brutHT) + ' − ' + ex.contrats.nbAvoirs +
           (ex.contrats.nbAvoirs > 1 ? ' avoirs ' : ' avoir ') + fmtEuros(ex.contrats.avoirsHT) + ' = net ci-dessus';
       }
       sources.appendChild(rentaExSourceLigne(
-        'Contrats envoyés en septembre (' + ex.contrats.nb + (ex.contrats.nb > 1 ? ' factures net)' : ' facture net)'),
+        'Contrats envoyés en ' + moisLabel(ex.contrats.mois).toLowerCase() + ' (' + ex.contrats.nb + (ex.contrats.nb > 1 ? ' factures net)' : ' facture net)'),
         'jarvis', ex.contrats.ht, ex.contrats.ttc, noteContrats));
     }
     if (ex.meg){
@@ -21048,7 +21378,7 @@
 
     // Reste a facturer -- etats honnetes, jamais un zero trompeur (regle du panneau Rentabilite).
     var reste = document.createElement('div'); reste.id = 'rex-reste';
-    var aT = contratsJarvis && ex.contrats && ex.contrats.aTraiter;
+    var aT = ex.contrats && ex.contrats.aTraiter;
     if (aT && aT.nb > 0){
       var l1 = document.createElement('div'); l1.className = 'rex-reste-ligne';
       l1.textContent = aT.nb + (aT.nb > 1 ? ' contrats en attente d\'envoi — ' : ' contrat en attente d\'envoi — ') + fmtEuros(aT.ht) + ' HT';
@@ -21059,7 +21389,7 @@
         reste.appendChild(dd);
       });
     }
-    var skipListe = (contratsJarvis && ex.contrats && ex.contrats.skip && ex.contrats.skip.liste) || [];
+    var skipListe = (ex.contrats && ex.contrats.skip && ex.contrats.skip.liste) || [];
     if (skipListe.length){
       var l2 = document.createElement('div'); l2.className = 'rex-reste-ligne';
       l2.textContent = skipListe.length + (skipListe.length > 1 ? ' contrats volontairement non facturés ce mois-ci :' : ' contrat volontairement non facturé ce mois-ci :');
@@ -21280,7 +21610,7 @@
 
     if (courant){
       table.appendChild(rentaBuildLigneCourante(courant, d.megExtraction, d.contratsMoisEnCours));
-      if (ongletActif('contrats')) table.appendChild(rentaResteAFacturer(cleCourante, d.contratsMoisEnCours));   // 07/10/2026 : rien a facturer dans Jarvis si Contrats est eteint
+      if (!isMcsCode() || d.contratsMoisEnCours) table.appendChild(rentaResteAFacturer(cleCourante, d.contratsMoisEnCours));   // 07/10/2026 (lot suivant) : MCS -- ligne seulement si le serveur a des contrats Jarvis ce mois-ci (non envoyes clos 'facturee_meg', exclus cote serveur) ; labo/demo inchange
     } else {
       var rowVide = document.createElement('div'); rowVide.className = 'rt-row rt-courant';
       var cMois = document.createElement('div'); cMois.className = 'rt-cell rt-mois'; cMois.style.color = 'var(--gold-a)'; cMois.textContent = moisLabelCourt(cleCourante) + ' ·';
@@ -21290,7 +21620,7 @@
       cVide.appendChild(vide);
       rowVide.appendChild(cMois); rowVide.appendChild(cVide);
       table.appendChild(rowVide);
-      if (ongletActif('contrats')) table.appendChild(rentaResteAFacturer(cleCourante, d.contratsMoisEnCours));   // 07/10/2026 : rien a facturer dans Jarvis si Contrats est eteint
+      if (!isMcsCode() || d.contratsMoisEnCours) table.appendChild(rentaResteAFacturer(cleCourante, d.contratsMoisEnCours));   // 07/10/2026 (lot suivant) : MCS -- ligne seulement si le serveur a des contrats Jarvis ce mois-ci (non envoyes clos 'facturee_meg', exclus cote serveur) ; labo/demo inchange
     }
 
     var moisAvecDepense = mois.filter(function(m){ return m.depenses != null; });
