@@ -2365,6 +2365,28 @@
     background:#FFF4E0; border-left:4px solid #B26B00; color:#4A3000; border-radius:8px;
     padding:10px 12px; margin:10px 0; font-size:14px; line-height:1.4;
   }
+  /* 07/10/2026 (référentiel communes, tournée, export verrouillé) : identifiants NOUVEAUX ou règles
+     sous html.mcs-theme uniquement -- le LABO au repos n'en voit aucune. */
+  html.mcs-theme #ik-a-corriger p{margin:0}
+  html.mcs-theme #ik-voir-a-corriger{width:auto; margin-top:8px; padding:8px 14px; font-size:14px}
+  #ik-table-corriger .ik-motif-court{display:block; font-size:12.5px; margin-top:2px}
+  html.mcs-theme #ik-form #ikf-tournee-label,
+  html.mcs-theme #ik-form #ikf-allerretour-label{display:flex}
+  html.mcs-theme #ik-export.ik-export-bloque{background:#FFF4E0; color:#4A3000; box-shadow:inset 0 0 0 1px #B26B00}
+  #ikf-tournee-aide{font-size:13px; color:var(--muted); margin:6px 2px 0; line-height:1.4}
+  #ikf-km-utiliser{width:auto; display:block; margin:8px 0 0; padding:7px 13px; font-size:13px}
+  .ik-sug li.ik-sug-tournee{color:var(--gold-a)}
+  html.mcs-theme .ik-sug li.ik-sug-tournee{color:#0050A0}
+  #ikl-a-corriger{background:var(--surface); border-left:4px solid var(--gold-anomalie); border-radius:10px;
+    padding:10px 12px; margin:0 0 10px; font-size:13px; line-height:1.45; color:var(--ink)}
+  #ikl-a-corriger p{margin:0}
+  #ikl-voir-a-corriger{width:auto; margin-top:8px; padding:7px 13px; font-size:13px;
+    background:transparent; border:1px solid var(--hairline); color:var(--ink)}
+  #iklf-anomalie{color:var(--gold-anomalie); font-size:13px; line-height:1.45; margin:6px 0 4px}
+  #iklf-tournee{font-size:12.5px; color:var(--muted); padding:6px 2px 0; line-height:1.45}
+  #iklf-tournee button{width:auto; margin:6px 0 0; padding:6px 12px; font-size:12.5px; display:block;
+    background:transparent; border:1px solid var(--hairline); color:var(--ink)}
+  #ikl-export.ik-export-bloque{color:var(--gold-anomalie)}
   html.mcs-theme #facture-contrat-form input:disabled,
   html.mcs-theme #facture-contrat-form textarea:disabled,
   html.mcs-theme #contrat-catalogue-form input:disabled,
@@ -3940,6 +3962,8 @@
   #renta-exercice-clos{font-size:11.5px; color:var(--muted); line-height:1.5; background:var(--surface); border-radius:12px; padding:11px 12px; margin:10px 0 18px}
   #renta-exercice-clos b{color:var(--ink)}
   #renta-mois-manquants{font-size:11.5px; color:var(--muted); line-height:1.4; margin:8px 2px 4px; font-style:italic}
+  /* 07/10/2026 : bloc non servi car il ne couvre pas la période affichée (classe nouvelle, MCS seulement en pratique). */
+  .renta-bloc-masque{font-size:12.5px; color:var(--muted); line-height:1.45; margin:10px 2px 4px; padding:8px 10px; border-left:3px solid var(--hairline)}
   /* CA de l'exercice (24/09/2026) -- LE chiffre attendu par Mickael, en tete d'ecran, avant le
      redressement. Empile tout verticalement (jamais de colonnes cote a cote) : seule mise en page
      qui garantit 0 debordement horizontal quel que soit le libelle (nom de client, motif de
@@ -8204,8 +8228,15 @@
     <input id="ikf-motif" type="text" placeholder="Précise le motif…" style="display:none; margin-top:8px">
     <div class="cf-row">
       <div><label>Ville départ<div style="position:relative"><input id="ikf-depart" type="text" value="Tresses" autocomplete="off"><ul class="ik-sug" id="ikf-depart-sug"></ul></div></label></div>
-      <div><label>Ville arrivée<div style="position:relative"><input id="ikf-arrivee" type="text" autocomplete="off"><ul class="ik-sug" id="ikf-arrivee-sug"></ul></div></label></div>
+      <div><label><span id="ikf-arrivee-lib">Ville arrivée</span><div style="position:relative"><input id="ikf-arrivee" type="text" autocomplete="off"><ul class="ik-sug" id="ikf-arrivee-sug"></ul></div></label></div>
     </div>
+    <!-- Journée de tournée (07/10/2026) : choisie EXPLICITEMENT (case ou ligne de la liste des villes),
+         jamais déduite -- départ reconnu, arrivée = libellé libre, km de la journée saisis à la main. -->
+    <label id="ikf-tournee-label" style="flex-direction:row; align-items:center; gap:8px; margin-top:10px">
+      <input id="ikf-tournee" type="checkbox" style="width:auto; margin:0">
+      <span>Journée de tournée (plusieurs arrêts dans la même sortie)</span>
+    </label>
+    <p id="ikf-tournee-aide" style="display:none">Arrivée : le secteur parcouru, en clair (par exemple « Bassin d’Arcachon », « Tournée CUB »). Les km de la journée se saisissent à la main.</p>
     <label id="ikf-allerretour-label" style="flex-direction:row; align-items:center; gap:8px; margin-top:10px">
       <input id="ikf-allerretour" type="checkbox" checked style="width:auto; margin:0">
       <span>Aller-retour (trajet compté ×2)</span>
@@ -8270,6 +8301,7 @@
   <div class="contrat-form ikl-modal" id="ikl-form">
     <h3 id="iklf-titre">Nouveau trajet</h3>
     <div id="iklf-conducteur" class="ikl-pastille"></div>
+    <p id="iklf-anomalie" style="display:none"></p>
     <label for="iklf-date">Date du trajet</label><input id="iklf-date" type="date">
     <div id="iklf-jour"></div>
     <label for="iklf-motif">Motif</label>
@@ -8279,6 +8311,9 @@
       <div><label>Départ<div style="position:relative"><input id="iklf-depart" type="text" autocomplete="off"><ul class="ik-sug" id="iklf-depart-sug"></ul></div></label></div>
       <div><label>Arrivée<div style="position:relative"><input id="iklf-arrivee" type="text" autocomplete="off"><ul class="ik-sug" id="iklf-arrivee-sug"></ul></div></label></div>
     </div>
+    <!-- Journée de tournée (07/10/2026) : visible seulement une fois choisie (ligne « Journée de tournée »
+         de la liste des villes d'arrivée) -- jamais déduite ; formulaire au repos inchangé. -->
+    <div id="iklf-tournee" style="display:none"></div>
     <label class="ikl-check"><input id="iklf-ar" type="checkbox" checked><span>Aller-retour (km comptés ×2)</span></label>
     <label for="iklf-km">Km aller <span class="ikl-aide">— calculés automatiquement par la route, modifiables</span></label>
     <input id="iklf-km" type="number" inputmode="decimal" step="0.1" min="0">
@@ -9045,9 +9080,9 @@
          c'est ce qui supprime le conflit humain sur cette ligne precise. Sert aussi de cle
          unique de detection de mise a jour (voir checkUpdate ci-dessous), plus fiable qu'une
          comparaison de chaine de version par tenant. */
-  var APPV_MCS = '4.62';
+  var APPV_MCS = '4.63';
   var APPV_LABO = '1.09';
-  var BUILD = 106;
+  var BUILD = 107;
 
   // ==============================================================================================
   // ONGLETS ACTIFS PAR LOCATAIRE (07/10/2026) -- LA liste qui décide ce qu'un client voit.
@@ -19597,7 +19632,8 @@
     var val = document.createElement('b'); val.textContent = ikVehiculeTexte(calc.vehicule);
     t.appendChild(lab); t.appendChild(val);
     var mod = document.createElement('div'); mod.className = 'ikv-modele';
-    mod.textContent = 'Modèle : ' + (calc.vehicule.modele || 'non renseigné') + (calc.vehicule.defaut ? ' · réglage par défaut' : '');
+    mod.textContent = 'Modèle : ' + (calc.vehicule.modele || 'non renseigné') + (calc.vehicule.defaut ? ' · réglage par défaut' : '') +
+      ' · s’applique à tous les trajets de ' + calc.annee;
     var btn = document.createElement('button'); btn.type = 'button'; btn.id = 'ik-vehicule-btn'; btn.className = 'vc-no';
     btn.textContent = 'Modifier le véhicule';
     btn.addEventListener('click', function(){ ikVehFormOpen(calc.annee); });
@@ -19619,7 +19655,7 @@
   }
   function ikRowValue(t, key){
     if (key === 'date') return ikDateAffichee(t.date);
-    if (key === 'trajet') return (t.ville_depart || '?') + ' → ' + (t.ville_arrivee || '?');
+    if (key === 'trajet') return (t.ville_depart || '?') + ' → ' + ikTexteArrivee(t);
     if (key === 'km_total') return (t.km_total != null ? t.km_total + ' km' : '');
     if (key === 'frais') return (ikTripFraisMap[t.id] != null) ? fmtEuros(ikTripFraisMap[t.id]) : '';
     return t[key] || '';
@@ -19670,8 +19706,11 @@
     s2.innerHTML = '<span class="cs-label">Frais du mois' + (calc.provisoire ? ' <span class="ik-tag-prov">provisoire</span>' : '') + '</span><span class="cs-value">' + (monthly.frais == null ? '—' : fmtEuros(monthly.frais)) + '</span>';
     stats.appendChild(s1); stats.appendChild(s2);
     wrap.appendChild(stats);
+    // 07/10/2026 : le véhicule (et son bouton « Modifier ») est visible dès l'ouverture de l'onglet,
+    // pas seulement dans « Récap » -- c'est lui qui fixe le barème de TOUTE l'année.
+    wrap.appendChild(ikBlocVehicule(calc));
     var etat = document.createElement('div'); etat.id = 'ik-etat';
-    etat.textContent = 'Frais par trajet ci-dessous = contribution marginale au barème progressif, selon l’ordre chronologique des trajets depuis le 1er janvier. Véhicule : ' + ikVehiculeTexte(calc.vehicule) + '. ' + ikMentionBareme(calc);
+    etat.textContent = 'Frais par trajet ci-dessous = contribution marginale au barème progressif, selon l’ordre chronologique des trajets depuis le 1er janvier. ' + ikMentionBareme(calc);
     wrap.appendChild(etat);
     return wrap;
   }
@@ -19708,11 +19747,11 @@
     var tbody = document.createElement('tbody');
     items.forEach(function(t){
       var tr = document.createElement('tr');
-      if (t.anomalie){ tr.className = 'ik-row-anomalie'; tr.title = t.anomalie + ' — touchez la ligne pour la corriger.'; }
+      if (t.a_corriger){ tr.className = 'ik-row-anomalie'; tr.title = t.a_corriger + ' — touchez la ligne pour la corriger.'; }
       IK_COLONNES.forEach(function(col){
         var td = document.createElement('td');
         if (col.cls) td.className = col.cls;
-        td.textContent = (col.key === 'motif' && t.anomalie ? '⚠️ ' : '') + ikRowValue(t, col.key);
+        td.textContent = (col.key === 'motif' && t.a_corriger ? '⚠️ ' : '') + ikRowValue(t, col.key);
         tr.appendChild(td);
       });
       tr.addEventListener('click', function(){ ikFormOpen(t); });
@@ -19739,6 +19778,16 @@
     recapBtn.textContent = '📊 Récap';
     recapBtn.addEventListener('click', function(){ ikActiveTab = 'recap'; ikRenderMonthTabs(); ikApplyFilter(); });
     ikMonthTabsEl.appendChild(recapBtn);
+    // 07/10/2026 : accès direct aux trajets à corriger de l'année (visible seulement s'il y en a,
+    // ou tant qu'on est dessus -- pour voir « tout est corrigé » après la dernière correction).
+    var nAc = ikACorriger().length;
+    if (nAc || ikActiveTab === 'corriger'){
+      var acBtn = document.createElement('button');
+      acBtn.type = 'button'; acBtn.id = 'ik-tab-corriger'; acBtn.className = 'df-chip' + (ikActiveTab === 'corriger' ? ' active' : '');
+      acBtn.textContent = nAc ? '⚠️ À corriger (' + nAc + ')' : '✅ Tout est corrigé';
+      acBtn.addEventListener('click', ikOuvrirACorriger);
+      ikMonthTabsEl.insertBefore(acBtn, ikMonthTabsEl.firstChild);
+    }
     // Le mois en cours doit être visible sans avoir à faire défiler la barre (demande Mathéo
     // 11/08/2026) -- l'onglet actif était bien sélectionné par défaut, mais hors champ de vue
     // (la bande de 13 onglets s'ouvrait toujours scrollée tout à gauche, sur Janvier).
@@ -19746,10 +19795,83 @@
     if (activeBtn) activeBtn.scrollIntoView({ inline: 'center', block: 'nearest' });
   }
 
+  // 07/10/2026 : trajets de l'année affichée que la règle commune refuse À L'INSTANT (calculé par le
+  // serveur à chaque lecture : a_corriger) -- signalés, jamais corrigés d'office. Le même compte
+  // verrouille l'export Excel de l'année (le serveur refuse aussi de le produire).
+  function ikACorriger(){
+    var annee = String(ikAnneeAffichee());
+    return (ikData || []).filter(function(t){ return t.a_corriger && String(t.date || '').indexOf(annee) === 0; })
+      .sort(function(a, b){ return String(a.date).localeCompare(String(b.date)) || (a.id - b.id); });
+  }
+  function ikTexteBlocage(n, annee){
+    return n + (n > 1 ? ' trajets' : ' trajet') + ' à corriger avant de pouvoir exporter ' + annee;
+  }
+  function ikOuvrirACorriger(){ ikActiveTab = 'corriger'; ikSearchInput.value = ''; ikRenderMonthTabs(); ikApplyFilter(); ikList.scrollTop = 0; }
+  // Bandeau : motif du blocage + accès direct à la liste. Rien quand tout est correct.
+  function ikBandeauACorriger(dansMois){
+    var n = ikACorriger().length;
+    if (!n) return null;
+    var d = document.createElement('div'); d.id = 'ik-a-corriger';
+    var p = document.createElement('p');
+    p.textContent = '⚠️ ' + ikTexteBlocage(n, ikAnneeAffichee()) + (dansMois ? ' (dont ' + dansMois + ' ce mois-ci)' : '') + '.';
+    var b = document.createElement('button'); b.type = 'button'; b.className = 'vc-no'; b.id = 'ik-voir-a-corriger';
+    b.textContent = 'Voir les trajets à corriger';
+    b.addEventListener('click', ikOuvrirACorriger);
+    d.appendChild(p); d.appendChild(b);
+    return d;
+  }
+  // Export : bloqué tant qu'il reste un trajet à corriger pour l'année affichée. Le bouton reste
+  // actif (jamais un bouton mort) : il ouvre la liste des trajets concernés et dit pourquoi.
+  function ikMajEtatExport(){
+    var el = document.getElementById('ik-export'), n = ikACorriger().length;
+    el.classList.toggle('ik-export-bloque', n > 0);
+    el.textContent = n > 0 ? '🔒 Excel' : '⬇️ Excel';
+    el.setAttribute('aria-label', n > 0 ? ikTexteBlocage(n, ikAnneeAffichee()) : 'Télécharger le tableau Excel');
+    el.title = n > 0 ? ikTexteBlocage(n, ikAnneeAffichee()) : '';
+  }
+  document.getElementById('ik-export').addEventListener('click', function(e){
+    var n = ikACorriger().length;
+    if (!n) return;   // export permis : le lien télécharge le fichier
+    e.preventDefault();
+    toast(ikTexteBlocage(n, ikAnneeAffichee()) + '.', 6000);
+    ikOuvrirACorriger();
+  });
+  function ikVueACorriger(){
+    var annee = ikAnneeAffichee(), items = ikACorriger();
+    var tete = document.createElement('div'); tete.id = 'ik-a-corriger';
+    var p = document.createElement('p');
+    if (!items.length){
+      p.textContent = '✅ Tous les trajets de ' + annee + ' sont corrects : l’export Excel ' + annee + ' est disponible (bouton « Excel » en haut).';
+      tete.appendChild(p); ikList.appendChild(tete); return;
+    }
+    p.textContent = '⚠️ ' + ikTexteBlocage(items.length, annee) + '. Touchez un trajet pour le corriger : choisissez la commune dans la liste, ' +
+      'ou cochez « Journée de tournée » pour une sortie à plusieurs arrêts.';
+    tete.appendChild(p); ikList.appendChild(tete);
+    var wrap = document.createElement('div'); wrap.id = 'ik-table-wrap';
+    var table = document.createElement('table'); table.className = 'ik-table'; table.id = 'ik-table-corriger';
+    table.innerHTML = '<thead><tr><th>Date</th><th>Trajet — à corriger</th><th>Km</th></tr></thead>';
+    var tbody = document.createElement('tbody');
+    items.forEach(function(t){
+      var tr = document.createElement('tr'); tr.className = 'ik-row-anomalie'; tr.title = t.a_corriger;
+      var tdD = document.createElement('td'); tdD.textContent = ikDateAffichee(t.date);
+      var tdT = document.createElement('td'); tdT.className = 'ik-td-trajet';
+      tdT.appendChild(document.createTextNode(ikRowValue(t, 'trajet')));
+      var motif = document.createElement('small'); motif.className = 'ik-motif-court'; motif.textContent = '⚠️ ' + ikMotifCourt(t.a_corriger);
+      tdT.appendChild(motif);
+      var tdK = document.createElement('td'); tdK.className = 'ik-td-km'; tdK.textContent = ikRowValue(t, 'km_total');
+      tr.appendChild(tdD); tr.appendChild(tdT); tr.appendChild(tdK);
+      tr.addEventListener('click', function(){ ikFormOpen(t); });
+      tbody.appendChild(tr);
+    });
+    table.appendChild(tbody); wrap.appendChild(table); ikList.appendChild(wrap);
+  }
   function ikApplyFilter(){
     ikList.innerHTML = '';
+    ikMajEtatExport();
+    if (ikActiveTab === 'corriger'){ ikSearchWrap.style.display = 'none'; ikVueACorriger(); return; }
     if (ikActiveTab === 'recap'){
       ikSearchWrap.style.display = 'none';
+      var bR = ikBandeauACorriger(0); if (bR) ikList.appendChild(bR);
       ikList.appendChild(ikBuildDash());
       ikList.appendChild(ikBuildRecapTable());
       return;
@@ -19764,17 +19886,8 @@
     });
     var monthly = ikComputeMonthly().parMois[moisIdx];
     ikList.appendChild(ikBuildMonthDash(moisIdx, monthly));
-    // 07/10/2026 : trajets que la règle commune refuserait aujourd'hui (ville non reconnue, distance
-    // incohérente ou nulle) -- signalés, jamais corrigés d'office (les vraies distances ne sont pas connues).
-    var aCorriger = (ikData || []).filter(function(t){ return t.anomalie && String(t.date || '').indexOf(String(annee)) === 0; });
-    if (aCorriger.length){
-      var dansMois = itemsMois.filter(function(t){ return t.anomalie; }).length;
-      var pAc = document.createElement('p'); pAc.id = 'ik-a-corriger';
-      pAc.textContent = '⚠️ ' + aCorriger.length + (aCorriger.length > 1 ? ' trajets' : ' trajet') + ' de ' + annee +
-        ' à corriger (ville non reconnue ou distance incohérente)' + (dansMois ? ', dont ' + dansMois + ' ce mois-ci' : '') +
-        ' : ils sont marqués ⚠️ — touchez une ligne pour choisir la bonne commune dans la liste et vérifier les km.';
-      ikList.appendChild(pAc);
-    }
+    var bM = ikBandeauACorriger(itemsMois.filter(function(t){ return t.a_corriger; }).length);
+    if (bM) ikList.appendChild(bM);
     var items = itemsMois.filter(function(t){
       return !q || normDoc(t.motif + ' ' + t.ville_depart + ' ' + t.ville_arrivee).indexOf(q) !== -1;
     });
@@ -19873,63 +19986,140 @@
   document.getElementById('sh-ik').addEventListener('click', function(){ sheetOpen(false); ikOpen(); });
   ikSearchInput.addEventListener('input', ikApplyFilter);
 
-  // ---- Autocomplétion ville (départ/arrivée) : API Base Adresse Nationale, villes uniquement,
-  // biaisée géographiquement vers Bordeaux (siège de MCS) + re-classement côté client pour
-  // remonter en premier les villes dont le nom commence VRAIMENT par ce qui est tapé. ----
-  var IK_BX_LAT = 44.8378, IK_BX_LON = -0.5792;
-  function ikDistKm(lat1, lon1, lat2, lon2){
-    var R = 6371, dLat = (lat2 - lat1) * Math.PI / 180, dLon = (lon2 - lon1) * Math.PI / 180;
-    var a = Math.sin(dLat/2)*Math.sin(dLat/2) + Math.cos(lat1*Math.PI/180)*Math.cos(lat2*Math.PI/180)*Math.sin(dLon/2)*Math.sin(dLon/2);
-    return R * 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1-a));
+  // ---- Communes : RÉFÉRENTIEL LOCAL, commun à MCS et au LABO (07/10/2026) ----------------------
+  // Suggestions et coordonnées viennent de NOTRE webhook (mcs-ik ou labo-ik, type 'communes'), qui
+  // interroge le sous-workflow n8n « 🗺️ Référentiel communes (commun) » (IGN, téléchargé une fois,
+  // produits/jarvis/ik-commun/referentiel-communes/) -- le MÊME référentiel que celui qui valide le
+  // trajet à l'enregistrement : une ville proposée ici est forcément acceptée là-bas. Plus aucun
+  // appel à api-adresse.data.gouv.fr depuis l'app. Fluidité : temporisation à la frappe + cache ;
+  // quand le serveur a renvoyé TOUTES les communes d'un début de mot (complet:true), les lettres
+  // suivantes sont filtrées ici, sans nouvel appel (même pertinence que ikcSuggerer, ik-communes.js).
+  function ikcNormClient(s){   // = ikcNorm (ik-communes.js)
+    return String(s == null ? '' : s).normalize('NFD').replace(/[̀-ͯ]/g, '').toLowerCase()
+      .replace(/[’'`\-]/g, ' ').replace(/\bst\b/g, 'saint').replace(/\bste\b/g, 'sainte')
+      .replace(/[^a-z0-9 ]/g, ' ').replace(/\s+/g, ' ').trim();
   }
-  // onChange (optionnel) : appelé après un choix dans le déroulant OU en quittant le champ avec
-  // une valeur -- sert à déclencher le calcul de distance automatique (voir ikMaybeAutoCalc).
-  function ikVilleSug(inputId, sugId, onChange){
-    var input = document.getElementById(inputId);
-    var sug = document.getElementById(sugId);
-    var timer = null;
+  function ikcFiltrerLocal(liste, n){
+    var out = [];
+    (liste || []).forEach(function(c){
+      var cle = c.cle || ikcNormClient(c.nom), score = 0;
+      if (cle.indexOf(n) === 0) score = 3;
+      else if (cle.replace(/^(le|la|les|l) /, '').indexOf(n) === 0) score = 2;
+      else if ((' ' + cle).indexOf(' ' + n) !== -1) score = 1;
+      if (score) out.push({ c: c, s: score, exact: cle === n });
+    });
+    out.sort(function(a, b){
+      if (a.s !== b.s) return b.s - a.s;
+      if (a.exact !== b.exact) return a.exact ? -1 : 1;
+      if (a.c.distanceKm != null && b.c.distanceKm != null && a.c.distanceKm !== b.c.distanceKm) return a.c.distanceKm - b.c.distanceKm;
+      return (b.c.population || 0) - (a.c.population || 0);
+    });
+    return out.map(function(x){ return x.c; });
+  }
+  // post(payload, onOk, onErr) : postIk (MCS) ou postIkLabo (LABO). Renvoie chercher(q, cb) :
+  // cb(liste) -- liste vide si rien, null si le serveur n'a pas répondu.
+  function ikcSuggesteur(post, limite){
+    var cache = {};
+    return function(q, cb){
+      var n = ikcNormClient(q);
+      if (n.length < 2) return cb([]);
+      if (cache[n]) return cb(ikcFiltrerLocal(cache[n].communes, n).slice(0, limite));
+      for (var k = n.length - 1; k >= 2; k--){
+        var c = cache[n.slice(0, k)];
+        if (c && c.complet) return cb(ikcFiltrerLocal(c.communes, n).slice(0, limite));
+      }
+      post({ type: 'communes', action: 'suggerer', q: q, limite: 40 }, function(j){
+        cache[n] = { communes: (j && j.communes) || [], complet: !!(j && j.complet) };
+        cb(ikcFiltrerLocal(cache[n].communes, n).slice(0, limite));
+      }, function(){ cb(null); });
+    };
+  }
+  // Branche les suggestions sur un champ. opts : { chercher, rendu(c) -> html, onChoix(c),
+  // onQuitter(), tournee: { actif(), choisir(texte) } (arrivée seulement) }. Le choix « Journée de
+  // tournée » n'est JAMAIS automatique : c'est une ligne de la liste que l'utilisateur touche.
+  function ikcBrancherSuggestions(input, sug, opts){
+    var timer = null, seq = 0;
+    function fermer(){ sug.innerHTML = ''; sug.classList.remove('open'); }
+    function afficher(liste, q){
+      sug.innerHTML = '';
+      (liste || []).forEach(function(c){
+        var li = document.createElement('li');
+        li.innerHTML = opts.rendu(c);
+        li.addEventListener('mousedown', function(e){ e.preventDefault(); });
+        li.addEventListener('click', function(){ input.value = c.nom; fermer(); if (opts.onChoix) opts.onChoix(c); });
+        sug.appendChild(li);
+      });
+      if (opts.tournee && !opts.tournee.actif()){
+        var lt = document.createElement('li'); lt.className = 'ik-sug-tournee';
+        lt.innerHTML = '↪ Pas une seule commune ? Journée de tournée : « ' + escHtml(q) + ' »<small>plusieurs arrêts dans la même sortie — km de la journée saisis à la main</small>';
+        lt.addEventListener('mousedown', function(e){ e.preventDefault(); });
+        lt.addEventListener('click', function(){ fermer(); opts.tournee.choisir(q); });
+        sug.appendChild(lt);
+      }
+      sug.classList.toggle('open', sug.children.length > 0 && document.activeElement === input);
+    }
     input.addEventListener('input', function(){
       clearTimeout(timer);
-      var q = input.value.trim();
-      if (q.length < 2){ sug.innerHTML = ''; sug.classList.remove('open'); return; }
+      var q = input.value.trim(), s = ++seq;
+      if (opts.tournee && opts.tournee.actif()){ fermer(); return; }   // libellé libre : aucune suggestion
+      if (q.length < 2){ fermer(); return; }
       timer = setTimeout(function(){
-        var url = 'https://api-adresse.data.gouv.fr/search/?type=municipality&autocomplete=1&limit=10'
-          + '&lat=' + IK_BX_LAT + '&lon=' + IK_BX_LON + '&q=' + encodeURIComponent(q);
-        fetch(url).then(function(r){ return r.json(); }).then(function(j){
-          var feats = (j && j.features) || [];
-          var qNorm = normDoc(q);
-          feats.forEach(function(f){
-            f._dist = ikDistKm(IK_BX_LAT, IK_BX_LON, f.geometry.coordinates[1], f.geometry.coordinates[0]);
-            f._prefix = normDoc(f.properties.city || f.properties.label).indexOf(qNorm) === 0;
-          });
-          feats.sort(function(a, b){
-            if (a._prefix !== b._prefix) return a._prefix ? -1 : 1;
-            return a._dist - b._dist;
-          });
-          feats = feats.slice(0, 8);
-          sug.innerHTML = '';
-          feats.forEach(function(f){
-            var li = document.createElement('li');
-            var ville = f.properties.city || f.properties.label;
-            li.innerHTML = escHtml(ville) + '<small>' + escHtml(f.properties.context || '') + ' · ' + Math.round(f._dist) + ' km de Bordeaux</small>';
-            li.addEventListener('click', function(){
-              input.value = ville;
-              sug.innerHTML = ''; sug.classList.remove('open');
-              if (onChange) onChange();
-            });
-            sug.appendChild(li);
-          });
-          sug.classList.toggle('open', feats.length > 0);
-        }).catch(function(){});
+        opts.chercher(q, function(liste){ if (s === seq) afficher(liste || [], q); });
       }, 250);
     });
-    input.addEventListener('blur', function(){
-      setTimeout(function(){ sug.classList.remove('open'); if (onChange) onChange(); }, 150);
-    });
+    input.addEventListener('blur', function(){ setTimeout(function(){ sug.classList.remove('open'); if (opts.onQuitter) opts.onQuitter(); }, 150); });
     input.addEventListener('focus', function(){ if (sug.innerHTML) sug.classList.add('open'); });
   }
-  ikVilleSug('ikf-depart', 'ikf-depart-sug', ikMaybeAutoCalc);
-  ikVilleSug('ikf-arrivee', 'ikf-arrivee-sug', ikMaybeAutoCalc);
+  // Distance ROUTIÈRE : le SEUL appel extérieur restant (OSRM). Il ne bloque JAMAIS l'enregistrement :
+  // délai maximal, message clair, km saisissables à la main. Les coordonnées viennent du référentiel
+  // local (type 'communes', action 'paire') ; la cohérence avec le vol d'oiseau est contrôlée par le
+  // serveur à l'enregistrement, même si la route n'a pas pu être calculée.
+  var IK_ROUTE_URL = 'https://router.project-osrm.org/route/v1/driving/';
+  var IK_ROUTE_DELAI_MS = 8000;
+  function ikDistanceRoutiere(post, depart, arrivee){
+    return new Promise(function(ok, ko){
+      post({ type: 'communes', action: 'paire', depart: depart, arrivee: arrivee }, function(j){
+        if (!j || !j.ok) return ko({ commune: true, message: (j && j.erreur) || 'commune introuvable' });
+        var ctrl = typeof AbortController !== 'undefined' ? new AbortController() : null, fini = false;
+        var minuteur = setTimeout(function(){ if (fini) return; fini = true; if (ctrl) ctrl.abort(); ko({ message: 'pas de réponse du service de calcul d’itinéraire au bout de ' + (IK_ROUTE_DELAI_MS / 1000) + ' s' }); }, IK_ROUTE_DELAI_MS);
+        fetch(IK_ROUTE_URL + j.depart.lon + ',' + j.depart.lat + ';' + j.arrivee.lon + ',' + j.arrivee.lat + '?overview=false', ctrl ? { signal: ctrl.signal } : {})
+          .then(function(r){ return r.json(); }).then(function(r){
+            if (fini) return; fini = true; clearTimeout(minuteur);
+            if (!r || r.code !== 'Ok' || !r.routes || !r.routes[0]) return ko({ message: 'itinéraire introuvable' });
+            ok({ km: Math.round(r.routes[0].distance / 100) / 10, depart: j.depart.nom, arrivee: j.arrivee.nom });
+          }).catch(function(){
+            if (fini) return; fini = true; clearTimeout(minuteur);
+            ko({ message: 'service de calcul d’itinéraire injoignable' });
+          });
+      }, function(err){ ko({ message: err }); });
+    });
+  }
+  function ikMessageRouteKo(e){
+    if (e && e.commune) return '⚠️ ' + e.message + ' Choisissez la commune dans la liste proposée.';
+    return '⚠️ Distance routière non calculée (' + ((e && e.message) || 'réseau') + ') : saisissez les km aller à la main. ' +
+      'Le trajet s’enregistrera normalement ; sa cohérence avec la distance à vol d’oiseau sera vérifiée.';
+  }
+  // Motif court d'un trajet à corriger (liste) -- le motif complet est affiché dans le formulaire.
+  function ikMotifCourt(m){
+    m = String(m || '');
+    if (/introuvable/.test(m)) return 'Ville non reconnue';
+    if (/incohérent/.test(m)) return 'Distance incohérente';
+    if (/0 km|sans distance/.test(m)) return 'Distance manquante';
+    return 'À vérifier';
+  }
+  function ikTexteArrivee(t){ return (t.mode === 'tournee' ? 'Tournée : ' : '') + (t.ville_arrivee || '?'); }
+
+  // ---- Suggestions MCS : même rendu qu'avant (contexte · distance de Bordeaux). ----
+  var ikChercherCommunes = ikcSuggesteur(postIk, 8);
+  function ikRenduCommune(c){
+    return escHtml(c.nom) + '<small>' + escHtml(c.contexte || '') + (c.distanceKm != null ? ' · ' + c.distanceKm + ' km de Bordeaux' : '') + '</small>';
+  }
+  ikcBrancherSuggestions(document.getElementById('ikf-depart'), document.getElementById('ikf-depart-sug'),
+    { chercher: ikChercherCommunes, rendu: ikRenduCommune, onChoix: function(){ ikMaybeAutoCalc(); }, onQuitter: ikMaybeAutoCalc });
+  ikcBrancherSuggestions(document.getElementById('ikf-arrivee'), document.getElementById('ikf-arrivee-sug'),
+    { chercher: ikChercherCommunes, rendu: ikRenduCommune, onChoix: function(){ ikMaybeAutoCalc(); }, onQuitter: ikMaybeAutoCalc,
+      tournee: { actif: function(){ return ikfTourneeCase.checked; },
+                 choisir: function(q){ ikfTourneeCase.checked = true; ikfMajTournee(); document.getElementById('ikf-arrivee').value = q; document.getElementById('ikf-km').focus(); } } });
 
   // ---- Formulaire IK (ajouter/modifier/supprimer un trajet) ----
   var ikFormBg = document.getElementById('ik-form-bg');
@@ -19965,6 +20155,19 @@
       ikfMotifInput.value = ikfMotifSelect.value;
     }
   });
+  // Journée de tournée : la case pilote les libellés ; aucun calcul de route (pas de commune d'arrivée).
+  var ikfTourneeCase = document.getElementById('ikf-tournee');
+  function ikfMajTournee(){
+    var on = ikfTourneeCase.checked;
+    document.getElementById('ikf-arrivee-lib').textContent = on ? 'Secteur de la tournée' : 'Ville arrivée';
+    document.getElementById('ikf-arrivee').placeholder = on ? 'Ex. : Bassin d’Arcachon' : '';
+    document.getElementById('ikf-tournee-aide').style.display = on ? '' : 'none';
+    document.getElementById('ikf-km-auto').textContent = on ? '— de la journée, à saisir à la main' : '— calculés automatiquement par la route, modifiables';
+    document.getElementById('ikf-calc').style.display = on ? 'none' : '';
+    if (on){ var r = document.getElementById('ikf-calc-result'); r.style.display = 'none'; }
+    var s = document.getElementById('ikf-arrivee-sug'); s.innerHTML = ''; s.classList.remove('open');
+  }
+  ikfTourneeCase.addEventListener('change', ikfMajTournee);
   function ikFormOpen(t){
     ikFormEditingId = t ? t.id : null;
     document.getElementById('ikf-titre').textContent = t ? 'Modifier le trajet' : 'Nouveau trajet';
@@ -19975,10 +20178,15 @@
     document.getElementById('ikf-arrivee').value = t ? t.ville_arrivee : '';
     document.getElementById('ikf-km').value = t && t.km_aller != null ? t.km_aller : '';
     document.getElementById('ikf-allerretour').checked = t ? (Number(t.nb_trajet) !== 1) : true;
+    ikfTourneeCase.checked = !!(t && t.mode === 'tournee');
+    ikfMajTournee();
+    ikKmManuel = !!(t && t.km_aller != null && t.km_aller !== '');
+    ikCalcCle = t ? (t.ville_depart || '') + '|' + (t.ville_arrivee || '') : '';
     document.getElementById('ikf-delete').style.display = t ? '' : 'none';
+    // 07/10/2026 : motif donné À L'INSTANT par la règle commune (serveur), jamais un texte figé.
     var ikfAno = document.getElementById('ikf-anomalie');
-    ikfAno.textContent = t && t.anomalie ? '⚠️ ' + t.anomalie : '';
-    ikfAno.style.display = t && t.anomalie ? '' : 'none';
+    ikfAno.textContent = t && t.a_corriger ? '⚠️ À corriger : ' + t.a_corriger : '';
+    ikfAno.style.display = t && t.a_corriger ? '' : 'none';
     document.getElementById('ikf-calc-result').style.display = 'none';
     document.getElementById('ikf-calc-result').className = '';
     document.getElementById('ikf-depart-sug').innerHTML = ''; document.getElementById('ikf-depart-sug').classList.remove('open');
@@ -19992,34 +20200,46 @@
   // Calcul de distance partagé : appelé automatiquement (quitter le champ ville, choix dans le
   // déroulant) ET par le bouton "Recalculer" resté en secours -- demande Mathéo 12/08/2026, avant
   // il fallait cliquer un bouton pour déclencher le calcul, plus assez visible/intuitif.
-  var ikCalcInFlight = false;
+  // 07/10/2026 : coordonnées du référentiel local (notre webhook) puis distance routière demandée
+  // par le navigateur (ikDistanceRoutiere) -- en cas d'échec ou de délai dépassé, message clair et
+  // saisie manuelle : l'enregistrement n'en dépend jamais.
+  var ikCalcInFlight = false, ikCalcCle = '', ikKmManuel = false;
+  document.getElementById('ikf-km').addEventListener('input', function(){ ikKmManuel = true; });
   function ikCalcDistance(manuel){
     var depart = document.getElementById('ikf-depart').value.trim();
     var arrivee = document.getElementById('ikf-arrivee').value.trim();
     var resEl = document.getElementById('ikf-calc-result');
+    if (ikfTourneeCase.checked) return;
     if (!depart || !arrivee){
       if (manuel) toast('Indique une ville de départ et d’arrivée.');
       return;
     }
     if (ikCalcInFlight) return;
+    if (!manuel && ikCalcCle === depart + '|' + arrivee) return;   // déjà calculé pour ces deux villes
+    ikCalcCle = depart + '|' + arrivee;
     ikCalcInFlight = true;
     var btn = document.getElementById('ikf-calc');
     btn.disabled = true;
     resEl.className = 'ikf-calc-loading'; resEl.style.display = '';
     resEl.textContent = '⏳ Calcul de la distance ' + depart + ' → ' + arrivee + '…';
-    postIk({ type: 'distance', depart: depart, arrivee: arrivee }, function(j){
+    ikDistanceRoutiere(postIk, depart, arrivee).then(function(r){
       ikCalcInFlight = false; btn.disabled = false;
       resEl.className = ''; resEl.style.display = '';
-      if (j.ok){
-        document.getElementById('ikf-km').value = j.km_aller;
-        resEl.textContent = '✅ ' + j.km_aller + ' km (' + j.depart_resolu + ' → ' + j.arrivee_resolu + ')';
-      } else {
-        resEl.textContent = '⚠️ ' + (j.error || 'Distance introuvable, entre le km à la main.');
-      }
-    }, function(err){
+      var kmEl = document.getElementById('ikf-km');
+      var txt = String(r.km).replace('.', ',') + ' km par la route (' + r.depart + ' → ' + r.arrivee + ')';
+      // Des km saisis à la main (trajet existant, ou tapés pendant le calcul) ne sont JAMAIS écrasés
+      // en silence : la distance routière est proposée, l'utilisateur choisit.
+      if (!ikKmManuel || kmEl.value === ''){ kmEl.value = r.km; ikKmManuel = false; resEl.textContent = '✅ ' + txt; return; }
+      if (Number(String(kmEl.value).replace(',', '.')) === r.km){ resEl.textContent = '✅ ' + txt; return; }
+      resEl.textContent = 'ℹ️ ' + txt + ' — km saisis conservés : ' + String(kmEl.value).replace('.', ',') + ' km. ';
+      var u = document.createElement('button'); u.type = 'button'; u.className = 'vc-no'; u.id = 'ikf-km-utiliser';
+      u.textContent = 'Utiliser ' + String(r.km).replace('.', ',') + ' km';
+      u.addEventListener('click', function(){ kmEl.value = r.km; ikKmManuel = false; resEl.textContent = '✅ ' + txt; });
+      resEl.appendChild(u);
+    }, function(e){
       ikCalcInFlight = false; btn.disabled = false;
-      if (manuel){ resEl.style.display = 'none'; toast(err); }
-      else { resEl.className = ''; resEl.style.display = ''; resEl.textContent = '⚠️ ' + err; }
+      resEl.className = ''; resEl.style.display = '';
+      resEl.textContent = ikMessageRouteKo(e);
     });
   }
   // Déclenché tout seul dès que les 2 villes sont renseignées (quitter le champ ou choisir une
@@ -20039,13 +20259,15 @@
       ville_arrivee: document.getElementById('ikf-arrivee').value.trim(),
       nb_trajet: document.getElementById('ikf-allerretour').checked ? 2 : 1,
       km_aller: document.getElementById('ikf-km').value !== '' ? parseFloat(document.getElementById('ikf-km').value) : null,
+      mode: ikfTourneeCase.checked ? 'tournee' : ''
     };
-    if (!trajet.date || !trajet.ville_arrivee){ toast('Indique au moins la date et la ville d’arrivée.'); return; }
+    var tournee = trajet.mode === 'tournee';
+    if (!trajet.date || !trajet.ville_arrivee){ toast(tournee ? 'Indique la date et le secteur de la tournée (par exemple « Bassin d’Arcachon »).' : 'Indique au moins la date et la ville d’arrivée.', 8000); return; }
     // 07/10/2026 : mêmes refus que le serveur (règle commune produits/jarvis/ik-commun/ik-validation-
     // trajet.js, qui reste seule juge : villes reconnues, distance cohérente) -- ici seulement les cas
     // évidents, pour répondre tout de suite. Message long : toast affiché 8 s.
     if (!trajet.ville_depart){ toast('Ville de départ manquante : choisissez-la dans la liste des communes.', 8000); return; }
-    if (!(trajet.km_aller > 0)){ toast('Distance à 0 km : un trajet doit avoir une distance. Choisissez les deux villes dans la liste des communes pour la calculer automatiquement, ou saisissez les km aller à la main.', 8000); return; }
+    if (!(trajet.km_aller > 0)){ toast(tournee ? 'Journée de tournée sans distance : saisissez les km aller de la journée à la main.' : 'Distance à 0 km : un trajet doit avoir une distance. Choisissez les deux villes dans la liste des communes pour la calculer automatiquement, ou saisissez les km aller à la main.', 8000); return; }
     var payload = ikFormEditingId
       ? { type: 'modifier', id: ikFormEditingId, trajet: trajet }
       : { type: 'ajouter', trajet: trajet };
@@ -20291,6 +20513,9 @@
       o.appendChild(iklChip(IKL_MOIS_COURT[idx], iklOnglet === String(idx), function(){ iklOnglet = String(idx); iklRender(); }));
     })(i);
     o.appendChild(iklChip('📊 Récap', iklOnglet === 'recap', function(){ iklOnglet = 'recap'; iklRender(); }));
+    // 07/10/2026 : trajets à corriger du conducteur et de l'année affichés (absent s'il n'y en a pas).
+    var nAc = iklACorriger().length;
+    if (nAc || iklOnglet === 'corriger') o.insertBefore(iklChip(nAc ? '⚠️ À corriger (' + nAc + ')' : '✅ Tout est corrigé', iklOnglet === 'corriger', iklOuvrirACorriger), o.firstChild);
     var act = o.querySelector('.df-chip.active');
     if (act && act.scrollIntoView) act.scrollIntoView({ inline: 'center', block: 'nearest' });
   }
@@ -20341,10 +20566,11 @@
     var tbody = document.createElement('tbody');
     trajets.forEach(function(t){
       var tr = document.createElement('tr');
+      if (t.a_corriger){ tr.className = 'ik-row-anomalie'; tr.title = t.a_corriger + ' — touche la ligne pour le corriger.'; }
       var cells = [
         [iklDateFr(t.date), ''], [iklJourSemaine(t.date), 'ikl-td-jour'],
-        [(t.ville_depart || '?') + ' → ' + (t.ville_arrivee || '?') + (Number(t.nb_trajet) === 2 ? ' (A/R)' : ''), 'ik-td-trajet'],
-        [t.motif || '', 'ik-td-trajet'], [iklKm(t.km_total), 'ik-td-km'],
+        [(t.ville_depart || '?') + ' → ' + ikTexteArrivee(t) + (Number(t.nb_trajet) === 2 ? ' (A/R)' : ''), 'ik-td-trajet'],
+        [(t.a_corriger ? '⚠️ ' + ikMotifCourt(t.a_corriger) + ' — ' : '') + (t.motif || ''), 'ik-td-trajet'], [iklKm(t.km_total), 'ik-td-km'],
         [calc.montants[t.id] != null ? iklEur(calc.montants[t.id]) : '—', 'ik-td-km']];
       cells.forEach(function(c){ var td = document.createElement('td'); if (c[1]) td.className = c[1]; td.textContent = c[0]; tr.appendChild(td); });
       tr.addEventListener('click', function(){ iklFormOpen(t); });
@@ -20372,12 +20598,50 @@
     return wrap;
   }
 
+  // 07/10/2026 : trajets du conducteur et de l'année affichés que la règle commune refuse à l'instant
+  // (a_corriger, calculé par le serveur à chaque lecture). Ils verrouillent l'export de CE conducteur
+  // pour CETTE année seulement. Aucun élément ajouté à l'écran quand il n'y en a pas.
+  function iklACorriger(){ return iklTrajets(iklConducteur, iklAnnee).filter(function(t){ return t.a_corriger; }); }
+  function iklTexteBlocage(n){ return n + (n > 1 ? ' trajets' : ' trajet') + ' à corriger avant de pouvoir exporter ' + iklAnnee; }
+  function iklOuvrirACorriger(){ iklOnglet = 'corriger'; iklRender(); iklList.scrollTop = 0; }
+  function iklBandeauACorriger(n, tout){
+    var d = document.createElement('div'); d.id = 'ikl-a-corriger';
+    var p = document.createElement('p');
+    p.textContent = tout ? '⚠️ ' + iklTexteBlocage(n) + ' (' + iklNomConducteur(iklConducteur) + '). Touche un trajet pour le corriger : commune choisie dans la liste, ou « Journée de tournée » pour une sortie à plusieurs arrêts.'
+                         : '⚠️ ' + iklTexteBlocage(n) + ' (' + iklNomConducteur(iklConducteur) + ').';
+    d.appendChild(p);
+    if (!tout){
+      var b = document.createElement('button'); b.type = 'button'; b.className = 'vc-no'; b.id = 'ikl-voir-a-corriger';
+      b.textContent = 'Voir les trajets à corriger'; b.addEventListener('click', iklOuvrirACorriger);
+      d.appendChild(b);
+    }
+    return d;
+  }
+  function iklMajEtatExport(){
+    var el = document.getElementById('ikl-export'), n = iklCharge ? iklACorriger().length : 0;
+    // Libellé changé SEULEMENT quand l'export est bloqué : au repos, bouton inchangé.
+    if (n > 0){ el.classList.add('ik-export-bloque'); el.textContent = '🔒 Excel'; el.title = iklTexteBlocage(n); }
+    else if (el.classList.contains('ik-export-bloque')){ el.classList.remove('ik-export-bloque'); el.textContent = '⬇️ Excel'; el.removeAttribute('title'); }
+  }
   function iklRender(){
     iklRenderFiltres();
     document.getElementById('ikl-titre-sub').textContent = iklNomConducteur(iklConducteur) + ' · ' + iklAnnee;
+    iklMajEtatExport();
     if (!iklCharge){ return; }
     var calc = iklCalculAnnee(iklConducteur, iklAnnee);
     iklList.innerHTML = '';
+    var aCorriger = iklACorriger();
+    if (iklOnglet === 'corriger'){
+      if (!aCorriger.length){
+        var ok = document.createElement('div'); ok.id = 'ikl-a-corriger';
+        ok.textContent = '✅ Tous les trajets ' + iklAnnee + ' de ' + iklNomConducteur(iklConducteur) + ' sont corrects : l’export Excel est disponible.';
+        iklList.appendChild(ok); return;
+      }
+      iklList.appendChild(iklBandeauACorriger(aCorriger.length, true));
+      iklList.appendChild(iklTable(calc, aCorriger));
+      return;
+    }
+    if (aCorriger.length) iklList.appendChild(iklBandeauACorriger(aCorriger.length, false));
     iklList.appendChild(iklBlocVehicule(calc));
     var sousMontant = calc.bareme && calc.kmTotal > 0 ? ('taux effectif ' + iklNum(calc.taux || 0, 4) + ' €/km' + (calc.bareme.provisoire ? ' · PROVISOIRE' : '')) : (calc.vehicule ? '' : 'véhicule à renseigner');
     if (iklOnglet === 'recap' || iklOnglet === 'tout'){
@@ -20422,73 +20686,55 @@
   document.getElementById('ikl-close').addEventListener('click', iklClose);
   document.getElementById('sh-ikl').addEventListener('click', function(){ sheetOpen(false); iklOpen(); });
 
-  // ---- Distance : Base Adresse Nationale (géocodage) + OSRM (itinéraire routier), appelés
-  // DEPUIS LE NAVIGATEUR (les deux services autorisent l'appel direct) -- zéro charge serveur.
-  function iklGeocoder(ville){
-    return fetch('https://api-adresse.data.gouv.fr/search/?type=municipality&limit=1&q=' + encodeURIComponent(ville))
-      .then(function(r){ return r.json(); }).then(function(j){
-        var f = j && j.features && j.features[0];
-        if (!f) throw new Error('« ' + ville + ' » introuvable');
-        return { lon: f.geometry.coordinates[0], lat: f.geometry.coordinates[1], nom: f.properties.city || f.properties.label };
-      });
-  }
+  // ---- Distance (07/10/2026) : coordonnées du RÉFÉRENTIEL LOCAL des communes (webhook labo-ik,
+  // type 'communes' -- plus d'appel à api-adresse.data.gouv.fr), puis itinéraire routier OSRM demandé
+  // par le navigateur (seul appel extérieur, avec délai maximal) : voir ikDistanceRoutiere. En cas
+  // d'échec, km saisis à la main -- l'enregistrement n'en dépend jamais.
   var iklCalcSeq = 0;
+  var iklTournee = false;
   function iklCalcDistance(manuel){
     var dep = document.getElementById('iklf-depart').value.trim();
     var arr = document.getElementById('iklf-arrivee').value.trim();
     var res = document.getElementById('iklf-calc-result');
+    if (iklTournee) return;
     if (dep.length < 2 || arr.length < 2){ if (manuel) toast('Indique une ville de départ et d’arrivée.'); return; }
     var seq = ++iklCalcSeq;
     res.style.display = ''; res.className = 'ikl-calc-encours';
     res.textContent = '⏳ Calcul de la distance ' + dep + ' → ' + arr + '…';
-    Promise.all([iklGeocoder(dep), iklGeocoder(arr)]).then(function(pts){
-      var url = 'https://router.project-osrm.org/route/v1/driving/' + pts[0].lon + ',' + pts[0].lat + ';' + pts[1].lon + ',' + pts[1].lat + '?overview=false';
-      return fetch(url).then(function(r){ return r.json(); }).then(function(j){
-        if (!j || j.code !== 'Ok' || !j.routes || !j.routes[0]) throw new Error('itinéraire introuvable');
-        return { km: Math.round(j.routes[0].distance / 100) / 10, a: pts[0].nom, b: pts[1].nom };
-      });
-    }).then(function(r){
+    ikDistanceRoutiere(postIkLabo, dep, arr).then(function(r){
       if (seq !== iklCalcSeq) return;
       document.getElementById('iklf-km').value = r.km;
-      res.className = ''; res.textContent = '✅ ' + String(r.km).replace('.', ',') + ' km par la route (' + r.a + ' → ' + r.b + ')';
+      res.className = ''; res.textContent = '✅ ' + String(r.km).replace('.', ',') + ' km par la route (' + r.depart + ' → ' + r.arrivee + ')';
       iklMajApercu();
-    }).catch(function(e){
+    }, function(e){
       if (seq !== iklCalcSeq) return;
-      res.className = ''; res.textContent = '⚠️ Distance non calculée (' + (e && e.message ? e.message : 'réseau') + ') — saisis les km à la main.';
+      res.className = ''; res.textContent = ikMessageRouteKo(e);
     });
   }
-  // Suggestions de villes (BAN, communes uniquement), sans biais géographique.
-  function iklVilleSug(inputId, sugId){
-    var input = document.getElementById(inputId), sug = document.getElementById(sugId), timer = null;
-    input.addEventListener('input', function(){
-      clearTimeout(timer);
-      var q = input.value.trim();
-      if (q.length < 2){ sug.innerHTML = ''; sug.classList.remove('open'); return; }
-      timer = setTimeout(function(){
-        fetch('https://api-adresse.data.gouv.fr/search/?type=municipality&autocomplete=1&limit=6&q=' + encodeURIComponent(q))
-          .then(function(r){ return r.json(); }).then(function(j){
-            var feats = (j && j.features) || [];
-            sug.innerHTML = '';
-            feats.forEach(function(f){
-              var li = document.createElement('li');
-              var ville = f.properties.city || f.properties.label;
-              li.innerHTML = escHtml(ville) + '<small>' + escHtml(f.properties.context || '') + '</small>';
-              li.addEventListener('mousedown', function(e){ e.preventDefault(); });
-              li.addEventListener('click', function(){
-                input.value = ville; sug.innerHTML = ''; sug.classList.remove('open'); iklCalcDistance(false);
-              });
-              sug.appendChild(li);
-            });
-            // réponse arrivée après la sortie du champ : ne pas rouvrir la liste par-dessus le champ suivant
-            sug.classList.toggle('open', feats.length > 0 && document.activeElement === input);
-          }).catch(function(){});
-      }, 250);
-    });
-    input.addEventListener('blur', function(){ setTimeout(function(){ sug.classList.remove('open'); }, 150); });
-    input.addEventListener('change', function(){ iklCalcDistance(false); });
+  // Suggestions de villes : référentiel local (même rendu qu'avant : nom + « 33, Gironde, Nouvelle-Aquitaine »),
+  // sans biais géographique (à pertinence égale, la commune la plus peuplée d'abord).
+  var iklChercherCommunes = ikcSuggesteur(postIkLabo, 6);
+  function iklRenduCommune(c){ return escHtml(c.nom) + '<small>' + escHtml(c.contexte || '') + '</small>'; }
+  ikcBrancherSuggestions(document.getElementById('iklf-depart'), document.getElementById('iklf-depart-sug'),
+    { chercher: iklChercherCommunes, rendu: iklRenduCommune, onChoix: function(){ iklCalcDistance(false); } });
+  ikcBrancherSuggestions(document.getElementById('iklf-arrivee'), document.getElementById('iklf-arrivee-sug'),
+    { chercher: iklChercherCommunes, rendu: iklRenduCommune, onChoix: function(){ iklCalcDistance(false); },
+      tournee: { actif: function(){ return iklTournee; }, choisir: function(q){ iklMajTournee(true); document.getElementById('iklf-arrivee').value = q; document.getElementById('iklf-km').focus(); } } });
+  ['iklf-depart', 'iklf-arrivee'].forEach(function(id){ document.getElementById(id).addEventListener('change', function(){ iklCalcDistance(false); }); });
+  // Journée de tournée : choisie dans la liste des villes d'arrivée, annulable ; libellé libre, km à la main.
+  function iklMajTournee(on){
+    iklTournee = !!on;
+    var d = document.getElementById('iklf-tournee');
+    d.style.display = on ? '' : 'none';
+    document.getElementById('iklf-calc').style.display = on ? 'none' : '';
+    d.innerHTML = '';
+    if (!on) return;
+    d.appendChild(document.createTextNode('🧭 Journée de tournée : « Arrivée » = secteur parcouru (par exemple « Bassin d’Arcachon »), km de la journée saisis à la main.'));
+    var b = document.createElement('button'); b.type = 'button'; b.className = 'vc-no'; b.textContent = 'Revenir à une commune d’arrivée';
+    b.addEventListener('click', function(){ iklMajTournee(false); document.getElementById('iklf-arrivee').focus(); });
+    d.appendChild(b);
+    document.getElementById('iklf-calc-result').style.display = 'none';
   }
-  iklVilleSug('iklf-depart', 'iklf-depart-sug');
-  iklVilleSug('iklf-arrivee', 'iklf-arrivee-sug');
 
   // ---- Formulaire trajet ----
   var iklFormBg = document.getElementById('ikl-form-bg');
@@ -20531,6 +20777,11 @@
     document.getElementById('iklf-km').value = t && t.km_aller != null ? t.km_aller : '';
     document.getElementById('iklf-ar').checked = t ? Number(t.nb_trajet) !== 1 : true;
     document.getElementById('iklf-calc-result').style.display = 'none';
+    iklMajTournee(!!(t && t.mode === 'tournee'));
+    // 07/10/2026 : motif donné à l'instant par la règle commune (masqué si le trajet est correct).
+    var ano = document.getElementById('iklf-anomalie');
+    ano.textContent = t && !dupliquer && t.a_corriger ? '⚠️ À corriger : ' + t.a_corriger : '';
+    ano.style.display = ano.textContent ? '' : 'none';
     document.getElementById('iklf-delete').style.display = iklEditId ? '' : 'none';
     document.getElementById('iklf-dup').style.display = iklEditId ? '' : 'none';
     document.getElementById('iklf-suivant').style.display = iklEditId ? 'none' : '';
@@ -20560,7 +20811,8 @@
       ville_depart: document.getElementById('iklf-depart').value.trim(),
       ville_arrivee: document.getElementById('iklf-arrivee').value.trim(),
       nb_trajet: document.getElementById('iklf-ar').checked ? 2 : 1,
-      km_aller: parseFloat(String(document.getElementById('iklf-km').value).replace(',', '.'))
+      km_aller: parseFloat(String(document.getElementById('iklf-km').value).replace(',', '.')),
+      mode: iklTournee ? 'tournee' : ''
     };
     if (iklEditId){ iklLignes.forEach(function(l){ if (l.id === iklEditId) trajet.conducteur = l.conducteur; }); }
     if (!iklPartiesDate(trajet.date)){ toast('Date invalide.'); return; }
@@ -20584,6 +20836,7 @@
         document.getElementById('iklf-km').value = '';
         document.getElementById('iklf-motif').value = '';
         document.getElementById('iklf-calc-result').style.display = 'none';
+        iklMajTournee(false);
         iklMajApercu();
         document.getElementById('iklf-arrivee').focus();
       } else iklFormClose();
@@ -20952,6 +21205,10 @@ function ikxRepartir(centimes, poids) {
 // <<< ik-export-xlsx.js
   function iklExporter(){
     if (!iklCharge){ toast('Chargement en cours, réessaie dans un instant.'); return; }
+    // 07/10/2026 : document comptable, propre par construction -- AUCUNE marque d'anomalie dans le
+    // fichier ; il n'est donc pas produit tant qu'un trajet de ce conducteur et de cette année est à corriger.
+    var nAc = iklACorriger().length;
+    if (nAc){ toast(iklTexteBlocage(nAc) + '.', 6000); iklOuvrirACorriger(); return; }
     var calc = iklCalculAnnee(iklConducteur, iklAnnee);
     if (!calc.trajets.length){ toast('Aucun trajet à exporter pour ' + iklNomConducteur(iklConducteur) + ' en ' + iklAnnee + '.'); return; }
     var nom = iklNomConducteur(iklConducteur);
@@ -20969,7 +21226,7 @@ function ikxRepartir(centimes, poids) {
       ],
       mentions: bar && bar.provisoire ? ['Barème ' + calc.annee + ' provisoire : montants à confirmer à la publication du barème officiel.'] : [],
       trajets: calc.trajets.map(function(t){
-        return { date: t.date, depart: t.ville_depart || '', arrivee: t.ville_arrivee || '', allerRetour: Number(t.nb_trajet) === 2,
+        return { date: t.date, depart: t.ville_depart || '', arrivee: ikTexteArrivee(t), allerRetour: Number(t.nb_trajet) === 2,
                  motif: t.motif || '', kmAller: Number(t.km_aller) || 0, kmComptes: Number(t.km_total) || 0,
                  centimes: calc.centimes[t.id] != null ? calc.centimes[t.id] : null };
       })
@@ -21225,17 +21482,32 @@ function ikxRepartir(centimes, poids) {
       if (caption){ var c = document.createElement('span'); c.className = 'ro-caption'; c.textContent = caption; t.appendChild(c); }
       return t;
     }
-    grid.appendChild(tile('CA comptable réel (HT)', fmtEuros(rc.caNet), null, periodeTxt));
-    grid.appendChild(tile('Charges réelles totales (HT)', fmtEuros(rc.chargesNet), null, periodeTxt));
-    grid.appendChild(tile('Résultat net', fmtEuros(rc.resultatNet), rc.resultatNet >= 0 ? 'ro-pos' : 'ro-neg', periodeTxt));
-    wrap.appendChild(grid);
+    // 07/10/2026 : le serveur ne sert un bloc que s'il couvre EXACTEMENT la période affichée
+    // (resultatComptable.blocsMasques sinon) -- jamais d'ancien chiffre sous le libellé de l'exercice.
+    if (typeof rc.caNet === 'number'){
+      grid.appendChild(tile('CA comptable réel (HT)', fmtEuros(rc.caNet), null, periodeTxt));
+      grid.appendChild(tile('Charges réelles totales (HT)', fmtEuros(rc.chargesNet), null, periodeTxt));
+      grid.appendChild(tile('Résultat net', fmtEuros(rc.resultatNet), rc.resultatNet >= 0 ? 'ro-pos' : 'ro-neg', periodeTxt));
+      wrap.appendChild(grid);
+    }
 
     var note = document.createElement('p'); note.id = 'ro-note';
     note.textContent = 'Ce bloc et le tableau mensuel ci-dessus viennent tous les deux du relevé de la comptable' + (rc.misAJourLe ? (', reçu le ' + fmtDevisDateSimple(rc.misAJourLe)) : '') + ' : le tableau le détaille mois par mois, ce bloc le consolide sur toute la période (toutes les charges, pas seulement les achats de matières).';
     wrap.appendChild(note);
 
-    if (rc.chargesParPoste) wrap.appendChild(rentaBuildRepartitionList('Répartition des charges par poste', rc.chargesParPoste, rc.chargesNet));
-    if (rc.caParPrestation) wrap.appendChild(rentaBuildRepartitionList('CA par type de prestation', rc.caParPrestation, rc.caNet));
+    // Période réellement couverte par les répartitions (serveur : repartitionsPeriode), écrite dans le titre.
+    var rpTxt = rc.repartitionsPeriode && rc.repartitionsPeriode.debut ? ' (' + fmtDevisDateSimple(rc.repartitionsPeriode.debut) + ' → ' + fmtDevisDateSimple(rc.repartitionsPeriode.fin) + ')' : '';
+    if (rc.chargesParPoste) wrap.appendChild(rentaBuildRepartitionList('Répartition des charges par poste' + rpTxt, rc.chargesParPoste, rc.chargesNet));
+    if (rc.caParPrestation) wrap.appendChild(rentaBuildRepartitionList('CA par type de prestation' + rpTxt, rc.caParPrestation, rc.caNet));
+    // Blocs que le serveur n'a PAS servis parce qu'ils ne couvrent pas la période affichée : on le dit,
+    // avec la période dont on dispose -- jamais leurs anciennes valeurs.
+    (rc.blocsMasques || []).forEach(function(b){
+      var pa = rc.periodeAffichee || {};
+      var p = document.createElement('p'); p.className = 'renta-bloc-masque';
+      p.textContent = b.libelle + ' : pas encore calculé pour la période affichée (' + fmtDevisDateSimple(pa.debut) + ' → ' + fmtDevisDateSimple(pa.fin) + ')' +
+        (b.periodeDebut && b.periodeFin ? ' — le dernier calcul porte sur ' + fmtDevisDateSimple(b.periodeDebut) + ' → ' + fmtDevisDateSimple(b.periodeFin) + ' ; il n’est pas affiché pour ne pas être confondu avec cette période.' : '.');
+      wrap.appendChild(p);
+    });
     if (rc.fournisseursCles){
       var fdict = {};
       Object.keys(rc.fournisseursCles).forEach(function(k){ fdict[k] = rc.fournisseursCles[k].montant; });
@@ -21413,9 +21685,12 @@ function ikxRepartir(centimes, poids) {
     var rc = d.resultatComptable;
     if (!rc || !rc.redressement) return null;
     var r = rc.redressement;
+    // 07/10/2026 : plus aucune période écrite en dur ici -- la comparaison porte son propre libellé
+    // (periodeLibelle, fourni avec les chiffres) ; sans lui, le bloc n'est pas affiché.
+    if (!r.periodeLibelle) return null;
     var wrap = document.createElement('div'); wrap.id = 'renta-redressement';
     var label = document.createElement('div'); label.className = 'rr-label';
-    label.textContent = "Sur les 8 memes mois (oct. -> mai), un an plus tot vs cette annee :";
+    label.textContent = 'Sur les mêmes mois (' + r.periodeLibelle + '), un an plus tôt vs cette année :';
     var compare = document.createElement('div'); compare.className = 'rr-compare';
     compare.innerHTML = fmtEuros(r.resultat8MoisAnneePrecedente) + ' → <b>' + fmtEuros(r.resultat8MoisAnneeCourante) + '</b>';
     var delta = document.createElement('div'); delta.className = 'rr-delta';
@@ -21632,7 +21907,10 @@ function ikxRepartir(centimes, poids) {
       var totalCa = mois.reduce(function(s, m){ return s + m.ca; }, 0);
       var totalDep = moisAvecDepense.reduce(function(s, m){ return s + m.depenses; }, 0);
       var totalBenef = moisAvecDepense.length === mois.length ? (totalCa - totalDep) : null;
-      table.appendChild(rentaTableRow('rt-total', 'Total', { ca: totalCa, depenses: moisAvecDepense.length ? totalDep : null, benefice: totalBenef }));
+      // 07/10/2026 (MCS) : le total porte la période qu'il additionne -- après une bascule d'exercice,
+      // le tableau couvre des mois de deux exercices et « Total » seul se lirait comme celui de l'exercice.
+      var libTotal = (isMcsCode() && d.exerciceCA && mois.length) ? 'Total ' + moisLabelCourt(mois[mois.length - 1].mois) + ' → ' + moisLabelCourt(mois[0].mois) : 'Total';
+      table.appendChild(rentaTableRow('rt-total', libTotal, { ca: totalCa, depenses: moisAvecDepense.length ? totalDep : null, benefice: totalBenef }));
     }
     if (isMcsCode()) wrap.appendChild(rentaRegleAvoirs());
     wrap.appendChild(table);
