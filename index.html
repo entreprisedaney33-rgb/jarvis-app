@@ -6789,6 +6789,95 @@
     html.mcs-theme .ro-grid{ grid-template-columns:1fr; }
     html.mcs-theme #renta-resultat-comptable .ro-grid{ grid-template-columns:1fr; }
   }
+
+  /* ==== Accueil MCS réduit + véhicule IK (07/10/2026) ==========================================
+     Maquette validée : clients/mcs/maquette-mcs.html (ordinateur + téléphone). Rapport :
+     clients/mcs/RAPPORT-REDUCTION-DEUX-ONGLETS-2026-10-07.md.
+     LABO PIXEL-IDENTIQUE : chaque règle ci-dessous vise soit un identifiant créé pour ce lot
+     (#mcsHome2, #hname-mcs2, #hquit-mcs2, #ik-veh-bg, #ik-vehicule, .mh2-*), soit
+     html.mcs-theme.mcs-accueil-v2 / .mcs-sans-chat -- classes que seul un patron MCS reçoit
+     (enterApp). Aucune règle de base existante n'est modifiée. Couleurs : jetons du thème MCS
+     (--blue #0050A0, contraste vérifié), au plus près du bleu de la maquette (#0a58a6). */
+  #mcsHome2{display:none}
+  html.mcs-theme.mcs-accueil-v2 #homeGrid .sh-grid{display:none !important}
+  html.mcs-theme.mcs-sans-chat #composer{display:none !important}
+  html.mcs-theme.mcs-accueil-v2 #mcsHome2{display:block; width:100%; box-sizing:border-box; padding:20px}
+  .mh2-stats{display:grid; grid-template-columns:1fr 1fr; gap:14px}
+  .mh2-stat{background:#fff; border:1px solid #E3E7EC; border-radius:12px; padding:15px 17px}
+  .mh2-lb{font-size:13px; letter-spacing:.07em; text-transform:uppercase; color:var(--muted); font-weight:700}
+  .mh2-tag{display:inline-block; background:#FFF3CD; color:#7A5B00; border-radius:4px; padding:1px 6px;
+    font-size:11px; font-weight:700; letter-spacing:.04em; vertical-align:2px; margin-left:8px}
+  .mh2-vl{font-size:28px; font-weight:800; letter-spacing:-.02em; margin:7px 0 2px; font-variant-numeric:tabular-nums; color:var(--blue)}
+  .mh2-ht{font-size:15px; font-weight:700; letter-spacing:0; margin-left:4px}
+  .mh2-pe{font-size:14px; color:var(--ink)}
+  .mh2-maj{font-size:13px; color:var(--muted); margin-top:8px; border-top:1px solid #E3E7EC; padding-top:8px}
+  .mh2-tuiles{display:grid; grid-template-columns:1fr 1fr; gap:14px; margin-top:14px}
+  .mh2-tuile{background:#fff; border:1px solid #E3E7EC; border-top:3px solid var(--blue); border-radius:12px;
+    padding:20px 18px 17px; cursor:pointer; -webkit-tap-highlight-color:transparent; display:flex; flex-direction:column}
+  .mh2-ic{color:var(--blue); line-height:0}
+  .mh2-ic svg{width:28px; height:28px}
+  .mh2-tuile h3{margin:11px 0 5px; font-size:18px; color:var(--ink)}
+  .mh2-tuile p{margin:0; color:var(--muted); font-size:15px; line-height:1.5; flex:1 0 auto}
+  .mh2-pied{margin-top:14px; padding-top:11px; border-top:1px solid #E3E7EC; display:flex; align-items:center; gap:10px}
+  .mh2-chiffre{font-size:14px; color:var(--muted); font-variant-numeric:tabular-nums}
+  .mh2-ouvrir{margin-left:auto; background:var(--blue); color:#fff; border:0; border-radius:99px;
+    padding:9px 20px; min-height:40px; font-size:15px; font-weight:600; cursor:pointer; font-family:inherit}
+  .mh2-ouvrir:active{opacity:.8}
+  .mh2-court{display:none}
+  /* En-tête (maquette) : logo + « MCS / Dératisation · Désinsectisation · VMC », Aide + Quitter à droite.
+     Le menu (chevron) reste à côté du nom : Notifications, mise à jour, Se déconnecter. */
+  html.mcs-theme.mcs-accueil-v2 header{justify-content:flex-start; gap:10px; padding-left:20px; padding-right:20px}
+  html.mcs-theme.mcs-accueil-v2 header .hname,
+  html.mcs-theme.mcs-accueil-v2 header .dot,
+  html.mcs-theme.mcs-accueil-v2 header .hver{display:none}
+  html.mcs-theme.mcs-accueil-v2 #header-logo-mcs{width:32px; height:32px}
+  html.mcs-theme.mcs-accueil-v2 #hname-mcs2{display:block !important; font-weight:700; font-size:16px; line-height:1.15; color:var(--ink); text-align:left}
+  #hname-mcs2 small{display:block; font-weight:400; font-size:13px; color:var(--muted); letter-spacing:.03em}
+  #hname-mcs2 .hn2-court{display:none}
+  html.mcs-theme.mcs-accueil-v2 #hchev{margin-right:auto}
+  html.mcs-theme.mcs-accueil-v2 #accueil-tuto-btn,
+  html.mcs-theme.mcs-accueil-v2 #hquit-mcs2{border:1px solid var(--hairline); background:#fff; color:var(--ink);
+    border-radius:99px; padding:6px 14px; font-size:14px; font-weight:600; line-height:1.2; cursor:pointer; font-family:inherit}
+  html.mcs-theme.mcs-accueil-v2 #accueil-tuto-btn{height:auto; min-height:0}
+  html.mcs-theme.mcs-accueil-v2 #accueil-tuto-btn svg{display:none}
+  /* Sans barre de discussion, l'ombre du menu du bas (fermé, sous l'écran) devenait visible. */
+  html.mcs-theme.mcs-accueil-v2 #sheet:not(.open){box-shadow:none}
+  html.mcs-theme.mcs-accueil-v2 #hquit-mcs2{display:inline-block !important}
+  /* Téléphone : tout en colonne, textes courts, en-tête allégé (comme la maquette). */
+  @media (max-width: 640px){
+    html.mcs-theme.mcs-accueil-v2 #mcsHome2{padding:14px}
+    .mh2-stats, .mh2-tuiles{grid-template-columns:1fr; gap:11px}
+    .mh2-tuiles{margin-top:11px}
+    .mh2-vl{font-size:25px}
+    .mh2-tuile{padding:16px 15px 14px}
+    .mh2-long{display:none}
+    .mh2-court{display:inline}
+    html.mcs-theme.mcs-accueil-v2 header{padding-left:14px; padding-right:14px}
+    #hname-mcs2 .hn2-long{display:none}
+    #hname-mcs2 .hn2-court{display:block}
+    html.mcs-theme.mcs-accueil-v2 #accueil-tuto-btn,
+    html.mcs-theme.mcs-accueil-v2 #hquit-mcs2{display:none !important}
+  }
+  /* Véhicule IK MCS (fenêtre calquée sur #ik-form) + bloc véhicule du récapitulatif. */
+  #ik-veh-bg{position:fixed; inset:0; z-index:55; background:rgba(0,0,0,.55); display:none}
+  #ik-veh-bg.open{display:block}
+  #ik-veh-form{
+    position:fixed; left:14px; right:14px; top:50%; transform:translateY(-50%) scale(.96); z-index:56;
+    background:var(--surface); border-radius:16px; padding:18px 18px calc(18px + env(safe-area-inset-bottom));
+    max-height:80vh; overflow-y:auto; max-width:560px; margin:0 auto;
+    opacity:0; transition:opacity .2s ease, transform .2s ease;
+  }
+  #ik-veh-bg.open #ik-veh-form{opacity:1; transform:translateY(-50%) scale(1)}
+  .ikv-aide{font-size:13px; color:var(--muted); margin:6px 2px 0}
+  #ik-veh-form #ikv-elec-label{display:flex}
+  #ikv-err{color:var(--no); font-size:14px; min-height:0; margin:8px 2px 0}
+  #ik-vehicule{background:var(--surface); border-radius:12px; padding:12px 14px; margin:4px 0 10px}
+  #ik-vehicule .ikv-ligne{font-size:15px; color:var(--ink)}
+  #ik-vehicule .ikv-lib{color:var(--muted)}
+  #ik-vehicule .ikv-modele{font-size:14px; color:var(--muted); margin-top:3px}
+  #ik-vehicule-btn{width:auto; margin-top:10px; padding:8px 14px; font-size:14px}
+  .ik-tag-prov{display:inline-block; background:#FFF3CD; color:#7A5B00; border-radius:4px; padding:0 5px;
+    font-size:11px; font-weight:700; letter-spacing:.03em; text-transform:uppercase; vertical-align:1px}
 </style>
 </head>
 <body>
@@ -6825,6 +6914,7 @@
       <span class="hbadge" id="header-badge"></span>
     </div>
     <b class="hname">Jarvis</b>
+    <span id="hname-mcs2" style="display:none">MCS<small class="hn2-long">Dératisation · Désinsectisation · VMC</small><small class="hn2-court">Jarvis</small></span>
     <i class="dot"></i>
     <span class="hver" id="hver"></span>
     <svg id="hchev" width="13" height="13" viewBox="0 0 24 24" fill="none" aria-hidden="true"><path d="M5 8.5 12 15.5 19 8.5" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round"/></svg>
@@ -6838,6 +6928,7 @@
          head/close de panneau comme les autres -- pas de sous-écran ici), même gating MCS patron
          que les autres, câblé à part comme #bruno-tuto-btn (cf. applyTutoVisibility). -->
     <button id="accueil-tuto-btn" class="tuto-btn" type="button" aria-label="Tutoriel de l'accueil" style="display:none"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="9"/><path d="M9.5 9a2.5 2.5 0 0 1 4.6 1.4c0 1.6-2.1 1.8-2.1 3.4"/><circle cx="12" cy="17" r="0.8" fill="currentColor" stroke="none"/></svg>Aide</button>
+    <button id="hquit-mcs2" type="button" style="display:none">Quitter</button>
   </header>
   <div id="brunoClient">
     <div id="bc-summary">
@@ -6902,7 +6993,7 @@
   <!-- Refonte accueil MCS (29/08/2026) : conteneur vide -- pour MCS patron, .sh-grid (definie
        plus bas dans #sheet) y est deplacee par appendChild au demarrage (enterApp()), jamais
        dupliquee. Pour tout autre tenant/role, reste vide et display:none (cf. CSS), aucun effet. -->
-  <div id="homeGrid"></div>
+  <div id="homeGrid"><div id="mcsHome2" aria-label="Accueil"></div></div>
   <div id="pullspin"><span class="pullspin-ic"></span></div>
   <div id="chat"></div>
   <div id="composer">
@@ -8106,6 +8197,35 @@
   </div>
 </div>
 
+<!-- Véhicule MCS (07/10/2026) : puissance fiscale, 100 % électrique, modèle -- même famille que #ik-form. -->
+<div id="ik-veh-bg">
+  <div class="contrat-form" id="ik-veh-form">
+    <h3 id="ikv-titre">Votre véhicule</h3>
+    <label>Type de véhicule</label>
+    <select id="ikv-genre">
+      <option value="voiture">Voiture</option>
+      <option value="moto">Moto (&gt; 50 cm³)</option>
+      <option value="cyclo">Cyclomoteur (≤ 50 cm³)</option>
+    </select>
+    <div id="ikv-cv-wrap">
+      <label>Puissance fiscale (case P.6 de la carte grise)</label>
+      <select id="ikv-cv"></select>
+      <p class="ikv-aide">Le barème s’arrête à 7 CV : au-delà (8, 10, 15 CV…), choisir « 7 CV et plus ».</p>
+    </div>
+    <label id="ikv-elec-label" style="flex-direction:row; align-items:center; gap:8px; margin-top:10px">
+      <input id="ikv-elec" type="checkbox" style="width:auto; margin:0">
+      <span>100 % électrique (barème majoré de 20 %)</span>
+    </label>
+    <label>Modèle du véhicule</label>
+    <input id="ikv-modele" type="text" maxlength="80" placeholder="Ex : Renault Kangoo" autocomplete="off">
+    <p id="ikv-err"></p>
+    <div class="cf-actions">
+      <button class="vc-ok" id="ikv-save" type="button">Enregistrer</button>
+      <button class="vc-no" id="ikv-cancel" type="button">Annuler</button>
+    </div>
+  </div>
+</div>
+
 <!-- Frais kilométriques LABO (06/10/2026) -- Dorian + Mathéo, panneau SEPARE de #ikview (MCS) :
      ids ikl-*, webhook labo-ik, table labo_ik. Voir produits/jarvis/RAPPORT-TUILE-IK-LABO-2026-10-06.md -->
 <div id="iklview">
@@ -8900,9 +9020,53 @@
          c'est ce qui supprime le conflit humain sur cette ligne precise. Sert aussi de cle
          unique de detection de mise a jour (voir checkUpdate ci-dessous), plus fiable qu'une
          comparaison de chaine de version par tenant. */
-  var APPV_MCS = '4.59';
+  var APPV_MCS = '4.60';
   var APPV_LABO = '1.09';
-  var BUILD = 103;
+  var BUILD = 104;
+
+  // ==============================================================================================
+  // ONGLETS ACTIFS PAR LOCATAIRE (07/10/2026) -- LA liste qui décide ce qu'un client voit.
+  // Mode d'emploi complet (rallumer un onglet, dupliquer pour un autre client) :
+  //   clients/mcs/RALLUMER-UN-ONGLET.md
+  // - Un locataire ABSENT de cette liste garde TOUT, comme avant (c'est le cas du LABO).
+  // - Un nom absent de la liste d'un locataire = onglet masqué ET jamais appelé au démarrage
+  //   (ni badge, ni préchargement) : aucune requête réseau pour un onglet éteint.
+  // - Rien n'est supprimé : les données restent en base, les panneaux restent dans ce fichier.
+  // - Rallumer un onglet = ajouter son nom ci-dessous ET réactiver son workflow n8n (liste des
+  //   workflows par onglet dans le document ci-dessus).
+  // Noms possibles : les clés de ONGLETS_CATALOGUE juste en dessous.
+  // ==============================================================================================
+  var ONGLETS_ACTIFS_PAR_LOCATAIRE = {
+    MCS: ['frais_kilometriques', 'rentabilite']
+  };
+  // Catalogue : nom -> tuile existante (bouton sh-*) + textes de la carte d'accueil. L'ordre des
+  // cartes à l'accueil suit l'ordre de la liste ci-dessus.
+  var ONGLETS_CATALOGUE = {
+    frais_kilometriques: { tuile: 'sh-ik', titre: 'Frais kilométriques',
+      texte: 'Saisissez vos déplacements au fil de l’année. Le barème s’applique tout seul, et l’export part chez votre comptable en un clic.',
+      texteCourt: 'Saisir vos déplacements, exporter pour la comptable.' },
+    rentabilite: { tuile: 'sh-rentabilite', titre: 'Rentabilité',
+      texte: 'Mois par mois : ce que vous avez vendu, ce que vous avez dépensé, et le détail poste par poste.',
+      texteCourt: 'Vendu, dépensé, poste par poste, mois par mois.' },
+    contrats: { tuile: 'sh-contrats', titre: 'Contrats', texte: 'Vos contrats d’entretien, leur facturation mois par mois et le calendrier des passages.' },
+    devis_et_factures: { tuile: 'sh-devis-attente', titre: 'Devis et factures', texte: 'Créer, suivre et envoyer vos devis, factures et avoirs.' },
+    relances_clients: { tuile: 'sh-relances', titre: 'Relances clients', texte: 'Les factures impayées à relancer, avec les brouillons prêts à envoyer.' },
+    opportunites: { tuile: 'sh-opportunites', titre: 'Opportunités', texte: 'Les syndics et copropriétés repérés comme prospects.' },
+    agenda: { tuile: 'sh-calendar', titre: 'Agenda', texte: 'Vos rendez-vous et passages.' },
+    carnet_bleu: { tuile: 'sh-carnet', titre: 'Carnet bleu', texte: 'Les fiches techniques de vos résidences.' },
+    notes: { tuile: 'sh-notes', titre: 'Notes', texte: 'Vos notes rapides.' },
+    // Pas des onglets à tuile, mais des zones de l'écran pilotées par la même liste :
+    chat: { tuile: null, titre: 'Discussion avec Jarvis (barre du bas)' },
+    point_du_jour: { tuile: null, titre: 'Bandeau « Point du jour » (chiffres à facturer, relances…)' }
+  };
+  function locataireCourant(){ return isMcsCode() ? 'MCS' : 'LABO'; }
+  function ongletActif(nom){
+    var liste = ONGLETS_ACTIFS_PAR_LOCATAIRE[locataireCourant()];
+    return !liste || liste.indexOf(nom) !== -1;
+  }
+  // Accueil « réduit » (maquette du 07/10/2026 : chiffres + cartes) : dès qu'un locataire a une
+  // liste, son accueil patron passe en cartes générées depuis cette liste.
+  function accueilReduit(){ return !!ONGLETS_ACTIFS_PAR_LOCATAIRE[locataireCourant()]; }
   // displayVersion()/displayVersionShort() lisent isMcsCode() (definie plus bas dans cette
   // meme IIFE -- declaration de fonction, donc disponible ici par hoisting) : le TENANT
   // affiche depend du code de connexion, jamais d'un simple "APPV" global qui ne dirait ni
@@ -9140,7 +9304,7 @@
         { selector: '#ik-month-tabs', title: 'Un onglet par mois',
           text: 'Comme votre fichier Excel : cliquez sur un mois pour voir les trajets de ce mois-là.' },
         { selector: '#ik-export', title: 'Export Excel',
-          text: 'Téléchargez le tableau du mois affiché en un clic.' },
+          text: 'Téléchargez en un clic le tableau Excel de l’année (une feuille par mois + un récapitulatif), pour votre comptable.' },
         { selector: '#ik-add', title: 'Ajouter un trajet',
           text: 'Cliquez ici pour enregistrer un nouveau trajet. On regarde ensemble comment le remplir.' },
         { selector: '#ikf-date', open: '#ik-add', close: '#ikf-cancel', title: 'La date',
@@ -9520,8 +9684,17 @@
         text: 'Pas besoin d’ouvrir un écran pour tout : vous pouvez aussi écrire ou dicter une demande ici (« fais-moi un devis pour... », « où en est telle facture ? ») -- Jarvis comprend et prépare, vous validez toujours avant tout envoi réel.' }
     ]
   };
+  // Accueil réduit (07/10/2026) : chiffres + cartes générées depuis ONGLETS_ACTIFS_PAR_LOCATAIRE.
+  var TUTO_ACCUEIL_V2_CONFIG = {
+    steps: [
+      { selector: '#mcsHome2 .mh2-stats', title: 'Vos chiffres',
+        text: 'Le chiffre d’affaires vient du dernier relevé comptable importé : sa date est écrite juste dessous, ce n’est pas du temps réel. Les frais kilométriques portent sur l’année civile en cours.' },
+      { selector: '#mcsHome2 .mh2-tuiles', title: 'Vos écrans',
+        text: 'Appuyez sur une carte pour ouvrir l’écran correspondant. Vous pouvez à tout moment appuyer sur « Aide » pour revoir ce tutoriel.' }
+    ]
+  };
   function startAccueilTuto(){
-    TUTO_CONFIGS.__accueil__ = TUTO_ACCUEIL_CONFIG; // réutilise tutoStart/tutoRenderStep tels quels
+    TUTO_CONFIGS.__accueil__ = document.documentElement.classList.contains('mcs-accueil-v2') ? TUTO_ACCUEIL_V2_CONFIG : TUTO_ACCUEIL_CONFIG; // réutilise tutoStart/tutoRenderStep tels quels
     tutoStart('__accueil__');
   }
   function brunoTutoSeen(){ return read('mcsBrunoTutoSeen') === '1'; }
@@ -9866,16 +10039,16 @@
     if (window._precacheDejaLancee) return;
     window._precacheDejaLancee = true;
     _precacheQueue = [
-      function(suite){ relancesChargerCalcul(function(j){ panelCacheSave('relances', j); suite(); }, function(){ suite(); }); },
-      function(suite){
+      ongletActif('relances_clients') && function(suite){ relancesChargerCalcul(function(j){ panelCacheSave('relances', j); suite(); }, function(){ suite(); }); },
+      ongletActif('contrats') && function(suite){
         var now = new Date();
         postContrats({ type: 'mois-liste', annee: now.getFullYear(), mois: now.getMonth() + 1 }, function(j){
           panelCacheSave('contrats-mois-' + now.getFullYear() + '-' + (now.getMonth() + 1), j);
           suite();
         }, function(){ suite(); });
       },
-      function(suite){ devisChargerListe(function(j){ panelCacheSave('devis', j); suite(); }, function(){ suite(); }); },
-    ];
+      ongletActif('devis_et_factures') && function(suite){ devisChargerListe(function(j){ panelCacheSave('devis', j); suite(); }, function(){ suite(); }); },
+    ].filter(Boolean); // 07/10/2026 : un onglet eteint (ONGLETS_ACTIFS_PAR_LOCATAIRE) n'est jamais precharge
     // Sujet 1.4 : court délai avant la toute première étape -- laisse le temps à un clic
     // immédiat de l'utilisateur d'annuler la file AVANT qu'elle ne démarre, plutôt que de
     // lancer un calcul lourd à l'instant même où l'écran d'accueil apparaît.
@@ -10718,30 +10891,30 @@
     // commentaire sur le bouton, ligne ~6205), donc jamais masque pour mcs+patron.
     // Backend indépendant côté MCS (table mcs_rdv_terrain, pas de vrai Google Agenda).
     var calBtn = document.getElementById('sh-calendar');
-    if (calBtn) calBtn.style.display = (mcs && role === 'patron') ? '' : 'none';
+    if (calBtn) calBtn.style.display = (mcs && role === 'patron' && ongletActif('agenda')) ? '' : 'none';
     // "Notes" (vide-cerveau) : visible côté compte principal (inchangé) ET côté patron d'un
     // tenant secondaire (même garde que Calendrier) — jamais pour un salarié. Backend séparé
     // par tenant (notes-liste pour le principal, mcs-notes-liste pour MCS, cf. postNotes()).
     var notesBtn = document.getElementById('sh-notes');
-    if (notesBtn) notesBtn.style.display = (!mcs || role === 'patron') ? '' : 'none';
+    if (notesBtn) notesBtn.style.display = (!mcs || (role === 'patron' && ongletActif('notes'))) ? '' : 'none';
     // "Devis et factures" : patron d'un tenant secondaire uniquement (jamais Bruno, jamais le
     // compte principal) — la protection réelle est côté serveur (webhook mcs-devis-factures).
     var devisBtn = document.getElementById('sh-devis-attente');
-    if (devisBtn) devisBtn.style.display = (mcs && role === 'patron') ? '' : 'none';
+    if (devisBtn) devisBtn.style.display = (mcs && role === 'patron' && ongletActif('devis_et_factures')) ? '' : 'none';
     // Badge (2026-08-10) : meme principe que meuteCheckBadge -- appel leger au demarrage pour
     // savoir s'il y a des devis/factures en attente sans attendre l'ouverture du panneau.
-    if (mcs && role === 'patron') devisCheckBadge(); else if (devisMenuBadge) devisMenuBadge.style.display = 'none';
+    if (mcs && role === 'patron' && ongletActif('devis_et_factures')) devisCheckBadge(); else if (devisMenuBadge) devisMenuBadge.style.display = 'none';
     // "Rentabilité" : même garde que "Devis à valider" — patron d'un tenant secondaire uniquement.
     var rentaBtn = document.getElementById('sh-rentabilite');
-    if (rentaBtn) rentaBtn.style.display = (mcs && role === 'patron') ? '' : 'none';
+    if (rentaBtn) rentaBtn.style.display = (mcs && role === 'patron' && ongletActif('rentabilite')) ? '' : 'none';
     // "Contrats" (chantier 5 audit MCS) : même garde — patron d'un tenant secondaire uniquement.
     var contratsBtn = document.getElementById('sh-contrats');
-    if (contratsBtn) contratsBtn.style.display = (mcs && role === 'patron') ? '' : 'none';
-    if (mcs && role === 'patron') contratsCheckBadge(); else if (contratsMenuBadge) contratsMenuBadge.style.display = 'none';
+    if (contratsBtn) contratsBtn.style.display = (mcs && role === 'patron' && ongletActif('contrats')) ? '' : 'none';
+    if (mcs && role === 'patron' && ongletActif('contrats')) contratsCheckBadge(); else if (contratsMenuBadge) contratsMenuBadge.style.display = 'none';
     // "Frais kilométriques (IK)" (chantier 6 réaffecté 11/08/2026) : même garde — patron d'un
     // tenant secondaire uniquement, jamais Bruno, jamais le compte principal.
     var ikBtn = document.getElementById('sh-ik');
-    if (ikBtn) ikBtn.style.display = (mcs && role === 'patron') ? '' : 'none';
+    if (ikBtn) ikBtn.style.display = (mcs && role === 'patron' && ongletActif('frais_kilometriques')) ? '' : 'none';
     // "Adresses manquantes" (Session 11, 07/09/2026, Point 2) : meme garde -- patron d'un tenant
     // secondaire uniquement, jamais Bruno, jamais le compte principal.
     // Session 16 bis (07/09/2026, Point 1) : outil de DIAGNOSTIC pour Dorian (retrouve les
@@ -10757,17 +10930,17 @@
     // "Relances clients" (chantier 3 audit MCS) : même garde — patron d'un tenant secondaire
     // uniquement, jamais Bruno, jamais le compte principal.
     var relancesBtn = document.getElementById('sh-relances');
-    if (relancesBtn) relancesBtn.style.display = (mcs && role === 'patron') ? '' : 'none';
-    if (mcs && role === 'patron') relancesCheckBadge(); else if (relancesMenuBadge) relancesMenuBadge.style.display = 'none';
+    if (relancesBtn) relancesBtn.style.display = (mcs && role === 'patron' && ongletActif('relances_clients')) ? '' : 'none';
+    if (mcs && role === 'patron' && ongletActif('relances_clients')) relancesCheckBadge(); else if (relancesMenuBadge) relancesMenuBadge.style.display = 'none';
     // "Opportunités" (radar prospection syndics/copropriétés) : même garde — patron d'un tenant
     // secondaire uniquement, jamais Bruno, jamais le compte principal.
     var oppBtn = document.getElementById('sh-opportunites');
-    if (oppBtn) oppBtn.style.display = (mcs && role === 'patron') ? '' : 'none';
-    if (mcs && role === 'patron') oppCheckBadge(); else if (oppBadge) oppBadge.style.display = 'none';
+    if (oppBtn) oppBtn.style.display = (mcs && role === 'patron' && ongletActif('opportunites')) ? '' : 'none';
+    if (mcs && role === 'patron' && ongletActif('opportunites')) oppCheckBadge(); else if (oppBadge) oppBadge.style.display = 'none';
     // "Carnet bleu" (fiches techniques des résidences) : même garde — patron d'un tenant
     // secondaire uniquement, jamais Bruno, jamais le compte principal.
     var carnetBtn = document.getElementById('sh-carnet');
-    if (carnetBtn) carnetBtn.style.display = (mcs && role === 'patron') ? '' : 'none';
+    if (carnetBtn) carnetBtn.style.display = (mcs && role === 'patron' && ongletActif('carnet_bleu')) ? '' : 'none';
     // "Portefeuille clients" (2026-08-03, demande Mathéo) : onglet retiré du menu (l'utilisateur
     // ne s'en sert pas via cette vue) — le mécanisme de fond RESTE actif (reconnaissance auto
     // d'un client MEG pendant la dictée d'un devis, cf. mcs_contacts) : c'est purement un
@@ -10795,7 +10968,7 @@
     // Bloc C (audit UX 21/08/2026) : Point du jour -- meme garde que toutes les tuiles patron
     // ci-dessus. refreshAccueil() est lui-meme non bloquant et ne leve jamais d'exception
     // (cf. sa definition) -- rien ici ne peut casser le reste de enterApp().
-    if (mcs && role === 'patron') refreshAccueil(); else hideAccueil();
+    if (mcs && role === 'patron' && ongletActif('point_du_jour')) refreshAccueil(); else hideAccueil();
     // Sujet 1 (01/09/2026, levier 1.3b) : precharge silencieuse des 3 panneaux les plus lourds
     // (Relances ~2-10s, Contrats ~1,5s/46 Ko, Devis et factures ~1,3s/62 Ko) pendant que Mickael
     // lit l'accueil -- alimente EXACTEMENT le meme cache (memes cles) que celui lu par
@@ -10813,7 +10986,7 @@
     // recree exactement le symptome a corriger). dfEnsureClients/dfEnsureArticles mettent deja
     // en file d'attente tout appelant pendant le chargement (jamais de reponse muette) --
     // rien a changer de ce cote, cf. leur definition plus haut.
-    if (mcs && role === 'patron') dfPrechargerCatalogue();
+    if (mcs && role === 'patron' && ongletActif('devis_et_factures')) dfPrechargerCatalogue();
     // Refonte accueil MCS (29/08/2026) : deplace .sh-grid de #sheet vers #homeGrid -- reserve
     // strictement a MCS patron (jamais pour le tenant labo, jamais pour Bruno). Un appendChild
     // deplace le noeud EXISTANT (pas une copie) : les 11 boutons gardent leurs ids, leurs
@@ -10827,6 +11000,12 @@
       if (shGrid && shGrid.parentElement !== homeGrid) homeGrid.appendChild(shGrid);
       mcsHomeMode = true;
     }
+    // Accueil réduit + discussion masquée (07/10/2026) -- pilotés par ONGLETS_ACTIFS_PAR_LOCATAIRE,
+    // jamais pour le LABO (pas de liste) ni pour Bruno. Classes sur <html>, comme mcs-theme.
+    var accueilV2 = mcs && role === 'patron' && !isBrunoMode() && accueilReduit();
+    document.documentElement.classList.toggle('mcs-accueil-v2', accueilV2);
+    document.documentElement.classList.toggle('mcs-sans-chat', accueilV2 && !ongletActif('chat'));
+    if (accueilV2) mh2Demarrer();
     applyHomeMode();
     installTutoButtons();
     // A4 (25/08/2026) : cible arrivee par l'URL (le SW a ouvert une fenetre fraiche, cf. plus
@@ -10867,6 +11046,8 @@
   // et Bruno restent au pixel ce qu'ils etaient avant ce chantier, jamais touches par ce code.
   function applyHomeMode(){
     if (!isMcsCode() || read('jarvisRole') !== 'patron' || isBrunoMode()) return;
+    // Sans discussion (07/10/2026), l'accueil est le seul écran racine : jamais de bascule vers un chat vide.
+    if (document.documentElement.classList.contains('mcs-sans-chat')) mcsHomeMode = true;
     if (app) app.classList.toggle('home-mode', mcsHomeMode);
     if (chat) chat.style.display = mcsHomeMode ? 'none' : '';
     if (homeGrid){
@@ -11090,7 +11271,12 @@
   var __origDevisAttenteClose = devisAttenteClose;
   devisAttenteClose = function(){ __origDevisAttenteClose(); refreshAccueil(); };
 
+  // 07/10/2026 : une notification (ou un lien ?cible=) vers un onglet ETEINT n'ouvre plus rien --
+  // jamais un panneau dont le workflow est desactive.
+  var ACCUEIL_CIBLES_ONGLET = { devis: 'devis_et_factures', contrats: 'contrats', relances: 'relances_clients',
+    calendrier: 'agenda', opportunites: 'opportunites', propositions: 'contrats', adresses: 'contrats' };
   function accueilNavigate(cible, ligne){
+    if (ACCUEIL_CIBLES_ONGLET[cible] && !ongletActif(ACCUEIL_CIBLES_ONGLET[cible])) return;
     var c = ACCUEIL_CIBLES[cible];
     if (c && typeof c.open === 'function'){ try { c.avecLigne ? c.open(ligne) : c.open(); } catch(e){} }
   }
@@ -11189,12 +11375,164 @@
 
   function refreshAccueil(){
     if (!isMcsCode() || read('jarvisRole') !== 'patron'){ hideAccueil(); return; }
+    if (!ongletActif('point_du_jour')){ hideAccueil(); return; }   // bandeau eteint (07/10/2026)
     try {
       postAccueil({}, function(j){
         try { renderAccueil(j); } catch(e){ hideAccueil(); }
       }, function(){ hideAccueil(); });
     } catch(e){ hideAccueil(); }
   }
+
+
+  // ---- Accueil MCS réduit (07/10/2026) -- maquette validée : clients/mcs/maquette-mcs.html ----
+  // Deux cartes de chiffres + une carte par onglet actif (ONGLETS_ACTIFS_PAR_LOCATAIRE, en tête de
+  // ce script). Les deux chiffres ne couvrent PAS la même période, et chaque carte l'écrit en clair :
+  //  - Chiffre d'affaires = DERNIER RELEVÉ COMPTABLE importé dans Rentabilité (exerciceCA.comptable,
+  //    même cache 'rentabilite' que le panneau) -- exercice du 1er octobre au 30 septembre, avec la
+  //    date du relevé : jamais présenté comme du temps réel.
+  //  - Frais kilométriques = année CIVILE en cours, même cache 'ik' et même calcul (ikCalculAnneeMcs)
+  //    que le panneau.
+  // Sobriété réseau : affichage immédiat depuis le cache ; au démarrage, 1 appel IK (léger) et 1 appel
+  // Rentabilité seulement si son cache a plus de 6 h (le relevé ne change qu'à l'import comptable).
+  var mh2 = document.getElementById('mcsHome2');
+  var MH2_RENTA_FRAICHEUR_MS = 6 * 3600 * 1000;
+  var MH2_MOIS = ['janvier', 'février', 'mars', 'avril', 'mai', 'juin', 'juillet', 'août', 'septembre', 'octobre', 'novembre', 'décembre'];
+  var mh2Etat = { ik: '', renta: '' };   // '' | 'charge' | 'erreur'
+  function mh2Date(iso){
+    var m = /^(\d{4})-(\d{2})-(\d{2})/.exec(String(iso || ''));
+    return m ? (Number(m[3]) === 1 ? '1er' : String(Number(m[3]))) + ' ' + MH2_MOIS[Number(m[2]) - 1] + ' ' + m[1] : '';
+  }
+  function mh2MoisAn(iso){
+    var m = /^(\d{4})-(\d{2})/.exec(String(iso || ''));
+    return m ? MH2_MOIS[Number(m[2]) - 1] + ' ' + m[1] : '';
+  }
+  function mh2El(tag, cls, txt){ var e = document.createElement(tag); if (cls) e.className = cls; if (txt != null) e.textContent = txt; return e; }
+  function mh2Stat(lb, tag, vl, ht, pe, maj){
+    var c = mh2El('div', 'mh2-stat');
+    var l = mh2El('div', 'mh2-lb', lb);
+    if (tag){ var t = mh2El('span', 'mh2-tag', tag); l.appendChild(t); }
+    c.appendChild(l);
+    var v = mh2El('div', 'mh2-vl', vl);
+    if (ht){ v.appendChild(mh2El('span', 'mh2-ht', ht)); }
+    c.appendChild(v);
+    if (pe) c.appendChild(mh2El('div', 'mh2-pe', pe));
+    if (maj) c.appendChild(mh2El('div', 'mh2-maj', maj));
+    return c;
+  }
+  function mh2CarteCA(){
+    var cache = panelCacheLoad('rentabilite');
+    var d = cache && cache.data && cache.data.donnees;
+    var cp = d && d.exerciceCA && d.exerciceCA.comptable;
+    if (!cp || typeof cp.ht !== 'number'){
+      return mh2Stat('Chiffre d’affaires', null, mh2Etat.renta === 'erreur' ? 'Indisponible' : '…', null,
+        mh2Etat.renta === 'erreur' ? 'Le relevé n’a pas pu être chargé. Ouvrez Rentabilité pour réessayer.' : 'Chargement du dernier relevé…', null);
+    }
+    var ex = d.exerciceCA.exercice || {};
+    var rc = d.resultatComptable || {};
+    var pe = 'Exercice du ' + mh2Date(ex.debut) + ' au ' + mh2Date(ex.fin);
+    var peCourt = 'Exercice ' + String(ex.debut || '').slice(0, 4) + '-' + String(ex.fin || '').slice(0, 4);
+    var maj = 'Dernier relevé comptable : ' + mh2MoisAn(cp.periodeDebut) + ' à ' + mh2MoisAn(cp.periodeFin) +
+      (rc.misAJourLe ? ', importé le ' + mh2Date(rc.misAJourLe) : '');
+    var c = mh2Stat('Chiffre d’affaires', null, fmtEuros(cp.ht), ' HT', null, maj);
+    var p = mh2El('div', 'mh2-pe');
+    p.appendChild(mh2El('span', 'mh2-long', pe)); p.appendChild(mh2El('span', 'mh2-court', peCourt));
+    c.insertBefore(p, c.querySelector('.mh2-maj'));
+    return c;
+  }
+  function mh2CalcIk(){
+    var cache = panelCacheLoad('ik');
+    if (!cache || !cache.data) return null;
+    return ikCalculAnneeMcs(cache.data.trajets || [], cache.data.vehicules || [], new Date().getFullYear());
+  }
+  function mh2CarteIk(calc){
+    if (!calc){
+      return mh2Stat('Frais kilométriques', null, mh2Etat.ik === 'erreur' ? 'Indisponible' : '…', null,
+        mh2Etat.ik === 'erreur' ? 'Les trajets n’ont pas pu être chargés. Ouvrez Frais kilométriques pour réessayer.' : 'Chargement des trajets…', null);
+    }
+    var kmTxt = calc.km.toLocaleString('fr-FR') + ' km';
+    var c = mh2Stat('Frais kilométriques', calc.provisoire ? 'PROVISOIRE' : null, calc.centimes == null ? '—' : fmtEuros(calc.centimes / 100), null, null,
+      calc.provisoire ? 'Barème définitif publié au printemps ' + (calc.annee + 1) : null);
+    var p = mh2El('div', 'mh2-pe');
+    p.appendChild(mh2El('span', 'mh2-long', 'Année civile ' + calc.annee + ' · ' + kmTxt + ' parcourus'));
+    p.appendChild(mh2El('span', 'mh2-court', 'Année ' + calc.annee + ' · ' + kmTxt));
+    var maj = c.querySelector('.mh2-maj');
+    if (maj) c.insertBefore(p, maj); else c.appendChild(p);
+    return c;
+  }
+  function mh2Pied(nom, calc){
+    if (nom === 'frais_kilometriques' && calc) return calc.nbTrajets + (calc.nbTrajets > 1 ? ' trajets' : ' trajet') + ' en ' + calc.annee;
+    if (nom === 'rentabilite'){
+      var cache = panelCacheLoad('rentabilite');
+      var cp = cache && cache.data && cache.data.donnees && cache.data.donnees.exerciceCA && cache.data.donnees.exerciceCA.comptable;
+      if (cp && cp.periodeFin) return 'Relevé jusqu’à ' + mh2MoisAn(cp.periodeFin);
+    }
+    return '';
+  }
+  function mh2Render(){
+    if (!mh2 || !document.documentElement.classList.contains('mcs-accueil-v2')) return;
+    try {
+      var liste = ONGLETS_ACTIFS_PAR_LOCATAIRE[locataireCourant()] || [];
+      var calc = ongletActif('frais_kilometriques') ? mh2CalcIk() : null;
+      mh2.innerHTML = '';
+      var stats = mh2El('div', 'mh2-stats');
+      if (ongletActif('rentabilite')) stats.appendChild(mh2CarteCA());
+      if (ongletActif('frais_kilometriques')) stats.appendChild(mh2CarteIk(calc));
+      if (stats.children.length) mh2.appendChild(stats);
+      var tuiles = mh2El('div', 'mh2-tuiles');
+      liste.forEach(function(nom){
+        var def = ONGLETS_CATALOGUE[nom];
+        var src = def && def.tuile && document.getElementById(def.tuile);
+        if (!src) return;   // 'chat', 'point_du_jour' : pas des cartes
+        var t = mh2El('div', 'mh2-tuile');
+        t.id = 'mh2-' + nom;
+        var ic = src.querySelector('.sh-tile-ic');
+        var icw = mh2El('div', 'mh2-ic'); if (ic) icw.innerHTML = ic.innerHTML;
+        t.appendChild(icw);
+        t.appendChild(mh2El('h3', null, def.titre));
+        var p = mh2El('p', null);
+        p.appendChild(mh2El('span', 'mh2-long', def.texte || ''));
+        p.appendChild(mh2El('span', 'mh2-court', def.texteCourt || def.texte || ''));
+        t.appendChild(p);
+        var pied = mh2El('div', 'mh2-pied');
+        pied.appendChild(mh2El('span', 'mh2-chiffre', mh2Pied(nom, calc)));
+        // Le contrôle est le bouton « Ouvrir » (principe 1 : jamais un fond plein dans un cadre
+        // cliquable) ; toucher n'importe où sur la carte fait la même chose, pour un doigt pressé.
+        var ouvrir = mh2El('button', 'mh2-ouvrir', 'Ouvrir'); ouvrir.type = 'button';
+        ouvrir.setAttribute('aria-label', 'Ouvrir ' + def.titre);
+        pied.appendChild(ouvrir);
+        t.appendChild(pied);
+        // La carte déclenche la tuile d'origine : mêmes écouteurs, même ouverture, aucun code dupliqué.
+        t.addEventListener('click', function(){ src.click(); });
+        tuiles.appendChild(t);
+      });
+      mh2.appendChild(tuiles);
+    } catch (e) {}
+  }
+  function mh2Demarrer(){
+    mh2Render();
+    if (window._mh2Charge) return;   // enterApp() tourne 2 fois par ouverture : un seul chargement
+    window._mh2Charge = true;
+    if (ongletActif('frais_kilometriques')){
+      mh2Etat.ik = 'charge';
+      postIk({ type: 'liste' }, function(j){ panelCacheSave('ik', j); mh2Etat.ik = ''; mh2Render(); },
+        function(){ mh2Etat.ik = 'erreur'; mh2Render(); });
+    }
+    if (ongletActif('rentabilite')){
+      var c = panelCacheLoad('rentabilite');
+      if (!c || (Date.now() - c.savedAt) > MH2_RENTA_FRAICHEUR_MS){
+        mh2Etat.renta = 'charge';
+        postRentabilite({}, function(j){ panelCacheSave('rentabilite', j); mh2Etat.renta = ''; mh2Render(); },
+          function(){ mh2Etat.renta = 'erreur'; mh2Render(); });
+      }
+    }
+  }
+  // Retour d'un panneau -> les chiffres reprennent la dernière donnée chargée (aucun appel).
+  document.addEventListener('click', function(e){
+    var t = e.target && e.target.closest && e.target.closest('[id$="-close"]');
+    if (t) setTimeout(mh2Render, 0);
+  });
+  var hquit = document.getElementById('hquit-mcs2');
+  if (hquit) hquit.addEventListener('click', function(e){ e.stopPropagation(); document.getElementById('sh-logout').click(); });
 
   // ---- Login ----
   loginbtn.addEventListener('click', function(){
@@ -11423,11 +11761,12 @@
   // aussi a l'ouverture du menu et au retour au premier plan (onResume(), plus bas).
   function refreshBadgesMcs(){
     if (!isMcsCode() || read('jarvisRole') !== 'patron') return;
-    devisCheckBadge();
-    relancesCheckBadge();
-    oppCheckBadge();
-    relationsCheckBadge();
-    contratsCheckBadge();
+    // 07/10/2026 : aucun badge (donc aucun appel) pour un onglet eteint -- ONGLETS_ACTIFS_PAR_LOCATAIRE.
+    if (ongletActif('devis_et_factures')) devisCheckBadge();
+    if (ongletActif('relances_clients')) relancesCheckBadge();
+    if (ongletActif('opportunites')) oppCheckBadge();
+    if (!accueilReduit()) relationsCheckBadge();
+    if (ongletActif('contrats')) contratsCheckBadge();
   }
   headerEl.addEventListener('click', function(){
     var opening = !sheet.classList.contains('open');
@@ -19144,13 +19483,84 @@
 
   var IK_MOIS_COURT = ['Janv','Fév','Mars','Avr','Mai','Juin','Juil','Août','Sept','Oct','Nov','Déc'];
   var IK_MOIS_LONG = ['Janvier','Février','Mars','Avril','Mai','Juin','Juillet','Août','Septembre','Octobre','Novembre','Décembre'];
-  var IK_CV = '7+';
-  var IK_BAREME = { '3':[0.41,0.245,824,0.285], '4':[0.493,0.27,1082,0.332], '5':[0.543,0.305,1188,0.364], '6':[0.568,0.32,1244,0.382], '7+':[0.601,0.34,1301,0.405] };
-  function ikBareme(d){
-    var b = IK_BAREME[IK_CV];
-    if (d <= 5000) return d * b[0];
-    if (d <= 20000) return d * b[1] + b[2];
-    return d * b[3];
+  // MOTEUR UNIQUE (07/10/2026) -- rapport clients/mcs/RAPPORT-REDUCTION-DEUX-ONGLETS-2026-10-07.md.
+  // Le barème n'est plus recopié ici : c'est CELUI DU LABO (IKL_BAREMES / IKL_GRILLES /
+  // iklBaremeCalc, plus bas dans ce fichier) -- barème stocké par année, calcul en nombres entiers
+  // (l'ancien arrondi au demi-centime était faux), +20 % pour un véhicule 100 % électrique,
+  // véhicule choisi. L'ANCIENNE grille (0,601 / 0,34 + 1 301 / 0,405) était celle des revenus
+  // 2019-2020 et sous-estimait les frais d'environ 14 % : ne pas la réintroduire.
+  // Côté serveur, clients/mcs/scripts/ik/bareme.js en est la copie exacte, vérifiée par le banc
+  // clients/mcs/scripts/ik/verifier-bareme-ik-mcs.js.
+  // Répartition propre à MCS, CONSERVÉE (Mickael et sa comptable la connaissent, et c'est celle
+  // des formules de l'export Excel) : un mois / un trajet = sa contribution marginale au barème
+  // progressif, barème(cumul après) − barème(cumul avant) depuis le 1er janvier -- désormais en
+  // CENTIMES ENTIERS : la somme des mois (et des trajets) retombe exactement sur le total annuel.
+  // Réglage de Mickael : voiture « 7 CV et plus » thermique tant qu'il n'a rien renseigné.
+  var IK_VEHICULE_DEFAUT = { genre: 'voiture', cv: '7+', electrique: 'non', modele: '' };
+  var ikVehicules = [];
+  // Véhicule d'une année = la ligne véhicule la plus récente de cette année (id max), sinon le défaut.
+  function ikVehiculeAnnee(vehicules, annee){
+    var v = null;
+    (vehicules || []).forEach(function(l){
+      if (l && String(l.annee) === String(annee) && (!v || Number(l.id) > Number(v.id))) v = l;
+    });
+    if (!v) return { genre: IK_VEHICULE_DEFAUT.genre, cv: IK_VEHICULE_DEFAUT.cv, electrique: 'non', modele: '', defaut: true };
+    return { genre: v.genre || 'voiture', cv: v.cv || '7+', electrique: v.electrique === 'oui' ? 'oui' : 'non', modele: v.modele || '', defaut: false };
+  }
+  function ikCentimes(annee, veh, km){ var r = iklBaremeCalc(annee, veh, km); return r ? r.centimes : null; }
+  // Calcul complet d'une année (trajets de cette année, chronologiques) -> montants en CENTIMES.
+  function ikCalculAnneeMcs(trajets, vehicules, annee){
+    var veh = ikVehiculeAnnee(vehicules, annee);
+    var bar = IKL_BAREMES[String(annee)] || null;
+    var trips = (trajets || []).filter(function(t){ return String(t.date || '').slice(0, 4) === String(annee); })
+      .slice().sort(function(a, b){ if (a.date !== b.date) return a.date < b.date ? -1 : 1; return (a.id || 0) - (b.id || 0); });
+    var km10 = function(t){ return Math.round((Number(t.km_total) || 0) * 10); };
+    var cum10 = 0, parTrajet = {}, mois10 = [];
+    for (var i = 0; i < 12; i++) mois10.push(0);
+    trips.forEach(function(t){
+      var avant = cum10; cum10 += km10(t);
+      var a = ikCentimes(annee, veh, avant / 10), b = ikCentimes(annee, veh, cum10 / 10);
+      parTrajet[t.id] = (a == null || b == null) ? null : b - a;
+      var m = /^\d{4}-(\d{2})-\d{2}$/.exec(String(t.date || ''));
+      if (m) mois10[Number(m[1]) - 1] += km10(t);
+    });
+    var parMois = [], c10 = 0;
+    for (var k = 0; k < 12; k++){
+      var av = c10; c10 += mois10[k];
+      var ca = ikCentimes(annee, veh, av / 10), cb = ikCentimes(annee, veh, c10 / 10);
+      parMois.push({ mois: k, km: mois10[k] / 10, kmCumule: c10 / 10, centimes: (ca == null || cb == null) ? null : cb - ca });
+    }
+    return { annee: annee, vehicule: veh, bareme: bar, provisoire: !!(bar && bar.provisoire),
+             km: cum10 / 10, centimes: ikCentimes(annee, veh, cum10 / 10), nbTrajets: trips.length,
+             parTrajet: parTrajet, parMois: parMois };
+  }
+  function ikEurosOuTiret(c){ return c == null ? '—' : fmtEuros(c / 100); }
+  var ikCalcCourant = null;
+  function ikAnneeAffichee(){ return (ikResume && ikResume.annee) || new Date().getFullYear(); }
+  function ikRecalculer(){ ikCalcCourant = ikCalculAnneeMcs(ikData, ikVehicules, ikAnneeAffichee()); return ikCalcCourant; }
+  // Mention SOBRE (pas un bandeau d'alerte) quand le barème de l'année n'est pas encore publié.
+  function ikMentionBareme(calc){
+    if (!calc.bareme) return 'Aucun barème enregistré pour ' + calc.annee + ' : kilomètres comptés, aucun montant calculé.';
+    if (calc.provisoire) return 'Barème ' + calc.annee + ' provisoire : le barème officiel des revenus ' + calc.annee + ' sera publié au printemps ' + (calc.annee + 1) + ' ; le barème en vigueur (arrêté du 27 mars 2023) est appliqué en attendant.';
+    return 'Barème officiel des revenus ' + calc.annee + ' (arrêté du 27 mars 2023).';
+  }
+  function ikVehiculeTexte(v){
+    return iklVehiculeLibelle({ genre: v.genre, cv: v.cv, electrique: v.electrique, libelle: '' }) +
+      (v.electrique === 'oui' ? ' (+20 %)' : ', thermique');
+  }
+  function ikBlocVehicule(calc){
+    var b = document.createElement('div'); b.id = 'ik-vehicule';
+    var t = document.createElement('div'); t.className = 'ikv-ligne';
+    var lab = document.createElement('span'); lab.className = 'ikv-lib'; lab.textContent = 'Véhicule ' + calc.annee + ' : ';
+    var val = document.createElement('b'); val.textContent = ikVehiculeTexte(calc.vehicule);
+    t.appendChild(lab); t.appendChild(val);
+    var mod = document.createElement('div'); mod.className = 'ikv-modele';
+    mod.textContent = 'Modèle : ' + (calc.vehicule.modele || 'non renseigné') + (calc.vehicule.defaut ? ' · réglage par défaut' : '');
+    var btn = document.createElement('button'); btn.type = 'button'; btn.id = 'ik-vehicule-btn'; btn.className = 'vc-no';
+    btn.textContent = 'Modifier le véhicule';
+    btn.addEventListener('click', function(){ ikVehFormOpen(calc.annee); });
+    b.appendChild(t); b.appendChild(mod); b.appendChild(btn);
+    return b;
   }
 
   var IK_COLONNES = [
@@ -19173,60 +19583,35 @@
     return t[key] || '';
   }
 
-  // Frais estimé PAR TRAJET : le barème est progressif sur le cumul annuel, donc le "coût" d'un
-  // trajet précis = sa contribution marginale (barème(cumul après) - barème(cumul avant)) une fois
-  // tous les trajets de l'année remis dans l'ordre chronologique -- pas un simple taux × ses km.
-  // La somme des frais par trajet d'un mois retombe exactement sur le frais marginal du mois
-  // (déjà affiché en haut de l'onglet), par construction.
+  // Frais PAR TRAJET (contribution marginale, en centimes -- voir ikCalculAnneeMcs).
   var ikTripFraisMap = {};
   function ikComputeTripFraisMap(){
-    var annee = (ikResume && ikResume.annee) || new Date().getFullYear();
-    var trips = (ikData || []).filter(function(t){
-      return String(t.date || '').slice(0, 4) === String(annee);
-    }).slice().sort(function(a, b){
-      if (a.date !== b.date) return a.date < b.date ? -1 : 1;
-      return (a.id || 0) - (b.id || 0);
-    });
-    var cum = 0, map = {};
-    trips.forEach(function(t){
-      var avant = cum;
-      cum += (t.km_total || 0);
-      map[t.id] = ikBareme(cum) - ikBareme(avant);
-    });
+    var calc = ikRecalculer(), map = {};
+    Object.keys(calc.parTrajet).forEach(function(id){ var c = calc.parTrajet[id]; map[id] = c == null ? null : c / 100; });
     ikTripFraisMap = map;
   }
 
-  // Répartition mensuelle calculée côté client (mêmes données déjà chargées, même barème que le
-  // backend/l'export Excel) : km du mois, cumul, frais marginal = barème(cumul apres) - barème(cumul avant).
+  // Répartition mensuelle (même calcul en centimes que l'accueil et l'export Excel).
   function ikComputeMonthly(){
-    var annee = (ikResume && ikResume.annee) || new Date().getFullYear();
-    var kmParMois = new Array(12).fill(0);
-    (ikData || []).forEach(function(t){
-      var m = /^(\d{4})-(\d{2})-\d{2}$/.exec(String(t.date || ''));
-      if (!m || Number(m[1]) !== annee) return;
-      kmParMois[Number(m[2]) - 1] += (t.km_total || 0);
-    });
-    var cum = 0, out = [];
-    for (var i = 0; i < 12; i++){
-      var avant = cum;
-      cum += kmParMois[i];
-      out.push({ mois: i, km: kmParMois[i], kmCumule: cum, frais: ikBareme(cum) - ikBareme(avant) });
-    }
-    return { annee: annee, parMois: out, kmTotal: cum, fraisTotal: ikBareme(cum) };
+    var calc = ikCalcCourant || ikRecalculer();
+    return { annee: calc.annee, kmTotal: calc.km, fraisTotal: calc.centimes == null ? null : calc.centimes / 100,
+      parMois: calc.parMois.map(function(m){ return { mois: m.mois, km: m.km, kmCumule: m.kmCumule, frais: m.centimes == null ? null : m.centimes / 100 }; }) };
   }
 
   function ikBuildDash(){
     var wrap = document.createElement('div'); wrap.id = 'ik-dash';
     if (!ikResume){ return wrap; }
+    var calc = ikCalcCourant || ikRecalculer();
     var stats = document.createElement('div'); stats.className = 'couts-stats';
     var s1 = document.createElement('div'); s1.className = 'couts-stat';
-    s1.innerHTML = '<span class="cs-label">Km cumulés ' + ikResume.annee + '</span><span class="cs-value">' + ikResume.kmAnnee.toLocaleString('fr-FR') + '</span><span class="cs-sub">' + ikResume.nbTrajetsAnnee + ' trajets</span>';
+    s1.innerHTML = '<span class="cs-label">Km cumulés ' + calc.annee + '</span><span class="cs-value">' + calc.km.toLocaleString('fr-FR') + '</span><span class="cs-sub">' + calc.nbTrajets + (calc.nbTrajets > 1 ? ' trajets' : ' trajet') + '</span>';
     var s2 = document.createElement('div'); s2.className = 'couts-stat';
-    s2.innerHTML = '<span class="cs-label">Frais IK estimés</span><span class="cs-value">' + fmtEuros(Number(ikResume.fraisAnnee)) + '</span><span class="cs-sub">véhicule ' + (ikResume.vehicule === '7+' ? '7 CV et plus' : escHtml(ikResume.vehicule) + ' CV') + '</span>';
+    s2.innerHTML = '<span class="cs-label">Frais kilométriques' + (calc.provisoire ? ' <span class="ik-tag-prov">provisoire</span>' : '') + '</span><span class="cs-value">' + ikEurosOuTiret(calc.centimes) + '</span><span class="cs-sub">année ' + calc.annee + '</span>';
     stats.appendChild(s1); stats.appendChild(s2);
     wrap.appendChild(stats);
+    wrap.appendChild(ikBlocVehicule(calc));
     var etat = document.createElement('div'); etat.id = 'ik-etat';
-    etat.textContent = 'Barème fiscal officiel appliqué au cumul annuel (pas un taux fixe) — détail mois par mois ci-dessous.';
+    etat.textContent = 'Barème fiscal officiel appliqué au cumul annuel (pas un taux fixe) — détail mois par mois ci-dessous. ' + ikMentionBareme(calc);
     wrap.appendChild(etat);
     return wrap;
   }
@@ -19234,16 +19619,17 @@
   // Même famille visuelle que le dashboard annuel de l'onglet Récap (cartes couts-stats), mais pour
   // UN mois précis -- demande explicite de Mathéo : voir le résumé du mois en haut de chaque onglet.
   function ikBuildMonthDash(monthIdx, monthly){
+    var calc = ikCalcCourant || ikRecalculer();
     var wrap = document.createElement('div'); wrap.id = 'ik-dash';
     var stats = document.createElement('div'); stats.className = 'couts-stats';
     var s1 = document.createElement('div'); s1.className = 'couts-stat';
     s1.innerHTML = '<span class="cs-label">Km cumulés ' + IK_MOIS_LONG[monthIdx] + '</span><span class="cs-value">' + monthly.km.toLocaleString('fr-FR') + '</span>';
     var s2 = document.createElement('div'); s2.className = 'couts-stat';
-    s2.innerHTML = '<span class="cs-label">Frais IK estimés</span><span class="cs-value">' + fmtEuros(monthly.frais) + '</span>';
+    s2.innerHTML = '<span class="cs-label">Frais du mois' + (calc.provisoire ? ' <span class="ik-tag-prov">provisoire</span>' : '') + '</span><span class="cs-value">' + (monthly.frais == null ? '—' : fmtEuros(monthly.frais)) + '</span>';
     stats.appendChild(s1); stats.appendChild(s2);
     wrap.appendChild(stats);
     var etat = document.createElement('div'); etat.id = 'ik-etat';
-    etat.textContent = 'Frais par trajet ci-dessous = contribution marginale au barème progressif, selon l’ordre chronologique des trajets depuis le 1er janvier.';
+    etat.textContent = 'Frais par trajet ci-dessous = contribution marginale au barème progressif, selon l’ordre chronologique des trajets depuis le 1er janvier. Véhicule : ' + ikVehiculeTexte(calc.vehicule) + '. ' + ikMentionBareme(calc);
     wrap.appendChild(etat);
     return wrap;
   }
@@ -19259,11 +19645,11 @@
       tr.innerHTML = '<td>' + IK_MOIS_LONG[row.mois] + '</td>' +
         '<td class="ik-td-num">' + row.km.toLocaleString('fr-FR') + '</td>' +
         '<td class="ik-td-num">' + row.kmCumule.toLocaleString('fr-FR') + '</td>' +
-        '<td class="ik-td-num">' + fmtEuros(row.frais) + '</td>';
+        '<td class="ik-td-num">' + (row.frais == null ? '—' : fmtEuros(row.frais)) + '</td>';
       tbody.appendChild(tr);
     });
     var trTotal = document.createElement('tr'); trTotal.className = 'ik-recap-total';
-    trTotal.innerHTML = '<td>Total ' + m.annee + '</td><td class="ik-td-num">' + m.kmTotal.toLocaleString('fr-FR') + '</td><td></td><td class="ik-td-num">' + fmtEuros(m.fraisTotal) + '</td>';
+    trTotal.innerHTML = '<td>Total ' + m.annee + '</td><td class="ik-td-num">' + m.kmTotal.toLocaleString('fr-FR') + '</td><td></td><td class="ik-td-num">' + (m.fraisTotal == null ? '—' : fmtEuros(m.fraisTotal)) + '</td>';
     tbody.appendChild(trTotal);
     table.appendChild(tbody);
     wrap.appendChild(table);
@@ -19350,6 +19736,7 @@
 
   function ikApplyData(j){
     ikData = j.trajets || [];
+    ikVehicules = j.vehicules || [];
     ikResume = j.resume || null;
     ikComputeTripFraisMap();
     ikRenderMonthTabs();
@@ -19366,15 +19753,69 @@
     postIk({ type: 'liste' }, function(j){
       panelCacheSave('ik', j);
       ikApplyData(j);
+      mh2Render();   // l'accueil reflète tout de suite un trajet ajouté/modifié (07/10/2026)
     }, function(err){ if (!cached) ikList.innerHTML = '<p id="ik-empty">' + escHtml(err) + '</p>'; });
   }
 
   function ikOpen(){
     ikview.classList.add('open');
-    document.getElementById('ik-export').href = API_IK_EXPORT + '?code=' + encodeURIComponent(String(read('jarvisCode') || '').trim());
+    ikMajLienExport();
     ikLoad(true);
   }
   function ikClose(){ ikview.classList.remove('open'); }
+  // Lien d'export : année affichée (?annee=) -- le serveur applique le véhicule et le barème de CETTE année.
+  function ikMajLienExport(){
+    document.getElementById('ik-export').href = API_IK_EXPORT + '?code=' + encodeURIComponent(String(read('jarvisCode') || '').trim()) + '&annee=' + ikAnneeAffichee();
+  }
+
+  // ---- Véhicule (07/10/2026) : puissance, électrique, modèle -- une NOUVELLE ligne côté serveur à
+  // chaque enregistrement (la plus récente de l'année fait foi, l'ancienne reste en base). Mêmes
+  // listes fermées que le LABO (IKL_GENRES / IKL_CV) et que le serveur. ----
+  var ikVehBg = document.getElementById('ik-veh-bg');
+  var ikVehAnnee = null;
+  var ikVehEnvoi = false;
+  function ikVehRemplirCv(genre, cv){
+    var sel = document.getElementById('ikv-cv');
+    sel.innerHTML = '';
+    (IKL_CV[genre] || []).forEach(function(x){
+      var o = document.createElement('option'); o.value = x[0]; o.textContent = x[1]; sel.appendChild(o);
+    });
+    sel.value = (IKL_CV[genre] || []).some(function(x){ return x[0] === cv; }) ? cv : (genre === 'voiture' ? '7+' : sel.options[0].value);
+    document.getElementById('ikv-cv-wrap').style.display = genre === 'cyclo' ? 'none' : '';
+  }
+  function ikVehFormOpen(annee){
+    ikVehAnnee = annee;
+    var v = ikVehiculeAnnee(ikVehicules, annee);
+    document.getElementById('ikv-titre').textContent = 'Votre véhicule en ' + annee;
+    document.getElementById('ikv-genre').value = v.genre;
+    ikVehRemplirCv(v.genre, v.cv);
+    document.getElementById('ikv-elec').checked = v.electrique === 'oui';
+    document.getElementById('ikv-modele').value = v.modele || '';
+    document.getElementById('ikv-err').textContent = '';
+    ikVehBg.classList.add('open');
+  }
+  function ikVehClose(){ ikVehBg.classList.remove('open'); }
+  document.getElementById('ikv-genre').addEventListener('change', function(){ ikVehRemplirCv(this.value, ''); });
+  document.getElementById('ikv-cancel').addEventListener('click', ikVehClose);
+  ikVehBg.addEventListener('click', function(e){ if (e.target === ikVehBg) ikVehClose(); });
+  document.getElementById('ikv-save').addEventListener('click', function(){
+    if (ikVehEnvoi) return;
+    var genre = document.getElementById('ikv-genre').value;
+    var veh = { annee: String(ikVehAnnee), genre: genre, cv: genre === 'cyclo' ? '-' : document.getElementById('ikv-cv').value,
+                electrique: document.getElementById('ikv-elec').checked ? 'oui' : 'non',
+                modele: document.getElementById('ikv-modele').value.trim().slice(0, 80) };
+    var btn = this, err = document.getElementById('ikv-err');
+    ikVehEnvoi = true; btn.disabled = true; err.textContent = '';
+    postIk({ type: 'vehicule', vehicule: veh }, function(){
+      ikVehEnvoi = false; btn.disabled = false;
+      ikVehClose();
+      if (typeof toast === 'function') toast('Véhicule enregistré');
+      ikLoad(false);
+    }, function(e){
+      ikVehEnvoi = false; btn.disabled = false;
+      err.textContent = 'Non enregistré : ' + e;   // jamais un échec silencieux
+    });
+  });
   document.getElementById('ik-close').addEventListener('click', ikClose);
   document.getElementById('sh-ik').addEventListener('click', function(){ sheetOpen(false); ikOpen(); });
   ikSearchInput.addEventListener('input', ikApplyFilter);
@@ -28771,6 +29212,8 @@
     if (document.hidden) return;
     if (app.style.display !== 'flex') return;
     if (!String(read('jarvisCode') || '').trim()) return;
+    // 07/10/2026 : sans discussion (onglet 'chat' eteint), aucune releve de boite toutes les 3 min.
+    if (!ongletActif('chat')) return;
     post({ type:'inbox' }, function(j){
       (j.messages || []).forEach(function(m){
         var b = bubble(String(m.contenu || ''), 'jarvis');
