@@ -2512,6 +2512,128 @@
   table.ik-recap-table td{padding:8px 8px; border-bottom:0.5px solid var(--hairline); color:var(--ink)}
   table.ik-recap-table td.ik-td-num{text-align:right}
   table.ik-recap-table tr.ik-recap-total td{font-weight:700; color:var(--gold-a)}
+  /* Tresorerie M22 (V1, 18/10/2026) -- labo uniquement. Ids/classes treso-* UNIQUEMENT (aucune
+     regle de base, aucun selecteur partage modifie : MCS et le reste du LABO pixel-identiques).
+     Couleurs portees par des variables propres au panneau (--tr-*), toujours sombres comme le
+     reste de l'app LABO, meme si l'iPhone est en mode clair (decision de Matheo, 18/10/2026).
+     Tuile : 6e tuile du menu labo, pleine largeur sous "Frais kilometriques". */
+  #sheet.sheet-labo #sh-treso{order:6; grid-column:1/-1}
+  #tresoview{
+    --tr-bg:var(--bg); --tr-card:var(--surface); --tr-ink:var(--ink); --tr-muted:var(--muted);
+    --tr-line:var(--hairline); --tr-accent:var(--gold-a); --tr-blue:var(--blue); --tr-pos:#64D2FF;
+    --tr-proj:#64D2FF; --tr-proj-sup:rgba(100,210,255,.55); --tr-neg:#FF6961; --tr-neg-fill:rgba(255,105,97,.16);
+    --tr-field:var(--field-bg); --tr-warn-bg:rgba(var(--gold-rgb),.16); --tr-warn-ink:var(--gold-a);
+    --tr-b-sure:#30D158; --tr-b-sure-ink:#04210C; --tr-b-prob:#64D2FF; --tr-b-prob-ink:#03222E;
+    --tr-b-sup:#48484A; --tr-b-sup-ink:#FFFFFF; --tr-b-ret:#FF9F0A; --tr-b-ret-ink:#2B1700;
+    position:fixed; inset:0; z-index:50; background:var(--tr-bg); color:var(--tr-ink);
+    display:none; flex-direction:column;
+    transform:translateY(100%); transition:transform .28s cubic-bezier(.2,.9,.25,1);
+    font-variant-numeric:tabular-nums;
+  }
+  #tresoview.open{display:flex; transform:translateY(0)}
+  @media (prefers-reduced-motion: reduce){#tresoview{transition:none}}
+  #treso-head{
+    flex:0 0 auto; display:flex; align-items:center; gap:10px;
+    padding:calc(10px + env(safe-area-inset-top)) 16px 12px;
+    border-bottom:0.5px solid var(--tr-line);
+  }
+  #treso-head b{font-size:17px; flex:1; line-height:1.25}
+  #treso-close, #treso-refresh{
+    width:44px; height:44px; border-radius:50%; border:0.5px solid var(--tr-line); flex:0 0 auto;
+    background:var(--tr-card); color:var(--tr-ink); font-size:17px;
+    display:flex; align-items:center; justify-content:center; cursor:pointer;
+    -webkit-tap-highlight-color:transparent;
+  }
+  #treso-body{flex:1; overflow-y:auto; -webkit-overflow-scrolling:touch; padding:12px 16px calc(96px + env(safe-area-inset-bottom))}
+  #treso-msg{color:var(--tr-muted); text-align:center; padding:40px 12px; font-size:16px; line-height:1.4}
+  #treso-msg button{margin-top:14px}
+  .treso-card{background:var(--tr-card); border-radius:16px; padding:14px 16px; margin:0 0 12px}
+  .treso-h{font-size:13px; font-weight:700; color:var(--tr-accent); text-transform:uppercase; letter-spacing:.03em; margin:20px 4px 8px}
+  .treso-warn{background:var(--tr-warn-bg); color:var(--tr-warn-ink); border-radius:14px; padding:12px 14px; margin:0 0 12px; font-size:15.5px; line-height:1.35; font-weight:700}
+  .treso-warn small{display:block; font-weight:400; font-size:14px; margin-top:3px}
+  .treso-solde-lbl{font-size:13px; color:var(--tr-muted); text-transform:uppercase; letter-spacing:.03em}
+  .treso-solde-val{font-size:38px; font-weight:800; line-height:1.1; margin:4px 0 4px; letter-spacing:-.01em}
+  .treso-neg{color:var(--tr-neg)}
+  .treso-solde-sub{font-size:15px; color:var(--tr-muted); line-height:1.35}
+  .treso-btn{
+    display:inline-flex; align-items:center; justify-content:center; gap:6px; min-height:44px; box-sizing:border-box;
+    padding:10px 16px; border-radius:12px; font:inherit; font-size:15.5px; font-weight:700; cursor:pointer;
+    border:1px solid var(--tr-line); background:transparent; color:var(--tr-ink);
+    -webkit-tap-highlight-color:transparent;
+  }
+  .treso-btn.treso-btn-main{background:var(--tr-blue); border-color:var(--tr-blue); color:#fff}
+  .treso-btn:disabled{opacity:.55; cursor:default}
+  .treso-btn-large{width:100%; margin-top:12px}
+  .treso-kpis{display:grid; grid-template-columns:1fr 1fr; gap:10px; margin:0 0 4px}
+  .treso-kpi{background:var(--tr-card); border-radius:14px; padding:12px 13px; display:flex; flex-direction:column; gap:3px; min-width:0}
+  .treso-kpi-lbl{font-size:13px; color:var(--tr-muted); line-height:1.25}
+  .treso-kpi-val{font-size:19px; font-weight:800; line-height:1.2; overflow-wrap:anywhere}
+  .treso-kpi-sub{font-size:13.5px; color:var(--tr-muted); line-height:1.3}
+  #treso-chart{width:100%; height:auto; display:block}
+  #treso-chart text{font-size:12px; fill:var(--tr-muted); font-family:inherit}
+  .treso-legend{display:flex; flex-wrap:wrap; gap:6px 16px; margin-top:8px; font-size:13.5px; color:var(--tr-muted)}
+  .treso-legend span{display:inline-flex; align-items:center; gap:6px}
+  .treso-legend i{display:inline-block; width:22px; height:0; border-top:3px solid var(--tr-proj)}
+  .treso-legend i.treso-lg-sup{border-top:3px dashed var(--tr-proj-sup)}
+  .treso-legend i.treso-lg-seuil{border-top:2px dashed var(--tr-accent)}
+  .treso-legend i.treso-lg-neg{height:11px; border:0; background:var(--tr-neg-fill); outline:1px solid var(--tr-neg)}
+  .treso-mois{font-size:14.5px; font-weight:700; color:var(--tr-muted); margin:16px 0 4px}
+  .treso-mois:first-child{margin-top:0}
+  .treso-ligne{padding:11px 0; border-top:0.5px solid var(--tr-line)}
+  .treso-mois + .treso-ligne{border-top:none}
+  .treso-l1{display:flex; align-items:baseline; gap:10px}
+  .treso-lib{flex:1; min-width:0; font-size:15.5px; font-weight:600; line-height:1.3; overflow-wrap:anywhere}
+  .treso-mt{flex:0 0 auto; font-size:15.5px; font-weight:800; white-space:nowrap}
+  .treso-mt.treso-pos{color:var(--tr-pos)}
+  .treso-l2{display:flex; align-items:center; flex-wrap:wrap; gap:6px 8px; margin-top:5px; font-size:14px; color:var(--tr-muted)}
+  .treso-badge{display:inline-block; padding:2px 9px; border-radius:99px; font-size:13px; font-weight:700; line-height:1.45}
+  .treso-badge.b-sure{background:var(--tr-b-sure); color:var(--tr-b-sure-ink)}
+  .treso-badge.b-probable{background:var(--tr-b-prob); color:var(--tr-b-prob-ink)}
+  .treso-badge.b-supposee{background:var(--tr-b-sup); color:var(--tr-b-sup-ink)}
+  .treso-badge.b-retard{background:var(--tr-b-ret); color:var(--tr-b-ret-ink)}
+  .treso-acts{display:flex; gap:8px; margin-top:9px}
+  .treso-acts .treso-btn{flex:1; min-height:42px; padding:8px 10px; font-size:15px}
+  .treso-confirm{margin-top:10px; padding:12px; border-radius:12px; border:1px solid var(--tr-line)}
+  .treso-confirm p{margin:0 0 10px; font-size:15px; line-height:1.35}
+  .treso-field{display:block; margin:0 0 10px}
+  .treso-field span{display:block; font-size:14px; color:var(--tr-muted); margin:0 0 4px}
+  .treso-field input, .treso-field select{
+    width:100%; box-sizing:border-box; min-height:44px; border:1px solid var(--tr-line); border-radius:10px;
+    background:var(--tr-field); color:var(--tr-ink); font:inherit; font-size:16px; padding:9px 11px;
+  }
+  .treso-err{color:var(--tr-neg); font-size:14.5px; margin:0 0 10px; font-weight:700}
+  .treso-err:empty{display:none}
+  .treso-row-btns{display:flex; gap:8px}
+  .treso-row-btns .treso-btn{flex:1}
+  .treso-rep{padding:10px 0; border-top:0.5px solid var(--tr-line)}
+  .treso-rep:first-child{border-top:none}
+  .treso-rep-top{display:flex; align-items:baseline; gap:8px; font-size:15.5px}
+  .treso-rep-top b{flex:1; min-width:0; font-weight:600}
+  .treso-rep-top span{font-weight:800; white-space:nowrap}
+  .treso-rep-bar{height:7px; border-radius:4px; background:var(--tr-line); overflow:hidden; margin-top:6px}
+  .treso-rep-bar i{display:block; height:100%; border-radius:4px; background:var(--tr-accent)}
+  .treso-rep-pct{font-size:13.5px; color:var(--tr-muted); margin-top:3px}
+  .treso-empty{color:var(--tr-muted); font-size:15px; padding:6px 0}
+  #treso-add{
+    position:fixed; left:50%; transform:translateX(-50%);
+    bottom:calc(18px + env(safe-area-inset-bottom)); z-index:51;
+    display:flex; align-items:center; gap:7px; padding:14px 24px; border:0; border-radius:99px;
+    background:var(--tr-blue); color:#fff; font:inherit; font-size:16px; font-weight:700; cursor:pointer; white-space:nowrap;
+    box-shadow:0 6px 16px rgba(0,0,0,.35); -webkit-tap-highlight-color:transparent;
+  }
+  #tresoview:not(.open) #treso-add{display:none}
+  #tresoFormBg{position:fixed; inset:0; z-index:55; background:rgba(0,0,0,.55); display:none}
+  #tresoFormBg.open{display:block}
+  #treso-form{
+    position:fixed; left:50%; bottom:0; transform:translateX(-50%); width:min(480px,100%); z-index:56;
+    max-height:90vh; overflow-y:auto; background:var(--tr-bg); color:var(--tr-ink); border-radius:20px 20px 0 0;
+    padding:18px 16px calc(18px + env(safe-area-inset-bottom)); box-sizing:border-box; display:none;
+  }
+  #treso-form.open{display:block}
+  #treso-form h3{margin:0 0 14px; font-size:18px}
+  .treso-seg{display:flex; gap:8px; margin:0 0 12px}
+  .treso-seg .treso-btn{flex:1}
+  .treso-seg .treso-btn[aria-pressed="true"]{background:var(--tr-blue); border-color:var(--tr-blue); color:#fff}
   /* Frais kilometriques LABO (06/10/2026) -- ids ikl-* UNIQUEMENT (aucune regle de base, aucun
      selecteur partage modifie : MCS pixel-identique). Copie de la famille visuelle de #ikview.
      Tuile : 5e tuile du menu labo, pleine largeur sous les 4 autres. */
@@ -7108,6 +7230,9 @@
     <!-- Onglet "Frais kilometriques" LABO (06/10/2026) -- Dorian + Matheo, masquage labo-only via
          le meme tableau que sh-radar/sh-factures (plus bas). Panneau #iklview, separe de #ikview (MCS). -->
     <button class="sh-tile" id="sh-ikl" type="button" style="display:none"><span class="sh-tile-ic">🚗</span><span class="sh-tile-label">Frais kilométriques</span></button>
+    <!-- Onglet "Tresorerie M22" (18/10/2026) -- Dorian + Matheo, masquage labo-only via le meme
+         tableau que sh-radar/sh-ikl (plus bas). Panneau #tresoview. -->
+    <button class="sh-tile" id="sh-treso" type="button" style="display:none"><span class="sh-tile-ic">🏦</span><span class="sh-tile-label">Trésorerie</span></button>
     <!-- Onglet "Rentabilite (demonstration)" (15/09/2026, retire du menu le 15/09 -- demande de
          Mathéo "ca ne sert a rien" une fois la demo Groupe Demonchy en place). Bouton et panneau
          laisses en place (code mort inoffensif, jamais affiche), display:none inconditionnel --
@@ -7222,6 +7347,52 @@
     <div id="couts-abo-rows"></div>
   </div>
   <button id="couts-add" type="button" aria-label="Ajouter un abonnement">+ Ajouter un abonnement</button>
+</div>
+
+<!-- Tresorerie M22 (V1, 18/10/2026, labo uniquement) -- tout est calcule par le workflow n8n
+     "Tresorerie · Onglet" (webhook jarvis-treso-onglet) ; ce panneau n'affiche que sa reponse,
+     toujours en textContent (aucun texte venu du serveur n'est pose en HTML). -->
+<div id="tresoview">
+  <div id="treso-head">
+    <b>🏦 Trésorerie M22</b>
+    <button id="treso-refresh" type="button" aria-label="Actualiser">↻</button>
+    <button id="treso-close" type="button" aria-label="Fermer">✕</button>
+  </div>
+  <div id="treso-body">
+    <div id="treso-msg">Chargement…</div>
+    <div id="treso-content" style="display:none">
+      <div id="treso-warn" class="treso-warn" style="display:none"></div>
+      <div class="treso-card">
+        <div class="treso-solde-lbl">Solde disponible</div>
+        <div class="treso-solde-val" id="treso-solde"></div>
+        <div class="treso-solde-sub" id="treso-solde-sub"></div>
+        <button class="treso-btn treso-btn-large" id="treso-solde-btn" type="button">Mettre à jour le solde</button>
+      </div>
+      <div class="treso-kpis">
+        <div class="treso-kpi"><span class="treso-kpi-lbl">Point bas (12 mois)</span><span class="treso-kpi-val" id="treso-k-bas"></span><span class="treso-kpi-sub" id="treso-k-bas-sub"></span></div>
+        <div class="treso-kpi"><span class="treso-kpi-lbl">Passage sous le seuil</span><span class="treso-kpi-val" id="treso-k-seuil"></span><span class="treso-kpi-sub" id="treso-k-seuil-sub"></span></div>
+        <div class="treso-kpi"><span class="treso-kpi-lbl">Tenu sans nouveau contrat</span><span class="treso-kpi-val" id="treso-k-mois"></span><span class="treso-kpi-sub" id="treso-k-mois-sub"></span></div>
+        <div class="treso-kpi"><span class="treso-kpi-lbl">Récurrent à signer pour tenir</span><span class="treso-kpi-val" id="treso-k-rec"></span><span class="treso-kpi-sub" id="treso-k-rec-sub"></span></div>
+      </div>
+      <div class="treso-h">Solde projeté sur 12 mois</div>
+      <div class="treso-card">
+        <svg id="treso-chart" role="img" aria-label="Courbe du solde projeté"></svg>
+        <div class="treso-legend">
+          <span><i></i>Prévu sûr ou probable</span>
+          <span><i class="treso-lg-sup"></i>Repose surtout sur du supposé</span>
+          <span><i class="treso-lg-seuil"></i>Seuil d'alerte</span>
+          <span><i class="treso-lg-neg"></i>Sous zéro</span>
+        </div>
+      </div>
+      <div class="treso-h">À venir — 60 prochains jours</div>
+      <div class="treso-card" id="treso-avenir"></div>
+      <div class="treso-h">Répartition des sorties sur 12 mois</div>
+      <div class="treso-card" id="treso-rep"></div>
+    </div>
+  </div>
+  <button id="treso-add" type="button">+ Ajouter</button>
+  <div id="tresoFormBg"></div>
+  <div id="treso-form" role="dialog" aria-modal="true" aria-labelledby="treso-form-title"></div>
 </div>
 
 <div id="cryptoview">
@@ -9090,8 +9261,8 @@
          unique de detection de mise a jour (voir checkUpdate ci-dessous), plus fiable qu'une
          comparaison de chaine de version par tenant. */
   var APPV_MCS = '4.65';
-  var APPV_LABO = '1.09';
-  var BUILD = 109;
+  var APPV_LABO = '1.10';
+  var BUILD = 110;
 
   // ==============================================================================================
   // ONGLETS ACTIFS PAR LOCATAIRE (07/10/2026) -- LA liste qui décide ce qu'un client voit.
@@ -10909,7 +11080,7 @@
     // inconditionnel pose directement dans le HTML), plus besoin de les lister ici.
     // sh-couts (gestion des coûts labo-ia) masqué côté tenant secondaire : données internes
     // à Mathéo/Dorian, sans aucun rapport avec un client.
-    ['sh-meute', 'sh-site', 'sh-vitrine', 'sh-plume', 'hcallbtn', 'sh-couts', 'sh-crypto', 'sh-radar', 'sh-rentabilite-demonchy', 'sh-factures', 'sh-ikl'].forEach(function(id){
+    ['sh-meute', 'sh-site', 'sh-vitrine', 'sh-plume', 'hcallbtn', 'sh-couts', 'sh-crypto', 'sh-radar', 'sh-rentabilite-demonchy', 'sh-factures', 'sh-ikl', 'sh-treso'].forEach(function(id){
       var el = document.getElementById(id);
       if (el) el.style.display = mcs ? 'none' : '';
     });
@@ -12381,6 +12552,414 @@
   // automatiquement). Interroge en LECTURE SEULE le Postgres separe du
   // produit produits/radar-opportunites/ (jamais n8n-db). Aucune mutation
   // possible depuis ce panneau.
+  // ---- Tresorerie M22 (V1, 18/10/2026, labo uniquement) ----
+  // Le workflow n8n "Tresorerie · Onglet" calcule tout (solde, projection, seuil, chiffres cles,
+  // a venir, repartition) a UN seul endroit ; ce bloc ne fait qu'afficher sa reponse. Tout texte
+  // venu du serveur passe par textContent (jamais innerHTML). Aucune suppression possible :
+  // "Payé" rapproche, "Annuler" marque annulee avec un motif. Confirmations dans la page.
+  var tresoview = document.getElementById('tresoview');
+  var API_TRESO = 'https://n8n-self-hosted-t0pz.onrender.com/webhook/jarvis-treso-onglet';
+  var tresoEtat = null, tresoEnVol = false;
+  var TRESO_MOIS = ['janvier', 'février', 'mars', 'avril', 'mai', 'juin', 'juillet', 'août', 'septembre', 'octobre', 'novembre', 'décembre'];
+  var TRESO_MOIS_COURT = ['janv.', 'févr.', 'mars', 'avr.', 'mai', 'juin', 'juil.', 'août', 'sept.', 'oct.', 'nov.', 'déc.'];
+  var TRESO_CERT = { sure: 'Sûr', probable: 'Probable', supposee: 'Supposé' };
+  var TRESO_CAT = {
+    depense: [['abonnements_techniques', 'Abonnements techniques'], ['logiciel', 'Logiciel'], ['comptabilite', 'Comptabilité'],
+      ['frais_bancaires', 'Frais bancaires'], ['assurance', 'Assurance'], ['prevoyance_mutuelle', 'Prévoyance / mutuelle'],
+      ['domiciliation', 'Domiciliation'], ['impots_taxes', 'Impôts et taxes'], ['vehicule', 'Véhicule'], ['carburant', 'Carburant'],
+      ['repas', 'Repas'], ['locaux', 'Locaux'], ['frais_stripe', 'Frais Stripe'], ['remuneration_gerant', 'Rémunération'],
+      ['cotisations_sociales', 'Cotisations sociales'], ['tva_a_reverser', 'TVA à reverser'], ['impot_societes', 'Impôt sur les sociétés'],
+      ['autre_charge', 'Autre dépense']],
+    encaissement: [['vente_ponctuelle', 'Vente ponctuelle'], ['acompte_client', 'Acompte client'], ['abonnement_client', 'Abonnement client'],
+      ['apport_associe', 'Apport d\'associé'], ['autre_encaissement', 'Autre encaissement']]
+  };
+  function tresoEl(tag, cls, txt){
+    var e = document.createElement(tag);
+    if (cls) e.className = cls;
+    if (txt != null) e.textContent = txt;
+    return e;
+  }
+  // 1234567 (centimes) -> "12 345,67 €" (espaces insecables, signe moins typographique)
+  function tresoEur(cts, signePlus){
+    var n = Math.round(Number(cts) || 0), neg = n < 0, a = Math.abs(n);
+    var e = String(Math.floor(a / 100)).replace(/\B(?=(\d{3})+(?!\d))/g, ' ');
+    var c = String(a % 100); if (c.length < 2) c = '0' + c;
+    return (neg ? '− ' : (signePlus && n > 0 ? '+ ' : '')) + e + ',' + c + ' €';
+  }
+  function tresoEurCourt(cts){
+    var k = Math.round((Number(cts) || 0) / 100000);
+    return (k < 0 ? '−' : '') + Math.abs(k) + ' k€';
+  }
+  function tresoJour(j){ return j ? (j.slice(8, 10) + '/' + j.slice(5, 7) + '/' + j.slice(0, 4)) : ''; }
+  function tresoJourCourt(j){ return j ? (j.slice(8, 10) + '/' + j.slice(5, 7)) : ''; }
+  function tresoMs(j){ return Date.UTC(+j.slice(0, 4), +j.slice(5, 7) - 1, +j.slice(8, 10)); }
+  function tresoAujourdhui(){
+    try { return new Date().toLocaleDateString('en-CA', { timeZone: 'Europe/Paris' }); }
+    catch(e){ return new Date().toISOString().slice(0, 10); }
+  }
+  function tresoJeton(){
+    var s = '', a = 'abcdefghijklmnopqrstuvwxyz0123456789';
+    try {
+      var r = new Uint8Array(16); crypto.getRandomValues(r);
+      for (var i = 0; i < 16; i++) s += a[r[i] % 36];
+    } catch(e){ for (var k = 0; k < 16; k++) s += a[Math.floor(Math.random() * 36)]; }
+    return s;
+  }
+  function tresoMontantSaisie(cts){ // centimes -> "960,00" pour un champ de saisie
+    var a = Math.abs(Math.round(Number(cts) || 0)), c = String(a % 100);
+    return Math.floor(a / 100) + ',' + (c.length < 2 ? '0' + c : c);
+  }
+  function tresoPost(payload, onOk, onErr){
+    postDevisWeb(API_TRESO, payload, function(j){
+      if (!j || j.ok !== true || !j.etat || j.etat.ok !== true){ onErr('Réponse inattendue du serveur.'); return; }
+      onOk(j);
+    }, onErr);
+  }
+  function tresoMessage(txt, retry){
+    var m = document.getElementById('treso-msg');
+    m.textContent = txt;
+    if (retry){
+      var b = tresoEl('button', 'treso-btn treso-btn-main', 'Réessayer');
+      b.type = 'button';
+      b.style.display = 'flex'; b.style.margin = '14px auto 0';
+      b.addEventListener('click', function(){ tresoCharger(); });
+      m.appendChild(b);
+    }
+    m.style.display = '';
+  }
+  function tresoCharger(){
+    if (tresoEnVol) return;
+    tresoEnVol = true;
+    if (!tresoEtat){ tresoMessage('Chargement…', false); document.getElementById('treso-content').style.display = 'none'; }
+    tresoPost({ action: 'etat' }, function(j){
+      tresoEnVol = false; tresoAfficher(j.etat);
+    }, function(err){
+      tresoEnVol = false;
+      if (tresoEtat){ toast(err, 3000); return; }
+      tresoMessage(err, true);
+    });
+  }
+
+  function tresoAfficher(e){
+    tresoEtat = e;
+    document.getElementById('treso-msg').style.display = 'none';
+    document.getElementById('treso-content').style.display = '';
+    // Bandeau : charges a renseigner
+    var w = document.getElementById('treso-warn'), nb = (e.charges_a_renseigner || []).length;
+    w.textContent = '';
+    if (nb){
+      w.appendChild(document.createTextNode(nb + (nb > 1 ? ' charges à renseigner' : ' charge à renseigner') + ' : les sorties réelles seront plus fortes.'));
+      w.appendChild(tresoEl('small', '', e.charges_a_renseigner.join(', ')));
+      w.style.display = '';
+    } else { w.style.display = 'none'; }
+    // 1. Solde
+    var s = e.solde || {};
+    var sv = document.getElementById('treso-solde');
+    sv.textContent = tresoEur(s.montant_cts);
+    sv.classList.toggle('treso-neg', s.montant_cts < 0);
+    var depuis = s.jours_depuis === 0 ? 'aujourd\'hui' : s.jours_depuis === 1 ? 'hier' : ('il y a ' + s.jours_depuis + ' jours');
+    var sub = s.present ? ('saisi le ' + tresoJourCourt(s.date) + ' — ' + depuis) : 'aucun solde saisi';
+    if (s.nb_mouvements_depuis) sub += ' · dont ' + tresoEur(s.mouvements_depuis_cts, true) + ' marqués payés depuis';
+    document.getElementById('treso-solde-sub').textContent = sub;
+    // 2. Chiffres cles
+    var pb = e.point_bas || {};
+    var kb = document.getElementById('treso-k-bas');
+    kb.textContent = tresoEur(pb.montant_cts); kb.classList.toggle('treso-neg', pb.montant_cts < 0);
+    document.getElementById('treso-k-bas-sub').textContent = 'le ' + tresoJour(pb.date);
+    var se = e.seuil || {};
+    document.getElementById('treso-k-seuil').textContent = se.franchi_le ? ('le ' + tresoJour(se.franchi_le)) : 'Pas sur 12 mois';
+    document.getElementById('treso-k-seuil-sub').textContent = 'seuil : ' + tresoEur(se.montant_cts)
+      + (se.origine === 'manuel' ? ' (fixé à la main)' : ' (un mois de dépenses)');
+    document.getElementById('treso-k-mois').textContent = e.mois_tenus == null ? '12 mois et plus'
+      : (e.mois_tenus + ' mois');
+    document.getElementById('treso-k-mois-sub').textContent = e.sous_zero
+      ? ('sous zéro le ' + tresoJour(e.sous_zero.date) + ' (' + tresoEur(e.sous_zero.montant_cts) + ')') : 'jamais sous zéro sur 12 mois';
+    var rc = (e.recurrent_a_signer || {});
+    var rz = rc.pour_zero || {}, rs = rc.pour_seuil || {};
+    document.getElementById('treso-k-rec').textContent = rz.montant_ht_cts ? tresoEur(rz.montant_ht_cts) : 'Rien à signer';
+    document.getElementById('treso-k-rec-sub').textContent = (rz.montant_ht_cts ? 'HT par mois pour ne jamais passer sous zéro' : 'le solde reste positif')
+      + (rs.montant_ht_cts ? ' · ' + tresoEur(rs.montant_ht_cts) + ' pour garder le seuil' : '');
+    tresoCourbe(e);
+    tresoAvenir(e);
+    tresoRepartition(e);
+  }
+
+  // 3. Courbe (SVG dessine a la main, comme le reste de l'app : aucune bibliotheque)
+  function tresoCourbe(e){
+    var svg = document.getElementById('treso-chart');
+    var NS = 'http://www.w3.org/2000/svg';
+    while (svg.firstChild) svg.removeChild(svg.firstChild);
+    var pts = (e.courbe || []).slice();
+    if (!pts.length) return;
+    var W = Math.max(280, Math.round(svg.getBoundingClientRect().width || 330)), H = 220;
+    var L = 46, R = 10, T = 14, B = 26;
+    svg.setAttribute('viewBox', '0 0 ' + W + ' ' + H);
+    var x0 = tresoMs(e.aujourdhui), x1 = tresoMs(e.horizon);
+    var seuil = (e.seuil && e.seuil.montant_cts) || 0;
+    var vals = pts.map(function(p){ return p.solde_cts; });
+    var ymin = Math.min.apply(null, vals.concat([0])), ymax = Math.max.apply(null, vals.concat([seuil]));
+    var pad = (ymax - ymin) * 0.08 || 100000; ymin -= pad; ymax += pad;
+    function X(ms){ return L + (ms - x0) / (x1 - x0) * (W - L - R); }
+    function Y(v){ return T + (ymax - v) / (ymax - ymin) * (H - T - B); }
+    function el(n, at, txt){
+      var x = document.createElementNS(NS, n);
+      for (var k in at) x.setAttribute(k, at[k]);
+      if (txt != null) x.textContent = txt;
+      svg.appendChild(x); return x;
+    }
+    // zone sous zero
+    if (ymin < 0) el('rect', { x: L, y: Y(0), width: W - L - R, height: Math.max(0, Y(ymin) - Y(0)), fill: 'var(--tr-neg-fill)' });
+    // graduations Y
+    var pas = Math.pow(10, Math.floor(Math.log(Math.max(1, (ymax - ymin) / 3)) / Math.LN10));
+    var etape = [1, 2, 5, 10].map(function(m){ return m * pas; }).filter(function(v){ return (ymax - ymin) / v <= 4; })[0] || pas * 10;
+    for (var v = Math.ceil(ymin / etape) * etape; v <= ymax; v += etape){
+      if (v === 0) continue;
+      el('line', { x1: L, x2: W - R, y1: Y(v), y2: Y(v), stroke: 'var(--tr-line)', 'stroke-width': 0.5 });
+      el('text', { x: L - 6, y: Y(v) + 4, 'text-anchor': 'end' }, tresoEurCourt(v));
+    }
+    // mois (graduation tous les mois, libelle un mois sur deux)
+    var a = +e.aujourdhui.slice(0, 4), m = +e.aujourdhui.slice(5, 7), i = 0;
+    for (;;){
+      m++; if (m > 12){ m = 1; a++; }
+      var ms = Date.UTC(a, m - 1, 1);
+      if (ms > x1) break;
+      el('line', { x1: X(ms), x2: X(ms), y1: H - B, y2: H - B + 4, stroke: 'var(--tr-muted)', 'stroke-width': 1 });
+      if (i % 2 === 0) el('text', { x: X(ms), y: H - 6, 'text-anchor': 'middle' }, TRESO_MOIS_COURT[m - 1] + (m === 1 ? ' ' + String(a).slice(2) : ''));
+      i++;
+    }
+    // zero et seuil
+    el('line', { x1: L, x2: W - R, y1: Y(0), y2: Y(0), stroke: 'var(--tr-neg)', 'stroke-width': 1 });
+    el('text', { x: L - 6, y: Y(0) + 4, 'text-anchor': 'end' }, '0 €');
+    if (seuil){
+      el('line', { x1: L, x2: W - R, y1: Y(seuil), y2: Y(seuil), stroke: 'var(--tr-accent)', 'stroke-width': 1.5, 'stroke-dasharray': '5 4' });
+      el('text', { x: W - R, y: Y(seuil) - 5, 'text-anchor': 'end', style: 'fill:var(--tr-accent);font-weight:700' }, 'seuil');
+    }
+    // courbe en escalier : un trait plein (sur/probable) ou tirete clair (surtout suppose)
+    var segs = [], cur = null;
+    for (var k = 0; k < pts.length; k++){
+      var p = pts[k], nx = k + 1 < pts.length ? pts[k + 1] : null;
+      var xa = X(tresoMs(p.date)), xb = nx ? X(tresoMs(nx.date)) : X(x1);
+      var sup = nx ? !!nx.surtout_suppose : !!p.surtout_suppose;
+      if (!cur || cur.sup !== sup){ cur = { sup: sup, d: 'M' + xa.toFixed(1) + ' ' + Y(p.solde_cts).toFixed(1) }; segs.push(cur); }
+      cur.d += ' H' + xb.toFixed(1);
+      if (nx) cur.d += ' V' + Y(nx.solde_cts).toFixed(1);
+    }
+    segs.forEach(function(s){
+      var at = { d: s.d, fill: 'none', stroke: s.sup ? 'var(--tr-proj-sup)' : 'var(--tr-proj)', 'stroke-width': 2.5, 'stroke-linejoin': 'round' };
+      if (s.sup) at['stroke-dasharray'] = '6 4';
+      el('path', at);
+    });
+    // point bas
+    var pb = e.point_bas;
+    if (pb && pb.date){
+      var px = X(tresoMs(pb.date)), py = Y(pb.montant_cts);
+      el('circle', { cx: px, cy: py, r: 5, fill: pb.montant_cts < 0 ? 'var(--tr-neg)' : 'var(--tr-proj)', stroke: 'var(--tr-card)', 'stroke-width': 2 });
+      var gauche = px > W * 0.6;
+      el('text', { x: px + (gauche ? -8 : 8), y: Math.min(H - B - 4, py + 4), 'text-anchor': gauche ? 'end' : 'start', style: 'fill:var(--tr-ink);font-weight:700' }, 'point bas');
+    }
+    svg.setAttribute('aria-label', 'Solde projeté : ' + tresoEur(pts[0].solde_cts) + ' aujourd\'hui, point bas '
+      + tresoEur(pb.montant_cts) + ' le ' + tresoJour(pb.date) + (e.sous_zero ? ', sous zéro à partir du ' + tresoJour(e.sous_zero.date) : ''));
+  }
+
+  // 4. A venir (60 jours), groupes par mois, avec Payé / Annuler confirmes dans la page
+  function tresoAvenir(e){
+    var box = document.getElementById('treso-avenir');
+    box.textContent = '';
+    var liste = e.a_venir || [];
+    if (!liste.length){ box.appendChild(tresoEl('div', 'treso-empty', 'Rien de prévu sur les 60 prochains jours.')); return; }
+    var dernier = '';
+    liste.forEach(function(p){
+      var groupe = p.en_retard ? 'En retard' : (TRESO_MOIS[+p.date_prevue.slice(5, 7) - 1] + ' ' + p.date_prevue.slice(0, 4));
+      if (groupe !== dernier){
+        var g = tresoEl('div', 'treso-mois', groupe.charAt(0).toUpperCase() + groupe.slice(1));
+        box.appendChild(g); dernier = groupe;
+      }
+      var row = tresoEl('div', 'treso-ligne');
+      var l1 = tresoEl('div', 'treso-l1');
+      l1.appendChild(tresoEl('div', 'treso-lib', p.libelle));
+      l1.appendChild(tresoEl('div', 'treso-mt' + (p.montant_cts > 0 ? ' treso-pos' : ''), tresoEur(p.montant_cts, true)));
+      row.appendChild(l1);
+      var l2 = tresoEl('div', 'treso-l2');
+      l2.appendChild(tresoEl('span', '', 'le ' + tresoJour(p.date_prevue)));
+      l2.appendChild(tresoEl('span', 'treso-badge b-' + p.fiabilite, TRESO_CERT[p.fiabilite] || p.fiabilite));
+      if (p.en_retard) l2.appendChild(tresoEl('span', 'treso-badge b-retard', 'En retard'));
+      row.appendChild(l2);
+      var acts = tresoEl('div', 'treso-acts');
+      var bp = tresoEl('button', 'treso-btn', p.montant_cts > 0 ? 'Reçu' : 'Payé'); bp.type = 'button';
+      var ba = tresoEl('button', 'treso-btn', 'Annuler'); ba.type = 'button';
+      acts.appendChild(bp); acts.appendChild(ba);
+      row.appendChild(acts);
+      bp.addEventListener('click', function(){ tresoConfirmer(row, acts, p, 'paye'); });
+      ba.addEventListener('click', function(){ tresoConfirmer(row, acts, p, 'annuler'); });
+      box.appendChild(row);
+    });
+  }
+  function tresoChamp(label, input){
+    var l = tresoEl('label', 'treso-field');
+    l.appendChild(tresoEl('span', '', label));
+    l.appendChild(input);
+    return l;
+  }
+  function tresoInput(type, val, attrs){
+    var i = document.createElement('input');
+    i.type = type; if (val != null) i.value = val;
+    for (var k in (attrs || {})) i.setAttribute(k, attrs[k]);
+    return i;
+  }
+  function tresoConfirmer(row, acts, p, mode){
+    var deja = row.querySelector('.treso-confirm');
+    if (deja) row.removeChild(deja);
+    acts.style.display = 'none';
+    var c = tresoEl('div', 'treso-confirm');
+    var err = tresoEl('p', 'treso-err', '');
+    var champs = {};
+    if (mode === 'paye'){
+      c.appendChild(tresoEl('p', '', (p.montant_cts > 0 ? 'Confirmer l\'encaissement' : 'Confirmer le paiement') + ' de « ' + p.libelle + ' » ? Modifiez la date ou le montant s\'ils diffèrent : le prévu est gardé à côté du réel.'));
+      champs.date = tresoInput('date', tresoAujourdhui(), { max: tresoAujourdhui() });
+      champs.montant = tresoInput('text', tresoMontantSaisie(p.montant_cts), { inputmode: 'decimal', autocomplete: 'off' });
+      c.appendChild(tresoChamp('Date réelle', champs.date));
+      c.appendChild(tresoChamp('Montant réel (€, TTC)', champs.montant));
+    } else {
+      c.appendChild(tresoEl('p', '', 'Annuler « ' + p.libelle + ' » ? La ligne reste gardée, marquée annulée avec votre motif.'));
+      champs.motif = tresoInput('text', '', { maxlength: '200', autocomplete: 'off', placeholder: 'Ex. : contrat décalé à janvier' });
+      c.appendChild(tresoChamp('Motif (obligatoire)', champs.motif));
+    }
+    c.appendChild(err);
+    var btns = tresoEl('div', 'treso-row-btns');
+    var ok = tresoEl('button', 'treso-btn treso-btn-main', mode === 'paye' ? 'Confirmer' : 'Confirmer l\'annulation'); ok.type = 'button';
+    var no = tresoEl('button', 'treso-btn', 'Retour'); no.type = 'button';
+    btns.appendChild(ok); btns.appendChild(no);
+    c.appendChild(btns);
+    row.appendChild(c);
+    no.addEventListener('click', function(){ row.removeChild(c); acts.style.display = ''; });
+    ok.addEventListener('click', function(){
+      var payload = mode === 'paye'
+        ? { action: 'marquer_paye', ref: p.ref, date_reelle: champs.date.value, montant_reel: champs.montant.value }
+        : { action: 'annuler', ref: p.ref, motif: champs.motif.value };
+      if (mode === 'annuler' && champs.motif.value.trim().length < 3){ err.textContent = 'Indiquez un motif (3 caractères au moins).'; return; }
+      ok.disabled = true; no.disabled = true; err.textContent = '';
+      tresoPost(payload, function(j){
+        toast(j.message || 'Enregistré.', 2200);
+        tresoAfficher(j.etat);
+      }, function(msg){ ok.disabled = false; no.disabled = false; err.textContent = msg; });
+    });
+  }
+
+  // 6. Repartition des sorties sur 12 mois
+  function tresoRepartition(e){
+    var box = document.getElementById('treso-rep');
+    box.textContent = '';
+    var r = e.repartition || {}, lignes = r.lignes || [];
+    if (!lignes.length){ box.appendChild(tresoEl('div', 'treso-empty', 'Aucune sortie prévue sur 12 mois.')); return; }
+    var max = lignes[0].montant_cts || 1;
+    lignes.forEach(function(l){
+      var d = tresoEl('div', 'treso-rep');
+      var top = tresoEl('div', 'treso-rep-top');
+      top.appendChild(tresoEl('b', '', l.libelle));
+      top.appendChild(tresoEl('span', '', tresoEur(l.montant_cts)));
+      d.appendChild(top);
+      var bar = tresoEl('div', 'treso-rep-bar'), i = tresoEl('i');
+      i.style.width = Math.max(2, Math.round(l.montant_cts * 100 / max)) + '%';
+      bar.appendChild(i); d.appendChild(bar);
+      d.appendChild(tresoEl('div', 'treso-rep-pct', (l.part_pm / 10).toFixed(1).replace('.', ',') + ' % des sorties'));
+      box.appendChild(d);
+    });
+    var t = tresoEl('div', 'treso-rep');
+    var tt = tresoEl('div', 'treso-rep-top');
+    tt.appendChild(tresoEl('b', '', 'Total'));
+    tt.appendChild(tresoEl('span', '', tresoEur(r.total_cts)));
+    t.appendChild(tt); box.appendChild(t);
+  }
+
+  // Formulaires en feuille basse (solde, ajout) -- construits en DOM, jamais en HTML
+  var tresoForm = document.getElementById('treso-form'), tresoFormBg = document.getElementById('tresoFormBg');
+  function tresoFormFermer(){ tresoForm.classList.remove('open'); tresoFormBg.classList.remove('open'); tresoForm.textContent = ''; }
+  function tresoFormOuvrir(titre, construire){
+    tresoForm.textContent = '';
+    var h = tresoEl('h3', '', titre); h.id = 'treso-form-title';
+    tresoForm.appendChild(h);
+    construire(tresoForm);
+    tresoForm.classList.add('open'); tresoFormBg.classList.add('open');
+  }
+  function tresoFormBoutons(f, libelleOk, envoyer){
+    var err = tresoEl('p', 'treso-err', '');
+    f.appendChild(err);
+    var btns = tresoEl('div', 'treso-row-btns');
+    var ok = tresoEl('button', 'treso-btn treso-btn-main', libelleOk); ok.type = 'button';
+    var no = tresoEl('button', 'treso-btn', 'Fermer'); no.type = 'button';
+    btns.appendChild(ok); btns.appendChild(no); f.appendChild(btns);
+    no.addEventListener('click', tresoFormFermer);
+    ok.addEventListener('click', function(){
+      var payload = envoyer(err);
+      if (!payload) return;
+      ok.disabled = true; no.disabled = true; err.textContent = '';
+      tresoPost(payload, function(j){
+        tresoFormFermer(); toast(j.message || 'Enregistré.', 2200); tresoAfficher(j.etat);
+      }, function(msg){ ok.disabled = false; no.disabled = false; err.textContent = msg; });
+    });
+  }
+  function tresoFormSolde(){
+    var jeton = tresoJeton();
+    tresoFormOuvrir('Mettre à jour le solde', function(f){
+      f.appendChild(tresoEl('p', 'treso-solde-sub', 'Le solde du compte M22 VISION tel que la banque l\'affiche. Une nouvelle ligne est ajoutée, l\'ancienne est gardée.'));
+      var mt = tresoInput('text', '', { inputmode: 'decimal', autocomplete: 'off', placeholder: 'Ex. : 10 000,00' });
+      var dt = tresoInput('date', tresoAujourdhui(), { max: tresoAujourdhui() });
+      f.appendChild(tresoChamp('Solde (€)', mt));
+      f.appendChild(tresoChamp('À la date du', dt));
+      tresoFormBoutons(f, 'Enregistrer le solde', function(err){
+        if (!mt.value.trim()){ err.textContent = 'Indiquez le solde.'; return null; }
+        return { action: 'maj_solde', montant: mt.value, date: dt.value, jeton: jeton };
+      });
+    });
+  }
+  function tresoFormAjout(){
+    var jeton = tresoJeton(), sens = 'depense';
+    tresoFormOuvrir('Ajouter une prévision ponctuelle', function(f){
+      var seg = tresoEl('div', 'treso-seg');
+      var bD = tresoEl('button', 'treso-btn', 'Dépense'), bE = tresoEl('button', 'treso-btn', 'Encaissement');
+      bD.type = 'button'; bE.type = 'button';
+      seg.appendChild(bD); seg.appendChild(bE); f.appendChild(seg);
+      var lib = tresoInput('text', '', { maxlength: '120', autocomplete: 'off', placeholder: 'Ex. : Renouvellement nom de domaine' });
+      var mt = tresoInput('text', '', { inputmode: 'decimal', autocomplete: 'off', placeholder: 'Ex. : 99,00' });
+      var dt = tresoInput('date', tresoAujourdhui());
+      var cat = document.createElement('select');
+      var cert = document.createElement('select');
+      [['sure', 'Sûr'], ['probable', 'Probable'], ['supposee', 'Supposé']].forEach(function(o){
+        var op = document.createElement('option'); op.value = o[0]; op.textContent = o[1]; cert.appendChild(op);
+      });
+      cert.value = 'probable';
+      function remplirCat(){
+        cat.textContent = '';
+        TRESO_CAT[sens].forEach(function(o){ var op = document.createElement('option'); op.value = o[0]; op.textContent = o[1]; cat.appendChild(op); });
+        bD.setAttribute('aria-pressed', sens === 'depense' ? 'true' : 'false');
+        bE.setAttribute('aria-pressed', sens === 'encaissement' ? 'true' : 'false');
+      }
+      bD.addEventListener('click', function(){ sens = 'depense'; remplirCat(); });
+      bE.addEventListener('click', function(){ sens = 'encaissement'; remplirCat(); });
+      remplirCat();
+      f.appendChild(tresoChamp('Libellé', lib));
+      f.appendChild(tresoChamp('Montant TTC (€)', mt));
+      f.appendChild(tresoChamp('Date prévue', dt));
+      f.appendChild(tresoChamp('Catégorie', cat));
+      f.appendChild(tresoChamp('Certitude', cert));
+      tresoFormBoutons(f, 'Ajouter', function(err){
+        if (lib.value.trim().length < 2){ err.textContent = 'Indiquez un libellé.'; return null; }
+        if (!mt.value.trim()){ err.textContent = 'Indiquez le montant.'; return null; }
+        return { action: 'ajouter', sens: sens, libelle: lib.value, montant: mt.value, date: dt.value,
+          categorie: cat.value, certitude: cert.value, jeton: jeton };
+      });
+    });
+  }
+  function tresoOpen(){ tresoview.classList.add('open'); tresoCharger(); }
+  function tresoClose(){ tresoFormFermer(); tresoview.classList.remove('open'); }
+  document.getElementById('sh-treso').addEventListener('click', function(){ sheetOpen(false); tresoOpen(); });
+  document.getElementById('treso-close').addEventListener('click', tresoClose);
+  document.getElementById('treso-refresh').addEventListener('click', function(){ tresoCharger(); });
+  document.getElementById('treso-solde-btn').addEventListener('click', tresoFormSolde);
+  document.getElementById('treso-add').addEventListener('click', tresoFormAjout);
+  tresoFormBg.addEventListener('click', tresoFormFermer);
+  window.addEventListener('resize', function(){ if (tresoEtat && tresoview.classList.contains('open')) tresoCourbe(tresoEtat); });
+
   var radarview = document.getElementById('radarview');
   var API_RADAR = 'https://n8n-self-hosted-t0pz.onrender.com/webhook/jarvis-radar-recap';
   function radarClose(){ radarview.classList.remove('open'); }
