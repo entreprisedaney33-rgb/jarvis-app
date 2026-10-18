@@ -2512,19 +2512,19 @@
   table.ik-recap-table td{padding:8px 8px; border-bottom:0.5px solid var(--hairline); color:var(--ink)}
   table.ik-recap-table td.ik-td-num{text-align:right}
   table.ik-recap-table tr.ik-recap-total td{font-weight:700; color:var(--gold-a)}
-  /* Tresorerie M22 (V1, 18/10/2026) -- labo uniquement. Ids/classes treso-* UNIQUEMENT (aucune
-     regle de base, aucun selecteur partage modifie : MCS et le reste du LABO pixel-identiques).
-     Couleurs portees par des variables propres au panneau (--tr-*), toujours sombres comme le
-     reste de l'app LABO, meme si l'iPhone est en mode clair (decision de Matheo, 18/10/2026).
-     Tuile : 6e tuile du menu labo, pleine largeur sous "Frais kilometriques". */
+  /* Tresorerie M22 (V1 18/10/2026, V1.1 lisibilite 18/10/2026) -- labo uniquement. Ids/classes
+     treso-* UNIQUEMENT (aucune regle de base, aucun selecteur partage modifie : MCS et le reste du
+     LABO pixel-identiques). Couleurs portees par des variables propres au panneau (--tr-*),
+     toujours sombres comme le reste de l'app LABO, meme si l'iPhone est en mode clair (decision
+     de Matheo, 18/10/2026). Tuile : 6e tuile du menu labo, pleine largeur sous "Frais kilometriques". */
   #sheet.sheet-labo #sh-treso{order:6; grid-column:1/-1}
   #tresoview{
-    --tr-bg:var(--bg); --tr-card:var(--surface); --tr-ink:var(--ink); --tr-muted:var(--muted);
+    --tr-bg:var(--bg); --tr-card:var(--surface); --tr-card2:#2C2C2E; --tr-ink:var(--ink); --tr-muted:var(--muted);
     --tr-line:var(--hairline); --tr-accent:var(--gold-a); --tr-blue:var(--blue); --tr-pos:#64D2FF;
     --tr-proj:#64D2FF; --tr-proj-sup:rgba(100,210,255,.55); --tr-neg:#FF6961; --tr-neg-fill:rgba(255,105,97,.16);
-    --tr-field:var(--field-bg); --tr-warn-bg:rgba(var(--gold-rgb),.16); --tr-warn-ink:var(--gold-a);
+    --tr-neg-bg:rgba(255,105,97,.12); --tr-field:var(--field-bg); --tr-warn-bg:rgba(var(--gold-rgb),.16); --tr-warn-ink:var(--gold-a);
     --tr-b-sure:#30D158; --tr-b-sure-ink:#04210C; --tr-b-prob:#64D2FF; --tr-b-prob-ink:#03222E;
-    --tr-b-sup:#48484A; --tr-b-sup-ink:#FFFFFF; --tr-b-ret:#FF9F0A; --tr-b-ret-ink:#2B1700;
+    --tr-b-sup:#48484A; --tr-b-sup-ink:#FFFFFF; --tr-b-ret:#FF6961; --tr-b-ret-ink:#2A0603;
     position:fixed; inset:0; z-index:50; background:var(--tr-bg); color:var(--tr-ink);
     display:none; flex-direction:column;
     transform:translateY(100%); transition:transform .28s cubic-bezier(.2,.9,.25,1);
@@ -2544,17 +2544,24 @@
     display:flex; align-items:center; justify-content:center; cursor:pointer;
     -webkit-tap-highlight-color:transparent;
   }
-  #treso-body{flex:1; overflow-y:auto; -webkit-overflow-scrolling:touch; padding:12px 16px calc(96px + env(safe-area-inset-bottom))}
+  /* marge basse : le bouton + (56 px) ne masque jamais la derniere ligne */
+  #treso-body{flex:1; overflow-y:auto; -webkit-overflow-scrolling:touch; padding:12px 16px calc(112px + env(safe-area-inset-bottom))}
   #treso-msg{color:var(--tr-muted); text-align:center; padding:40px 12px; font-size:16px; line-height:1.4}
-  #treso-msg button{margin-top:14px}
   .treso-card{background:var(--tr-card); border-radius:16px; padding:14px 16px; margin:0 0 12px}
-  .treso-h{font-size:13px; font-weight:700; color:var(--tr-accent); text-transform:uppercase; letter-spacing:.03em; margin:20px 4px 8px}
-  .treso-warn{background:var(--tr-warn-bg); color:var(--tr-warn-ink); border-radius:14px; padding:12px 14px; margin:0 0 12px; font-size:15.5px; line-height:1.35; font-weight:700}
-  .treso-warn small{display:block; font-weight:400; font-size:14px; margin-top:3px}
+  .treso-h{display:flex; align-items:center; gap:8px; font-size:13px; font-weight:700; color:var(--tr-accent); text-transform:uppercase; letter-spacing:.03em; margin:22px 4px 8px}
+  .treso-h span{flex:1}
+  .treso-pill{
+    display:inline-flex; align-items:center; gap:6px; min-height:36px; padding:6px 14px; margin:0 0 12px;
+    border-radius:99px; border:0; background:var(--tr-warn-bg); color:var(--tr-warn-ink);
+    font:inherit; font-size:14.5px; font-weight:700; cursor:pointer; -webkit-tap-highlight-color:transparent;
+  }
+  .treso-pill-list{font-size:14px; color:var(--tr-muted); line-height:1.45; margin:-4px 4px 12px}
   .treso-solde-lbl{font-size:13px; color:var(--tr-muted); text-transform:uppercase; letter-spacing:.03em}
-  .treso-solde-val{font-size:38px; font-weight:800; line-height:1.1; margin:4px 0 4px; letter-spacing:-.01em}
+  .treso-solde-row{display:flex; align-items:flex-end; gap:10px; flex-wrap:wrap}
+  .treso-solde-val{font-size:36px; font-weight:800; line-height:1.1; margin:4px 0 2px; letter-spacing:-.01em; flex:1; min-width:0}
   .treso-neg{color:var(--tr-neg)}
-  .treso-solde-sub{font-size:15px; color:var(--tr-muted); line-height:1.35}
+  .treso-solde-sub{font-size:14.5px; color:var(--tr-muted); line-height:1.35}
+  .treso-link{border:0; background:none; color:var(--tr-blue); font:inherit; font-size:15px; font-weight:700; padding:8px 0; cursor:pointer; min-height:40px}
   .treso-btn{
     display:inline-flex; align-items:center; justify-content:center; gap:6px; min-height:44px; box-sizing:border-box;
     padding:10px 16px; border-radius:12px; font:inherit; font-size:15.5px; font-weight:700; cursor:pointer;
@@ -2563,48 +2570,79 @@
   }
   .treso-btn.treso-btn-main{background:var(--tr-blue); border-color:var(--tr-blue); color:#fff}
   .treso-btn:disabled{opacity:.55; cursor:default}
-  .treso-btn-large{width:100%; margin-top:12px}
   .treso-kpis{display:grid; grid-template-columns:1fr 1fr; gap:10px; margin:0 0 4px}
   .treso-kpi{background:var(--tr-card); border-radius:14px; padding:12px 13px; display:flex; flex-direction:column; gap:3px; min-width:0}
   .treso-kpi-lbl{font-size:13px; color:var(--tr-muted); line-height:1.25}
   .treso-kpi-val{font-size:19px; font-weight:800; line-height:1.2; overflow-wrap:anywhere}
   .treso-kpi-sub{font-size:13.5px; color:var(--tr-muted); line-height:1.3}
-  #treso-chart{width:100%; height:auto; display:block}
+  .treso-seg{display:flex; gap:4px; padding:3px; border-radius:11px; background:var(--tr-card2)}
+  .treso-seg button{flex:1; min-height:36px; border:0; border-radius:9px; background:transparent; color:var(--tr-muted);
+    font:inherit; font-size:14.5px; font-weight:700; cursor:pointer; padding:4px 8px; white-space:nowrap; -webkit-tap-highlight-color:transparent}
+  .treso-seg button[aria-pressed="true"]{background:#636366; color:#FFFFFF; box-shadow:0 1px 3px rgba(0,0,0,.4)}
+  .treso-h .treso-seg{flex:0 0 auto; text-transform:none; letter-spacing:0}
+  .treso-h .treso-seg button{min-height:30px; font-size:13px; padding:2px 9px}
+  #treso-chart{width:100%; height:auto; display:block; touch-action:pan-y}
   #treso-chart text{font-size:12px; fill:var(--tr-muted); font-family:inherit}
+  #treso-point{min-height:22px; font-size:14.5px; font-weight:700; margin-top:6px}
+  #treso-point span{color:var(--tr-muted); font-weight:400}
   .treso-legend{display:flex; flex-wrap:wrap; gap:6px 16px; margin-top:8px; font-size:13.5px; color:var(--tr-muted)}
   .treso-legend span{display:inline-flex; align-items:center; gap:6px}
   .treso-legend i{display:inline-block; width:22px; height:0; border-top:3px solid var(--tr-proj)}
   .treso-legend i.treso-lg-sup{border-top:3px dashed var(--tr-proj-sup)}
   .treso-legend i.treso-lg-seuil{border-top:2px dashed var(--tr-accent)}
   .treso-legend i.treso-lg-neg{height:11px; border:0; background:var(--tr-neg-fill); outline:1px solid var(--tr-neg)}
-  .treso-mois{font-size:14.5px; font-weight:700; color:var(--tr-muted); margin:16px 0 4px}
-  .treso-mois:first-child{margin-top:0}
-  .treso-ligne{padding:11px 0; border-top:0.5px solid var(--tr-line)}
-  .treso-mois + .treso-ligne{border-top:none}
-  .treso-l1{display:flex; align-items:baseline; gap:10px}
-  .treso-lib{flex:1; min-width:0; font-size:15.5px; font-weight:600; line-height:1.3; overflow-wrap:anywhere}
-  .treso-mt{flex:0 0 auto; font-size:15.5px; font-weight:800; white-space:nowrap}
-  .treso-mt.treso-pos{color:var(--tr-pos)}
-  .treso-l2{display:flex; align-items:center; flex-wrap:wrap; gap:6px 8px; margin-top:5px; font-size:14px; color:var(--tr-muted)}
-  .treso-badge{display:inline-block; padding:2px 9px; border-radius:99px; font-size:13px; font-weight:700; line-height:1.45}
+  /* A venir : en-tete de mois + lignes compactes de hauteur unique */
+  .treso-retard{background:var(--tr-neg-bg); border:1px solid var(--tr-neg); border-radius:16px; padding:8px 12px; margin:0 0 12px}
+  .treso-retard-h{color:var(--tr-neg); font-weight:800; font-size:15px; padding:4px 2px 2px}
+  .treso-mois-h{display:flex; flex-wrap:wrap; align-items:baseline; gap:2px 10px; padding:10px 2px 6px; border-bottom:0.5px solid var(--tr-line)}
+  .treso-mois-h:first-child{padding-top:0}
+  .treso-mois-h b{font-size:15.5px; flex:1 0 100%; text-transform:capitalize}
+  .treso-mois-h span{font-size:13.5px; color:var(--tr-muted)}
+  .treso-mois-h span em{font-style:normal; font-weight:700; color:var(--tr-ink)}
+  .treso-mois-h span em.treso-neg{color:var(--tr-neg)}
+  .treso-row{
+    display:grid; grid-template-columns:minmax(0,1fr) auto; grid-template-rows:auto auto; column-gap:10px; row-gap:2px;
+    align-items:center; width:100%; height:58px; box-sizing:border-box; padding:7px 2px; border:0;
+    border-bottom:0.5px solid var(--tr-line); background:transparent; color:var(--tr-ink); font:inherit; text-align:left;
+    cursor:pointer; -webkit-tap-highlight-color:transparent;
+  }
+  .treso-row:last-child{border-bottom:0}
+  .treso-row:active{background:var(--tr-card2)}
+  .treso-r-nom{font-size:15.5px; font-weight:600; white-space:nowrap; overflow:hidden; text-overflow:ellipsis}
+  .treso-r-sub{font-size:13.5px; color:var(--tr-muted); white-space:nowrap; overflow:hidden; text-overflow:ellipsis}
+  .treso-r-mt{font-size:15.5px; font-weight:800; white-space:nowrap; text-align:right}
+  .treso-r-mt.treso-pos{color:var(--tr-pos)}
+  .treso-r-right2{text-align:right; white-space:nowrap}
+  .treso-badge{display:inline-block; padding:1px 8px; border-radius:99px; font-size:13px; font-weight:700; line-height:1.4}
   .treso-badge.b-sure{background:var(--tr-b-sure); color:var(--tr-b-sure-ink)}
   .treso-badge.b-probable{background:var(--tr-b-prob); color:var(--tr-b-prob-ink)}
   .treso-badge.b-supposee{background:var(--tr-b-sup); color:var(--tr-b-sup-ink)}
   .treso-badge.b-retard{background:var(--tr-b-ret); color:var(--tr-b-ret-ink)}
-  .treso-acts{display:flex; gap:8px; margin-top:9px}
-  .treso-acts .treso-btn{flex:1; min-height:42px; padding:8px 10px; font-size:15px}
-  .treso-confirm{margin-top:10px; padding:12px; border-radius:12px; border:1px solid var(--tr-line)}
-  .treso-confirm p{margin:0 0 10px; font-size:15px; line-height:1.35}
-  .treso-field{display:block; margin:0 0 10px}
-  .treso-field span{display:block; font-size:14px; color:var(--tr-muted); margin:0 0 4px}
-  .treso-field input, .treso-field select{
-    width:100%; box-sizing:border-box; min-height:44px; border:1px solid var(--tr-line); border-radius:10px;
-    background:var(--tr-field); color:var(--tr-ink); font:inherit; font-size:16px; padding:9px 11px;
-  }
-  .treso-err{color:var(--tr-neg); font-size:14.5px; margin:0 0 10px; font-weight:700}
-  .treso-err:empty{display:none}
-  .treso-row-btns{display:flex; gap:8px}
-  .treso-row-btns .treso-btn{flex:1}
+  .treso-groupe-enf{padding-left:14px; border-left:2px solid var(--tr-line); margin:0 0 4px 4px}
+  .treso-chev{display:inline-block; transition:transform .15s; color:var(--tr-muted); margin-left:7px}
+  .treso-row[aria-expanded="true"] .treso-chev{transform:rotate(90deg)}
+  .treso-empty{color:var(--tr-muted); font-size:15px; padding:8px 2px}
+  /* Plan de tresorerie : 12 cartes mensuelles horizontales */
+  .treso-plan{display:flex; gap:10px; overflow-x:auto; scroll-snap-type:x mandatory; -webkit-overflow-scrolling:touch;
+    margin:0 -16px 4px; padding:0 16px 8px; scrollbar-width:none}
+  .treso-plan::-webkit-scrollbar{display:none}
+  .treso-pm{flex:0 0 78%; max-width:300px; scroll-snap-align:start; box-sizing:border-box; background:var(--tr-card); border-radius:16px; padding:13px 14px; border:1px solid transparent}
+  .treso-pm.treso-pm-sous{border-color:var(--tr-neg)}
+  .treso-pm h4{margin:0 0 8px; font-size:16px; text-transform:capitalize}
+  .treso-pm-l{display:flex; gap:8px; font-size:14px; padding:3px 0}
+  .treso-pm-l b{flex:1; min-width:0; font-weight:400; color:var(--tr-muted); white-space:nowrap; overflow:hidden; text-overflow:ellipsis}
+  .treso-pm-l span{white-space:nowrap; font-weight:600}
+  .treso-pm-t{display:flex; gap:8px; font-size:14.5px; font-weight:800; padding:6px 0 3px; border-top:0.5px solid var(--tr-line); margin-top:4px}
+  .treso-pm-t b{flex:1}
+  .treso-pm-tva{width:100%; border:0; background:none; color:inherit; font:inherit; padding:0; cursor:pointer; text-align:left}
+  .treso-pm-tva b{text-decoration:underline dotted; text-underline-offset:3px}
+  .treso-pm-det{font-size:13.5px; color:var(--tr-muted); background:var(--tr-card2); border-radius:10px; padding:8px 10px; margin:4px 0}
+  .treso-pm-det div{display:flex; justify-content:space-between; gap:8px; padding:1px 0}
+  .treso-pm-fin{margin-top:10px; padding-top:9px; border-top:1px solid var(--tr-line)}
+  .treso-pm-fin small{display:block; font-size:13px; color:var(--tr-muted)}
+  .treso-pm-fin strong{font-size:21px; font-weight:800}
+  .treso-pm-fin em{display:block; font-style:normal; font-size:13px; font-weight:700; color:var(--tr-neg)}
+  /* Repartitions */
   .treso-rep{padding:10px 0; border-top:0.5px solid var(--tr-line)}
   .treso-rep:first-child{border-top:none}
   .treso-rep-top{display:flex; align-items:baseline; gap:8px; font-size:15.5px}
@@ -2612,28 +2650,48 @@
   .treso-rep-top span{font-weight:800; white-space:nowrap}
   .treso-rep-bar{height:7px; border-radius:4px; background:var(--tr-line); overflow:hidden; margin-top:6px}
   .treso-rep-bar i{display:block; height:100%; border-radius:4px; background:var(--tr-accent)}
+  .treso-rep-bar.treso-rep-in i{background:var(--tr-pos)}
   .treso-rep-pct{font-size:13.5px; color:var(--tr-muted); margin-top:3px}
-  .treso-empty{color:var(--tr-muted); font-size:15px; padding:6px 0}
+  /* Bouton + : petit rond en bas a droite, au-dessus de la zone de securite */
   #treso-add{
-    position:fixed; left:50%; transform:translateX(-50%);
-    bottom:calc(18px + env(safe-area-inset-bottom)); z-index:51;
-    display:flex; align-items:center; gap:7px; padding:14px 24px; border:0; border-radius:99px;
-    background:var(--tr-blue); color:#fff; font:inherit; font-size:16px; font-weight:700; cursor:pointer; white-space:nowrap;
-    box-shadow:0 6px 16px rgba(0,0,0,.35); -webkit-tap-highlight-color:transparent;
+    position:fixed; right:16px; bottom:calc(16px + env(safe-area-inset-bottom)); z-index:51;
+    width:56px; height:56px; border-radius:50%; border:0; padding:0;
+    background:var(--tr-blue); color:#fff; font:inherit; font-size:30px; font-weight:400; line-height:1; cursor:pointer;
+    display:flex; align-items:center; justify-content:center;
+    box-shadow:0 6px 16px rgba(0,0,0,.45); -webkit-tap-highlight-color:transparent;
   }
   #tresoview:not(.open) #treso-add{display:none}
-  #tresoFormBg{position:fixed; inset:0; z-index:55; background:rgba(0,0,0,.55); display:none}
+  /* Feuilles basses (actions, formulaires) */
+  #tresoFormBg{position:fixed; inset:0; z-index:55; background:rgba(0,0,0,.6); display:none}
   #tresoFormBg.open{display:block}
   #treso-form{
     position:fixed; left:50%; bottom:0; transform:translateX(-50%); width:min(480px,100%); z-index:56;
-    max-height:90vh; overflow-y:auto; background:var(--tr-bg); color:var(--tr-ink); border-radius:20px 20px 0 0;
-    padding:18px 16px calc(18px + env(safe-area-inset-bottom)); box-sizing:border-box; display:none;
+    max-height:90vh; overflow-y:auto; background:var(--tr-card); color:var(--tr-ink); border-radius:20px 20px 0 0;
+    padding:10px 16px calc(18px + env(safe-area-inset-bottom)); box-sizing:border-box; display:none;
   }
   #treso-form.open{display:block}
-  #treso-form h3{margin:0 0 14px; font-size:18px}
-  .treso-seg{display:flex; gap:8px; margin:0 0 12px}
-  .treso-seg .treso-btn{flex:1}
-  .treso-seg .treso-btn[aria-pressed="true"]{background:var(--tr-blue); border-color:var(--tr-blue); color:#fff}
+  .treso-grip{width:38px; height:5px; border-radius:3px; background:var(--tr-line); margin:0 auto 12px}
+  #treso-form h3{margin:0 0 2px; font-size:18px; line-height:1.3}
+  .treso-f-sub{font-size:14.5px; color:var(--tr-muted); margin:0 0 12px}
+  .treso-kv{display:flex; justify-content:space-between; gap:10px; font-size:15px; padding:7px 0; border-bottom:0.5px solid var(--tr-line)}
+  .treso-kv b{font-weight:400; color:var(--tr-muted)}
+  .treso-kv span{font-weight:700; text-align:right}
+  .treso-acts-v{display:flex; flex-direction:column; gap:8px; margin-top:14px}
+  .treso-acts-v .treso-btn{width:100%}
+  .treso-field{display:block; margin:0 0 10px}
+  .treso-field > span{display:block; font-size:14px; color:var(--tr-muted); margin:0 0 4px}
+  .treso-field input, .treso-field select{
+    width:100%; box-sizing:border-box; min-height:44px; border:1px solid var(--tr-line); border-radius:10px;
+    background:var(--tr-field); color:var(--tr-ink); font:inherit; font-size:16px; padding:9px 11px;
+  }
+  .treso-2col{display:grid; grid-template-columns:1fr 1fr; gap:8px}
+  .treso-apercu{background:var(--tr-card2); border-radius:12px; padding:10px 12px; margin:0 0 12px; font-size:14.5px}
+  .treso-apercu div{display:flex; justify-content:space-between; padding:2px 0}
+  .treso-apercu div:last-child{font-weight:800}
+  .treso-err{color:var(--tr-neg); font-size:14.5px; margin:0 0 10px; font-weight:700}
+  .treso-err:empty{display:none}
+  .treso-row-btns{display:flex; gap:8px}
+  .treso-row-btns .treso-btn{flex:1}
   /* Frais kilometriques LABO (06/10/2026) -- ids ikl-* UNIQUEMENT (aucune regle de base, aucun
      selecteur partage modifie : MCS pixel-identique). Copie de la famille visuelle de #ikview.
      Tuile : 5e tuile du menu labo, pleine largeur sous les 4 autres. */
@@ -7349,9 +7407,9 @@
   <button id="couts-add" type="button" aria-label="Ajouter un abonnement">+ Ajouter un abonnement</button>
 </div>
 
-<!-- Tresorerie M22 (V1, 18/10/2026, labo uniquement) -- tout est calcule par le workflow n8n
-     "Tresorerie · Onglet" (webhook jarvis-treso-onglet) ; ce panneau n'affiche que sa reponse,
-     toujours en textContent (aucun texte venu du serveur n'est pose en HTML). -->
+<!-- Tresorerie M22 (V1 18/10/2026, V1.1 lisibilite 18/10/2026, labo uniquement) -- tout est calcule
+     par le workflow n8n "Tresorerie · Onglet" (webhook jarvis-treso-onglet) ; ce panneau n'affiche
+     que sa reponse, toujours en textContent (aucun texte venu du serveur n'est pose en HTML). -->
 <div id="tresoview">
   <div id="treso-head">
     <b>🏦 Trésorerie M22</b>
@@ -7361,12 +7419,13 @@
   <div id="treso-body">
     <div id="treso-msg">Chargement…</div>
     <div id="treso-content" style="display:none">
-      <div id="treso-warn" class="treso-warn" style="display:none"></div>
+      <button id="treso-pill" class="treso-pill" type="button" aria-expanded="false" style="display:none"></button>
+      <div id="treso-pill-list" class="treso-pill-list" style="display:none"></div>
       <div class="treso-card">
         <div class="treso-solde-lbl">Solde disponible</div>
         <div class="treso-solde-val" id="treso-solde"></div>
         <div class="treso-solde-sub" id="treso-solde-sub"></div>
-        <button class="treso-btn treso-btn-large" id="treso-solde-btn" type="button">Mettre à jour le solde</button>
+        <button class="treso-link" id="treso-solde-btn" type="button">Mettre à jour le solde ›</button>
       </div>
       <div class="treso-kpis">
         <div class="treso-kpi"><span class="treso-kpi-lbl">Point bas (12 mois)</span><span class="treso-kpi-val" id="treso-k-bas"></span><span class="treso-kpi-sub" id="treso-k-bas-sub"></span></div>
@@ -7374,9 +7433,14 @@
         <div class="treso-kpi"><span class="treso-kpi-lbl">Tenu sans nouveau contrat</span><span class="treso-kpi-val" id="treso-k-mois"></span><span class="treso-kpi-sub" id="treso-k-mois-sub"></span></div>
         <div class="treso-kpi"><span class="treso-kpi-lbl">Récurrent à signer pour tenir</span><span class="treso-kpi-val" id="treso-k-rec"></span><span class="treso-kpi-sub" id="treso-k-rec-sub"></span></div>
       </div>
-      <div class="treso-h">Solde projeté sur 12 mois</div>
+      <div class="treso-h"><span>Solde projeté</span>
+        <div class="treso-seg" id="treso-periode" role="group" aria-label="Période de la courbe">
+          <button type="button" data-n="3" aria-pressed="false">3 mois</button><button type="button" data-n="6" aria-pressed="false">6 mois</button><button type="button" data-n="12" aria-pressed="true">12 mois</button>
+        </div>
+      </div>
       <div class="treso-card">
         <svg id="treso-chart" role="img" aria-label="Courbe du solde projeté"></svg>
+        <div id="treso-point" aria-live="polite"><span>Touchez la courbe pour lire une valeur.</span></div>
         <div class="treso-legend">
           <span><i></i>Prévu sûr ou probable</span>
           <span><i class="treso-lg-sup"></i>Repose surtout sur du supposé</span>
@@ -7384,13 +7448,22 @@
           <span><i class="treso-lg-neg"></i>Sous zéro</span>
         </div>
       </div>
-      <div class="treso-h">À venir — 60 prochains jours</div>
+      <div id="treso-retard" class="treso-retard" style="display:none"></div>
+      <div class="treso-h"><span>À venir · 60 jours</span>
+        <div class="treso-seg" id="treso-filtre" role="group" aria-label="Filtrer les prévisions">
+          <button type="button" data-f="entrees" aria-pressed="true">Entrées</button><button type="button" data-f="sorties" aria-pressed="false">Sorties</button><button type="button" data-f="tout" aria-pressed="false">Tout</button>
+        </div>
+      </div>
       <div class="treso-card" id="treso-avenir"></div>
-      <div class="treso-h">Répartition des sorties sur 12 mois</div>
+      <div class="treso-h"><span>Plan de trésorerie · 12 mois</span></div>
+      <div class="treso-plan" id="treso-plan"></div>
+      <div class="treso-h"><span>Entrées par client · 12 mois</span></div>
+      <div class="treso-card" id="treso-rep-in"></div>
+      <div class="treso-h"><span>Sorties par catégorie · 12 mois</span></div>
       <div class="treso-card" id="treso-rep"></div>
     </div>
   </div>
-  <button id="treso-add" type="button">+ Ajouter</button>
+  <button id="treso-add" type="button" aria-label="Ajouter une prévision">+</button>
   <div id="tresoFormBg"></div>
   <div id="treso-form" role="dialog" aria-modal="true" aria-labelledby="treso-form-title"></div>
 </div>
@@ -9261,8 +9334,8 @@
          unique de detection de mise a jour (voir checkUpdate ci-dessous), plus fiable qu'une
          comparaison de chaine de version par tenant. */
   var APPV_MCS = '4.65';
-  var APPV_LABO = '1.10';
-  var BUILD = 110;
+  var APPV_LABO = '1.11';
+  var BUILD = 111;
 
   // ==============================================================================================
   // ONGLETS ACTIFS PAR LOCATAIRE (07/10/2026) -- LA liste qui décide ce qu'un client voit.
@@ -12552,24 +12625,27 @@
   // automatiquement). Interroge en LECTURE SEULE le Postgres separe du
   // produit produits/radar-opportunites/ (jamais n8n-db). Aucune mutation
   // possible depuis ce panneau.
-  // ---- Tresorerie M22 (V1, 18/10/2026, labo uniquement) ----
-  // Le workflow n8n "Tresorerie · Onglet" calcule tout (solde, projection, seuil, chiffres cles,
-  // a venir, repartition) a UN seul endroit ; ce bloc ne fait qu'afficher sa reponse. Tout texte
-  // venu du serveur passe par textContent (jamais innerHTML). Aucune suppression possible :
-  // "Payé" rapproche, "Annuler" marque annulee avec un motif. Confirmations dans la page.
+  // ---- Tresorerie M22 (V1 18/10/2026, V1.1 lisibilite 18/10/2026, labo uniquement) ----
+  // Le workflow n8n "Tresorerie · Onglet" calcule tout (solde, projection, seuil, TVA nette, plan,
+  // repartitions, libelles propres) a UN seul endroit ; ce bloc ne fait qu'afficher sa reponse.
+  // Tout texte venu du serveur passe par textContent (jamais innerHTML). Aucune suppression
+  // possible : "Payé" rapproche, "Modifier" garde la valeur d'origine, "Annuler" demande un motif.
+  // Seul calcul local : l'apercu HT / TVA / TTC du formulaire (meme arrondi que le serveur, qui
+  // refait le calcul et fait foi).
   var tresoview = document.getElementById('tresoview');
   var API_TRESO = 'https://n8n-self-hosted-t0pz.onrender.com/webhook/jarvis-treso-onglet';
-  var tresoEtat = null, tresoEnVol = false;
+  var tresoEtat = null, tresoEnVol = false, tresoFiltre = 'entrees', tresoPeriode = 12, tresoOuverts = {};
   var TRESO_MOIS = ['janvier', 'février', 'mars', 'avril', 'mai', 'juin', 'juillet', 'août', 'septembre', 'octobre', 'novembre', 'décembre'];
   var TRESO_MOIS_COURT = ['janv.', 'févr.', 'mars', 'avr.', 'mai', 'juin', 'juil.', 'août', 'sept.', 'oct.', 'nov.', 'déc.'];
   var TRESO_CERT = { sure: 'Sûr', probable: 'Probable', supposee: 'Supposé' };
+  var TRESO_TAUX = [['2000', '20 %'], ['1000', '10 %'], ['550', '5,5 %'], ['210', '2,1 %'], ['0', '0 %'], ['autoliquidation', 'Autoliquidation']];
+  var TRESO_SANS_TVA = ['remuneration_gerant', 'cotisations_sociales', 'tva_a_reverser', 'impot_societes', 'impots_taxes'];
   var TRESO_CAT = {
     depense: [['abonnements_techniques', 'Abonnements techniques'], ['logiciel', 'Logiciel'], ['comptabilite', 'Comptabilité'],
       ['frais_bancaires', 'Frais bancaires'], ['assurance', 'Assurance'], ['prevoyance_mutuelle', 'Prévoyance / mutuelle'],
       ['domiciliation', 'Domiciliation'], ['impots_taxes', 'Impôts et taxes'], ['vehicule', 'Véhicule'], ['carburant', 'Carburant'],
       ['repas', 'Repas'], ['locaux', 'Locaux'], ['frais_stripe', 'Frais Stripe'], ['remuneration_gerant', 'Rémunération'],
-      ['cotisations_sociales', 'Cotisations sociales'], ['tva_a_reverser', 'TVA à reverser'], ['impot_societes', 'Impôt sur les sociétés'],
-      ['autre_charge', 'Autre dépense']],
+      ['cotisations_sociales', 'Cotisations sociales'], ['impot_societes', 'Impôt sur les sociétés'], ['autre_charge', 'Autre dépense']],
     encaissement: [['vente_ponctuelle', 'Vente ponctuelle'], ['acompte_client', 'Acompte client'], ['abonnement_client', 'Abonnement client'],
       ['apport_associe', 'Apport d\'associé'], ['autre_encaissement', 'Autre encaissement']]
   };
@@ -12592,6 +12668,8 @@
   }
   function tresoJour(j){ return j ? (j.slice(8, 10) + '/' + j.slice(5, 7) + '/' + j.slice(0, 4)) : ''; }
   function tresoJourCourt(j){ return j ? (j.slice(8, 10) + '/' + j.slice(5, 7)) : ''; }
+  function tresoJourMot(j){ return j ? (+j.slice(8, 10)) + ' ' + TRESO_MOIS_COURT[+j.slice(5, 7) - 1] : ''; } // "28 oct."
+  function tresoMoisNom(m){ return TRESO_MOIS[+m.slice(5, 7) - 1] + ' ' + m.slice(0, 4); }
   function tresoMs(j){ return Date.UTC(+j.slice(0, 4), +j.slice(5, 7) - 1, +j.slice(8, 10)); }
   function tresoAujourdhui(){
     try { return new Date().toLocaleDateString('en-CA', { timeZone: 'Europe/Paris' }); }
@@ -12609,6 +12687,19 @@
     var a = Math.abs(Math.round(Number(cts) || 0)), c = String(a % 100);
     return Math.floor(a / 100) + ',' + (c.length < 2 ? '0' + c : c);
   }
+  function tresoCentimes(txt){ // meme regle que le serveur ; null si invalide
+    var t = String(txt || '').replace(/[\s  ]/g, '').replace(',', '.');
+    if (!/^\d{1,9}(\.\d{1,2})?$/.test(t)) return null;
+    var p = t.split('.');
+    return (+p[0]) * 100 + (p[1] ? +(p[1] + '0').slice(0, 2) : 0);
+  }
+  function tresoCalculTva(abs, base, tva){ // apercu seulement, meme arrondi que controle_entree.js
+    if (tva === 'autoliquidation') return { ht: abs, tva: 0, ttc: abs };
+    var taux = +tva;
+    if (base === 'ht'){ var t = Math.round(abs * taux / 10000); return { ht: abs, tva: t, ttc: abs + t }; }
+    var ht = Math.round(abs * 10000 / (10000 + taux));
+    return { ht: ht, tva: abs - ht, ttc: abs };
+  }
   function tresoPost(payload, onOk, onErr){
     postDevisWeb(API_TRESO, payload, function(j){
       if (!j || j.ok !== true || !j.etat || j.etat.ok !== true){ onErr('Réponse inattendue du serveur.'); return; }
@@ -12620,8 +12711,7 @@
     m.textContent = txt;
     if (retry){
       var b = tresoEl('button', 'treso-btn treso-btn-main', 'Réessayer');
-      b.type = 'button';
-      b.style.display = 'flex'; b.style.margin = '14px auto 0';
+      b.type = 'button'; b.style.margin = '14px auto 0'; b.style.display = 'flex';
       b.addEventListener('click', function(){ tresoCharger(); });
       m.appendChild(b);
     }
@@ -12639,20 +12729,31 @@
       tresoMessage(err, true);
     });
   }
+  function tresoPlanMois(m){
+    var p = (tresoEtat && tresoEtat.plan) || [];
+    for (var i = 0; i < p.length; i++) if (p[i].mois === m) return p[i];
+    return null;
+  }
+  function tresoFinMois(m){
+    var f = (tresoEtat && tresoEtat.fins_de_mois) || [];
+    for (var i = 0; i < f.length; i++) if (f[i].mois === m) return f[i].solde_cts;
+    return null;
+  }
 
   function tresoAfficher(e){
     tresoEtat = e;
     document.getElementById('treso-msg').style.display = 'none';
     document.getElementById('treso-content').style.display = '';
-    // Bandeau : charges a renseigner
-    var w = document.getElementById('treso-warn'), nb = (e.charges_a_renseigner || []).length;
-    w.textContent = '';
+    // 8. Pastille des charges a renseigner
+    var pill = document.getElementById('treso-pill'), pl = document.getElementById('treso-pill-list');
+    var nb = (e.charges_a_renseigner || []).length;
     if (nb){
-      w.appendChild(document.createTextNode(nb + (nb > 1 ? ' charges à renseigner' : ' charge à renseigner') + ' : les sorties réelles seront plus fortes.'));
-      w.appendChild(tresoEl('small', '', e.charges_a_renseigner.join(', ')));
-      w.style.display = '';
-    } else { w.style.display = 'none'; }
-    // 1. Solde
+      pill.textContent = nb + (nb > 1 ? ' charges à renseigner ›' : ' charge à renseigner ›');
+      pill.style.display = '';
+      pl.textContent = 'Les sorties réelles seront plus fortes : ' + e.charges_a_renseigner.join(', ') + '.';
+      pl.style.display = pill.getAttribute('aria-expanded') === 'true' ? '' : 'none';
+    } else { pill.style.display = 'none'; pl.style.display = 'none'; }
+    // Solde
     var s = e.solde || {};
     var sv = document.getElementById('treso-solde');
     sv.textContent = tresoEur(s.montant_cts);
@@ -12661,7 +12762,7 @@
     var sub = s.present ? ('saisi le ' + tresoJourCourt(s.date) + ' — ' + depuis) : 'aucun solde saisi';
     if (s.nb_mouvements_depuis) sub += ' · dont ' + tresoEur(s.mouvements_depuis_cts, true) + ' marqués payés depuis';
     document.getElementById('treso-solde-sub').textContent = sub;
-    // 2. Chiffres cles
+    // Chiffres cles
     var pb = e.point_bas || {};
     var kb = document.getElementById('treso-k-bas');
     kb.textContent = tresoEur(pb.montant_cts); kb.classList.toggle('treso-neg', pb.montant_cts < 0);
@@ -12670,31 +12771,34 @@
     document.getElementById('treso-k-seuil').textContent = se.franchi_le ? ('le ' + tresoJour(se.franchi_le)) : 'Pas sur 12 mois';
     document.getElementById('treso-k-seuil-sub').textContent = 'seuil : ' + tresoEur(se.montant_cts)
       + (se.origine === 'manuel' ? ' (fixé à la main)' : ' (un mois de dépenses)');
-    document.getElementById('treso-k-mois').textContent = e.mois_tenus == null ? '12 mois et plus'
-      : (e.mois_tenus + ' mois');
+    document.getElementById('treso-k-mois').textContent = e.mois_tenus == null ? '12 mois et plus' : (e.mois_tenus + ' mois');
     document.getElementById('treso-k-mois-sub').textContent = e.sous_zero
       ? ('sous zéro le ' + tresoJour(e.sous_zero.date) + ' (' + tresoEur(e.sous_zero.montant_cts) + ')') : 'jamais sous zéro sur 12 mois';
-    var rc = (e.recurrent_a_signer || {});
-    var rz = rc.pour_zero || {}, rs = rc.pour_seuil || {};
+    var rc = (e.recurrent_a_signer || {}), rz = rc.pour_zero || {}, rs = rc.pour_seuil || {};
     document.getElementById('treso-k-rec').textContent = rz.montant_ht_cts ? tresoEur(rz.montant_ht_cts) : 'Rien à signer';
     document.getElementById('treso-k-rec-sub').textContent = (rz.montant_ht_cts ? 'HT par mois pour ne jamais passer sous zéro' : 'le solde reste positif')
       + (rs.montant_ht_cts ? ' · ' + tresoEur(rs.montant_ht_cts) + ' pour garder le seuil' : '');
     tresoCourbe(e);
-    tresoAvenir(e);
-    tresoRepartition(e);
+    tresoListes(e);
+    tresoPlan(e);
+    tresoRepartition('treso-rep-in', e.repartition_entrees, true);
+    tresoRepartition('treso-rep', e.repartition, false);
   }
 
-  // 3. Courbe (SVG dessine a la main, comme le reste de l'app : aucune bibliotheque)
+  // 6. Courbe : periode 3/6/12 mois, repere aujourd'hui, valeur au toucher
+  var tresoCourbeGeo = null;
   function tresoCourbe(e){
     var svg = document.getElementById('treso-chart');
     var NS = 'http://www.w3.org/2000/svg';
     while (svg.firstChild) svg.removeChild(svg.firstChild);
-    var pts = (e.courbe || []).slice();
+    var x0 = tresoMs(e.aujourdhui);
+    var fin = new Date(x0); fin.setUTCMonth(fin.getUTCMonth() + tresoPeriode);
+    var x1 = Math.min(fin.getTime(), tresoMs(e.horizon));
+    var pts = (e.courbe || []).filter(function(p){ return tresoMs(p.date) <= x1; });
     if (!pts.length) return;
     var W = Math.max(280, Math.round(svg.getBoundingClientRect().width || 330)), H = 220;
-    var L = 46, R = 10, T = 14, B = 26;
+    var L = 46, R = 10, T = 18, B = 26;
     svg.setAttribute('viewBox', '0 0 ' + W + ' ' + H);
-    var x0 = tresoMs(e.aujourdhui), x1 = tresoMs(e.horizon);
     var seuil = (e.seuil && e.seuil.montant_cts) || 0;
     var vals = pts.map(function(p){ return p.solde_cts; });
     var ymin = Math.min.apply(null, vals.concat([0])), ymax = Math.max.apply(null, vals.concat([seuil]));
@@ -12707,9 +12811,7 @@
       if (txt != null) x.textContent = txt;
       svg.appendChild(x); return x;
     }
-    // zone sous zero
     if (ymin < 0) el('rect', { x: L, y: Y(0), width: W - L - R, height: Math.max(0, Y(ymin) - Y(0)), fill: 'var(--tr-neg-fill)' });
-    // graduations Y
     var pas = Math.pow(10, Math.floor(Math.log(Math.max(1, (ymax - ymin) / 3)) / Math.LN10));
     var etape = [1, 2, 5, 10].map(function(m){ return m * pas; }).filter(function(v){ return (ymax - ymin) / v <= 4; })[0] || pas * 10;
     for (var v = Math.ceil(ymin / etape) * etape; v <= ymax; v += etape){
@@ -12717,24 +12819,24 @@
       el('line', { x1: L, x2: W - R, y1: Y(v), y2: Y(v), stroke: 'var(--tr-line)', 'stroke-width': 0.5 });
       el('text', { x: L - 6, y: Y(v) + 4, 'text-anchor': 'end' }, tresoEurCourt(v));
     }
-    // mois (graduation tous les mois, libelle un mois sur deux)
-    var a = +e.aujourdhui.slice(0, 4), m = +e.aujourdhui.slice(5, 7), i = 0;
+    var a = +e.aujourdhui.slice(0, 4), m = +e.aujourdhui.slice(5, 7), i = 0, pasMois = tresoPeriode > 6 ? 2 : 1;
     for (;;){
       m++; if (m > 12){ m = 1; a++; }
       var ms = Date.UTC(a, m - 1, 1);
       if (ms > x1) break;
       el('line', { x1: X(ms), x2: X(ms), y1: H - B, y2: H - B + 4, stroke: 'var(--tr-muted)', 'stroke-width': 1 });
-      if (i % 2 === 0) el('text', { x: X(ms), y: H - 6, 'text-anchor': 'middle' }, TRESO_MOIS_COURT[m - 1] + (m === 1 ? ' ' + String(a).slice(2) : ''));
+      if (i % pasMois === 0) el('text', { x: X(ms), y: H - 6, 'text-anchor': 'middle' }, TRESO_MOIS_COURT[m - 1] + (m === 1 ? ' ' + String(a).slice(2) : ''));
       i++;
     }
-    // zero et seuil
     el('line', { x1: L, x2: W - R, y1: Y(0), y2: Y(0), stroke: 'var(--tr-neg)', 'stroke-width': 1 });
     el('text', { x: L - 6, y: Y(0) + 4, 'text-anchor': 'end' }, '0 €');
     if (seuil){
       el('line', { x1: L, x2: W - R, y1: Y(seuil), y2: Y(seuil), stroke: 'var(--tr-accent)', 'stroke-width': 1.5, 'stroke-dasharray': '5 4' });
       el('text', { x: W - R, y: Y(seuil) - 5, 'text-anchor': 'end', style: 'fill:var(--tr-accent);font-weight:700' }, 'seuil');
     }
-    // courbe en escalier : un trait plein (sur/probable) ou tirete clair (surtout suppose)
+    // repere "aujourd'hui"
+    el('line', { x1: L, x2: L, y1: T - 4, y2: H - B, stroke: 'var(--tr-ink)', 'stroke-width': 1, 'stroke-dasharray': '2 3' });
+    el('text', { x: L + 4, y: T - 6, 'text-anchor': 'start', style: 'fill:var(--tr-ink);font-weight:700' }, 'aujourd\'hui');
     var segs = [], cur = null;
     for (var k = 0; k < pts.length; k++){
       var p = pts[k], nx = k + 1 < pts.length ? pts[k + 1] : null;
@@ -12749,50 +12851,193 @@
       if (s.sup) at['stroke-dasharray'] = '6 4';
       el('path', at);
     });
-    // point bas
-    var pb = e.point_bas;
-    if (pb && pb.date){
-      var px = X(tresoMs(pb.date)), py = Y(pb.montant_cts);
-      el('circle', { cx: px, cy: py, r: 5, fill: pb.montant_cts < 0 ? 'var(--tr-neg)' : 'var(--tr-proj)', stroke: 'var(--tr-card)', 'stroke-width': 2 });
-      var gauche = px > W * 0.6;
-      el('text', { x: px + (gauche ? -8 : 8), y: Math.min(H - B - 4, py + 4), 'text-anchor': gauche ? 'end' : 'start', style: 'fill:var(--tr-ink);font-weight:700' }, 'point bas');
-    }
-    svg.setAttribute('aria-label', 'Solde projeté : ' + tresoEur(pts[0].solde_cts) + ' aujourd\'hui, point bas '
-      + tresoEur(pb.montant_cts) + ' le ' + tresoJour(pb.date) + (e.sous_zero ? ', sous zéro à partir du ' + tresoJour(e.sous_zero.date) : ''));
+    var bas = pts[0];
+    pts.forEach(function(p){ if (p.solde_cts < bas.solde_cts) bas = p; });
+    var px = X(tresoMs(bas.date)), py = Y(bas.solde_cts);
+    el('circle', { cx: px, cy: py, r: 5, fill: bas.solde_cts < 0 ? 'var(--tr-neg)' : 'var(--tr-proj)', stroke: 'var(--tr-card)', 'stroke-width': 2 });
+    var gauche = px > W * 0.6;
+    el('text', { x: px + (gauche ? -8 : 8), y: Math.min(H - B - 4, py + 4), 'text-anchor': gauche ? 'end' : 'start', style: 'fill:var(--tr-ink);font-weight:700' }, 'point bas');
+    var marque = el('circle', { cx: -10, cy: -10, r: 6, fill: 'var(--tr-ink)', stroke: 'var(--tr-card)', 'stroke-width': 2 });
+    tresoCourbeGeo = { pts: pts, X: X, Y: Y, x0: x0, x1: x1, L: L, R: R, W: W, marque: marque };
+    svg.setAttribute('aria-label', 'Solde projeté sur ' + tresoPeriode + ' mois : ' + tresoEur(pts[0].solde_cts) + ' aujourd\'hui, point bas '
+      + tresoEur(bas.solde_cts) + ' le ' + tresoJour(bas.date));
+    document.getElementById('treso-point').textContent = '';
+    document.getElementById('treso-point').appendChild(tresoEl('span', '', 'Touchez la courbe pour lire une valeur.'));
+  }
+  function tresoToucherCourbe(ev){
+    var g = tresoCourbeGeo; if (!g) return;
+    var svg = document.getElementById('treso-chart'), r = svg.getBoundingClientRect();
+    var x = (ev.clientX - r.left) * g.W / r.width;
+    var ms = g.x0 + (Math.max(g.L, Math.min(g.W - g.R, x)) - g.L) / (g.W - g.L - g.R) * (g.x1 - g.x0);
+    var p = g.pts[0];
+    for (var i = 0; i < g.pts.length; i++){ if (tresoMs(g.pts[i].date) <= ms) p = g.pts[i]; else break; }
+    var jour = new Date(ms).toISOString().slice(0, 10);
+    g.marque.setAttribute('cx', g.X(ms)); g.marque.setAttribute('cy', g.Y(p.solde_cts));
+    var out = document.getElementById('treso-point');
+    out.textContent = tresoEur(p.solde_cts) + ' ';
+    out.appendChild(tresoEl('span', '', 'le ' + tresoJour(jour) + (p.surtout_suppose ? ' · surtout du supposé' : '')));
   }
 
-  // 4. A venir (60 jours), groupes par mois, avec Payé / Annuler confirmes dans la page
-  function tresoAvenir(e){
+  // 1 a 4. En retard (rouge, en tete), A venir filtre Entrees / Sorties / Tout, mois avec totaux,
+  // lignes compactes, regroupement repliable des echeances de meme nature et meme date.
+  function tresoLigne(p, onTap){
+    var b = tresoEl('button', 'treso-row'); b.type = 'button';
+    var nom = tresoEl('div', 'treso-r-nom', p.titre || p.libelle);
+    var mt = tresoEl('div', 'treso-r-mt' + (p.montant_cts > 0 ? ' treso-pos' : ''), tresoEur(p.montant_cts, true));
+    var sub = tresoEl('div', 'treso-r-sub', (p.en_retard ? 'prévu le ' + tresoJourMot(p.date_prevue) : tresoJourMot(p.date_prevue))
+      + (p.sous_titre ? ' · ' + p.sous_titre : '') + (p.modifie ? ' · modifié' : ''));
+    var r2 = tresoEl('div', 'treso-r-right2');
+    r2.appendChild(tresoEl('span', 'treso-badge b-' + (p.en_retard ? 'retard' : p.fiabilite), p.en_retard ? 'En retard' : (TRESO_CERT[p.fiabilite] || p.fiabilite)));
+    b.appendChild(nom); b.appendChild(mt); b.appendChild(sub); b.appendChild(r2);
+    b.addEventListener('click', onTap || function(){ tresoActions(p); });
+    return b;
+  }
+  function tresoGrouper(liste){ // [{seul:p} | {groupe:[p,...], cle}]
+    var out = [], idx = {};
+    liste.forEach(function(p){
+      var cle = p.date_prevue + '|' + p.categorie + '|' + (p.montant_cts > 0 ? '+' : '-');
+      if (idx[cle] != null){ var o = out[idx[cle]]; if (o.seul){ o.groupe = [o.seul]; delete o.seul; } o.groupe.push(p); }
+      else { idx[cle] = out.length; out.push({ seul: p, cle: cle }); }
+    });
+    return out;
+  }
+  function tresoRendreGroupes(box, liste){
+    tresoGrouper(liste).forEach(function(g){
+      if (g.seul){ box.appendChild(tresoLigne(g.seul)); return; }
+      var tot = g.groupe.reduce(function(s, p){ return s + p.montant_cts; }, 0), p0 = g.groupe[0];
+      var faux = { titre: (p0.categorie_libelle || p0.titre), sous_titre: g.groupe.length + ' lignes', montant_cts: tot,
+        date_prevue: p0.date_prevue, en_retard: p0.en_retard, fiabilite: p0.fiabilite };
+      var ouvert = !!tresoOuverts[g.cle];
+      var enf = tresoEl('div', 'treso-groupe-enf');
+      var tete = tresoLigne(faux, function(){
+        ouvert = !ouvert; tresoOuverts[g.cle] = ouvert;
+        enf.style.display = ouvert ? '' : 'none'; tete.setAttribute('aria-expanded', ouvert ? 'true' : 'false');
+      });
+      tete.setAttribute('aria-expanded', ouvert ? 'true' : 'false');
+      tete.querySelector('.treso-r-nom').appendChild(tresoEl('span', 'treso-chev', '›'));
+      g.groupe.forEach(function(p){ enf.appendChild(tresoLigne(p)); });
+      enf.style.display = ouvert ? '' : 'none';
+      box.appendChild(tete); box.appendChild(enf);
+    });
+  }
+  function tresoListes(e){
+    var tout = e.a_venir || [];
+    var ret = document.getElementById('treso-retard');
+    ret.textContent = '';
+    var retards = tout.filter(function(p){ return p.en_retard; });
+    if (retards.length){
+      ret.appendChild(tresoEl('div', 'treso-retard-h', 'En retard · ' + retards.length + (retards.length > 1 ? ' prévisions non cochées' : ' prévision non cochée')));
+      tresoRendreGroupes(ret, retards);
+      ret.style.display = '';
+    } else ret.style.display = 'none';
     var box = document.getElementById('treso-avenir');
     box.textContent = '';
-    var liste = e.a_venir || [];
-    if (!liste.length){ box.appendChild(tresoEl('div', 'treso-empty', 'Rien de prévu sur les 60 prochains jours.')); return; }
-    var dernier = '';
-    liste.forEach(function(p){
-      var groupe = p.en_retard ? 'En retard' : (TRESO_MOIS[+p.date_prevue.slice(5, 7) - 1] + ' ' + p.date_prevue.slice(0, 4));
-      if (groupe !== dernier){
-        var g = tresoEl('div', 'treso-mois', groupe.charAt(0).toUpperCase() + groupe.slice(1));
-        box.appendChild(g); dernier = groupe;
-      }
-      var row = tresoEl('div', 'treso-ligne');
-      var l1 = tresoEl('div', 'treso-l1');
-      l1.appendChild(tresoEl('div', 'treso-lib', p.libelle));
-      l1.appendChild(tresoEl('div', 'treso-mt' + (p.montant_cts > 0 ? ' treso-pos' : ''), tresoEur(p.montant_cts, true)));
-      row.appendChild(l1);
-      var l2 = tresoEl('div', 'treso-l2');
-      l2.appendChild(tresoEl('span', '', 'le ' + tresoJour(p.date_prevue)));
-      l2.appendChild(tresoEl('span', 'treso-badge b-' + p.fiabilite, TRESO_CERT[p.fiabilite] || p.fiabilite));
-      if (p.en_retard) l2.appendChild(tresoEl('span', 'treso-badge b-retard', 'En retard'));
-      row.appendChild(l2);
-      var acts = tresoEl('div', 'treso-acts');
-      var bp = tresoEl('button', 'treso-btn', p.montant_cts > 0 ? 'Reçu' : 'Payé'); bp.type = 'button';
-      var ba = tresoEl('button', 'treso-btn', 'Annuler'); ba.type = 'button';
-      acts.appendChild(bp); acts.appendChild(ba);
-      row.appendChild(acts);
-      bp.addEventListener('click', function(){ tresoConfirmer(row, acts, p, 'paye'); });
-      ba.addEventListener('click', function(){ tresoConfirmer(row, acts, p, 'annuler'); });
-      box.appendChild(row);
+    var liste = tout.filter(function(p){
+      if (p.en_retard) return false;
+      return tresoFiltre === 'tout' || (tresoFiltre === 'entrees' ? p.montant_cts > 0 : p.montant_cts < 0);
     });
+    if (!liste.length){
+      box.appendChild(tresoEl('div', 'treso-empty', tresoFiltre === 'entrees' ? 'Aucune entrée prévue sur 60 jours.'
+        : tresoFiltre === 'sorties' ? 'Aucune sortie prévue sur 60 jours.' : 'Rien de prévu sur 60 jours.'));
+      return;
+    }
+    var parMois = [], dernier = null;
+    liste.forEach(function(p){
+      var m = p.date_effective.slice(0, 7);
+      if (!dernier || dernier.m !== m){ dernier = { m: m, l: [] }; parMois.push(dernier); }
+      dernier.l.push(p);
+    });
+    parMois.forEach(function(g){
+      var h = tresoEl('div', 'treso-mois-h');
+      h.appendChild(tresoEl('b', '', tresoMoisNom(g.m)));
+      var pm = tresoPlanMois(g.m), fin = tresoFinMois(g.m);
+      function info(lib, cts, neg, signe){ var s = tresoEl('span', '', lib + ' '); var em = tresoEl('em', neg ? 'treso-neg' : '', tresoEur(cts, signe)); s.appendChild(em); return s; }
+      if (pm){ h.appendChild(info('Entrées', pm.total_entrees_cts, false, true)); h.appendChild(info('Sorties', pm.total_sorties_cts, false, true)); }
+      if (fin != null) h.appendChild(info('Fin de mois', fin, fin < ((tresoEtat.seuil || {}).montant_cts || 0), false));
+      box.appendChild(h);
+      tresoRendreGroupes(box, g.l);
+    });
+  }
+
+  // 5. Plan de tresorerie : 12 cartes mensuelles horizontales
+  function tresoPlan(e){
+    var box = document.getElementById('treso-plan');
+    box.textContent = '';
+    (e.plan || []).forEach(function(m){
+      var c = tresoEl('div', 'treso-pm' + (m.sous_seuil ? ' treso-pm-sous' : ''));
+      c.appendChild(tresoEl('h4', '', m.libelle));
+      function bloc(titre, lignes, total){
+        var t = tresoEl('div', 'treso-pm-t'); t.appendChild(tresoEl('b', '', titre)); t.appendChild(tresoEl('span', '', tresoEur(total, true)));
+        c.appendChild(t);
+        if (!lignes.length){ var v = tresoEl('div', 'treso-pm-l'); v.appendChild(tresoEl('b', '', 'aucune')); c.appendChild(v); }
+        lignes.forEach(function(l){
+          if (l.categorie === 'tva_a_reverser' && m.tva){
+            var bt = tresoEl('button', 'treso-pm-l treso-pm-tva'); bt.type = 'button';
+            bt.appendChild(tresoEl('b', '', 'TVA nette ›')); bt.appendChild(tresoEl('span', '', tresoEur(l.montant_cts, true)));
+            var det = tresoEl('div', 'treso-pm-det'); det.style.display = 'none';
+            det.appendChild(tresoEl('div', '', 'Activité de ' + tresoMoisNom(m.tva.mois)));
+            [['TVA collectée', m.tva.collectee_cts], ['TVA déductible', -m.tva.deductible_cts],
+              ['Crédit reporté', -m.tva.credit_entrant_cts], ['À prélever le ' + tresoJourCourt(m.tva.date_prelevement), -m.tva.prelevement_cts]]
+              .forEach(function(r, i){ if (i === 2 && !m.tva.credit_entrant_cts) return; var d = tresoEl('div'); d.appendChild(tresoEl('span', '', r[0])); d.appendChild(tresoEl('span', '', tresoEur(r[1], true))); det.appendChild(d); });
+            bt.addEventListener('click', function(){ det.style.display = det.style.display === 'none' ? '' : 'none'; });
+            c.appendChild(bt); c.appendChild(det);
+            return;
+          }
+          var d = tresoEl('div', 'treso-pm-l'); d.appendChild(tresoEl('b', '', l.libelle)); d.appendChild(tresoEl('span', '', tresoEur(l.montant_cts, true)));
+          c.appendChild(d);
+        });
+      }
+      bloc('Entrées', m.entrees || [], m.total_entrees_cts);
+      bloc('Sorties', m.sorties || [], m.total_sorties_cts);
+      if (m.tva && m.tva.credit_sortant_cts){
+        var cr = tresoEl('div', 'treso-pm-l'); cr.appendChild(tresoEl('b', '', 'Crédit de TVA reporté')); cr.appendChild(tresoEl('span', '', tresoEur(m.tva.credit_sortant_cts)));
+        c.appendChild(cr);
+      }
+      var f = tresoEl('div', 'treso-pm-fin');
+      f.appendChild(tresoEl('small', '', 'Solde de fin de mois'));
+      f.appendChild(tresoEl('strong', m.solde_fin_cts < 0 || m.sous_seuil ? 'treso-neg' : '', tresoEur(m.solde_fin_cts)));
+      if (m.sous_seuil) f.appendChild(tresoEl('em', '', m.sous_zero ? 'sous zéro' : 'sous le seuil d\'alerte'));
+      c.appendChild(f);
+      box.appendChild(c);
+    });
+  }
+
+  // 7. Repartitions sur 12 mois (entrees par client, sorties par categorie)
+  function tresoRepartition(id, r, entrees){
+    var box = document.getElementById(id);
+    box.textContent = '';
+    r = r || {}; var lignes = r.lignes || [];
+    if (!lignes.length){ box.appendChild(tresoEl('div', 'treso-empty', entrees ? 'Aucune entrée prévue sur 12 mois.' : 'Aucune sortie prévue sur 12 mois.')); return; }
+    var max = lignes[0].montant_cts || 1;
+    lignes.forEach(function(l){
+      var d = tresoEl('div', 'treso-rep');
+      var top = tresoEl('div', 'treso-rep-top');
+      top.appendChild(tresoEl('b', '', l.libelle));
+      top.appendChild(tresoEl('span', '', tresoEur(l.montant_cts)));
+      d.appendChild(top);
+      var bar = tresoEl('div', 'treso-rep-bar' + (entrees ? ' treso-rep-in' : '')), i = tresoEl('i');
+      i.style.width = Math.max(2, Math.round(l.montant_cts * 100 / max)) + '%';
+      bar.appendChild(i); d.appendChild(bar);
+      d.appendChild(tresoEl('div', 'treso-rep-pct', (l.part_pm / 10).toFixed(1).replace('.', ',') + (entrees ? ' % des entrées' : ' % des sorties')));
+      box.appendChild(d);
+    });
+    var t = tresoEl('div', 'treso-rep'), tt = tresoEl('div', 'treso-rep-top');
+    tt.appendChild(tresoEl('b', '', 'Total')); tt.appendChild(tresoEl('span', '', tresoEur(r.total_cts)));
+    t.appendChild(tt); box.appendChild(t);
+  }
+
+  // Feuilles basses dans la page (actions, formulaires) -- construites en DOM, jamais en HTML
+  var tresoForm = document.getElementById('treso-form'), tresoFormBg = document.getElementById('tresoFormBg');
+  function tresoFormFermer(){ tresoForm.classList.remove('open'); tresoFormBg.classList.remove('open'); tresoForm.textContent = ''; }
+  function tresoFormOuvrir(titre, sousTitre, construire){
+    tresoForm.textContent = '';
+    tresoForm.appendChild(tresoEl('div', 'treso-grip'));
+    var h = tresoEl('h3', '', titre); h.id = 'treso-form-title';
+    tresoForm.appendChild(h);
+    if (sousTitre) tresoForm.appendChild(tresoEl('p', 'treso-f-sub', sousTitre));
+    construire(tresoForm);
+    tresoForm.classList.add('open'); tresoFormBg.classList.add('open');
+    tresoForm.scrollTop = 0;
   }
   function tresoChamp(label, input){
     var l = tresoEl('label', 'treso-field');
@@ -12806,89 +13051,35 @@
     for (var k in (attrs || {})) i.setAttribute(k, attrs[k]);
     return i;
   }
-  function tresoConfirmer(row, acts, p, mode){
-    var deja = row.querySelector('.treso-confirm');
-    if (deja) row.removeChild(deja);
-    acts.style.display = 'none';
-    var c = tresoEl('div', 'treso-confirm');
-    var err = tresoEl('p', 'treso-err', '');
-    var champs = {};
-    if (mode === 'paye'){
-      c.appendChild(tresoEl('p', '', (p.montant_cts > 0 ? 'Confirmer l\'encaissement' : 'Confirmer le paiement') + ' de « ' + p.libelle + ' » ? Modifiez la date ou le montant s\'ils diffèrent : le prévu est gardé à côté du réel.'));
-      champs.date = tresoInput('date', tresoAujourdhui(), { max: tresoAujourdhui() });
-      champs.montant = tresoInput('text', tresoMontantSaisie(p.montant_cts), { inputmode: 'decimal', autocomplete: 'off' });
-      c.appendChild(tresoChamp('Date réelle', champs.date));
-      c.appendChild(tresoChamp('Montant réel (€, TTC)', champs.montant));
-    } else {
-      c.appendChild(tresoEl('p', '', 'Annuler « ' + p.libelle + ' » ? La ligne reste gardée, marquée annulée avec votre motif.'));
-      champs.motif = tresoInput('text', '', { maxlength: '200', autocomplete: 'off', placeholder: 'Ex. : contrat décalé à janvier' });
-      c.appendChild(tresoChamp('Motif (obligatoire)', champs.motif));
-    }
-    c.appendChild(err);
-    var btns = tresoEl('div', 'treso-row-btns');
-    var ok = tresoEl('button', 'treso-btn treso-btn-main', mode === 'paye' ? 'Confirmer' : 'Confirmer l\'annulation'); ok.type = 'button';
-    var no = tresoEl('button', 'treso-btn', 'Retour'); no.type = 'button';
-    btns.appendChild(ok); btns.appendChild(no);
-    c.appendChild(btns);
-    row.appendChild(c);
-    no.addEventListener('click', function(){ row.removeChild(c); acts.style.display = ''; });
-    ok.addEventListener('click', function(){
-      var payload = mode === 'paye'
-        ? { action: 'marquer_paye', ref: p.ref, date_reelle: champs.date.value, montant_reel: champs.montant.value }
-        : { action: 'annuler', ref: p.ref, motif: champs.motif.value };
-      if (mode === 'annuler' && champs.motif.value.trim().length < 3){ err.textContent = 'Indiquez un motif (3 caractères au moins).'; return; }
-      ok.disabled = true; no.disabled = true; err.textContent = '';
-      tresoPost(payload, function(j){
-        toast(j.message || 'Enregistré.', 2200);
-        tresoAfficher(j.etat);
-      }, function(msg){ ok.disabled = false; no.disabled = false; err.textContent = msg; });
+  function tresoSelect(options, val){
+    var s = document.createElement('select');
+    options.forEach(function(o){ var op = document.createElement('option'); op.value = o[0]; op.textContent = o[1]; s.appendChild(op); });
+    if (val != null) s.value = val;
+    return s;
+  }
+  function tresoSeg(options, val, onChange){
+    var seg = tresoEl('div', 'treso-seg'), etat = { v: val };
+    options.forEach(function(o){
+      var b = tresoEl('button', '', o[1]); b.type = 'button'; b.setAttribute('data-v', o[0]);
+      b.setAttribute('aria-pressed', o[0] === val ? 'true' : 'false');
+      b.addEventListener('click', function(){
+        etat.v = o[0];
+        Array.prototype.forEach.call(seg.children, function(x){ x.setAttribute('aria-pressed', x.getAttribute('data-v') === o[0] ? 'true' : 'false'); });
+        if (onChange) onChange(o[0]);
+      });
+      seg.appendChild(b);
     });
+    seg.style.margin = '0 0 12px';
+    return { el: seg, val: function(){ return etat.v; } };
   }
-
-  // 6. Repartition des sorties sur 12 mois
-  function tresoRepartition(e){
-    var box = document.getElementById('treso-rep');
-    box.textContent = '';
-    var r = e.repartition || {}, lignes = r.lignes || [];
-    if (!lignes.length){ box.appendChild(tresoEl('div', 'treso-empty', 'Aucune sortie prévue sur 12 mois.')); return; }
-    var max = lignes[0].montant_cts || 1;
-    lignes.forEach(function(l){
-      var d = tresoEl('div', 'treso-rep');
-      var top = tresoEl('div', 'treso-rep-top');
-      top.appendChild(tresoEl('b', '', l.libelle));
-      top.appendChild(tresoEl('span', '', tresoEur(l.montant_cts)));
-      d.appendChild(top);
-      var bar = tresoEl('div', 'treso-rep-bar'), i = tresoEl('i');
-      i.style.width = Math.max(2, Math.round(l.montant_cts * 100 / max)) + '%';
-      bar.appendChild(i); d.appendChild(bar);
-      d.appendChild(tresoEl('div', 'treso-rep-pct', (l.part_pm / 10).toFixed(1).replace('.', ',') + ' % des sorties'));
-      box.appendChild(d);
-    });
-    var t = tresoEl('div', 'treso-rep');
-    var tt = tresoEl('div', 'treso-rep-top');
-    tt.appendChild(tresoEl('b', '', 'Total'));
-    tt.appendChild(tresoEl('span', '', tresoEur(r.total_cts)));
-    t.appendChild(tt); box.appendChild(t);
-  }
-
-  // Formulaires en feuille basse (solde, ajout) -- construits en DOM, jamais en HTML
-  var tresoForm = document.getElementById('treso-form'), tresoFormBg = document.getElementById('tresoFormBg');
-  function tresoFormFermer(){ tresoForm.classList.remove('open'); tresoFormBg.classList.remove('open'); tresoForm.textContent = ''; }
-  function tresoFormOuvrir(titre, construire){
-    tresoForm.textContent = '';
-    var h = tresoEl('h3', '', titre); h.id = 'treso-form-title';
-    tresoForm.appendChild(h);
-    construire(tresoForm);
-    tresoForm.classList.add('open'); tresoFormBg.classList.add('open');
-  }
-  function tresoFormBoutons(f, libelleOk, envoyer){
+  function tresoFormBoutons(f, libelleOk, envoyer, libelleNon, onNon){
     var err = tresoEl('p', 'treso-err', '');
     f.appendChild(err);
     var btns = tresoEl('div', 'treso-row-btns');
     var ok = tresoEl('button', 'treso-btn treso-btn-main', libelleOk); ok.type = 'button';
-    var no = tresoEl('button', 'treso-btn', 'Fermer'); no.type = 'button';
+    var no = tresoEl('button', 'treso-btn', libelleNon || 'Fermer'); no.type = 'button';
     btns.appendChild(ok); btns.appendChild(no); f.appendChild(btns);
-    no.addEventListener('click', tresoFormFermer);
+    no.addEventListener('click', onNon || tresoFormFermer);
     ok.addEventListener('click', function(){
       var payload = envoyer(err);
       if (!payload) return;
@@ -12898,10 +13089,108 @@
       }, function(msg){ ok.disabled = false; no.disabled = false; err.textContent = msg; });
     });
   }
+  // Bloc montant + HT/TTC + taux + apercu en direct (ajout et Modifier)
+  function tresoBlocTva(f, montantInitial, tauxInitial){
+    var mt = tresoInput('text', montantInitial || '', { inputmode: 'decimal', autocomplete: 'off', placeholder: 'Ex. : 1 200,00' });
+    var base = tresoSeg([['ttc', 'Montant TTC'], ['ht', 'Montant HT']], 'ttc', maj);
+    var taux = tresoSelect(TRESO_TAUX, tauxInitial || '2000');
+    var ap = tresoEl('div', 'treso-apercu');
+    function maj(){
+      ap.textContent = '';
+      var abs = tresoCentimes(mt.value);
+      if (abs === null || !abs){ ap.appendChild(tresoEl('div', '', 'Saisissez un montant pour voir le HT, la TVA et le TTC.')); return; }
+      var r = tresoCalculTva(abs, base.val(), taux.value);
+      [['HT', r.ht], [taux.value === 'autoliquidation' ? 'TVA (autoliquidée)' : 'TVA', r.tva], ['TTC', r.ttc]].forEach(function(x){
+        var d = tresoEl('div'); d.appendChild(tresoEl('span', '', x[0])); d.appendChild(tresoEl('span', '', tresoEur(x[1]))); ap.appendChild(d);
+      });
+    }
+    mt.addEventListener('input', maj); taux.addEventListener('change', maj);
+    f.appendChild(base.el);
+    var deux = tresoEl('div', 'treso-2col');
+    deux.appendChild(tresoChamp('Montant (€)', mt));
+    deux.appendChild(tresoChamp('Taux de TVA', taux));
+    f.appendChild(deux);
+    f.appendChild(ap);
+    maj();
+    return { montant: mt, base: base, taux: taux, maj: maj };
+  }
+
+  // 2. Feuille d'actions d'une ligne : Reçu/Payé, Modifier, Annuler
+  function tresoActions(p){
+    var enc = p.montant_cts > 0;
+    tresoFormOuvrir(p.titre || p.libelle, p.sous_titre || '', function(f){
+      function kv(k, v){ var d = tresoEl('div', 'treso-kv'); d.appendChild(tresoEl('b', '', k)); d.appendChild(tresoEl('span', '', v)); f.appendChild(d); }
+      kv(enc ? 'Encaissement prévu' : 'Dépense prévue', tresoEur(p.montant_cts, true) + (p.tva_calculee ? ' (calculée)' : ''));
+      kv('Date prévue', tresoJour(p.date_prevue) + (p.en_retard ? ' · en retard' : ''));
+      kv('Certitude', TRESO_CERT[p.fiabilite] || p.fiabilite);
+      if (p.detail_tva){
+        var t = p.detail_tva;
+        kv('TVA collectée (' + tresoMoisNom(t.mois) + ')', tresoEur(t.collectee_cts));
+        kv('TVA déductible', tresoEur(-t.deductible_cts));
+        if (t.credit_entrant_cts) kv('Crédit de TVA reporté', tresoEur(-t.credit_entrant_cts));
+      } else if (p.taux_tva_pb != null && TRESO_SANS_TVA.indexOf(p.categorie) === -1){
+        kv('Dont TVA', p.tva_mode === 'autoliquidation' ? 'autoliquidée' : (tresoEur(Math.abs(p.tva_cts || 0)) + ' (' + (p.taux_tva_pb / 100).toString().replace('.', ',') + ' %)'));
+      } else if (TRESO_SANS_TVA.indexOf(p.categorie) === -1) kv('TVA', 'non précisée');
+      if (p.origine) kv('Prévu à l\'origine', (p.origine.montant_cts != null ? tresoEur(p.origine.montant_cts, true) : '') + (p.origine.date ? ' le ' + tresoJour(p.origine.date) : ''));
+      var acts = tresoEl('div', 'treso-acts-v');
+      if (p.virtuelle){
+        acts.appendChild(tresoEl('p', 'treso-f-sub', 'Ligne calculée automatiquement : elle se coche sur la ligne de TVA du mois quand elle existe.'));
+      } else {
+        var bp = tresoEl('button', 'treso-btn treso-btn-main', enc ? 'Reçu' : 'Payé'); bp.type = 'button';
+        bp.addEventListener('click', function(){ tresoFormPaye(p); });
+        acts.appendChild(bp);
+        if (p.modifiable){
+          var bm = tresoEl('button', 'treso-btn', 'Modifier la date ou le montant'); bm.type = 'button';
+          bm.addEventListener('click', function(){ tresoFormModifier(p); });
+          acts.appendChild(bm);
+        }
+        var ba = tresoEl('button', 'treso-btn', 'Annuler cette prévision'); ba.type = 'button';
+        ba.addEventListener('click', function(){ tresoFormAnnuler(p); });
+        acts.appendChild(ba);
+      }
+      var bf = tresoEl('button', 'treso-btn', 'Fermer'); bf.type = 'button'; bf.addEventListener('click', tresoFormFermer);
+      acts.appendChild(bf);
+      f.appendChild(acts);
+    });
+  }
+  function tresoFormPaye(p){
+    var enc = p.montant_cts > 0;
+    tresoFormOuvrir(enc ? 'Marquer reçu' : 'Marquer payé', p.titre + (p.sous_titre ? ' · ' + p.sous_titre : '') + ' — le prévu est gardé à côté du réel.', function(f){
+      var dt = tresoInput('date', tresoAujourdhui(), { max: tresoAujourdhui() });
+      var mt = tresoInput('text', tresoMontantSaisie(p.montant_cts), { inputmode: 'decimal', autocomplete: 'off' });
+      f.appendChild(tresoChamp('Date réelle', dt));
+      f.appendChild(tresoChamp('Montant réel (€, TTC)', mt));
+      tresoFormBoutons(f, 'Confirmer', function(){
+        return { action: 'marquer_paye', ref: p.ref, date_reelle: dt.value, montant_reel: mt.value };
+      }, 'Retour', function(){ tresoActions(p); });
+    });
+  }
+  function tresoFormModifier(p){
+    var tauxDefaut = p.tva_mode === 'autoliquidation' ? 'autoliquidation'
+      : (p.taux_tva_pb != null ? String(p.taux_tva_pb) : (TRESO_SANS_TVA.indexOf(p.categorie) !== -1 ? '0' : '2000'));
+    tresoFormOuvrir('Modifier', p.titre + (p.sous_titre ? ' · ' + p.sous_titre : '') + ' — la valeur d\'origine est gardée.', function(f){
+      var dt = tresoInput('date', p.date_prevue);
+      f.appendChild(tresoChamp('Nouvelle date prévue', dt));
+      var tv = tresoBlocTva(f, tresoMontantSaisie(p.montant_cts), tauxDefaut);
+      tresoFormBoutons(f, 'Enregistrer', function(err){
+        if (!tresoCentimes(tv.montant.value)){ err.textContent = 'Montant invalide (exemple : 960,00).'; return null; }
+        return { action: 'modifier', ref: p.ref, date: dt.value, montant: tv.montant.value, base: tv.base.val(), tva: tv.taux.value };
+      }, 'Retour', function(){ tresoActions(p); });
+    });
+  }
+  function tresoFormAnnuler(p){
+    tresoFormOuvrir('Annuler la prévision', p.titre + (p.sous_titre ? ' · ' + p.sous_titre : '') + ' — la ligne est gardée, marquée annulée.', function(f){
+      var motif = tresoInput('text', '', { maxlength: '200', autocomplete: 'off', placeholder: 'Ex. : contrat décalé à janvier' });
+      f.appendChild(tresoChamp('Motif (obligatoire)', motif));
+      tresoFormBoutons(f, 'Confirmer l\'annulation', function(err){
+        if (motif.value.trim().length < 3){ err.textContent = 'Indiquez un motif (3 caractères au moins).'; return null; }
+        return { action: 'annuler', ref: p.ref, motif: motif.value };
+      }, 'Retour', function(){ tresoActions(p); });
+    });
+  }
   function tresoFormSolde(){
     var jeton = tresoJeton();
-    tresoFormOuvrir('Mettre à jour le solde', function(f){
-      f.appendChild(tresoEl('p', 'treso-solde-sub', 'Le solde du compte M22 VISION tel que la banque l\'affiche. Une nouvelle ligne est ajoutée, l\'ancienne est gardée.'));
+    tresoFormOuvrir('Mettre à jour le solde', 'Le solde du compte M22 VISION tel que la banque l\'affiche. Une nouvelle ligne est ajoutée, l\'ancienne est gardée.', function(f){
       var mt = tresoInput('text', '', { inputmode: 'decimal', autocomplete: 'off', placeholder: 'Ex. : 10 000,00' });
       var dt = tresoInput('date', tresoAujourdhui(), { max: tresoAujourdhui() });
       f.appendChild(tresoChamp('Solde (€)', mt));
@@ -12914,41 +13203,35 @@
   }
   function tresoFormAjout(){
     var jeton = tresoJeton(), sens = 'depense';
-    tresoFormOuvrir('Ajouter une prévision ponctuelle', function(f){
-      var seg = tresoEl('div', 'treso-seg');
-      var bD = tresoEl('button', 'treso-btn', 'Dépense'), bE = tresoEl('button', 'treso-btn', 'Encaissement');
-      bD.type = 'button'; bE.type = 'button';
-      seg.appendChild(bD); seg.appendChild(bE); f.appendChild(seg);
-      var lib = tresoInput('text', '', { maxlength: '120', autocomplete: 'off', placeholder: 'Ex. : Renouvellement nom de domaine' });
-      var mt = tresoInput('text', '', { inputmode: 'decimal', autocomplete: 'off', placeholder: 'Ex. : 99,00' });
-      var dt = tresoInput('date', tresoAujourdhui());
+    tresoFormOuvrir('Ajouter une prévision ponctuelle', '', function(f){
       var cat = document.createElement('select');
-      var cert = document.createElement('select');
-      [['sure', 'Sûr'], ['probable', 'Probable'], ['supposee', 'Supposé']].forEach(function(o){
-        var op = document.createElement('option'); op.value = o[0]; op.textContent = o[1]; cert.appendChild(op);
-      });
-      cert.value = 'probable';
       function remplirCat(){
         cat.textContent = '';
         TRESO_CAT[sens].forEach(function(o){ var op = document.createElement('option'); op.value = o[0]; op.textContent = o[1]; cat.appendChild(op); });
-        bD.setAttribute('aria-pressed', sens === 'depense' ? 'true' : 'false');
-        bE.setAttribute('aria-pressed', sens === 'encaissement' ? 'true' : 'false');
       }
-      bD.addEventListener('click', function(){ sens = 'depense'; remplirCat(); });
-      bE.addEventListener('click', function(){ sens = 'encaissement'; remplirCat(); });
-      remplirCat();
+      var segSens = tresoSeg([['depense', 'Dépense'], ['encaissement', 'Encaissement']], sens, function(v){ sens = v; remplirCat(); });
+      f.appendChild(segSens.el);
+      var lib = tresoInput('text', '', { maxlength: '120', autocomplete: 'off', placeholder: 'Ex. : Matériaux chantier Aurelio' });
       f.appendChild(tresoChamp('Libellé', lib));
-      f.appendChild(tresoChamp('Montant TTC (€)', mt));
-      f.appendChild(tresoChamp('Date prévue', dt));
+      var tv = tresoBlocTva(f, '', '2000');
+      var dt = tresoInput('date', tresoAujourdhui());
+      var cert = tresoSelect([['sure', 'Sûr'], ['probable', 'Probable'], ['supposee', 'Supposé']], 'probable');
+      remplirCat();
+      var deux = tresoEl('div', 'treso-2col');
+      deux.appendChild(tresoChamp('Date prévue', dt));
+      deux.appendChild(tresoChamp('Certitude', cert));
+      f.appendChild(deux);
       f.appendChild(tresoChamp('Catégorie', cat));
-      f.appendChild(tresoChamp('Certitude', cert));
       tresoFormBoutons(f, 'Ajouter', function(err){
         if (lib.value.trim().length < 2){ err.textContent = 'Indiquez un libellé.'; return null; }
-        if (!mt.value.trim()){ err.textContent = 'Indiquez le montant.'; return null; }
-        return { action: 'ajouter', sens: sens, libelle: lib.value, montant: mt.value, date: dt.value,
-          categorie: cat.value, certitude: cert.value, jeton: jeton };
+        if (!tresoCentimes(tv.montant.value)){ err.textContent = 'Montant invalide (exemple : 99,00).'; return null; }
+        return { action: 'ajouter', sens: sens, libelle: lib.value, montant: tv.montant.value, base: tv.base.val(), tva: tv.taux.value,
+          date: dt.value, categorie: cat.value, certitude: cert.value, jeton: jeton };
       });
     });
+  }
+  function tresoSegActif(id, attr, val){
+    Array.prototype.forEach.call(document.querySelectorAll('#' + id + ' button'), function(b){ b.setAttribute('aria-pressed', b.getAttribute(attr) === val ? 'true' : 'false'); });
   }
   function tresoOpen(){ tresoview.classList.add('open'); tresoCharger(); }
   function tresoClose(){ tresoFormFermer(); tresoview.classList.remove('open'); }
@@ -12957,6 +13240,22 @@
   document.getElementById('treso-refresh').addEventListener('click', function(){ tresoCharger(); });
   document.getElementById('treso-solde-btn').addEventListener('click', tresoFormSolde);
   document.getElementById('treso-add').addEventListener('click', tresoFormAjout);
+  document.getElementById('treso-pill').addEventListener('click', function(){
+    var o = this.getAttribute('aria-expanded') !== 'true';
+    this.setAttribute('aria-expanded', o ? 'true' : 'false');
+    document.getElementById('treso-pill-list').style.display = o ? '' : 'none';
+  });
+  Array.prototype.forEach.call(document.querySelectorAll('#treso-filtre button'), function(b){
+    b.addEventListener('click', function(){ tresoFiltre = b.getAttribute('data-f'); tresoSegActif('treso-filtre', 'data-f', tresoFiltre); if (tresoEtat) tresoListes(tresoEtat); });
+  });
+  Array.prototype.forEach.call(document.querySelectorAll('#treso-periode button'), function(b){
+    b.addEventListener('click', function(){ tresoPeriode = +b.getAttribute('data-n'); tresoSegActif('treso-periode', 'data-n', String(tresoPeriode)); if (tresoEtat) tresoCourbe(tresoEtat); });
+  });
+  (function(){
+    var svg = document.getElementById('treso-chart');
+    svg.addEventListener('pointerdown', tresoToucherCourbe);
+    svg.addEventListener('pointermove', function(ev){ if (ev.buttons || ev.pointerType === 'touch') tresoToucherCourbe(ev); });
+  })();
   tresoFormBg.addEventListener('click', tresoFormFermer);
   window.addEventListener('resize', function(){ if (tresoEtat && tresoview.classList.contains('open')) tresoCourbe(tresoEtat); });
 
