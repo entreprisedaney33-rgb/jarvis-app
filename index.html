@@ -3116,6 +3116,11 @@
   .ticket-bouton{font:inherit; font-size:12.5px; font-weight:700; padding:8px 12px; border-radius:9px; border:none; background:var(--blue); color:#fff; margin-top:6px}
   .ticket-bouton.sec{background:var(--surface); color:var(--ink); border:1px solid var(--hairline)}
   .ticket-actions .ticket-bouton{margin-top:0}
+  /* Étape 2d (19/10/2026) : « Payé avec » sous le bouton photo (onglet Factures TVA, LABO) */
+  .ticket-paye{display:flex; gap:6px; align-items:center; flex-wrap:wrap; margin-top:9px}
+  .ticket-paye-lbl{font-size:12px; color:var(--muted); margin-right:2px}
+  .ticket-paye-opt{font:inherit; font-size:12.5px; font-weight:600; padding:8px 11px; border-radius:9px; border:1px solid var(--hairline); background:var(--bg); color:var(--ink)}
+  .ticket-paye-opt.on{background:var(--blue); border-color:var(--blue); color:#fff}
   .factures-ventes-bloc{margin-top:8px; font-size:12px}
   .factures-ventes-bloc summary{color:var(--muted); font-size:11.5px; cursor:pointer}
   .factures-vente{padding:6px 2px; border-bottom:1px solid var(--hairline); font-size:12px}
@@ -7564,6 +7569,12 @@
           <button id="ticket-btn" type="button">📷 Photo d'un ticket</button>
           <select id="ticket-societe" aria-label="Société du ticket"></select>
         </div>
+        <div class="ticket-paye" role="radiogroup" aria-label="Payé avec">
+          <span class="ticket-paye-lbl">Payé avec</span>
+          <button type="button" class="ticket-paye-opt" role="radio" data-v="societe">Société</button>
+          <button type="button" class="ticket-paye-opt" role="radio" data-v="perso_matheo">Perso Mathéo</button>
+          <button type="button" class="ticket-paye-opt" role="radio" data-v="perso_dorian">Perso Dorian</button>
+        </div>
         <input type="file" id="ticket-input" accept="image/*" multiple style="display:none">
         <div id="ticket-resultats"></div>
       </div>
@@ -9349,8 +9360,8 @@
          unique de detection de mise a jour (voir checkUpdate ci-dessous), plus fiable qu'une
          comparaison de chaine de version par tenant. */
   var APPV_MCS = '4.65';
-  var APPV_LABO = '1.12';
-  var BUILD = 112;
+  var APPV_LABO = '1.13';
+  var BUILD = 113;
 
   // ==============================================================================================
   // ONGLETS ACTIFS PAR LOCATAIRE (07/10/2026) -- LA liste qui décide ce qu'un client voit.
@@ -14496,6 +14507,24 @@
     return TICKET_SOCIETES.some(function(s){ return s[0] === v; }) ? v : 'DMROOM';
   }
   function ticketSocieteMemo(v){ try { localStorage.setItem('ticketSociete', v); } catch (e) {} }
+  // Étape 2d : « Payé avec » (Société présélectionné, jamais retenu d'une fois sur l'autre) et TVA lue sur le ticket.
+  var TICKET_PAYE_PAR = { societe: 'Société', perso_matheo: 'Perso Mathéo', perso_dorian: 'Perso Dorian' };
+  function ticketPayeParLire(){ var b = document.querySelector('.ticket-paye-opt.on'); var v = b ? b.getAttribute('data-v') : ''; return TICKET_PAYE_PAR[v] ? v : 'societe'; }
+  function ticketPayeParChoisir(v){
+    Array.prototype.forEach.call(document.querySelectorAll('.ticket-paye-opt'), function(b){ var on = b.getAttribute('data-v') === v; b.classList.toggle('on', on); b.setAttribute('aria-checked', on ? 'true' : 'false'); });
+  }
+  function ticketTvaTexte(j){
+    var t = j && j.tva; if (!t) return '';
+    if (t.etat === 'lue') return 'TVA lue : ' + facturesFmtMontant(t.montant_tva, 'EUR') + ' (HT ' + facturesFmtMontant(t.montant_ht, 'EUR') + ')' + (t.carburant ? ' · carburant : la part récupérable est calculée par la trésorerie' : '');
+    if (t.etat === 'sans_tva') return 'TVA non applicable (lu sur le ticket)';
+    if (t.etat === 'incoherente') return 'TVA incohérente : ' + (t.raison || '');
+    return 'TVA à lire : récapitulatif TVA non lisible sur la photo';
+  }
+  function ticketDetailTvaPaye(j){
+    var parts = [], t = ticketTvaTexte(j); if (t) parts.push(t);
+    parts.push('Payé avec : ' + (TICKET_PAYE_PAR[j && j.paye_par] || 'Société'));
+    return parts.join(' · ');
+  }
   function ticketAujourdhui(){
     var d = new Date(), m = d.getMonth() + 1, j = d.getDate();
     return d.getFullYear() + '-' + (m < 10 ? '0' + m : m) + '-' + (j < 10 ? '0' + j : j);
@@ -14597,7 +14626,7 @@
   // Lot 14 : le ticket est range dans Google Drive. En cas d'erreur (Drive ou reseau), la photo reste dans la carte : « Réessayer » la renvoie telle quelle.
   function ticketEnvoyer(carte, photo, societe, dateChoisie, indices, quandMeme){
     ticketMessage(carte, 'ticket-encours', dateChoisie ? 'Rangement avec la date choisie…' : 'Lecture et rangement du ticket…');
-    var payload = { action: 'ajouter_ticket', societe: societe, image_base64: photo.b64, dhash: photo.dhash };
+    var payload = { action: 'ajouter_ticket', societe: societe, image_base64: photo.b64, dhash: photo.dhash, paye_par: photo.paye_par || 'societe' };
     if (dateChoisie){ payload.date_choisie = dateChoisie; payload.indices = indices || {}; }
     if (quandMeme) payload.ranger_quand_meme = true;
     ticketPost(payload, function(j){ ticketReponse(carte, photo, societe, j, dateChoisie, indices); }, function(err){
@@ -14607,7 +14636,7 @@
   }
   function ticketReponse(carte, photo, societe, j, dateEnvoyee, indicesEnvoyes){
     if (j.etat === 'date_incertaine' || j.etat === 'erreur_ia'){
-      var indices = { commercant: j.commercant || '', montant_ttc: j.montant_ttc, devise: j.devise || '' };
+      var indices = { commercant: j.commercant || '', montant_ttc: j.montant_ttc, devise: j.devise || '', tva: j.tva_indices || null };
       ticketMessage(carte, 'ticket-attention', '⚠️ ' + (j.raison || 'Date non lue.') + ' Choisis la date du ticket : elle sert à le ranger dans le bon mois.');
       var l = ticketResumeLigne(j); if (j.commercant || j.montant_ttc != null) carte.corps.appendChild(ticketEl('div', 'ticket-detail', 'Lu sur le ticket : ' + l));
       var champ = document.createElement('input'); champ.type = 'date'; champ.max = ticketAujourdhui(); champ.min = '2020-01-01';
@@ -14629,6 +14658,7 @@
       var mois = facturesMoisLabel(j.mois_rattachement);
       if (j.etat === 'a_verifier') ticketMessage(carte, 'ticket-attention', '⚠️ Rangé dans Google Drive mais à vérifier : ' + (j.raison || ''));
       else ticketMessage(carte, 'ticket-ok', '✅ Rangé dans Google Drive : ' + ticketResumeLigne(j) + ' · ' + (FACTURES_SOCIETE_LABEL[societe] || societe) + ' · ' + mois);
+      carte.corps.appendChild(ticketEl('div', 'ticket-detail', ticketDetailTvaPaye(j)));
       carte.corps.appendChild(ticketEl('div', 'ticket-detail', 'Dossier : ' + (j.drive_dossier || '') + (j.date_source === 'choisie' ? ' · date choisie à la main' : '')));
       facturesLoad({ frais: true }); return;
     }
@@ -14640,11 +14670,12 @@
     carte.corps.appendChild(ticketBouton('Réessayer', function(){ ticketEnvoyer(carte, photo, societe, dateEnvoyee, indicesEnvoyes); }));
   }
   function ticketTraiter(file){
-    var societe = document.getElementById('ticket-societe').value;
+    var societe = document.getElementById('ticket-societe').value, payePar = ticketPayeParLire();
     var carte = ticketCarteNouvelle(file.name || 'photo');
     ticketMessage(carte, 'ticket-encours', 'Réduction de la photo…');
     return ticketReduire(file).then(function(photo){
-      carte.racine.firstChild.textContent = (file.name || 'photo') + ' · ' + ticketMo(photo.octets) + ' envoyés';
+      photo.paye_par = payePar;
+      carte.racine.firstChild.textContent = (file.name || 'photo') + ' · ' + ticketMo(photo.octets) + ' envoyés · payé avec : ' + TICKET_PAYE_PAR[payePar];
       ticketEnvoyer(carte, photo, societe, '', null);
     }, function(err){ ticketMessage(carte, 'ticket-erreur', (err && err.message) || 'Photo refusée.'); });
   }
@@ -14654,6 +14685,8 @@
     TICKET_SOCIETES.forEach(function(s){ var o = document.createElement('option'); o.value = s[0]; o.textContent = s[1]; sel.appendChild(o); });
     sel.value = ticketSocieteLire();
     sel.addEventListener('change', function(){ ticketSocieteMemo(sel.value); });
+    ticketPayeParChoisir('societe');
+    Array.prototype.forEach.call(document.querySelectorAll('.ticket-paye-opt'), function(b){ b.addEventListener('click', function(){ ticketPayeParChoisir(b.getAttribute('data-v')); }); });
     btn.addEventListener('click', function(){ inp.value = ''; inp.click(); });
     inp.addEventListener('change', function(){
       var fichiers = Array.prototype.slice.call(inp.files || []);
