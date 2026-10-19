@@ -2618,6 +2618,16 @@
   .treso-badge.b-probable{background:var(--tr-b-prob); color:var(--tr-b-prob-ink)}
   .treso-badge.b-supposee{background:var(--tr-b-sup); color:var(--tr-b-sup-ink)}
   .treso-badge.b-retard{background:var(--tr-b-ret); color:var(--tr-b-ret-ink)}
+  /* Etape 2c (19/10/2026) : depenses reprises de l'onglet Factures TVA, comptes courants d'associes */
+  .treso-seg.treso-seg-paye{flex-direction:column}
+  .treso-badge.b-doublon{background:var(--tr-b-ret); color:var(--tr-b-ret-ink)}
+  .treso-badge.b-relier{background:var(--tr-b-prob); color:var(--tr-b-prob-ink)}
+  .treso-h .treso-link{text-transform:none; letter-spacing:0; font-size:14px; min-height:30px; padding:2px 0}
+  .treso-info{font-size:13.5px; color:var(--tr-muted); margin:-2px 4px 8px}
+  .treso-alerte{background:var(--tr-warn-bg); color:var(--tr-ink); border-radius:12px; padding:10px 12px; margin:8px 0 12px; font-size:14.5px; line-height:1.4}
+  .treso-alerte b{color:var(--tr-warn-ink)}
+  .treso-cca-ligne{display:flex; justify-content:space-between; gap:10px; font-size:14px; padding:6px 0; border-bottom:0.5px solid var(--tr-line)}
+  .treso-cca-ligne span:first-child{flex:1; min-width:0; color:var(--tr-muted); overflow:hidden; text-overflow:ellipsis; white-space:nowrap}
   .treso-groupe-enf{padding-left:14px; border-left:2px solid var(--tr-line); margin:0 0 4px 4px}
   .treso-chev{display:inline-block; transition:transform .15s; color:var(--tr-muted); margin-left:7px}
   .treso-row[aria-expanded="true"] .treso-chev{transform:rotate(90deg)}
@@ -7455,6 +7465,11 @@
         </div>
       </div>
       <div class="treso-card" id="treso-avenir"></div>
+      <div class="treso-h"><span>Dépenses reprises · 90 jours</span><button class="treso-link" id="treso-reprendre" type="button">Reprendre ›</button></div>
+      <div class="treso-info" id="treso-reprise-info"></div>
+      <div class="treso-card" id="treso-justifs"></div>
+      <div class="treso-h"><span>Comptes courants d'associés</span></div>
+      <div class="treso-card" id="treso-cca"></div>
       <div class="treso-h"><span>Plan de trésorerie · 12 mois</span></div>
       <div class="treso-plan" id="treso-plan"></div>
       <div class="treso-h"><span>Entrées par client · 12 mois</span></div>
@@ -9334,8 +9349,8 @@
          unique de detection de mise a jour (voir checkUpdate ci-dessous), plus fiable qu'une
          comparaison de chaine de version par tenant. */
   var APPV_MCS = '4.65';
-  var APPV_LABO = '1.11';
-  var BUILD = 111;
+  var APPV_LABO = '1.12';
+  var BUILD = 112;
 
   // ==============================================================================================
   // ONGLETS ACTIFS PAR LOCATAIRE (07/10/2026) -- LA liste qui décide ce qu'un client voit.
@@ -12639,13 +12654,17 @@
   var TRESO_MOIS_COURT = ['janv.', 'févr.', 'mars', 'avr.', 'mai', 'juin', 'juil.', 'août', 'sept.', 'oct.', 'nov.', 'déc.'];
   var TRESO_CERT = { sure: 'Sûr', probable: 'Probable', supposee: 'Supposé' };
   var TRESO_TAUX = [['2000', '20 %'], ['1000', '10 %'], ['550', '5,5 %'], ['210', '2,1 %'], ['0', '0 %'], ['autoliquidation', 'Autoliquidation']];
-  var TRESO_SANS_TVA = ['remuneration_gerant', 'cotisations_sociales', 'tva_a_reverser', 'impot_societes', 'impots_taxes'];
+  var TRESO_SANS_TVA = ['remuneration_gerant', 'cotisations_sociales', 'tva_a_reverser', 'impot_societes', 'impots_taxes',
+    'remunerations', 'cotisations', 'taxes', 'tva'];
+  var TRESO_PAYE = [['carte_societe', 'Carte société'], ['carte_perso_matheo', 'Carte perso Mathéo'], ['carte_perso_dorian', 'Carte perso Dorian']];
+  var TRESO_PAYE_LIB = { carte_societe: 'Carte société', carte_perso_matheo: 'Carte perso Mathéo', carte_perso_dorian: 'Carte perso Dorian' };
+  var tresoJustifsTout = false;
+  // Etape 2c (19/10/2026) : 15 categories larges (les lignes deja en base gardent leur cle, le serveur les regroupe).
   var TRESO_CAT = {
-    depense: [['abonnements_techniques', 'Abonnements techniques'], ['logiciel', 'Logiciel'], ['comptabilite', 'Comptabilité'],
-      ['frais_bancaires', 'Frais bancaires'], ['assurance', 'Assurance'], ['prevoyance_mutuelle', 'Prévoyance / mutuelle'],
-      ['domiciliation', 'Domiciliation'], ['impots_taxes', 'Impôts et taxes'], ['vehicule', 'Véhicule'], ['carburant', 'Carburant'],
-      ['repas', 'Repas'], ['locaux', 'Locaux'], ['frais_stripe', 'Frais Stripe'], ['remuneration_gerant', 'Rémunération'],
-      ['cotisations_sociales', 'Cotisations sociales'], ['impot_societes', 'Impôt sur les sociétés'], ['autre_charge', 'Autre dépense']],
+    depense: [['materiaux', 'Matériaux'], ['carburant', 'Carburant'], ['repas', 'Repas'], ['courses_fournitures', 'Courses et fournitures'],
+      ['deplacements', 'Déplacements'], ['logiciels_abonnements', 'Logiciels et abonnements'], ['sous_traitance', 'Sous-traitance'],
+      ['materiel_outillage', 'Matériel et outillage'], ['honoraires', 'Honoraires'], ['banque_assurances', 'Banque et assurances'],
+      ['taxes', 'Taxes'], ['remunerations', 'Rémunérations'], ['cotisations', 'Cotisations'], ['tva', 'TVA'], ['autres', 'Autres']],
     encaissement: [['vente_ponctuelle', 'Vente ponctuelle'], ['acompte_client', 'Acompte client'], ['abonnement_client', 'Abonnement client'],
       ['apport_associe', 'Apport d\'associé'], ['autre_encaissement', 'Autre encaissement']]
   };
@@ -12780,6 +12799,8 @@
       + (rs.montant_ht_cts ? ' · ' + tresoEur(rs.montant_ht_cts) + ' pour garder le seuil' : '');
     tresoCourbe(e);
     tresoListes(e);
+    tresoJustifs(e);
+    tresoCca(e);
     tresoPlan(e);
     tresoRepartition('treso-rep-in', e.repartition_entrees, true);
     tresoRepartition('treso-rep', e.repartition, false);
@@ -13160,8 +13181,17 @@
       var mt = tresoInput('text', tresoMontantSaisie(p.montant_cts), { inputmode: 'decimal', autocomplete: 'off' });
       f.appendChild(tresoChamp('Date réelle', dt));
       f.appendChild(tresoChamp('Montant réel (€, TTC)', mt));
+      var pp = null;
+      if (!enc){
+        f.appendChild(tresoEl('p', 'treso-f-sub', 'Payé avec :'));
+        pp = tresoSeg(TRESO_PAYE, 'carte_societe');
+        pp.el.classList.add('treso-seg-paye');
+        f.appendChild(pp.el);
+      }
       tresoFormBoutons(f, 'Confirmer', function(){
-        return { action: 'marquer_paye', ref: p.ref, date_reelle: dt.value, montant_reel: mt.value };
+        var o = { action: 'marquer_paye', ref: p.ref, date_reelle: dt.value, montant_reel: mt.value };
+        if (pp) o.paye_par = pp.val();
+        return o;
       }, 'Retour', function(){ tresoActions(p); });
     });
   }
@@ -13230,6 +13260,190 @@
       });
     });
   }
+  // ---- Etape 2c (19/10/2026) : depenses reprises de l'onglet Factures TVA ----
+  // Tout vient du serveur (calcul_etat.js : e.justificatifs, e.derniere_reprise, e.comptes_associes).
+  // Aucun geste automatique : doublon, rapprochement, categorie, carte, remboursement se valident ici.
+  function tresoGeste(payload, btns, err){
+    btns.forEach(function(b){ b.disabled = true; });
+    if (err) err.textContent = '';
+    tresoPost(payload, function(j){
+      tresoFormFermer(); toast(j.message || 'Enregistré.', 2600); tresoAfficher(j.etat);
+    }, function(msg){
+      btns.forEach(function(b){ b.disabled = false; });
+      if (err) err.textContent = msg; else toast(msg, 3500);
+    });
+  }
+  function tresoBadgeJustif(x){
+    if (x.doublon) return ['doublon', 'Doublon ?'];
+    if (x.suggestion) return ['relier', 'À relier ?'];
+    if (x.etat === 'a_payer') return ['supposee', 'À payer'];
+    if (x.tva_statut === 'a_lire') return ['supposee', 'TVA à lire'];
+    return ['sure', 'Payée'];
+  }
+  function tresoJustifs(e){
+    var info = document.getElementById('treso-reprise-info'), box = document.getElementById('treso-justifs');
+    var r = e.derniere_reprise;
+    info.textContent = r ? ('Dernière reprise le ' + tresoJourCourt((r.debut_le || '').slice(0, 10)) + ' à ' + new Date(r.debut_le).toLocaleTimeString('fr-FR', { hour: '2-digit', minute: '2-digit', timeZone: 'Europe/Paris' })
+      + ' · ' + r.ajoutees + (r.ajoutees > 1 ? ' ajoutées' : ' ajoutée') + (r.statut !== 'ok' ? ' · ' + (r.erreur || 'à vérifier') : '')
+      + (r.en_attente_verification ? ' · ' + r.en_attente_verification + ' pièce(s) à vérifier dans Factures TVA' : '')) : 'Aucune reprise pour l\'instant.';
+    box.textContent = '';
+    var l = e.justificatifs || [];
+    if (!l.length){ box.appendChild(tresoEl('div', 'treso-empty', 'Aucune dépense reprise sur 90 jours.')); return; }
+    var nbD = l.filter(function(x){ return x.doublon; }).length, nbS = l.filter(function(x){ return x.suggestion; }).length;
+    var nbT = l.filter(function(x){ return x.tva_statut === 'a_lire'; }).length;
+    if (nbD || nbS){
+      var a = tresoEl('div', 'treso-alerte');
+      if (nbD) a.appendChild(tresoEl('b', '', nbD + (nbD > 1 ? ' doublons probables' : ' doublon probable') + ' à trancher. '));
+      if (nbS) a.appendChild(tresoEl('span', '', nbS + (nbS > 1 ? ' dépenses ressemblent' : ' dépense ressemble') + ' à une prévision : à relier ou non.'));
+      box.appendChild(a);
+    }
+    var tot = l.reduce(function(s, x){ return s + (x.montant_cts || 0); }, 0);
+    box.appendChild(tresoEl('div', 'treso-f-sub', l.length + (l.length > 1 ? ' dépenses' : ' dépense') + ' · ' + tresoEur(tot, true)
+      + (nbT ? ' · ' + nbT + ' ticket' + (nbT > 1 ? 's' : '') + ' « TVA à lire »' : '')));
+    var visibles = tresoJustifsTout ? l : l.slice(0, 8);
+    visibles.forEach(function(x){
+      var b = tresoEl('button', 'treso-row'); b.type = 'button';
+      b.appendChild(tresoEl('div', 'treso-r-nom', x.libelle));
+      b.appendChild(tresoEl('div', 'treso-r-mt', tresoEur(x.montant_cts, true)));
+      var pp = x.paye_par && x.paye_par !== 'carte_societe' ? ' · ' + TRESO_PAYE_LIB[x.paye_par] : '';
+      b.appendChild(tresoEl('div', 'treso-r-sub', tresoJourMot(x.date) + ' · ' + x.categorie_libelle + ' · ' + (x.piece_type === 'ticket' ? 'ticket' : 'facture') + pp));
+      var r2 = tresoEl('div', 'treso-r-right2'), bd = tresoBadgeJustif(x);
+      r2.appendChild(tresoEl('span', 'treso-badge b-' + bd[0], bd[1]));
+      b.appendChild(r2);
+      b.addEventListener('click', function(){ tresoJustifActions(x); });
+      box.appendChild(b);
+    });
+    if (l.length > 8){
+      var v = tresoEl('button', 'treso-link', tresoJustifsTout ? 'Voir moins' : 'Voir les ' + (l.length - 8) + ' autres'); v.type = 'button';
+      v.addEventListener('click', function(){ tresoJustifsTout = !tresoJustifsTout; tresoJustifs(tresoEtat); });
+      box.appendChild(v);
+    }
+  }
+  function tresoJustifActions(x){
+    tresoFormOuvrir(x.libelle, (x.piece_type === 'ticket' ? 'Ticket' : 'Facture') + ' repris de Factures TVA · ' + tresoJour(x.date), function(f){
+      function kv(k, v){ var d = tresoEl('div', 'treso-kv'); d.appendChild(tresoEl('b', '', k)); d.appendChild(tresoEl('span', '', v)); f.appendChild(d); }
+      kv('Montant TTC', tresoEur(x.montant_cts, true) + (x.montant_corrige ? ' (corrigé)' : ''));
+      if (x.devise_origine) kv('Montant d\'origine', (Math.abs(x.montant_devise || 0)).toFixed(2).replace('.', ',') + ' ' + x.devise_origine + ' (taux BCE ' + String(x.taux_change).replace('.', ',') + ')');
+      kv('TVA', x.tva_statut === 'a_lire' ? 'à lire (pas encore lue sur le ticket)' : x.tva_mode === 'autoliquidation' ? 'autoliquidée' : tresoEur(Math.abs(x.tva_cts || 0)));
+      kv(x.etat === 'a_payer' ? 'À payer le' : 'Payée le', tresoJour(x.etat === 'a_payer' ? x.echeance : x.date));
+      if (x.type === 'mouvement') kv('Payé avec', TRESO_PAYE_LIB[x.paye_par] || 'Carte société');
+      var err = tresoEl('p', 'treso-err', '');
+      var tous = [];
+      function bouton(txt, principal, payload){
+        var b = tresoEl('button', 'treso-btn' + (principal ? ' treso-btn-main' : ''), txt); b.type = 'button';
+        b.addEventListener('click', function(){ tresoGeste(payload, tous, err); });
+        tous.push(b); return b;
+      }
+      var acts = tresoEl('div', 'treso-acts-v');
+      if (x.doublon){
+        var d = x.doublon;
+        f.appendChild(tresoEl('div', 'treso-alerte', 'Doublon probable de « ' + (d.libelle || '?') + ' » du ' + tresoJour(d.date) + ' (' + tresoEur(d.montant_cts, true)
+          + '). Les deux sont comptées tant que vous n\'avez pas tranché.'));
+        acts.appendChild(bouton('Garder les deux', false, { action: 'trancher_doublon', type: x.type, cle: x.cle, decision: 'distinct' }));
+        acts.appendChild(bouton('Écarter celle-ci (gardée, plus comptée)', true, { action: 'trancher_doublon', type: x.type, cle: x.cle, decision: 'ecarter' }));
+      }
+      if (x.suggestion){
+        var s = x.suggestion;
+        f.appendChild(tresoEl('div', 'treso-alerte', 'Correspond peut-être à la prévision « ' + s.libelle + ' » du ' + tresoJour(s.date) + ' (' + tresoEur(s.montant_cts, true) + ').'
+          + (x.type === 'mouvement' ? ' Relier la marque payée.' : ' Relier remplace la prévision par cette facture.')));
+        acts.appendChild(bouton('Relier', true, { action: 'relier', type: x.type, cle: x.cle, prevision: s.ref }));
+        acts.appendChild(bouton('Pas la même', false, { action: 'refuser_suggestion', type: x.type, cle: x.cle }));
+      }
+      var cat = tresoSelect(TRESO_CAT.depense, x.categorie);
+      f.appendChild(tresoChamp('Catégorie', cat));
+      var pp = null;
+      if (x.type === 'mouvement'){
+        f.appendChild(tresoEl('p', 'treso-f-sub', 'Payé avec (une carte perso ne sort pas du compte : la société la doit à l\'associé) :'));
+        pp = tresoSeg(TRESO_PAYE, x.paye_par || 'carte_societe');
+        pp.el.classList.add('treso-seg-paye');
+        f.appendChild(pp.el);
+      }
+      var enr = tresoEl('button', 'treso-btn treso-btn-main', 'Enregistrer'); enr.type = 'button'; tous.push(enr);
+      enr.addEventListener('click', function(){
+        var o = { action: 'corriger_ligne', type: x.type, cle: x.cle };
+        if (cat.value !== x.categorie) o.categorie = cat.value;
+        if (pp && pp.val() !== (x.paye_par || 'carte_societe')) o.paye_par = pp.val();
+        if (!o.categorie && !o.paye_par){ err.textContent = 'Rien à modifier.'; return; }
+        tresoGeste(o, tous, err);
+      });
+      acts.insertBefore(enr, acts.firstChild);
+      f.appendChild(err);
+      var bf = tresoEl('button', 'treso-btn', 'Fermer'); bf.type = 'button'; bf.addEventListener('click', tresoFormFermer);
+      acts.appendChild(bf);
+      f.appendChild(acts);
+    });
+  }
+  function tresoCca(e){
+    var box = document.getElementById('treso-cca'), c = e.comptes_associes || {};
+    box.textContent = '';
+    [['MATHEO', 'Mathéo'], ['DORIAN', 'Dorian']].forEach(function(p){
+      var x = c[p[0]] || { du_cts: 0, lignes: [] };
+      var b = tresoEl('button', 'treso-row'); b.type = 'button';
+      b.appendChild(tresoEl('div', 'treso-r-nom', 'Dû à ' + p[1]));
+      b.appendChild(tresoEl('div', 'treso-r-mt', tresoEur(x.du_cts)));
+      b.appendChild(tresoEl('div', 'treso-r-sub', x.lignes.length ? (x.lignes.length + ' mouvement' + (x.lignes.length > 1 ? 's' : '') + ' · avancé ' + tresoEur(x.avance_cts) + ' · remboursé ' + tresoEur(x.rembourse_cts)) : 'aucune dépense payée avec sa carte'));
+      b.appendChild(tresoEl('div', 'treso-r-right2'));
+      b.addEventListener('click', function(){ tresoCcaDetail(p, x); });
+      box.appendChild(b);
+    });
+  }
+  function tresoCcaDetail(p, x){
+    tresoFormOuvrir('Compte courant de ' + p[1], 'Dépenses payées avec sa carte perso, moins les remboursements. Rien n\'est jamais supprimé.', function(f){
+      var d = tresoEl('div', 'treso-kv'); d.appendChild(tresoEl('b', '', 'La société lui doit')); d.appendChild(tresoEl('span', '', tresoEur(x.du_cts))); f.appendChild(d);
+      if (!x.lignes.length) f.appendChild(tresoEl('div', 'treso-empty', 'Aucun mouvement.'));
+      x.lignes.forEach(function(l){
+        var r = tresoEl('div', 'treso-cca-ligne');
+        r.appendChild(tresoEl('span', '', tresoJourCourt(l.date) + ' · ' + (l.type === 'remboursement' ? 'Remboursement' : l.libelle)));
+        r.appendChild(tresoEl('span', '', tresoEur(l.montant_cts, true)));
+        if (l.type === 'remboursement'){
+          var an = tresoEl('button', 'treso-link', 'Annuler'); an.type = 'button'; an.style.minHeight = '0'; an.style.padding = '0';
+          an.addEventListener('click', function(){ tresoCcaAnnuler(p, x, l); });
+          r.appendChild(an);
+        }
+        f.appendChild(r);
+      });
+      var acts = tresoEl('div', 'treso-acts-v');
+      if (x.du_cts > 0){
+        var br = tresoEl('button', 'treso-btn treso-btn-main', 'Rembourser ' + p[1]); br.type = 'button';
+        br.addEventListener('click', function(){ tresoCcaRembourser(p, x); });
+        acts.appendChild(br);
+      }
+      var bf = tresoEl('button', 'treso-btn', 'Fermer'); bf.type = 'button'; bf.addEventListener('click', tresoFormFermer);
+      acts.appendChild(bf);
+      f.appendChild(acts);
+    });
+  }
+  function tresoCcaRembourser(p, x){
+    var jeton = tresoJeton();
+    tresoFormOuvrir('Rembourser ' + p[1], 'Virement du compte M22 VISION vers ' + p[1] + ' : il fait baisser le solde. Au plus ' + tresoEur(x.du_cts) + '.', function(f){
+      var mt = tresoInput('text', tresoMontantSaisie(x.du_cts), { inputmode: 'decimal', autocomplete: 'off' });
+      var dt = tresoInput('date', tresoAujourdhui(), { max: tresoAujourdhui() });
+      f.appendChild(tresoChamp('Montant remboursé (€)', mt));
+      f.appendChild(tresoChamp('Date du virement', dt));
+      tresoFormBoutons(f, 'Enregistrer le remboursement', function(err){
+        if (!tresoCentimes(mt.value)){ err.textContent = 'Montant invalide (exemple : 120,00).'; return null; }
+        return { action: 'rembourser', associe: p[0], montant: mt.value, date: dt.value, jeton: jeton };
+      }, 'Retour', function(){ tresoCcaDetail(p, x); });
+    });
+  }
+  function tresoCcaAnnuler(p, x, l){
+    tresoFormOuvrir('Annuler le remboursement', tresoJour(l.date) + ' · ' + tresoEur(l.montant_cts, true) + ' — la ligne est gardée, marquée annulée.', function(f){
+      var motif = tresoInput('text', '', { maxlength: '200', autocomplete: 'off', placeholder: 'Ex. : saisi deux fois' });
+      f.appendChild(tresoChamp('Motif (obligatoire)', motif));
+      tresoFormBoutons(f, 'Confirmer l\'annulation', function(err){
+        if (motif.value.trim().length < 3){ err.textContent = 'Indiquez un motif (3 caractères au moins).'; return null; }
+        return { action: 'annuler_remboursement', cle: l.id_externe, motif: motif.value };
+      }, 'Retour', function(){ tresoCcaDetail(p, x); });
+    });
+  }
+  function tresoReprendre(){
+    var b = document.getElementById('treso-reprendre');
+    if (b.disabled) return;
+    b.disabled = true; b.textContent = 'Reprise…';
+    tresoPost({ action: 'synchro_justificatifs' }, function(j){
+      b.disabled = false; b.textContent = 'Reprendre ›'; toast(j.message || 'Reprise faite.', 3000); tresoAfficher(j.etat);
+    }, function(msg){ b.disabled = false; b.textContent = 'Reprendre ›'; toast(msg, 3500); });
+  }
   function tresoSegActif(id, attr, val){
     Array.prototype.forEach.call(document.querySelectorAll('#' + id + ' button'), function(b){ b.setAttribute('aria-pressed', b.getAttribute(attr) === val ? 'true' : 'false'); });
   }
@@ -13240,6 +13454,7 @@
   document.getElementById('treso-refresh').addEventListener('click', function(){ tresoCharger(); });
   document.getElementById('treso-solde-btn').addEventListener('click', tresoFormSolde);
   document.getElementById('treso-add').addEventListener('click', tresoFormAjout);
+  document.getElementById('treso-reprendre').addEventListener('click', tresoReprendre);
   document.getElementById('treso-pill').addEventListener('click', function(){
     var o = this.getAttribute('aria-expanded') !== 'true';
     this.setAttribute('aria-expanded', o ? 'true' : 'false');
