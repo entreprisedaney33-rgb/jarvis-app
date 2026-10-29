@@ -9360,8 +9360,8 @@
          unique de detection de mise a jour (voir checkUpdate ci-dessous), plus fiable qu'une
          comparaison de chaine de version par tenant. */
   var APPV_MCS = '4.65';
-  var APPV_LABO = '1.13';
-  var BUILD = 113;
+  var APPV_LABO = '1.14';
+  var BUILD = 114;
 
   // ==============================================================================================
   // ONGLETS ACTIFS PAR LOCATAIRE (07/10/2026) -- LA liste qui décide ce qu'un client voit.
@@ -27520,7 +27520,11 @@ function ikxRepartir(centimes, poids) {
     }, 250);
   });
   var PLUME_BILAN_REPORT_MS = 24 * 3600 * 1000;
+  // 29/10/2026 : pop-up DESACTIVE a la demande de Dorian (il revenait en boucle, un site apres
+  // l'autre, car "Plus tard" ne reportait que le site affiche). Passer a true pour le reactiver.
+  var PLUME_BILAN_ACTIF = false;
   function plumeCheckBilan(sites){
+    if (!PLUME_BILAN_ACTIF) return;
     if (plumeBilanModal.classList.contains('open')) return; // un seul pop-up a la fois
     var now = new Date();
     for (var i = 0; i < sites.length; i++){
