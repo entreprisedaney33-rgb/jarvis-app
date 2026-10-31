@@ -2571,6 +2571,17 @@
   .treso-btn.treso-btn-main{background:var(--tr-blue); border-color:var(--tr-blue); color:#fff}
   .treso-btn:disabled{opacity:.55; cursor:default}
   .treso-kpis{display:grid; grid-template-columns:1fr 1fr; gap:10px; margin:0 0 4px}
+  /* 1.16 : récurrent mensuel, blocs, détail d'un mois, impôts */
+  .treso-rec{display:block; width:100%; text-align:left; background:var(--tr-card); border:0; border-radius:16px; color:inherit; font:inherit; padding:12px 14px; margin:0 0 12px; cursor:pointer}
+  .treso-rec-l{font-size:13px; color:var(--tr-muted); text-transform:uppercase; letter-spacing:.03em}
+  .treso-rec-v{font-size:26px; font-weight:800; line-height:1.2; font-variant-numeric:tabular-nums}
+  .treso-rec-s{font-size:14.5px; color:var(--tr-muted); line-height:1.35}
+  .treso-bloc-t{font-size:13px; font-weight:700; color:var(--tr-muted); text-transform:uppercase; letter-spacing:.03em; margin:10px 0 2px}
+  .treso-pv-det{padding:2px 0 10px; border-bottom:0.5px solid var(--tr-line)}
+  .treso-pv-det .treso-kv{font-size:14.5px}
+  button.treso-tva-b{width:100%; background:none; border:0; border-bottom:0.5px solid var(--tr-line); color:inherit; font:inherit; font-size:14px; text-align:left; cursor:pointer}
+  button.treso-tva-b span:first-child{color:var(--tr-ink)}
+  .treso-tva-d{padding-left:12px; border-left:2px solid var(--tr-line); margin:0 0 4px 4px}
   /* Prévisionnel (31/10/2026) : 3 tuiles, une ligne par mois. Vert au-dessus du seuil, orange entre zéro et le seuil, rouge sous zéro ; le mot accompagne toujours la couleur. */
   .treso-pv-tuiles{display:grid; grid-template-columns:repeat(3,minmax(0,1fr)); gap:8px; margin:0 0 12px}
   .treso-pv-t{background:var(--tr-card); border-radius:16px; padding:12px 8px; text-align:center; min-width:0; display:flex; flex-direction:column; justify-content:flex-start; align-items:stretch}
@@ -7461,6 +7472,7 @@
         <div class="treso-solde-sub" id="treso-solde-sub"></div>
         <button class="treso-link" id="treso-solde-btn" type="button">Mettre à jour le solde ›</button>
       </div>
+      <button class="treso-rec" id="treso-recurrent" type="button" style="display:none"></button>
       <div class="treso-kpis">
         <div class="treso-kpi"><span class="treso-kpi-lbl">Point bas (12 mois)</span><span class="treso-kpi-val" id="treso-k-bas"></span><span class="treso-kpi-sub" id="treso-k-bas-sub"></span></div>
         <div class="treso-kpi" id="treso-kpi-seuil" role="button" tabindex="0" aria-label="Détail du seuil d'alerte"><span class="treso-kpi-lbl">Passage sous le seuil</span><span class="treso-kpi-val" id="treso-k-seuil"></span><span class="treso-kpi-sub" id="treso-k-seuil-sub"></span></div>
@@ -7488,6 +7500,8 @@
         </div>
       </div>
       </div>
+      <div class="treso-h"><span>Impôts et cotisations · 12 mois</span></div>
+      <div class="treso-card" id="treso-impots"></div>
       <div id="treso-retard" class="treso-retard" style="display:none"></div>
       <div class="treso-h"><span>À venir · 60 jours</span>
         <div class="treso-seg" id="treso-filtre" role="group" aria-label="Filtrer les prévisions">
@@ -7511,7 +7525,10 @@
       <div class="treso-h"><span>Plan de trésorerie · 12 mois</span></div>
       <div class="treso-plan" id="treso-plan"></div>
       <div class="treso-h"><span>Entrées par client · 12 mois</span></div>
-      <div class="treso-card" id="treso-rep-in"></div>
+      <div class="treso-bloc-t">Revenus récurrents</div>
+      <div class="treso-card" id="treso-rep-rec"></div>
+      <div class="treso-bloc-t">Entrées ponctuelles</div>
+      <div class="treso-card" id="treso-rep-ponc"></div>
       <div class="treso-h"><span>Sorties par catégorie · 12 mois</span></div>
       <div class="treso-card" id="treso-rep"></div>
     </div>
@@ -9393,8 +9410,8 @@
          unique de detection de mise a jour (voir checkUpdate ci-dessous), plus fiable qu'une
          comparaison de chaine de version par tenant. */
   var APPV_MCS = '4.65';
-  var APPV_LABO = '1.15';
-  var BUILD = 115;
+  var APPV_LABO = '1.16';
+  var BUILD = 116;
 
   // ==============================================================================================
   // ONGLETS ACTIFS PAR LOCATAIRE (07/10/2026) -- LA liste qui décide ce qu'un client voit.
@@ -12849,7 +12866,9 @@
     tresoBanque(e);
     tresoChargesCarte(e);
     tresoPlan(e);
-    tresoRepartition('treso-rep-in', e.repartition_entrees, true);
+    tresoRepartition('treso-rep-rec', e.repartition_recurrents, true);
+    tresoRepartition('treso-rep-ponc', e.repartition_ponctuels, true);
+    tresoRecurrent(e); tresoImpots(e);
     tresoRepartition('treso-rep', e.repartition, false);
   }
 
@@ -12950,10 +12969,10 @@
   // lignes compactes, regroupement repliable des echeances de meme nature et meme date.
   function tresoLigne(p, onTap){
     var b = tresoEl('button', 'treso-row'); b.type = 'button';
-    var nom = tresoEl('div', 'treso-r-nom', p.titre || p.libelle);
+    var nom = tresoEl('div', 'treso-r-nom', p.titre_ligne || p.titre || p.libelle);
     var mt = tresoEl('div', 'treso-r-mt' + (p.montant_cts > 0 ? ' treso-pos' : ''), tresoEur(p.montant_cts, true));
     var sub = tresoEl('div', 'treso-r-sub', (p.en_retard ? 'prévu le ' + tresoJourMot(p.date_prevue) : tresoJourMot(p.date_prevue))
-      + (p.sous_titre ? ' · ' + p.sous_titre : '') + (p.modifie ? ' · modifié' : ''));
+      + (p.sous_titre && !p.titre_ligne ? ' · ' + p.sous_titre : '') + (p.modifie ? ' · modifié' : ''));
     var r2 = tresoEl('div', 'treso-r-right2');
     r2.appendChild(tresoEl('span', 'treso-badge b-' + (p.en_retard ? 'retard' : p.fiabilite), p.en_retard ? 'En retard' : (TRESO_CERT[p.fiabilite] || p.fiabilite)));
     b.appendChild(nom); b.appendChild(mt); b.appendChild(sub); b.appendChild(r2);
@@ -12963,7 +12982,7 @@
   function tresoGrouper(liste){ // [{seul:p} | {groupe:[p,...], cle}]
     var out = [], idx = {};
     liste.forEach(function(p){
-      var cle = p.date_prevue + '|' + p.categorie + '|' + (p.montant_cts > 0 ? '+' : '-');
+      var cle = p.date_prevue + '|' + p.categorie + '|' + (p.montant_cts > 0 ? '+' + (p.type_entree || '') : '-') + (p.personne ? '|' + p.ref : '');
       if (idx[cle] != null){ var o = out[idx[cle]]; if (o.seul){ o.groupe = [o.seul]; delete o.seul; } o.groupe.push(p); }
       else { idx[cle] = out.length; out.push({ seul: p, cle: cle }); }
     });
@@ -13023,7 +13042,11 @@
       if (pm){ h.appendChild(info('Entrées', pm.total_entrees_cts, false, true)); h.appendChild(info('Sorties', pm.total_sorties_cts, false, true)); }
       if (fin != null) h.appendChild(info('Fin de mois', fin, fin < ((tresoEtat.seuil || {}).montant_cts || 0), false));
       box.appendChild(h);
-      tresoRendreGroupes(box, g.l);
+      [['Revenus récurrents', function(p){ return p.montant_cts > 0 && p.type_entree === 'recurrent'; }], ['Entrées ponctuelles', function(p){ return p.montant_cts > 0 && p.type_entree !== 'recurrent'; }], ['Sorties', function(p){ return p.montant_cts < 0; }]].forEach(function(b){
+        var l = g.l.filter(b[1]); if (!l.length) return;
+        box.appendChild(tresoEl('div', 'treso-bloc-t', b[0]));
+        tresoRendreGroupes(box, l);
+      });
     });
   }
 
@@ -13055,8 +13078,9 @@
           c.appendChild(d);
         });
       }
-      bloc('Entrées', m.entrees || [], m.total_entrees_cts);
-      bloc('Sorties', m.sorties || [], m.total_sorties_cts);
+      if (m.entrees_recurrentes){ bloc('Revenus récurrents', m.entrees_recurrentes, m.total_recurrent_cts); bloc('Entrées ponctuelles', m.entrees_ponctuelles, m.total_ponctuel_cts); }
+      else bloc('Entrées', m.entrees || [], m.total_entrees_cts);
+      bloc('Sorties', (m.sorties_detail || m.sorties || []).filter(function(l){ return l.montant_cts; }), m.total_sorties_cts);
       if (m.tva && m.tva.credit_sortant_cts){
         var cr = tresoEl('div', 'treso-pm-l'); cr.appendChild(tresoEl('b', '', 'Crédit de TVA reporté')); cr.appendChild(tresoEl('span', '', tresoEur(m.tva.credit_sortant_cts)));
         c.appendChild(cr);
@@ -13207,6 +13231,7 @@
           : 'Ligne calculée automatiquement : elle se coche sur la ligne de TVA du mois quand elle existe.'));
       } else {
         tresoBqChampProjet(f, 'prevision', p.ref, p.projet);
+        if (enc) tresoChampType(f, 'prevision', p.ref, p.type_entree);
         var bp = tresoEl('button', 'treso-btn treso-btn-main', enc ? 'Reçu' : 'Payé'); bp.type = 'button';
         bp.addEventListener('click', function(){ tresoFormPaye(p); });
         acts.appendChild(bp);
@@ -13335,6 +13360,7 @@
     if (x.doublon) return ['doublon', 'Doublon ?'];
     if (x.lien_auto) return ['sure', 'Relié auto'];
     if (x.suggestion) return ['relier', 'À relier ?'];
+    if (x.debit_a_confirmer) return ['relier', 'Débit à confirmer'];
     if (x.etat === 'a_payer') return ['supposee', 'À payer'];
     if (x.tva_statut === 'a_lire') return ['supposee', 'TVA à lire'];
     return ['sure', 'Payée'];
@@ -13737,6 +13763,7 @@
     return ['pv-vert', ''];
   }
   function tresoPvEuros(c){ return (c < 0 ? '−' : '') + String(Math.round(Math.abs(c) / 100)).replace(/\B(?=(\d{3})+(?!\d))/g, ' ') + ' €'; }
+  var tresoPvOuverts = {};
   function tresoPrevisionnel(e){
     var plan = e.plan || [], seuil = (e.seuil || {}).montant_cts || 0;
     var tu = document.getElementById('treso-pv-tuiles'), li = document.getElementById('treso-pv-liste');
@@ -13759,27 +13786,92 @@
       var bar = tresoEl('div', 'treso-pv-b'), i = tresoEl('i', et[0]);
       i.style.width = Math.max(1, Math.round(Math.abs(m.solde_fin_cts) * 100 / max)) + '%';
       bar.appendChild(i); b.appendChild(bar);
-      b.addEventListener('click', function(){ tresoPvDetail(m, seuil); });
-      li.appendChild(b);
+      var det = tresoEl('div', 'treso-pv-det'), ouvert = !!tresoPvOuverts[m.mois];
+      det.style.display = ouvert ? '' : 'none'; if (ouvert) tresoMoisContenu(det, m);
+      b.setAttribute('aria-expanded', ouvert ? 'true' : 'false');
+      b.addEventListener('click', function(){ ouvert = !ouvert; tresoPvOuverts[m.mois] = ouvert; det.textContent = ''; if (ouvert) tresoMoisContenu(det, m); det.style.display = ouvert ? '' : 'none'; b.setAttribute('aria-expanded', ouvert ? 'true' : 'false'); });
+      li.appendChild(b); li.appendChild(det);
     });
+  }
+  // ---- 1.16 (31/10/2026) : recurrent / ponctuel, sorties par personne, impots et cotisations ----
+  function tresoRecurrent(e){
+    var b = document.getElementById('treso-recurrent'), r = e.recurrent_mensuel; if (!b) return;
+    b.style.display = r ? '' : 'none'; if (!r) return;
+    b.textContent = '';
+    b.appendChild(tresoEl('div', 'treso-rec-l', 'Récurrent mensuel'));
+    b.appendChild(tresoEl('div', 'treso-rec-v', tresoEur(r.ht_cts) + ' HT'));
+    var ev = r.evolution_ttc_cts;
+    b.appendChild(tresoEl('div', 'treso-rec-s', tresoEur(r.ttc_cts) + ' TTC · ' + (ev === 0 ? 'stable le mois prochain' : (ev > 0 ? '+ ' : '− ') + tresoEur(Math.abs(ev)) + ' TTC le mois prochain') + ' ›'));
+  }
+  function tresoRecurrentDetail(){
+    var r = (tresoEtat || {}).recurrent_mensuel; if (!r) return;
+    tresoFormOuvrir('Récurrent mensuel', 'Abonnements des contrats récurrents. Le reste (acomptes, chantiers, ventes) est dans « Entrées ponctuelles ».', function(f){
+      r.serie.forEach(function(m, k){
+        var d = tresoEl('div', 'treso-kv'); d.appendChild(tresoEl('b', '', m.libelle.charAt(0).toUpperCase() + m.libelle.slice(1))); d.appendChild(tresoEl('span', '', tresoEur(m.ht_cts) + ' HT · ' + tresoEur(m.ttc_cts) + ' TTC')); f.appendChild(d);
+        if (k < 2) m.clients.forEach(function(c){ var l = tresoEl('div', 'treso-cca-ligne'); l.appendChild(tresoEl('span', '', c.client)); l.appendChild(tresoEl('span', '', tresoEur(c.ttc_cts) + ' TTC')); f.appendChild(l); });
+      });
+      var bf = tresoEl('button', 'treso-btn', 'Fermer'); bf.type = 'button'; bf.style.width = '100%'; bf.style.marginTop = '14px'; bf.addEventListener('click', tresoFormFermer); f.appendChild(bf);
+    });
+  }
+  // Détail d'un mois : revenus récurrents, entrées ponctuelles, puis les sorties ligne à ligne, jamais groupées par personne.
+  function tresoMoisContenu(f, m){
+    function ligne(l){ var r = tresoEl('div', 'treso-cca-ligne'); r.appendChild(tresoEl('span', '', l.libelle)); r.appendChild(tresoEl('span', '', tresoEur(l.montant_cts, true))); f.appendChild(r); }
+    [['Revenus récurrents', m.entrees_recurrentes, m.total_recurrent_cts], ['Entrées ponctuelles', m.entrees_ponctuelles, m.total_ponctuel_cts]].forEach(function(b){
+      tresoBqKv(f, b[0], tresoEur(b[2] || 0, true)); (b[1] || []).forEach(ligne);
+    });
+    tresoBqKv(f, 'Sorties', tresoEur(m.total_sorties_cts, true));
+    (m.sorties_detail || []).forEach(function(l){
+      if (l.categorie === 'tva_a_reverser' && m.tva){
+        var bt = tresoEl('button', 'treso-cca-ligne treso-tva-b'); bt.type = 'button';
+        bt.appendChild(tresoEl('span', '', 'TVA nette ›')); bt.appendChild(tresoEl('span', '', tresoEur(l.montant_cts, true)));
+        var det = tresoEl('div', 'treso-tva-d'); det.style.display = 'none';
+        tresoTvaLignes(det, m.tva);
+        bt.addEventListener('click', function(ev){ ev.stopPropagation(); det.style.display = det.style.display === 'none' ? '' : 'none'; });
+        f.appendChild(bt); f.appendChild(det);
+        return;
+      }
+      if (l.montant_cts || l.categorie !== 'personnel_autre') ligne(l);
+    });
+  }
+  function tresoTvaLignes(box, t){
+    [['Activité de ' + tresoMoisNom(t.mois) + ' : collectée', t.collectee_cts], ['Déductible', -t.deductible_cts]].concat(t.credit_entrant_cts ? [['Crédit reporté', -t.credit_entrant_cts]] : [])
+      .concat([['À prélever le ' + tresoJourCourt(t.date_prelevement), -t.prelevement_cts]]).forEach(function(x){
+        var r = tresoEl('div', 'treso-cca-ligne'); r.appendChild(tresoEl('span', '', x[0])); r.appendChild(tresoEl('span', '', tresoEur(x[1], true))); box.appendChild(r);
+      });
   }
   function tresoPvDetail(m, seuil){
     var et = tresoPvEtat(m, seuil);
     tresoFormOuvrir(m.libelle.charAt(0).toUpperCase() + m.libelle.slice(1), 'Solde de fin de mois : ' + tresoEur(m.solde_fin_cts) + (et[1] ? ' (' + et[1] + ')' : ''), function(f){
-      function bloc(titre, lignes, total){
-        tresoBqKv(f, titre, tresoEur(total, true));
-        if (!lignes.length) f.appendChild(tresoEl('p', 'treso-f-sub', 'Aucune.'));
-        lignes.forEach(function(l){ var r = tresoEl('div', 'treso-cca-ligne'); r.appendChild(tresoEl('span', '', l.libelle)); r.appendChild(tresoEl('span', '', tresoEur(l.montant_cts, true))); f.appendChild(r); });
-      }
-      bloc('Entrées', m.entrees || [], m.total_entrees_cts); bloc('Sorties', m.sorties || [], m.total_sorties_cts);
-      if (m.tva){
-        tresoBqKv(f, 'TVA nette à prélever le ' + tresoJourCourt(m.tva.date_prelevement), tresoEur(-m.tva.prelevement_cts, true));
-        [['Activité de ' + tresoMoisNom(m.tva.mois) + ' : collectée', m.tva.collectee_cts], ['Déductible', -m.tva.deductible_cts]].concat(m.tva.credit_entrant_cts ? [['Crédit reporté', -m.tva.credit_entrant_cts]] : []).forEach(function(x){
-          var r = tresoEl('div', 'treso-cca-ligne'); r.appendChild(tresoEl('span', '', x[0])); r.appendChild(tresoEl('span', '', tresoEur(x[1], true))); f.appendChild(r);
-        });
-      }
+      tresoMoisContenu(f, m);
       var bf = tresoEl('button', 'treso-btn', 'Fermer'); bf.type = 'button'; bf.style.width = '100%'; bf.style.marginTop = '14px'; bf.addEventListener('click', tresoFormFermer); f.appendChild(bf);
     });
+  }
+  var tresoImpOuverts = {};
+  function tresoImpots(e){
+    var box = document.getElementById('treso-impots'); if (!box) return;
+    box.textContent = '';
+    (e.impots_cotisations || []).forEach(function(m, k){
+      var ouvert = tresoImpOuverts[m.mois] != null ? tresoImpOuverts[m.mois] : k === 1;
+      var tete = tresoEl('button', 'treso-pv-l'); tete.type = 'button'; tete.setAttribute('aria-expanded', ouvert ? 'true' : 'false');
+      tete.appendChild(tresoEl('div', 'treso-pv-n', m.libelle.charAt(0).toUpperCase() + m.libelle.slice(1)));
+      tete.appendChild(tresoEl('div', 'treso-pv-s', tresoEur(m.total_cts)));
+      tete.appendChild(tresoEl('div', 'treso-pv-d', 'TVA ' + tresoPvEuros(m.tva_cts) + ' · URSSAF ' + tresoPvEuros(m.urssaf.MATHEO + m.urssaf.DORIAN)));
+      tete.appendChild(tresoEl('div', 'treso-pv-e', ouvert ? '⌄' : '›'));
+      var d = tresoEl('div', 'treso-pv-det'); d.style.display = ouvert ? '' : 'none';
+      [['URSSAF Mathéo', m.urssaf.MATHEO], ['URSSAF Dorian', m.urssaf.DORIAN]].forEach(function(x){ var r = tresoEl('div', 'treso-cca-ligne'); r.appendChild(tresoEl('span', '', x[0])); r.appendChild(tresoEl('span', '', tresoEur(x[1]))); d.appendChild(r); });
+      var rt = tresoEl('div', 'treso-cca-ligne'); rt.appendChild(tresoEl('span', '', 'TVA à reverser')); rt.appendChild(tresoEl('span', '', tresoEur(m.tva_cts))); d.appendChild(rt);
+      if (m.tva_detail) tresoTvaLignes(d, m.tva_detail);
+      tete.addEventListener('click', function(){ ouvert = !ouvert; tresoImpOuverts[m.mois] = ouvert; d.style.display = ouvert ? '' : 'none'; tete.setAttribute('aria-expanded', ouvert ? 'true' : 'false'); tete.lastChild.textContent = ouvert ? '⌄' : '›'; });
+      box.appendChild(tete); box.appendChild(d);
+    });
+  }
+  // Type d'un encaissement, modifiable depuis sa fiche.
+  function tresoChampType(f, type, cle, val){
+    var s = tresoSelect([['recurrent', 'Revenu récurrent'], ['ponctuel', 'Entrée ponctuelle']], val || 'ponctuel');
+    f.appendChild(tresoChamp('Type d’encaissement', s));
+    var b = tresoEl('button', 'treso-btn', 'Enregistrer le type'); b.type = 'button'; b.style.width = '100%'; b.style.marginBottom = '8px';
+    b.addEventListener('click', function(){ b.disabled = true; tresoPost({ action: 'banque_type_entree', type: type, cle: cle, type_entree: s.value }, function(j){ tresoFormFermer(); toast(j.message || 'Enregistré.', 2200); tresoAfficher(j.etat); }, function(msg){ b.disabled = false; toast(msg, 3500); }); });
+    f.appendChild(b);
   }
   function tresoBqLigne(box, nom, mt, sub, badge, onTap){
     var b = tresoEl('button', 'treso-row'); b.type = 'button';
@@ -13861,7 +13953,7 @@
   function tresoBqClasser(o, entree){
     var soc = ((tresoEtat || {}).banque || {}).societes || ['DMROOM'];
     tresoFormOuvrir(entree ? 'Encaissement à classer' : 'Classer sans justificatif', tresoBqOpTexte(o), function(f){
-      var opts = entree ? TRESO_CAT_ENC : TRESO_CAT.depense.concat([['remboursement_associe', 'Remboursement compte courant associé'], ['remboursement_societe', 'Paiement à une autre société (compte courant)']]);
+      var opts = entree ? TRESO_CAT_ENC : TRESO_CAT.depense.concat([['remboursement_associe', 'Remboursement compte courant associé'], ['remboursement_societe', 'Remboursement d’une dette de M22 envers une société']]);
       var cat = tresoSelect(opts, entree ? 'vente_ponctuelle' : (o.societe_suggeree ? 'remboursement_societe' : 'autres'));
       f.appendChild(tresoChamp('Catégorie', cat));
       var ass = tresoSelect([['MATHEO', 'Mathéo'], ['DORIAN', 'Dorian']], 'MATHEO'), so = tresoSelect(soc.map(function(s){ return [s, s]; }), o.societe_suggeree || soc[0]);
@@ -13872,6 +13964,8 @@
       f.appendChild(tresoChamp('Chantier (facultatif)', chan));
       var proj = tresoBqSelectProjet(''); f.appendChild(tresoChamp('Projet (facultatif)', proj));
       var att = entree ? null : tresoSeg([['non', 'Pas de justificatif'], ['oui', 'Facture attendue']], o.justif_attendu ? 'oui' : 'non');
+      var conf = entree ? null : tresoSeg([['non', 'Sûr'], ['oui', 'À confirmer par la comptable']], o.a_confirmer ? 'oui' : 'non');
+      if (conf) f.appendChild(conf.el);
       if (att) f.appendChild(att.el);
       function maj(){ cAss.style.display = cat.value === 'remboursement_associe' ? '' : 'none'; cSo.style.display = cat.value === 'remboursement_societe' ? '' : 'none'; }
       cat.addEventListener('change', maj); maj();
@@ -13883,6 +13977,7 @@
         if (chan.value.trim()) c.chantier = chan.value;
         if (proj.value) c.projet = proj.value;
         if (att && att.val() === 'oui') c.garder_manquant = true;
+        if (conf && conf.val() === 'oui') c.a_confirmer = true;
         return c;
       }, 'Retour', entree ? tresoBqNonPrevus : tresoBqManquants);
     });
@@ -13935,10 +14030,15 @@
     tresoFormOuvrir('Opération', o.libelle_brut, function(f){
       tresoBqKv(f, 'Date', tresoJour(o.date)); if (o.date_achat) tresoBqKv(f, 'Achat du', tresoJour(o.date_achat)); tresoBqKv(f, 'Montant', tresoEur(o.montant_cts, true));
       if (o.chantier) tresoBqKv(f, 'Chantier', o.chantier);
+      if (o.a_confirmer) tresoBqKv(f, 'Statut', 'à confirmer par la comptable');
+      if (o.montant_cts > 0) tresoChampType(f, 'mouvement', o.id_externe, o.type_entree);
       tresoBqChampProjet(f, 'mouvement', o.id_externe, o.projet);
       var acts = tresoEl('div', 'treso-acts-v');
       if (o.delie_possible){ var d = tresoEl('button', 'treso-btn', 'Délier (ce n’est pas la bonne pièce)'); d.type = 'button'; tresoBqGeste(d, { action: 'banque_delier', operation: o.id_externe }); acts.appendChild(d); }
-      else if (o.classe){ var c = tresoEl('button', 'treso-btn', 'Remettre à classer'); c.type = 'button'; tresoBqGeste(c, { action: 'banque_classer', operation: o.id_externe, a_classer: true }); acts.appendChild(c); }
+      else if (o.classe){
+        var rc = tresoEl('button', 'treso-btn treso-btn-main', 'Reclasser'); rc.type = 'button'; rc.addEventListener('click', function(){ tresoBqClasser(o, o.montant_cts > 0); }); acts.appendChild(rc);
+        var c = tresoEl('button', 'treso-btn', 'Remettre à classer'); c.type = 'button'; tresoBqGeste(c, { action: 'banque_classer', operation: o.id_externe, a_classer: true }); acts.appendChild(c);
+      }
       var ret = tresoEl('button', 'treso-btn', 'Retour'); ret.type = 'button'; ret.addEventListener('click', tresoBqOperations); acts.appendChild(ret);
       f.appendChild(acts);
     });
@@ -14023,7 +14123,7 @@
       tresoBqBoutonOuverture(f, c.societe, c.societe, c, function(){ tresoBqCciDetail(c); });
       c.lignes.forEach(function(l){
         var r = tresoEl('div', 'treso-cca-ligne');
-        r.appendChild(tresoEl('span', '', tresoJourCourt(l.date) + ' · ' + (l.type === 'remboursement' ? 'Remboursement' : l.libelle)));
+        r.appendChild(tresoEl('span', '', tresoJourCourt(l.date) + ' · ' + (l.type === 'remboursement' ? 'Remboursement de dette' + (l.a_confirmer ? ' (à confirmer par la comptable)' : '') : l.libelle)));
         r.appendChild(tresoEl('span', '', tresoEur(l.montant_cts, true)));
         if (l.type === 'remboursement' && /^saisie:/.test(l.id_externe)){
           var an = tresoEl('button', 'treso-link', 'Annuler'); an.type = 'button'; an.style.minHeight = '0'; an.style.padding = '0';
@@ -14073,6 +14173,7 @@
   function tresoClose(){ tresoFormFermer(); tresoview.classList.remove('open'); }
   document.getElementById('sh-treso').addEventListener('click', function(){ sheetOpen(false); tresoOpen(); });
   document.getElementById('treso-close').addEventListener('click', tresoClose);
+  document.getElementById('treso-recurrent').addEventListener('click', tresoRecurrentDetail);
   document.getElementById('treso-voir-courbe').addEventListener('click', function(){
     var bloc = document.getElementById('treso-courbe-bloc'), ouvrir = bloc.style.display === 'none';
     bloc.style.display = ouvrir ? '' : 'none';
