@@ -2571,6 +2571,13 @@
   .treso-btn.treso-btn-main{background:var(--tr-blue); border-color:var(--tr-blue); color:#fff}
   .treso-btn:disabled{opacity:.55; cursor:default}
   .treso-kpis{display:grid; grid-template-columns:1fr 1fr; gap:10px; margin:0 0 4px}
+  /* 1.19 : passage sous zéro, tableaux URSSAF et TVA */
+  .treso-zero{font-size:13.5px; color:var(--tr-muted); margin:-6px 4px 12px}
+  .treso-tab{width:100%; border-collapse:collapse; table-layout:auto; font-size:13px; font-variant-numeric:tabular-nums}
+  .treso-tab th{font-size:12px; font-weight:700; color:var(--tr-muted); text-align:right; padding:4px 0 6px 6px; border-bottom:0.5px solid var(--tr-line); white-space:nowrap}
+  .treso-tab td{text-align:right; padding:7px 0 7px 6px; border-bottom:0.5px solid var(--tr-line); white-space:nowrap}
+  .treso-tab th:first-child, .treso-tab td:first-child{text-align:left; padding-left:0}
+  .treso-tab-total td{font-weight:800; border-bottom:0}
   /* 1.18 : pense-bête */
   .treso-pb{display:flex; align-items:flex-start; gap:12px; width:100%; min-height:44px; padding:10px 0; background:none; border:0; border-bottom:0.5px solid var(--tr-line); color:inherit; font:inherit; text-align:left}
   .treso-pb-case{flex:0 0 24px; width:24px; height:24px; border:1.5px solid var(--tr-muted); border-radius:7px; display:flex; align-items:center; justify-content:center; font-size:15px; font-weight:700}
@@ -7486,14 +7493,17 @@
         <button class="treso-link" id="treso-solde-btn" type="button">Mettre à jour le solde ›</button>
       </div>
       <button class="treso-rec" id="treso-recurrent" type="button" style="display:none"></button>
+      <button class="treso-rec" id="treso-objectif" type="button" aria-expanded="false" style="display:none"></button>
+      <div class="treso-card" id="treso-objectif-det" style="display:none"></div>
       <div class="treso-kpis">
-        <div class="treso-kpi"><span class="treso-kpi-lbl">Point bas (12 mois)</span><span class="treso-kpi-val" id="treso-k-bas"></span><span class="treso-kpi-sub" id="treso-k-bas-sub"></span></div>
-        <div class="treso-kpi" id="treso-kpi-seuil" role="button" tabindex="0" aria-label="Détail du seuil d'alerte"><span class="treso-kpi-lbl">Passage sous le seuil</span><span class="treso-kpi-val" id="treso-k-seuil"></span><span class="treso-kpi-sub" id="treso-k-seuil-sub"></span></div>
-        <div class="treso-kpi"><span class="treso-kpi-lbl">Tenu sans nouveau contrat</span><span class="treso-kpi-val" id="treso-k-mois"></span><span class="treso-kpi-sub" id="treso-k-mois-sub"></span></div>
-        <div class="treso-kpi"><span class="treso-kpi-lbl">Récurrent à signer pour tenir</span><span class="treso-kpi-val" id="treso-k-rec"></span><span class="treso-kpi-sub" id="treso-k-rec-sub"></span></div>
+        <div class="treso-kpi" style="display:none"><span class="treso-kpi-lbl">Point bas (12 mois)</span><span class="treso-kpi-val" id="treso-k-bas"></span><span class="treso-kpi-sub" id="treso-k-bas-sub"></span></div>
+        <div class="treso-kpi" id="treso-kpi-seuil" style="display:none" role="button" tabindex="0" aria-label="Détail du seuil d'alerte"><span class="treso-kpi-lbl">Passage sous le seuil</span><span class="treso-kpi-val" id="treso-k-seuil"></span><span class="treso-kpi-sub" id="treso-k-seuil-sub"></span></div>
+        <div class="treso-kpi" style="grid-column:1 / -1"><span class="treso-kpi-lbl">Tenu sans nouveau contrat</span><span class="treso-kpi-val" id="treso-k-mois"></span><span class="treso-kpi-sub" id="treso-k-mois-sub"></span></div>
+        <div class="treso-kpi" style="display:none"><span class="treso-kpi-lbl">Récurrent à signer pour tenir</span><span class="treso-kpi-val" id="treso-k-rec"></span><span class="treso-kpi-sub" id="treso-k-rec-sub"></span></div>
       </div>
       <div class="treso-h"><span>Prévisionnel</span></div>
       <div class="treso-pv-tuiles" id="treso-pv-tuiles"></div>
+      <div class="treso-zero" id="treso-zero-ligne"></div>
       <div class="treso-card treso-pv-liste" id="treso-pv-liste"></div>
       <button class="treso-link" id="treso-voir-courbe" type="button" aria-expanded="false">Voir la courbe ›</button>
       <div id="treso-courbe-bloc" style="display:none">
@@ -7513,8 +7523,10 @@
         </div>
       </div>
       </div>
-      <div class="treso-h"><span>Impôts et cotisations · 12 mois</span></div>
-      <div class="treso-card" id="treso-impots"></div>
+      <div class="treso-h"><span>URSSAF · 12 mois</span></div>
+      <div class="treso-card" id="treso-urssaf"></div>
+      <div class="treso-h"><span>TVA · 12 mois</span></div>
+      <div class="treso-card" id="treso-tva-tab"></div>
       <div class="treso-h"><span>TVA récupérable</span></div>
       <div class="treso-card" id="treso-tva-controle"></div>
       <div class="treso-h"><span>Abonnements et autres sociétés</span></div>
@@ -9427,8 +9439,8 @@
          unique de detection de mise a jour (voir checkUpdate ci-dessous), plus fiable qu'une
          comparaison de chaine de version par tenant. */
   var APPV_MCS = '4.65';
-  var APPV_LABO = '1.18';
-  var BUILD = 118;
+  var APPV_LABO = '1.19';
+  var BUILD = 119;
 
   // ==============================================================================================
   // ONGLETS ACTIFS PAR LOCATAIRE (07/10/2026) -- LA liste qui décide ce qu'un client voit.
@@ -12870,8 +12882,7 @@
     document.getElementById('treso-k-seuil-sub').textContent = 'seuil : ' + tresoEur(se.montant_cts)
       + (se.origine === 'manuel' ? ' (fixé à la main)' : ' (un mois de dépenses courantes) ›');
     document.getElementById('treso-k-mois').textContent = e.mois_tenus == null ? '12 mois et plus' : (e.mois_tenus + ' mois');
-    document.getElementById('treso-k-mois-sub').textContent = e.sous_zero
-      ? ('sous zéro le ' + tresoJour(e.sous_zero.date) + ' (' + tresoEur(e.sous_zero.montant_cts) + ')') : 'jamais sous zéro sur 12 mois';
+    document.getElementById('treso-k-mois-sub').textContent = '';
     var rc = (e.recurrent_a_signer || {}), rz = rc.pour_zero || {}, rs = rc.pour_seuil || {};
     document.getElementById('treso-k-rec').textContent = rz.montant_ht_cts ? tresoEur(rz.montant_ht_cts) : 'Rien à signer';
     document.getElementById('treso-k-rec-sub').textContent = (rz.montant_ht_cts ? 'HT par mois pour ne jamais passer sous zéro' : 'le solde reste positif')
@@ -12886,7 +12897,7 @@
     tresoPlan(e);
     tresoRepartition('treso-rep-rec', e.repartition_recurrents, true);
     tresoRepartition('treso-rep-ponc', e.repartition_ponctuels, true);
-    tresoRecurrent(e); tresoImpots(e); tresoTvaCarte(e); tresoSocietesCarte(e);
+    tresoRecurrent(e); tresoObjectif(e); tresoZeroLigne(e); tresoTableaux(e); tresoTvaCarte(e); tresoSocietesCarte(e);
     tresoRepartition('treso-rep', e.repartition, false);
   }
 
@@ -13046,6 +13057,7 @@
         : tresoFiltre === 'sorties' ? 'Aucune sortie prévue sur 60 jours.' : 'Rien de prévu sur 60 jours.'));
       return;
     }
+    if (!tresoAvenirOuvert){ tresoAvenirRepli(box, liste); return; }
     var parMois = [], dernier = null;
     liste.forEach(function(p){
       var m = p.date_effective.slice(0, 7);
@@ -13066,6 +13078,7 @@
         tresoRendreGroupes(box, l);
       });
     });
+    var rp = tresoEl('button', 'treso-link', 'Replier'); rp.type = 'button'; rp.setAttribute('aria-expanded', 'true'); rp.addEventListener('click', function(){ tresoAvenirBasculer(false); }); box.appendChild(rp);
   }
 
   // 5. Plan de tresorerie : 12 cartes mensuelles horizontales
@@ -13865,25 +13878,6 @@
       var bf = tresoEl('button', 'treso-btn', 'Fermer'); bf.type = 'button'; bf.style.width = '100%'; bf.style.marginTop = '14px'; bf.addEventListener('click', tresoFormFermer); f.appendChild(bf);
     });
   }
-  var tresoImpOuverts = {};
-  function tresoImpots(e){
-    var box = document.getElementById('treso-impots'); if (!box) return;
-    box.textContent = '';
-    (e.impots_cotisations || []).forEach(function(m, k){
-      var ouvert = tresoImpOuverts[m.mois] != null ? tresoImpOuverts[m.mois] : k === 1;
-      var tete = tresoEl('button', 'treso-pv-l'); tete.type = 'button'; tete.setAttribute('aria-expanded', ouvert ? 'true' : 'false');
-      tete.appendChild(tresoEl('div', 'treso-pv-n', m.libelle.charAt(0).toUpperCase() + m.libelle.slice(1)));
-      tete.appendChild(tresoEl('div', 'treso-pv-s', tresoEur(m.total_cts)));
-      tete.appendChild(tresoEl('div', 'treso-pv-d', 'TVA ' + tresoPvEuros(m.tva_cts) + ' · URSSAF ' + tresoPvEuros(m.urssaf.MATHEO + m.urssaf.DORIAN)));
-      tete.appendChild(tresoEl('div', 'treso-pv-e', ouvert ? '⌄' : '›'));
-      var d = tresoEl('div', 'treso-pv-det'); d.style.display = ouvert ? '' : 'none';
-      [['URSSAF Mathéo', m.urssaf.MATHEO], ['URSSAF Dorian', m.urssaf.DORIAN]].forEach(function(x){ var r = tresoEl('div', 'treso-cca-ligne'); r.appendChild(tresoEl('span', '', x[0])); r.appendChild(tresoEl('span', '', tresoEur(x[1]))); d.appendChild(r); });
-      var rt = tresoEl('div', 'treso-cca-ligne'); rt.appendChild(tresoEl('span', '', 'TVA à reverser')); rt.appendChild(tresoEl('span', '', tresoEur(m.tva_cts))); d.appendChild(rt);
-      if (m.tva_detail) tresoTvaLignes(d, m.tva_detail);
-      tete.addEventListener('click', function(){ ouvert = !ouvert; tresoImpOuverts[m.mois] = ouvert; d.style.display = ouvert ? '' : 'none'; tete.setAttribute('aria-expanded', ouvert ? 'true' : 'false'); tete.lastChild.textContent = ouvert ? '⌄' : '›'; });
-      box.appendChild(tete); box.appendChild(d);
-    });
-  }
   // Type d'un encaissement, modifiable depuis sa fiche.
   function tresoChampType(f, type, cle, val){
     var s = tresoSelect([['recurrent', 'Revenu récurrent'], ['ponctuel', 'Entrée ponctuelle']], val || 'ponctuel');
@@ -13975,6 +13969,70 @@
     });
   }
   // ---- 1.18 (01/11/2026) : pense-bete des abonnements, paye par une autre societe, voiture ----
+  // ---- 1.19 (01/11/2026) : objectif commercial, passage sous zero, tableaux URSSAF et TVA ----
+  var tresoObjectifOuvert = false;
+  function tresoObjectif(e){
+    var b = document.getElementById('treso-objectif'), d = document.getElementById('treso-objectif-det'), o = e.objectif_commercial; if (!b || !d) return;
+    b.style.display = o ? '' : 'none'; d.textContent = ''; b.textContent = '';
+    if (!o){ d.style.display = 'none'; return; }
+    b.setAttribute('aria-expanded', tresoObjectifOuvert ? 'true' : 'false');
+    b.appendChild(tresoEl('div', 'treso-rec-l', 'Reste à signer'));
+    b.appendChild(tresoEl('div', 'treso-rec-v', o.atteint ? 'Objectif atteint' : tresoEur(o.reste_cts) + ' HT / mois'));
+    b.appendChild(tresoEl('div', 'treso-rec-s', (o.atteint ? (o.surplus_cts ? 'Surplus : ' + tresoEur(o.surplus_cts) + ' HT / mois · ' : '') : '') + 'Mois de référence : ' + o.libelle + ' ' + (tresoObjectifOuvert ? '⌄' : '›')));
+    d.style.display = tresoObjectifOuvert ? '' : 'none';
+    function ligne(lib, cts){ var r = tresoEl('div', 'treso-cca-ligne'); r.appendChild(tresoEl('span', '', lib)); r.appendChild(tresoEl('span', '', tresoEur(cts))); d.appendChild(r); }
+    tresoBqKv(d, 'Salaires nets', tresoEur(o.salaires_cts));
+    o.personnes.forEach(function(p){ ligne(p.nom, p.net_cts); });
+    tresoBqKv(d, 'URSSAF', tresoEur(o.urssaf_cts));
+    o.personnes.forEach(function(p){ ligne(p.nom + ' (' + String(p.taux_pb / 100).replace('.', ',') + ' %)', p.urssaf_cts); });
+    tresoBqKv(d, 'Charges fixes de M22, HT', tresoEur(o.charges_cts));
+    o.charges.forEach(function(c){ ligne(c.poste + (c.frequence === 'annuel' ? ' (annuel, ramené au mois)' : c.frequence === 'trimestriel' ? ' (trimestriel, ramené au mois)' : ''), c.ht_cts); });
+    tresoBqKv(d, 'Total du besoin', tresoEur(o.besoin_cts));
+    tresoBqKv(d, 'Déjà signé, HT', tresoEur(o.signe_cts));
+    o.contrats.forEach(function(c){ ligne(c.client, c.ht_cts); });
+    tresoBqKv(d, o.atteint ? 'Surplus' : 'Reste à signer', tresoEur(o.atteint ? o.surplus_cts : o.reste_cts));
+    if (o.charges_exclues.length) d.appendChild(tresoEl('p', 'treso-f-sub', 'Pas comptées : ' + o.charges_exclues.map(function(c){ return c.poste + ' (' + c.raison + ')'; }).join(', ') + '. Les entrées ponctuelles ne comptent pas.'));
+  }
+  function tresoZeroLigne(e){
+    var l = document.getElementById('treso-zero-ligne'); if (!l) return;
+    l.textContent = e.sous_zero ? 'Passage sous zéro : ' + tresoJourLong(e.sous_zero.date) + ' (' + tresoEuros0(e.sous_zero.montant_cts) + ')' : 'Pas de passage sous zéro sur 12 mois';
+  }
+  function tresoJourLong(j){ return j ? j.slice(8, 10) + '/' + j.slice(5, 7) + '/' + j.slice(0, 4) : ''; }
+  function tresoEuros0(cts){ return (cts < 0 ? '−' : '') + String(Math.round(Math.abs(cts) / 100)).replace(/\B(?=(\d{3})+(?!\d))/g, ' ') + ' €'; }
+  function tresoNb(cts){ if (!cts) return '—'; var s = (Math.abs(cts) / 100).toFixed(2).split('.'); return (cts < 0 ? '−' : '') + s[0].replace(/\B(?=(\d{3})+(?!\d))/g, ' ') + ',' + s[1]; }
+  function tresoTableau(id, entetes, lignes, total, note){
+    var box = document.getElementById(id); if (!box) return;
+    box.textContent = '';
+    var t = tresoEl('table', 'treso-tab'), th = tresoEl('thead'), tb = tresoEl('tbody'), tr = tresoEl('tr');
+    entetes.forEach(function(x){ tr.appendChild(tresoEl('th', '', x)); }); th.appendChild(tr); t.appendChild(th);
+    lignes.concat([total]).forEach(function(l, k){
+      var r = tresoEl('tr', k === lignes.length ? 'treso-tab-total' : '');
+      l.forEach(function(c){ r.appendChild(tresoEl('td', '', c)); });
+      tb.appendChild(r);
+    });
+    t.appendChild(tb); box.appendChild(t);
+    if (note) box.appendChild(tresoEl('p', 'treso-f-sub', note));
+  }
+  function tresoMoisCourt(m){ return TRESO_MOIS_COURT[+m.slice(5, 7) - 1] + ' ' + m.slice(2, 4); }
+  function tresoTableaux(e){
+    var u = e.urssaf_tableau, t = e.tva_tableau;
+    if (u) tresoTableau('treso-urssaf', ['Mois', 'Mathéo', 'Dorian', 'Total', 'Prélevé le'], u.lignes.map(function(l){ return [tresoMoisCourt(l.mois), tresoNb(l.matheo_cts), tresoNb(l.dorian_cts), tresoNb(l.total_cts), l.date_prelevement ? tresoJourCourt(l.date_prelevement) : '—']; }), ['Total', tresoNb(u.total_matheo_cts), tresoNb(u.total_dorian_cts), tresoNb(u.total_cts), ''], 'Montants en euros.');
+    if (t) tresoTableau('treso-tva-tab', ['Mois', 'Collectée', 'Déductible', 'À reverser', 'Payée le'], t.lignes.map(function(l){ return [tresoMoisCourt(l.mois), tresoNb(l.collectee_cts), tresoNb(l.deductible_cts), tresoNb(l.a_reverser_cts), l.date_paiement ? tresoJourCourt(l.date_paiement) : '—']; }), ['Total', tresoNb(t.total_collectee_cts), tresoNb(t.total_deductible_cts), tresoNb(t.total_a_reverser_cts), ''], 'Montants en euros. Chaque ligne porte sur l’activité du mois précédent, payée le 20 du mois de la ligne.' + (t.lignes.some(function(l){ return l.credit_entrant_cts; }) ? ' Un crédit reporté réduit le montant à reverser.' : ''));
+  }
+  var TRESO_AVENIR_CLE = 'jarvis_treso_avenir_ouvert', tresoAvenirOuvert = false;
+  try { tresoAvenirOuvert = localStorage.getItem(TRESO_AVENIR_CLE) === 'oui'; } catch (err) { tresoAvenirOuvert = false; }
+  function tresoAvenirBasculer(v){
+    tresoAvenirOuvert = v;
+    try { localStorage.setItem(TRESO_AVENIR_CLE, v ? 'oui' : 'non'); } catch (err) { /* stockage indisponible : le choix vaut pour cette session */ }
+    if (tresoEtat) tresoListes(tresoEtat);
+  }
+  function tresoAvenirRepli(box, liste){
+    var tot = liste.reduce(function(s, p){ return s + p.montant_cts; }, 0);
+    var h = tresoEl('div', 'treso-kv'); h.appendChild(tresoEl('b', '', 'Total · ' + liste.length + (liste.length > 1 ? ' lignes' : ' ligne'))); h.appendChild(tresoEl('b', '', tresoEur(tot, true))); box.appendChild(h);
+    box.appendChild(tresoEl('div', 'treso-bloc-t', 'Prochaines échéances'));
+    liste.slice(0, 3).forEach(function(p){ box.appendChild(tresoLigne(p)); });
+    if (liste.length > 3){ var b = tresoEl('button', 'treso-link', 'Tout voir (' + liste.length + ')'); b.type = 'button'; b.setAttribute('aria-expanded', 'false'); b.addEventListener('click', function(){ tresoAvenirBasculer(true); }); box.appendChild(b); }
+  }
   function tresoSocietesCarte(e){
     var box = document.getElementById('treso-societes'); if (!box) return;
     box.textContent = '';
@@ -13990,11 +14048,11 @@
     var v = e.voiture;
     if (v && v.achat) ligne('Voiture (Audi)', v.achat.a_renseigner ? 'À renseigner' : tresoEur(v.achat.montant_cts), 'Achat prévu le ' + tresoJourCourt(v.achat.date) + (v.achat.date_supposee ? ' (supposée)' : ''), tresoVoiture);
   }
-  var TRESO_PB_TYPES = { carte: 'Changer la carte de paiement', resilier: 'À résilier', etude: 'À l’étude' };
+  var TRESO_PB_TYPES = { carte: 'Changer la carte de paiement', basculer: 'À basculer', resilier: 'À résilier', etude: 'À l’étude' };
   function tresoPenseBete(){
     var pb = (tresoEtat || {}).pense_bete || [];
-    tresoFormOuvrir('Pense-bête abonnements', 'À cocher une fois fait. Les charges sont déjà comptées dans la projection de M22.', function(f){
-      ['carte', 'resilier', 'etude'].forEach(function(t){
+    tresoFormOuvrir('Pense-bête abonnements', 'À cocher une fois fait. Sauf mention contraire, les charges sont déjà comptées dans la projection de M22.', function(f){
+      ['carte', 'basculer', 'resilier', 'etude'].forEach(function(t){
         var l = pb.filter(function(x){ return x.type === t; }); if (!l.length) return;
         f.appendChild(tresoEl('div', 'treso-bloc-t', TRESO_PB_TYPES[t] + ' · ' + l.filter(function(x){ return !x.coche; }).length + ' à faire'));
         l.forEach(function(x){
@@ -14375,6 +14433,7 @@
   document.getElementById('sh-treso').addEventListener('click', function(){ sheetOpen(false); tresoOpen(); });
   document.getElementById('treso-close').addEventListener('click', tresoClose);
   document.getElementById('treso-recurrent').addEventListener('click', tresoRecurrentDetail);
+  document.getElementById('treso-objectif').addEventListener('click', function(){ tresoObjectifOuvert = !tresoObjectifOuvert; if (tresoEtat) tresoObjectif(tresoEtat); });
   document.getElementById('treso-voir-courbe').addEventListener('click', function(){
     var bloc = document.getElementById('treso-courbe-bloc'), ouvrir = bloc.style.display === 'none';
     bloc.style.display = ouvrir ? '' : 'none';
