@@ -2571,6 +2571,12 @@
   .treso-btn.treso-btn-main{background:var(--tr-blue); border-color:var(--tr-blue); color:#fff}
   .treso-btn:disabled{opacity:.55; cursor:default}
   .treso-kpis{display:grid; grid-template-columns:1fr 1fr; gap:10px; margin:0 0 4px}
+  /* 1.17 : charges détectées, écran TVA */
+  .treso-det{margin:0 0 8px; padding:12px 14px}
+  .treso-det-n{font-size:15.5px; font-weight:700; line-height:1.3; overflow-wrap:anywhere}
+  .treso-det-m{font-size:15px; font-variant-numeric:tabular-nums; margin:2px 0}
+  .treso-det-a{display:grid; grid-template-columns:1fr 1fr; gap:8px; margin-top:10px}
+  .treso-tva-a{padding:8px 0; border-bottom:0.5px solid var(--tr-line)}
   /* 1.16 : récurrent mensuel, blocs, détail d'un mois, impôts */
   .treso-rec{display:block; width:100%; text-align:left; background:var(--tr-card); border:0; border-radius:16px; color:inherit; font:inherit; padding:12px 14px; margin:0 0 12px; cursor:pointer}
   .treso-rec-l{font-size:13px; color:var(--tr-muted); text-transform:uppercase; letter-spacing:.03em}
@@ -7446,6 +7452,7 @@
         <div id="couts-svc-list"></div>
       </div>
     </div>
+    <div id="couts-reel"></div>
     <div id="couts-abo-head">Abonnements (gérés ici)</div>
     <div id="couts-abo-rows"></div>
   </div>
@@ -7502,6 +7509,8 @@
       </div>
       <div class="treso-h"><span>Impôts et cotisations · 12 mois</span></div>
       <div class="treso-card" id="treso-impots"></div>
+      <div class="treso-h"><span>TVA récupérable</span></div>
+      <div class="treso-card" id="treso-tva-controle"></div>
       <div id="treso-retard" class="treso-retard" style="display:none"></div>
       <div class="treso-h"><span>À venir · 60 jours</span>
         <div class="treso-seg" id="treso-filtre" role="group" aria-label="Filtrer les prévisions">
@@ -9410,8 +9419,8 @@
          unique de detection de mise a jour (voir checkUpdate ci-dessous), plus fiable qu'une
          comparaison de chaine de version par tenant. */
   var APPV_MCS = '4.65';
-  var APPV_LABO = '1.16';
-  var BUILD = 116;
+  var APPV_LABO = '1.17';
+  var BUILD = 117;
 
   // ==============================================================================================
   // ONGLETS ACTIFS PAR LOCATAIRE (07/10/2026) -- LA liste qui décide ce qu'un client voit.
@@ -12570,6 +12579,7 @@
     return row;
   }
   function coutsListeRender(items){
+    coutsDerniereListe = items || []; if (coutsVus) coutsReelRendre(coutsVus);
     coutsAboRows.innerHTML = '';
     if (!items.length){ coutsAboRows.innerHTML = '<p id="couts-empty">Aucun abonnement suivi pour l’instant. Touche + pour en ajouter un.</p>'; return; }
     items.forEach(function(c){ coutsAboRows.appendChild(coutsRow(c)); });
@@ -12655,7 +12665,7 @@
     });
   }
   function coutsClose(){ coutsview.classList.remove('open'); }
-  function coutsOpen(){ coutsview.classList.add('open'); coutsDashLoad(); coutsLoad(); }
+  function coutsOpen(){ coutsview.classList.add('open'); coutsDashLoad(); coutsLoad(); coutsReelCharger(); }
   document.getElementById('sh-couts').addEventListener('click', function(){ sheetOpen(false); coutsOpen(); });
   document.getElementById('couts-close').addEventListener('click', coutsClose);
 
@@ -12868,7 +12878,7 @@
     tresoPlan(e);
     tresoRepartition('treso-rep-rec', e.repartition_recurrents, true);
     tresoRepartition('treso-rep-ponc', e.repartition_ponctuels, true);
-    tresoRecurrent(e); tresoImpots(e);
+    tresoRecurrent(e); tresoImpots(e); tresoTvaCarte(e);
     tresoRepartition('treso-rep', e.repartition, false);
   }
 
@@ -12972,7 +12982,7 @@
     var nom = tresoEl('div', 'treso-r-nom', p.titre_ligne || p.titre || p.libelle);
     var mt = tresoEl('div', 'treso-r-mt' + (p.montant_cts > 0 ? ' treso-pos' : ''), tresoEur(p.montant_cts, true));
     var sub = tresoEl('div', 'treso-r-sub', (p.en_retard ? 'prévu le ' + tresoJourMot(p.date_prevue) : tresoJourMot(p.date_prevue))
-      + (p.sous_titre && !p.titre_ligne ? ' · ' + p.sous_titre : '') + (p.modifie ? ' · modifié' : ''));
+      + (p.sous_titre && !p.titre_ligne ? ' · ' + p.sous_titre : '') + (p.date_supposee ? ' · date supposée' : '') + (p.modifie ? ' · modifié' : ''));
     var r2 = tresoEl('div', 'treso-r-right2');
     r2.appendChild(tresoEl('span', 'treso-badge b-' + (p.en_retard ? 'retard' : p.fiabilite), p.en_retard ? 'En retard' : (TRESO_CERT[p.fiabilite] || p.fiabilite)));
     b.appendChild(nom); b.appendChild(mt); b.appendChild(sub); b.appendChild(r2);
@@ -12982,7 +12992,7 @@
   function tresoGrouper(liste){ // [{seul:p} | {groupe:[p,...], cle}]
     var out = [], idx = {};
     liste.forEach(function(p){
-      var cle = p.date_prevue + '|' + p.categorie + '|' + (p.montant_cts > 0 ? '+' + (p.type_entree || '') : '-') + (p.personne ? '|' + p.ref : '');
+      var cle = p.date_prevue + '|' + p.categorie + '|' + (p.montant_cts > 0 ? '+' + (p.type_entree || '') : '-') + (p.personne || p.chantier || p.type_entree === 'recurrent' ? '|' + p.ref : '');
       if (idx[cle] != null){ var o = out[idx[cle]]; if (o.seul){ o.groupe = [o.seul]; delete o.seul; } o.groupe.push(p); }
       else { idx[cle] = out.length; out.push({ seul: p, cle: cle }); }
     });
@@ -13583,6 +13593,7 @@
   function tresoChargesListe(){
     var e = tresoEtat || {};
     tresoFormOuvrir('Charges fixes', 'Une charge renseignée crée ses échéances sur 12 mois glissants. Une modification vaut « à partir de » tel mois : le passé et ce qui est déjà payé ne changent jamais.', function(f){
+      tresoDetectees(f);
       var liste = tresoEl('div', 'treso-card'); liste.style.padding = '0 12px'; liste.style.margin = '0 0 12px';
       (e.charges || []).forEach(function(c){
         var b = tresoEl('button', 'treso-row'); b.type = 'button';
@@ -13873,6 +13884,88 @@
     b.addEventListener('click', function(){ b.disabled = true; tresoPost({ action: 'banque_type_entree', type: type, cle: cle, type_entree: s.value }, function(j){ tresoFormFermer(); toast(j.message || 'Enregistré.', 2200); tresoAfficher(j.etat); }, function(msg){ b.disabled = false; toast(msg, 3500); }); });
     f.appendChild(b);
   }
+  // ---- 1.17 (01/11/2026) : charges detectees, ecran TVA, montant reel vu dans l'onglet Couts ----
+  var TRESO_DET_SOURCE = { banque: 'vu en banque', factures: 'vu sur les factures', releves: 'vu sur les relevés' };
+  function tresoDetectees(f){
+    var l = (tresoEtat || {}).charges_detectees || [];
+    if (!l.length) return;
+    f.appendChild(tresoEl('div', 'treso-bloc-t', 'Charges détectées · ' + l.length));
+    f.appendChild(tresoEl('p', 'treso-f-sub', 'Proposées d’après ce qui revient chaque mois. Aucune n’est créée sans votre validation.'));
+    l.forEach(function(d){
+      var c = tresoEl('div', 'treso-card treso-det');
+      c.appendChild(tresoEl('div', 'treso-det-n', d.fournisseur));
+      c.appendChild(tresoEl('div', 'treso-det-m', tresoEur(d.montant_cts) + ' · ' + (TRESO_FREQ_LIB[d.frequence] || d.frequence)));
+      c.appendChild(tresoEl('div', 'treso-r-sub', 'Le ' + d.jour + ' · ' + d.occurrences + ' fois, ' + (TRESO_DET_SOURCE[d.source] || d.source) + ' · payé par ' + (d.societe === 'DMROOM' ? 'DMROOM' : 'la société')));
+      var acts = tresoEl('div', 'treso-det-a');
+      var ok = tresoEl('button', 'treso-btn treso-btn-main', 'Valider'); ok.type = 'button';
+      tresoBqGeste(ok, Object.assign({}, d.geste, { jeton: tresoJeton() }));
+      var no = tresoEl('button', 'treso-btn', 'Ignorer'); no.type = 'button';
+      tresoBqGeste(no, { action: 'banque_detection_ecarter', cle: d.cle });
+      acts.appendChild(ok); acts.appendChild(no); c.appendChild(acts);
+      f.appendChild(c);
+    });
+  }
+  function tresoTvaCarte(e){
+    var box = document.getElementById('treso-tva-controle'), t = e.tva_controle; if (!box) return;
+    box.textContent = ''; if (!t) return;
+    var b = tresoEl('button', 'treso-row'); b.type = 'button';
+    b.appendChild(tresoEl('div', 'treso-r-nom', 'TVA perdue faute de justificatif'));
+    b.appendChild(tresoEl('div', 'treso-r-mt', tresoEur(t.perdue_cts)));
+    b.appendChild(tresoEl('div', 'treso-r-sub', 'Estimée à 20 % · ' + t.a_recuperer.length + ' justificatif' + (t.a_recuperer.length > 1 ? 's' : '') + ' à récupérer · récupérée ' + tresoEur(t.tva_recuperee_cts)));
+    b.appendChild(tresoEl('div', 'treso-r-right2'));
+    b.addEventListener('click', tresoTvaEcran); box.appendChild(b);
+  }
+  var TRESO_TVA_STATUT = { recuperee: 'Récupérée', justificatif_manquant: 'Justificatif manquant', tva_a_lire: 'TVA à lire sur la pièce', non_deductible: 'Non déductible' };
+  function tresoTvaEcran(){
+    var t = (tresoEtat || {}).tva_controle; if (!t) return;
+    tresoFormOuvrir('TVA', 'Règle de Mathéo : 100 % des achats de la société sont éligibles' + (t.carte_dmroom_deductible ? ', y compris les tickets payés avec la carte DMROOM' : '') + '.', function(f){
+      tresoBqKv(f, 'TVA payée', tresoEur(t.tva_payee_cts)); tresoBqKv(f, 'TVA récupérée', tresoEur(t.tva_recuperee_cts)); tresoBqKv(f, 'Écart', tresoEur(t.ecart_cts));
+      f.appendChild(tresoEl('div', 'treso-bloc-t', 'TVA perdue faute de justificatif · ' + tresoEur(t.perdue_cts)));
+      f.appendChild(tresoEl('p', 'treso-f-sub', 'Estimation à 20 % sur les sorties sans justificatif, hors exceptions. Justificatifs à récupérer :'));
+      t.a_recuperer.forEach(function(a){ var r = tresoEl('div', 'treso-cca-ligne'); r.appendChild(tresoEl('span', '', tresoJourCourt(a.date) + ' · ' + a.libelle + ' · ' + tresoEur(a.montant_cts))); r.appendChild(tresoEl('span', '', tresoEur(a.ecart_cts))); f.appendChild(r); });
+      f.appendChild(tresoEl('div', 'treso-bloc-t', 'Achat par achat'));
+      t.achats.filter(function(a){ return a.statut !== 'exception' && a.statut !== 'neutre'; }).forEach(function(a){
+        var c = tresoEl('div', 'treso-tva-a');
+        c.appendChild(tresoEl('div', 'treso-det-n', a.libelle));
+        c.appendChild(tresoEl('div', 'treso-r-sub', tresoJourCourt(a.date) + ' · ' + tresoEur(a.montant_cts) + ' · ' + (TRESO_TVA_STATUT[a.statut] || a.statut)));
+        c.appendChild(tresoEl('div', 'treso-r-sub', 'Payée ' + (a.estimee ? '≈ ' : '') + tresoEur(a.tva_payee_cts) + ' · récupérée ' + tresoEur(a.tva_recuperee_cts) + ' · écart ' + tresoEur(a.ecart_cts)));
+        f.appendChild(c);
+      });
+      f.appendChild(tresoEl('div', 'treso-bloc-t', 'Sans TVA à récupérer · ' + t.exceptions.length));
+      t.exceptions.forEach(function(a){ var r = tresoEl('div', 'treso-cca-ligne'); r.appendChild(tresoEl('span', '', a.libelle + ' · ' + a.exception)); r.appendChild(tresoEl('span', '', tresoEur(a.montant_cts))); f.appendChild(r); });
+      var bf = tresoEl('button', 'treso-btn', 'Fermer'); bf.type = 'button'; bf.style.width = '100%'; bf.style.marginTop = '14px'; bf.addEventListener('click', tresoFormFermer); f.appendChild(bf);
+    });
+  }
+  // Onglet Coûts : montant réel vu, à côté du montant saisi. Lecture seule depuis la trésorerie ; jamais côté MCS (la route refuse tout autre code que Mathéo et Dorian).
+  var coutsDerniereListe = [], coutsVus = null;
+  function coutsReelCharger(){
+    var box = document.getElementById('couts-reel'); if (!box || isMcsCode()) return;
+    tresoPost({ action: 'etat' }, function(j){ coutsVus = j.etat.abonnements_vus || []; coutsReelRendre(coutsVus); }, function(){ box.textContent = ''; });
+  }
+  function coutsReelRendre(vus){
+    var box = document.getElementById('couts-reel'); if (!box) return;
+    box.textContent = ''; if (!vus.length) return;
+    var t = document.createElement('div'); t.className = 'couts-section-title'; t.textContent = 'Montant réel vu (banque et factures)'; box.appendChild(t);
+    vus.forEach(function(v){
+      var mot = String(v.motif || '').split(' ')[0].toLowerCase();
+      var saisis = coutsDerniereListe.filter(function(c){ var n = String(c.nom || '').toLowerCase(); return n.indexOf(mot) !== -1 || (v.fournisseur.toLowerCase().split(' ')[0] && n.indexOf(v.fournisseur.toLowerCase().split(' ')[0]) !== -1); });
+      var devise = v.devise === 'USD' ? 'USD' : 'EUR';
+      var reel = v.montant_devise != null && devise === 'USD' ? v.montant_devise : v.montant_cts / 100;
+      var memes = saisis.filter(function(c){ return (c.devise || 'EUR') === devise; });
+      var saisi = memes.reduce(function(s, c){ var m = Number(c.montant_reel); return s + (isFinite(m) ? (c.periodicite === 'annuel' ? m / 12 : m) : 0); }, 0);
+      var row = document.createElement('div'); row.className = 'couts-row';
+      var mid = document.createElement('div'); mid.className = 'couts-mid';
+      var nom = document.createElement('span'); nom.className = 'couts-nom'; nom.textContent = v.fournisseur;
+      var meta = document.createElement('span'); meta.className = 'couts-meta';
+      var ecart = memes.length ? reel - saisi : null, signale = ecart !== null && Math.abs(ecart) > Math.max(1, saisi * 0.1);
+      meta.textContent = 'Payé par ' + (v.societe === 'DMROOM' ? 'DMROOM' : 'M22') + ' · ' + (v.source === 'banque' ? 'vu en banque' : 'vu sur facture') + ' le ' + tresoJourCourt(v.derniere_date) + ' · '
+        + (memes.length ? 'saisi ' + coutsFmt(saisi, devise) + (signale ? ' · écart ' + (ecart > 0 ? '+' : '−') + coutsFmt(Math.abs(ecart), devise) : ' · conforme') : 'pas saisi dans les coûts');
+      meta.style.whiteSpace = 'normal';
+      mid.appendChild(nom); mid.appendChild(meta);
+      var mt = document.createElement('span'); mt.className = 'couts-montant'; mt.textContent = coutsFmt(reel, devise); if (signale) mt.style.color = 'var(--tr-warn, #ffb340)';
+      row.appendChild(mid); row.appendChild(mt); box.appendChild(row);
+    });
+  }
   function tresoBqLigne(box, nom, mt, sub, badge, onTap){
     var b = tresoEl('button', 'treso-row'); b.type = 'button';
     b.appendChild(tresoEl('div', 'treso-r-nom', nom)); b.appendChild(tresoEl('div', 'treso-r-mt', mt)); b.appendChild(tresoEl('div', 'treso-r-sub', sub));
@@ -13925,11 +14018,25 @@
     });
   }
   function tresoBqFicheRelier(p){
+    if (p.type === 'estimation_facture') {
+      tresoFormOuvrir('Remplacer l’estimation ?', p.raison, function(f){
+        tresoBqKv(f, 'Estimation', tresoEur(p.cibles[0].montant_cts, true) + ' · ' + p.cibles[0].libelle);
+        tresoBqKv(f, 'Facture', tresoEur(p.facture.montant_cts, true) + ' · ' + p.facture.libelle);
+        f.appendChild(tresoEl('p', 'treso-f-sub', 'Le montant réel prend la place de l’estimation, l’estimation reste dans l’historique.'));
+        var acts = tresoEl('div', 'treso-acts-v');
+        var ok = tresoEl('button', 'treso-btn treso-btn-main', 'Remplacer'); ok.type = 'button';
+        tresoBqGeste(ok, { action: 'banque_relier_estimation', facture_type: p.facture.type, facture: p.facture.cle, estimation: p.cibles[0].cle }); acts.appendChild(ok);
+        var ret = tresoEl('button', 'treso-btn', 'Retour'); ret.type = 'button'; ret.addEventListener('click', tresoBqARelier); acts.appendChild(ret);
+        f.appendChild(acts);
+      });
+      return;
+    }
     tresoFormOuvrir('Relier ?', p.raison, function(f){
       p.operations.forEach(function(o){ tresoBqKv(f, 'Banque', tresoBqOpTexte(o)); });
       p.cibles.forEach(function(c){ tresoBqKv(f, c.type === 'justificatif' ? 'Justificatif' : 'Prévision', tresoJourCourt(c.date) + ' · ' + tresoEur(c.montant_cts, true) + ' · ' + c.libelle); });
       if (p.reste_cts) f.appendChild(tresoEl('div', 'treso-alerte', 'Le reste (' + tresoEur(Math.abs(p.reste_cts)) + ') partira dans « Pas trouvé en banque » : vous direz qui l’a payé (DMROOM, perso…).'));
       if (p.ecart_cts) f.appendChild(tresoEl('p', 'treso-f-sub', 'Écart de ' + tresoEur(Math.abs(p.ecart_cts)) + ' : le montant de la banque est gardé.'));
+      if (p.frais_cts) f.appendChild(tresoEl('p', 'treso-f-sub', 'La différence (' + tresoEur(p.frais_cts) + ') passe en « Frais Shopify / Stripe ».'));
       var acts = tresoEl('div', 'treso-acts-v');
       var ok = tresoEl('button', 'treso-btn treso-btn-main', 'Relier'); ok.type = 'button';
       var corps = { action: 'banque_relier', operations: p.operations.map(function(o){ return o.id_externe; }), cible_type: p.type === 'justificatif' ? 'justificatif' : 'prevision', cibles: p.cibles.map(function(c){ return c.cle; }) };
