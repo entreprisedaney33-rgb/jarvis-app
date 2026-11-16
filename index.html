@@ -9439,8 +9439,8 @@
          unique de detection de mise a jour (voir checkUpdate ci-dessous), plus fiable qu'une
          comparaison de chaine de version par tenant. */
   var APPV_MCS = '4.65';
-  var APPV_LABO = '1.19';
-  var BUILD = 119;
+  var APPV_LABO = '1.20';
+  var BUILD = 120;
 
   // ==============================================================================================
   // ONGLETS ACTIFS PAR LOCATAIRE (07/10/2026) -- LA liste qui décide ce qu'un client voit.
@@ -22751,6 +22751,16 @@ function ikcDepuisNavigateur(p) {
   var API_IK_LABO = 'https://n8n-self-hosted-t0pz.onrender.com/webhook/labo-ik';
   function postIkLabo(payload, onOk, onErr){ postDevisWeb(API_IK_LABO, payload, onOk, onErr); }
 
+  // DÉPART PAR DÉFAUT DE CHAQUE NOUVEAU TRAJET, PAR CONDUCTEUR (16/11/2026, demande de Dorian : nos
+  // trajets sont surtout des allers-retours depuis la maison). Prérempli à l'ouverture d'un nouveau
+  // trajet ET après « Enregistrer et saisir le suivant » ; modifiable à la main pour un trajet, mais
+  // jamais mémorisé d'un trajet à l'autre. « Dupliquer ce trajet » recopie toujours le départ du
+  // trajet dupliqué. Noms exacts du référentiel des communes (vérifiés le 16/11/2026, sans homonyme) :
+  // La Sauve = INSEE 33505 (33670, Gironde) ; Cénac = INSEE 33118 (33360, Gironde).
+  // CHANGER UNE COMMUNE PAR DÉFAUT : modifier cette constante, rien d'autre.
+  var IKL_DEPART_PAR_DEFAUT = { dorian: 'La Sauve', matheo: 'Cénac' };
+  function iklDepartParDefaut(conducteur){ return IKL_DEPART_PAR_DEFAUT[conducteur] || ''; }
+
   // BARÈME FISCAL OFFICIEL, STOCKÉ PAR ANNÉE DE REVENUS (= année des trajets).
   // ⚠️ Piège d'appellation : le barème dit « 2026 » est celui PUBLIÉ en 2026, il s'applique aux
   // trajets/revenus 2025 -> clé '2025' ici. Une clé = l'année où les trajets ont été faits.
@@ -23229,7 +23239,11 @@ function ikcDepuisNavigateur(p) {
     document.getElementById('iklf-date').value = dateDef;
     document.getElementById('iklf-date').max = iklAujourdhui();
     document.getElementById('iklf-motif').value = t ? (t.motif || '') : '';
-    document.getElementById('iklf-depart').value = t ? (t.ville_depart || '') : iklLire('iklDepart_' + iklConducteur, '');
+    // 16/11/2026 : le « dernier départ mémorisé par conducteur » (lecture ci-dessous, gardée en
+    // commentaire) est remplacé par le départ fixe IKL_DEPART_PAR_DEFAUT : un départ changé à la main
+    // pour un trajet ne doit plus revenir sur les suivants. Ancienne lecture :
+    //   t ? (t.ville_depart || '') : iklLire('iklDepart_' + iklConducteur, '')
+    document.getElementById('iklf-depart').value = t ? (t.ville_depart || '') : iklDepartParDefaut(iklConducteur);
     document.getElementById('iklf-arrivee').value = t ? (t.ville_arrivee || '') : '';
     document.getElementById('iklf-km').value = t && t.km_aller != null ? t.km_aller : '';
     document.getElementById('iklf-ar').checked = t ? Number(t.nb_trajet) !== 1 : true;
@@ -23291,12 +23305,16 @@ function ikcDepuisNavigateur(p) {
     var payload = iklEditId ? { type: 'modifier', id: iklEditId, trajet: trajet } : { type: 'ajouter', trajet: trajet };
     postIkLabo(payload, function(){
       iklEnvoi = false;
-      if (trajet.ville_depart) iklEcrire('iklDepart_' + trajet.conducteur, trajet.ville_depart);
+      // 16/11/2026 : mémorisation du dernier départ NEUTRALISÉE (départ fixe par conducteur, voir
+      // IKL_DEPART_PAR_DEFAUT). Ligne gardée pour la trace, elle n'est plus exécutée :
+      //   if (trajet.ville_depart) iklEcrire('iklDepart_' + trajet.conducteur, trajet.ville_depart);
       var annee = parseInt(trajet.date.slice(0, 4), 10);
       if (annee !== iklAnnee){ iklAnnee = annee; iklEcrire('iklAnnee', String(annee)); }
       toast('✅ Trajet du ' + iklDateLongue(trajet.date) + ' enregistré');
       if (suivant){
-        // Saisie en rafale : même date et même départ conservés, le reste vidé.
+        // Saisie en rafale : même date conservée ; départ remis au départ par défaut du conducteur
+        // (16/11/2026 -- avant : le départ du trajet précédent était gardé) ; le reste vidé.
+        document.getElementById('iklf-depart').value = iklDepartParDefaut(trajet.conducteur);
         document.getElementById('iklf-arrivee').value = '';
         document.getElementById('iklf-km').value = '';
         document.getElementById('iklf-motif').value = '';
