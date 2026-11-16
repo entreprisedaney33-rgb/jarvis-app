@@ -2671,6 +2671,9 @@
   .treso-h .treso-link{text-transform:none; letter-spacing:0; font-size:14px; min-height:30px; padding:2px 0}
   .treso-info{font-size:13.5px; color:var(--tr-muted); margin:-2px 4px 8px}
   .treso-alerte{background:var(--tr-warn-bg); color:var(--tr-ink); border-radius:12px; padding:10px 12px; margin:8px 0 12px; font-size:14.5px; line-height:1.4}
+  /* 1.22 : fraîcheur de la banque */
+  .treso-fraicheur{font-size:13px; line-height:1.35; color:var(--tr-muted); margin:0 4px 10px; overflow-wrap:anywhere}
+  .treso-fraicheur-orange{color:#FF9F0A; background:rgba(255,159,10,.14); border-radius:10px; padding:8px 10px; margin:0 0 12px; font-weight:600}
   .treso-alerte b{color:var(--tr-warn-ink)}
   .treso-cca-ligne{display:flex; justify-content:space-between; gap:10px; font-size:14px; padding:6px 0; border-bottom:0.5px solid var(--tr-line)}
   .treso-cca-ligne span:first-child{flex:1; min-width:0; color:var(--tr-muted); overflow:hidden; text-overflow:ellipsis; white-space:nowrap}
@@ -7484,6 +7487,7 @@
   <div id="treso-body">
     <div id="treso-msg">Chargement…</div>
     <div id="treso-content" style="display:none">
+      <div id="treso-fraicheur" class="treso-fraicheur" style="display:none"></div>
       <button id="treso-pill" class="treso-pill" type="button" aria-expanded="false" style="display:none"></button>
       <div id="treso-pill-list" class="treso-pill-list" style="display:none"></div>
       <div class="treso-card">
@@ -9439,8 +9443,8 @@
          unique de detection de mise a jour (voir checkUpdate ci-dessous), plus fiable qu'une
          comparaison de chaine de version par tenant. */
   var APPV_MCS = '4.65';
-  var APPV_LABO = '1.21';
-  var BUILD = 121;
+  var APPV_LABO = '1.22';
+  var BUILD = 122;
 
   // ==============================================================================================
   // ONGLETS ACTIFS PAR LOCATAIRE (07/10/2026) -- LA liste qui décide ce qu'un client voit.
@@ -12897,7 +12901,7 @@
     tresoPlan(e);
     tresoRepartition('treso-rep-rec', e.repartition_recurrents, true);
     tresoRepartition('treso-rep-ponc', e.repartition_ponctuels, true);
-    tresoRecurrent(e); tresoObjectif(e); tresoZeroLigne(e); tresoTableaux(e); tresoTvaCarte(e); tresoSocietesCarte(e);
+    tresoFraicheur(e); tresoRecurrent(e); tresoObjectif(e); tresoZeroLigne(e); tresoTableaux(e); tresoTvaCarte(e); tresoSocietesCarte(e);
     tresoRepartition('treso-rep', e.repartition, false);
   }
 
@@ -14032,6 +14036,14 @@
     box.appendChild(tresoEl('div', 'treso-bloc-t', 'Prochaines échéances'));
     liste.slice(0, 3).forEach(function(p){ box.appendChild(tresoLigne(p)); });
     if (liste.length > 3){ var b = tresoEl('button', 'treso-link', 'Tout voir (' + liste.length + ')'); b.type = 'button'; b.setAttribute('aria-expanded', 'false'); b.addEventListener('click', function(){ tresoAvenirBasculer(true); }); box.appendChild(b); }
+  }
+  // ---- 1.22 (16/11/2026) : fraîcheur de la banque, en haut de l'onglet ----
+  function tresoFraicheur(e){
+    var l = document.getElementById('treso-fraicheur'); if (!l) return;
+    var f = e && e.banque && e.banque.fraicheur;
+    l.style.display = f ? '' : 'none'; l.textContent = f ? f.message : '';
+    l.className = 'treso-fraicheur' + (f && f.orange ? ' treso-fraicheur-orange' : '');
+    l.setAttribute('role', f && f.orange ? 'alert' : 'status');
   }
   function tresoSocietesCarte(e){
     var box = document.getElementById('treso-societes'); if (!box) return;
