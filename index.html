@@ -9439,8 +9439,8 @@
          unique de detection de mise a jour (voir checkUpdate ci-dessous), plus fiable qu'une
          comparaison de chaine de version par tenant. */
   var APPV_MCS = '4.65';
-  var APPV_LABO = '1.20';
-  var BUILD = 120;
+  var APPV_LABO = '1.21';
+  var BUILD = 121;
 
   // ==============================================================================================
   // ONGLETS ACTIFS PAR LOCATAIRE (07/10/2026) -- LA liste qui décide ce qu'un client voit.
@@ -23203,6 +23203,24 @@ function ikcDepuisNavigateur(p) {
     document.getElementById('iklf-calc-result').style.display = 'none';
   }
 
+  // ---- Fermeture par le fond (16/11/2026, RAPPORT-TUILE-IK-LABO § 9) ----
+  // Bug : sélectionner le texte d'un champ à la souris (pour effacer « La Sauve », par exemple) et
+  // relâcher le bouton juste à côté de la fenêtre fermait la fenêtre et perdait la saisie. Le
+  // navigateur envoie alors le « click » au plus proche parent commun de l'appui et du relâchement,
+  // c'est-à-dire au fond lui-même. Le fond ne ferme donc plus que si l'appui a AUSSI COMMENCÉ sur
+  // lui ; un appui parti d'un champ ou de la liste de suggestions ne ferme jamais. Les boutons
+  // Annuler / Enregistrer sont inchangés.
+  function iklFermerParFond(fond, fermer){
+    var appuiSurFond = false;
+    ['pointerdown', 'mousedown', 'touchstart'].forEach(function(t){
+      fond.addEventListener(t, function(e){ appuiSurFond = e.target === fond; }, { passive: true });
+    });
+    fond.addEventListener('click', function(e){
+      if (e.target === fond && appuiSurFond) fermer();
+      appuiSurFond = false;
+    });
+  }
+
   // ---- Formulaire trajet ----
   var iklFormBg = document.getElementById('ikl-form-bg');
   var iklEditId = null;
@@ -23269,7 +23287,9 @@ function ikcDepuisNavigateur(p) {
     if (iklListePerimee){ iklListePerimee = false; iklCharger(false); }
   }
   document.getElementById('iklf-cancel').addEventListener('click', iklFormClose);
-  iklFormBg.addEventListener('click', function(e){ if (e.target === this) iklFormClose(); });
+  // 16/11/2026 : remplacé par iklFermerParFond (voir plus haut). Ancienne ligne, gardée pour la trace :
+  //   iklFormBg.addEventListener('click', function(e){ if (e.target === this) iklFormClose(); });
+  iklFermerParFond(iklFormBg, iklFormClose);
   ['iklf-date', 'iklf-km'].forEach(function(id){ document.getElementById(id).addEventListener('input', iklMajApercu); });
   document.getElementById('iklf-date').addEventListener('change', iklMajApercu);
   document.getElementById('iklf-ar').addEventListener('change', iklMajApercu);
@@ -23363,7 +23383,10 @@ function ikcDepuisNavigateur(p) {
   function iklVehClose(){ iklVehBg.classList.remove('open'); }
   document.getElementById('iklv-genre').addEventListener('change', function(){ iklVehRemplirCv(this.value); });
   document.getElementById('iklv-cancel').addEventListener('click', iklVehClose);
-  iklVehBg.addEventListener('click', function(e){ if (e.target === this) iklVehClose(); });
+  // 16/11/2026 : même défaut que la fenêtre de trajet (champ « libellé ») -- remplacé par
+  // iklFermerParFond. Ancienne ligne, gardée pour la trace :
+  //   iklVehBg.addEventListener('click', function(e){ if (e.target === this) iklVehClose(); });
+  iklFermerParFond(iklVehBg, iklVehClose);
   document.getElementById('iklv-save').addEventListener('click', function(){
     if (!iklVehCible) return;
     var genre = document.getElementById('iklv-genre').value;
