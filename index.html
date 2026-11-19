@@ -2550,6 +2550,8 @@
   .treso-card{background:var(--tr-card); border-radius:16px; padding:14px 16px; margin:0 0 12px}
   .treso-h{display:flex; align-items:center; gap:8px; font-size:13px; font-weight:700; color:var(--tr-accent); text-transform:uppercase; letter-spacing:.03em; margin:22px 4px 8px}
   .treso-h span{flex:1}
+  /* 19/11/2026 (Mathéo) : comptes courants d'associés et projets masqués de l'onglet (trop d'informations, jamais justes) */
+  #treso-comptes-h, #treso-comptes-alertes, #treso-cca, #treso-cci, #treso-projets-h, #treso-projets{display:none !important}
   .treso-pill{
     display:inline-flex; align-items:center; gap:6px; min-height:36px; padding:6px 14px; margin:0 0 12px;
     border-radius:99px; border:0; background:var(--tr-warn-bg); color:var(--tr-warn-ink);
@@ -7549,7 +7551,7 @@
       <div class="treso-h"><span>Dépenses reprises · 90 jours</span><button class="treso-link" id="treso-reprendre" type="button">Reprendre ›</button></div>
       <div class="treso-info" id="treso-reprise-info"></div>
       <div class="treso-card" id="treso-justifs"></div>
-      <div class="treso-h"><span>Comptes courants d'associés</span></div>
+      <div class="treso-h" id="treso-comptes-h"><span>Comptes courants d'associés</span></div>
       <div id="treso-comptes-alertes"></div>
       <div class="treso-card" id="treso-cca"></div>
       <div class="treso-card" id="treso-cci"></div>
@@ -9445,8 +9447,8 @@
          unique de detection de mise a jour (voir checkUpdate ci-dessous), plus fiable qu'une
          comparaison de chaine de version par tenant. */
   var APPV_MCS = '4.65';
-  var APPV_LABO = '1.23';
-  var BUILD = 123;
+  var APPV_LABO = '1.24';
+  var BUILD = 124;
 
   // ==============================================================================================
   // ONGLETS ACTIFS PAR LOCATAIRE (07/10/2026) -- LA liste qui décide ce qu'un client voit.
@@ -12852,12 +12854,23 @@
     tresoEnVol = true;
     if (!tresoEtat){ tresoMessage('Chargement…', false); document.getElementById('treso-content').style.display = 'none'; }
     tresoPost({ action: 'etat' }, function(j){
-      tresoEnVol = false; tresoAfficher(j.etat);
+      tresoEnVol = false; tresoAfficher(j.etat); tresoATerme(j.etat);
     }, function(err){
       tresoEnVol = false;
       if (tresoEtat){ toast(err, 3000); return; }
       tresoMessage(err, true);
     });
+  }
+  // Les 3 plans comparent le récurrent et le reste à signer AU MÊME MOIS (celui où tous les contrats espérés tournent).
+  // Le plan réel vient du webhook de l'onglet (mois courant) : on lui prête les valeurs « à terme » du workflow Scénarios.
+  // Si cet appel échoue, on garde les valeurs du mois courant, sans bruit.
+  function tresoATerme(e){
+    if (tresoScenario !== 'pessimiste') return;
+    postDevisWeb(API_TRESO_SCN, { action: 'etat', scenario: 'pessimiste' }, function(r){
+      if (tresoScenario !== 'pessimiste' || tresoEtat !== e || !r || !r.etat || r.etat.ok !== true || !r.etat.recurrent_mensuel) return;
+      e.recurrent_mensuel = r.etat.recurrent_mensuel; e.objectif_commercial = r.etat.objectif_commercial;
+      tresoRecurrent(e); tresoObjectif(e);
+    }, function(){});
   }
   function tresoPlanMois(m){
     var p = (tresoEtat && tresoEtat.plan) || [];
@@ -13853,7 +13866,7 @@
     b.appendChild(tresoEl('div', 'treso-rec-l', 'Récurrent mensuel'));
     b.appendChild(tresoEl('div', 'treso-rec-v', tresoEur(r.ht_cts) + ' HT'));
     var ev = r.evolution_ttc_cts;
-    b.appendChild(tresoEl('div', 'treso-rec-s', tresoEur(r.ttc_cts) + ' TTC · ' + (ev === 0 ? 'stable le mois prochain' : (ev > 0 ? '+ ' : '− ') + tresoEur(Math.abs(ev)) + ' TTC le mois prochain') + ' ›'));
+    b.appendChild(tresoEl('div', 'treso-rec-s', (r.mois && r.mois !== tresoAujourdhui().slice(0, 7) ? 'en ' + tresoMoisNom(r.mois) + ' · ' : '') + tresoEur(r.ttc_cts) + ' TTC · ' + (ev === 0 ? 'stable le mois prochain' : (ev > 0 ? '+ ' : '− ') + tresoEur(Math.abs(ev)) + ' TTC le mois prochain') + ' ›'));
   }
   function tresoRecurrentDetail(){
     var r = (tresoEtat || {}).recurrent_mensuel; if (!r) return;
