@@ -7485,6 +7485,8 @@
     <button id="treso-close" type="button" aria-label="Fermer">✕</button>
   </div>
   <div id="treso-body">
+    <div id="treso-scn-bar"></div>
+    <div id="treso-scn-note" class="treso-fraicheur-orange" style="display:none"></div>
     <div id="treso-msg">Chargement…</div>
     <div id="treso-content" style="display:none">
       <div id="treso-fraicheur" class="treso-fraicheur" style="display:none"></div>
@@ -9443,8 +9445,8 @@
          unique de detection de mise a jour (voir checkUpdate ci-dessous), plus fiable qu'une
          comparaison de chaine de version par tenant. */
   var APPV_MCS = '4.65';
-  var APPV_LABO = '1.22';
-  var BUILD = 122;
+  var APPV_LABO = '1.23';
+  var BUILD = 123;
 
   // ==============================================================================================
   // ONGLETS ACTIFS PAR LOCATAIRE (07/10/2026) -- LA liste qui décide ce qu'un client voit.
@@ -12744,6 +12746,14 @@
   // refait le calcul et fait foi).
   var tresoview = document.getElementById('tresoview');
   var API_TRESO = 'https://n8n-self-hosted-t0pz.onrender.com/webhook/jarvis-treso-onglet';
+  // 3 scenarios (19/11/2026) : « pessimiste » = le reel (webhook de l'onglet) ; « realiste » et « optimiste » = le reel
+  // + des contrats espérés, calculés par le workflow LECTURE SEULE « Trésorerie · Scénarios ». En simulation, aucune écriture.
+  var API_TRESO_SCN = 'https://n8n-self-hosted-t0pz.onrender.com/webhook/jarvis-treso-scenarios';
+  var tresoScenario = 'pessimiste';
+  var TRESO_SCN_NOTE = {
+    realiste: 'Simulation « Réaliste » : le réel + les contrats espérés (Azura). Rien n’est enregistré, rien ne peut être modifié ici.',
+    optimiste: 'Simulation « Optimiste » : le réaliste + Aphrodix et la vente des véhicules Devinci à Saint-Barthélemy. Rien n’est enregistré, rien ne peut être modifié ici.'
+  };
   var tresoEtat = null, tresoEnVol = false, tresoFiltre = 'entrees', tresoPeriode = 12, tresoOuverts = {};
   var TRESO_MOIS = ['janvier', 'février', 'mars', 'avril', 'mai', 'juin', 'juillet', 'août', 'septembre', 'octobre', 'novembre', 'décembre'];
   var TRESO_MOIS_COURT = ['janv.', 'févr.', 'mars', 'avr.', 'mai', 'juin', 'juil.', 'août', 'sept.', 'oct.', 'nov.', 'déc.'];
@@ -12815,7 +12825,13 @@
     return { ht: ht, tva: abs - ht, ttc: abs };
   }
   function tresoPost(payload, onOk, onErr){
-    postDevisWeb(API_TRESO, payload, function(j){
+    var url = API_TRESO;
+    if (tresoScenario !== 'pessimiste'){
+      // Simulation : lecture seule. Toute écriture est refusée ici, avant même d'atteindre le réseau.
+      if (payload.action !== 'etat'){ onErr('Simulation : rien ne peut être modifié. Repasse sur « Pessimiste (réel) » pour agir.'); return; }
+      url = API_TRESO_SCN; payload = { action: 'etat', scenario: tresoScenario };
+    }
+    postDevisWeb(url, payload, function(j){
       if (!j || j.ok !== true || !j.etat || j.etat.ok !== true){ onErr('Réponse inattendue du serveur.'); return; }
       onOk(j);
     }, onErr);
@@ -13005,7 +13021,7 @@
     var nom = tresoEl('div', 'treso-r-nom', p.titre_ligne || p.titre || p.libelle);
     var mt = tresoEl('div', 'treso-r-mt' + (p.montant_cts > 0 ? ' treso-pos' : ''), tresoEur(p.montant_cts, true));
     var sub = tresoEl('div', 'treso-r-sub', (p.en_retard ? 'prévu le ' + tresoJourMot(p.date_prevue) : tresoJourMot(p.date_prevue))
-      + (p.sous_titre && !p.titre_ligne ? ' · ' + p.sous_titre : '') + (p.a_renseigner ? ' · montant à renseigner' : '') + (p.mention ? ' · ' + p.mention : '') + (p.date_supposee ? ' · date supposée' : '') + (p.modifie ? ' · modifié' : ''));
+      + (p.sous_titre && !p.titre_ligne ? ' · ' + p.sous_titre : '') + (p.a_renseigner ? ' · montant à renseigner' : '') + (p.mention ? ' · ' + p.mention : '') + (p.date_supposee ? ' · date supposée' : '') + (p.modifie ? ' · modifié' : '') + (/^PRV-SCN-/.test(p.ref || '') ? ' · hypothèse' : ''));
     var r2 = tresoEl('div', 'treso-r-right2');
     r2.appendChild(tresoEl('span', 'treso-badge b-' + (p.en_retard ? 'retard' : p.fiabilite), p.en_retard ? 'En retard' : (TRESO_CERT[p.fiabilite] || p.fiabilite)));
     b.appendChild(nom); b.appendChild(mt); b.appendChild(sub); b.appendChild(r2);
@@ -14440,7 +14456,20 @@
   function tresoSegActif(id, attr, val){
     Array.prototype.forEach.call(document.querySelectorAll('#' + id + ' button'), function(b){ b.setAttribute('aria-pressed', b.getAttribute(attr) === val ? 'true' : 'false'); });
   }
-  function tresoOpen(){ tresoview.classList.add('open'); tresoCharger(); }
+  function tresoScnRendre(){
+    var bar = document.getElementById('treso-scn-bar'), note = document.getElementById('treso-scn-note');
+    bar.textContent = '';
+    var seg = tresoSeg([['pessimiste', 'Pessimiste (réel)'], ['realiste', 'Réaliste'], ['optimiste', 'Optimiste']], tresoScenario, function(v){
+      if (v === tresoScenario) return;
+      tresoScenario = v; tresoEtat = null; tresoEnVol = false;
+      tresoScnRendre(); tresoCharger();
+    });
+    seg.el.style.margin = '0 0 10px';
+    bar.appendChild(seg.el);
+    note.textContent = TRESO_SCN_NOTE[tresoScenario] || '';
+    note.style.display = TRESO_SCN_NOTE[tresoScenario] ? '' : 'none';
+  }
+  function tresoOpen(){ if (tresoScenario !== 'pessimiste') tresoEtat = null; tresoScenario = 'pessimiste'; tresoScnRendre(); tresoview.classList.add('open'); tresoCharger(); }
   function tresoClose(){ tresoFormFermer(); tresoview.classList.remove('open'); }
   document.getElementById('sh-treso').addEventListener('click', function(){ sheetOpen(false); tresoOpen(); });
   document.getElementById('treso-close').addEventListener('click', tresoClose);
